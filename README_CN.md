@@ -76,7 +76,7 @@ conda create -n mag python=3.11
 conda activate mag
 
 # 克隆仓库
-git clone https://github.com/yourusername/mcp-agent-graph.git
+git clone https://github.com/keta1930/mcp-agent-graph.git
 cd mcp-agent-graph
 
 # 安装依赖
@@ -93,7 +93,7 @@ python main.py
 安装指南: https://docs.astral.sh/uv/getting-started/installation/
 
 # 克隆仓库
-git clone https://github.com/yourusername/mcp-agent-graph.git
+git clone https://github.com/keta1930/mcp-agent-graph.git
 cd mcp-agent-graph
 
 # 安装依赖
