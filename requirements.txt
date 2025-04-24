@@ -1,0 +1,13 @@
+asyncio>=3.4.3
+fastapi>=0.115.12
+fastmcp>=2.2.2
+langchain>=0.3.24
+langgraph>=0.3.33
+mcp>=1.6.0
+openai>=1.76.0
+pydantic>=2.11.3
+pyzmq>=26.4.0
+requests>=2.32.3
+typing-extensions>=4.13.2
+uvicorn>=0.34.2
+websockets>=15.0.1

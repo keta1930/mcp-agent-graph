@@ -1,0 +1,19 @@
+/* src/components/graph-runner/InputPanel.css */
+.flat-execute-button {
+  border-radius: 4px !important;
+  height: 38px !important;
+  box-shadow: none !important;
+  border: 1px solid #2563eb !important;
+  background: #3b82f6 !important;
+  transition: all 0.2s ease;
+}
+
+.flat-execute-button:hover {
+  background: #2563eb !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.input-spacing {
+  margin-top: 12px;
+}

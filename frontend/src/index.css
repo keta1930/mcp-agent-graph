@@ -1,0 +1,1073 @@
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  padding-right: 16px;
+  background-color: #fff;
+}
+
+/* Shutdown button styling */
+.shutdown-button {
+  background-color: #fff1f0;
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.3s;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.shutdown-button:hover {
+  background-color: #ff4d4f;
+  color: white;
+  border-color: #ff4d4f;
+  box-shadow: 0 2px 6px rgba(255, 77, 79, 0.4);
+  transform: translateY(-1px);
+}
+
+.shutdown-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .main-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shutdown-button {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    align-self: flex-end;
+  }
+}
+
+.mcp-tabs .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
+/* 调整JSON编辑器间距 */
+.ant-input-textarea textarea.font-mono {
+  padding: 12px;
+  line-height: 1.5;
+  border-radius: 4px;
+}
+
+/* 添加卡片hover效果 */
+.ant-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 页面容器 */
+.max-w-7xl {
+  max-width: 1280px;
+}
+
+/* MCP管理器页面美化 */
+.ant-card .ant-tabs-content-holder {
+  padding: 8px;
+}
+
+/* 美化按钮和按钮组 */
+.ant-btn {
+  border-radius: 4px;
+  transition: all 0.3s;
+  margin-right: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ant-btn:last-child {
+  margin-right: 0;
+}
+
+.ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+}
+
+.ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.25);
+}
+
+.ant-btn-default:hover {
+  border-color: #40a9ff;
+  color: #40a9ff;
+}
+
+/* 服务器卡片样式 */
+.ant-card-bordered {
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 20px;
+  min-height: 48px;
+  background-color: #fafafa;
+}
+
+.ant-card-body {
+  padding: 20px;
+}
+
+/* 工具栏布局修复 */
+.flex.justify-between {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.flex.justify-between .space-x-2 > * {
+  margin-right: 12px !important;
+}
+
+.flex.justify-between .space-x-2 > *:last-child {
+  margin-right: 0 !important;
+}
+
+/* 服务器列表美化 */
+.ant-row {
+  margin-top: 16px;
+}
+
+.ant-empty {
+  margin: 32px 0;
+  padding: 24px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+/* 美化表格样式 */
+.ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  padding: 16px 12px;
+}
+
+.ant-table-tbody > tr > td {
+  padding: 14px 12px;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f5f7fa;
+}
+
+/* 表单样式美化 */
+.ant-form-item {
+  margin-bottom: 20px;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #333;
+}
+
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: #40a9ff;
+}
+
+/* 状态指示器 */
+.ant-badge-status-dot {
+  width: 10px;
+  height: 10px;
+}
+
+.ant-badge-status-text {
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+/* MCP服务器卡片中的按钮组 */
+.ant-card-actions {
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+  padding: 8px 0;
+}
+
+.ant-card-actions > li {
+  margin: 0 8px;
+}
+
+.ant-card-actions .ant-btn {
+  margin-right: 8px;
+}
+
+/* 弹窗美化 */
+.ant-modal-content {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ant-modal-header {
+  padding: 16px 24px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.ant-modal-footer {
+  padding: 16px 24px;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Tools 弹出卡片优化 */
+.ant-modal {
+  width: 90% !important;
+  max-width: 900px !important;
+  top: 50px;
+}
+
+.ant-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Tools 内容自动换行和滚动条 */
+pre, code, .tool-description, .tool-schema {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.tool-item {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.tool-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+  border-color: #d9d9d9;
+}
+
+.tool-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1890ff;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e8e8e8;
+}
+
+.tool-description {
+  color: #666;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.tool-schema {
+  background: #f8f8f8;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 3px solid #1890ff;
+  font-family: monospace;
+  font-size: 13px;
+  overflow-x: auto;
+  color: #333;
+}
+
+/* 代码高亮区域 */
+.code-block {
+  background: #f8f8f8;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+  border-left: 3px solid #1890ff;
+}
+
+.parameter-list {
+  margin-top: 12px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.parameter-item {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e8e8e8;
+}
+
+.parameter-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.parameter-name {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.parameter-type {
+  font-style: italic;
+  color: #888;
+  margin-left: 8px;
+}
+
+.parameter-required {
+  display: inline-block;
+  background: #fff2e8;
+  color: #fa541c;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.parameter-optional {
+  display: inline-block;
+  background: #f6ffed;
+  color: #52c41a;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.parameter-description {
+  margin-top: 4px;
+  color: #666;
+}
+
+/* 响应式布局优化 */
+@media (max-width: 768px) {
+  .ant-btn {
+    padding: 4px 12px;
+    font-size: 14px;
+    margin-right: 8px;
+  }
+  
+  .ant-card-body {
+    padding: 16px;
+  }
+  
+  .ant-modal {
+    max-width: 95% !important;
+    margin: 0 auto;
+  }
+  
+  .ant-modal-body {
+    max-height: 80vh;
+    padding: 16px;
+  }
+  
+  .tool-item {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+}
+
+/* 自定义标题样式 */
+h1.text-2xl.font-bold {
+  position: relative;
+  padding-left: 12px;
+  margin-bottom: 24px;
+  font-size: 1.5rem;
+  line-height: 1.4;
+  color: #222;
+  border-left: 4px solid #1890ff;
+}
+
+/* 美化布局 */
+.ant-layout-header {
+  background: linear-gradient(90deg, #1890ff, #0050b3);
+  padding: 0 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.ant-layout-content {
+  background-color: #f5f7fa;
+  padding: 24px;
+}
+
+/* 美化菜单 */
+.ant-menu {
+  border-right: none;
+}
+
+.ant-menu-item {
+  margin: 4px 0 !important;
+  padding: 0 16px !important;
+  border-radius: 0 20px 20px 0;
+  transition: all 0.3s;
+}
+
+.ant-menu-item-selected {
+  background-color: #e6f7ff !important;
+  font-weight: 500;
+}
+
+.ant-menu-item:hover {
+  color: #1890ff;
+}
+
+.ant-menu-item-selected::after {
+  opacity: 0 !important;
+}
+
+/* 标签页美化 */
+.ant-tabs-tab {
+  padding: 12px 16px;
+  transition: all 0.3s;
+}
+
+.ant-tabs-tab:hover {
+  color: #40a9ff;
+}
+
+.ant-tabs-tab-active {
+  font-weight: 500;
+}
+
+.ant-tabs-ink-bar {
+  height: 3px !important;
+  border-radius: 3px;
+}
+
+.custom-tabs .ant-tabs-content {
+  padding-top: 16px;
+}
+
+/* Action按钮间距调整 */
+.ant-space {
+  gap: 8px !important;
+}
+
+.ant-space-item button {
+  margin-right: 0 !important;
+}
+
+/* Enhanced Model Manager Styling */
+
+/* Page title styling */
+.model-manager-title {
+  position: relative;
+  padding-left: 12px;
+  border-left: 4px solid #1890ff;
+  margin-bottom: 24px;
+}
+
+/* Table styling */
+.ant-table-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background-color: white;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background: #f7f9fc !important;
+  font-weight: 600;
+  color: #333;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.ant-table-tbody > tr > td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f0f7ff !important;
+}
+
+/* Add model button with enhanced styling */
+.add-model-btn {
+  background: linear-gradient(to right, #1890ff, #096dd9);
+  border: none;
+  border-radius: 4px;
+  height: 40px;
+  padding: 0 20px;
+  font-weight: 500;
+  margin-top: 20px;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.25);
+  transition: all 0.3s ease;
+}
+
+.add-model-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35);
+  background: linear-gradient(to right, #40a9ff, #1890ff);
+}
+
+/* Edit and Delete buttons */
+.action-btn-edit {
+  color: #1890ff;
+  background: #e6f7ff;
+  border-color: #91d5ff;
+  margin-right: 8px;
+}
+
+.action-btn-edit:hover {
+  color: #096dd9;
+  background: #bae7ff;
+  border-color: #1890ff;
+}
+
+.action-btn-delete {
+  color: #ff4d4f;
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+
+.action-btn-delete:hover {
+  color: #ff7875;
+  background: #ff4d4f;
+  border-color: #ff4d4f;
+  color: white;
+}
+
+/* Modal styling */
+.ant-modal-header {
+  padding: 16px 24px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.ant-modal-title {
+  font-weight: 600;
+  font-size: 18px;
+  color: #222;
+}
+
+.ant-modal-content {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.ant-modal-body {
+  padding: 24px;
+}
+
+.ant-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8e8;
+  background: #f7f9fc;
+}
+
+/* Form styling */
+.ant-form-item-label > label {
+  font-weight: 500;
+  color: #333;
+}
+
+.ant-input, .ant-input-password {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+}
+
+.ant-input:hover, .ant-input-password:hover {
+  border-color: #40a9ff;
+}
+
+.ant-input:focus, .ant-input-focused,
+.ant-input-password.ant-input-affix-wrapper-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Error message styling */
+.error-message {
+  margin-bottom: 16px;
+}
+
+/* Loading state */
+.ant-spin-nested-loading {
+  transition: opacity 0.3s;
+}
+
+/* Empty table styling */
+.ant-empty {
+  margin: 32px 0;
+  padding: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 10px 8px;
+  }
+
+  .add-model-btn {
+    height: 36px;
+    padding: 0 16px;
+  }
+
+  .ant-modal {
+    width: 95% !important;
+    margin: 0 auto;
+  }
+}
+
+/* Enhanced Graph UI Styles */
+
+/* ===== Graph Runner Main Layout ===== */
+.graph-runner-container {
+  padding: 24px;
+  background-color: #f9fafc;
+  min-height: calc(100vh - 64px);
+}
+
+.graph-runner-title {
+  position: relative;
+  font-size: 1.8rem;
+  margin-bottom: 24px;
+  color: #111827;
+  font-weight: 700;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* ===== Card Styles ===== */
+.graph-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  background-color: white;
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.graph-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.graph-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.graph-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+}
+
+.graph-card-body {
+  padding: 20px;
+}
+
+/* ===== Graph Selector ===== */
+.graph-selector .ant-select {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.graph-selector .ant-select-selector {
+  border-radius: 8px !important;
+  height: 45px !important;
+  padding: 0 16px !important;
+  display: flex;
+  align-items: center;
+}
+
+.graph-selector .ant-select-selection-item {
+  font-weight: 500;
+}
+
+.graph-selector-helper {
+  color: #6b7280;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+/* ===== Input Panel ===== */
+.input-panel .ant-input {
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.input-panel .ant-input:hover,
+.input-panel .ant-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.input-panel .ant-btn {
+  border-radius: 8px;
+  height: 44px;
+  font-weight: 500;
+  background: linear-gradient(to right, #3b82f6, #2563eb);
+  border: none;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s;
+}
+
+.input-panel .ant-btn:hover {
+  background: linear-gradient(to right, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+}
+
+.input-panel .ant-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Result Panel ===== */
+.result-panel-header {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.result-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.result-info-item {
+  background-color: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.result-info-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.result-info-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+}
+
+.result-section {
+  margin-bottom: 24px;
+}
+
+.result-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.result-section-title svg {
+  color: #6b7280;
+}
+
+.result-content {
+  background-color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.result-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.result-loading .ant-spin {
+  margin-bottom: 16px;
+}
+
+/* Enhanced Collapse for Node Results */
+.node-collapse .ant-collapse {
+  background-color: transparent;
+  border: none;
+}
+
+.node-collapse .ant-collapse-item {
+  margin-bottom: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.node-collapse .ant-collapse-header {
+  padding: 12px 16px !important;
+  background-color: #f8fafc;
+  font-weight: 500;
+  align-items: center !important;
+}
+
+.node-collapse .ant-collapse-content {
+  border-top: 1px solid #e5e7eb;
+}
+
+.node-collapse .ant-collapse-content-box {
+  padding: 16px !important;
+  background-color: white;
+}
+
+.node-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.node-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.node-badge-start {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.node-badge-error {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.node-io-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.node-io-content {
+  background-color: #f3f4f6;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.node-error {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 3px solid #ef4444;
+}
+
+/* Subgraph Collapse */
+.subgraph-collapse .ant-collapse {
+  border: none;
+  background-color: #f8fafc;
+}
+
+.subgraph-collapse .ant-collapse-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px !important;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.subgraph-collapse .ant-collapse-header {
+  background-color: #f1f5f9;
+}
+
+/* ===== Status Tags ===== */
+.status-tag {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-completed {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.status-processing {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-error {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ===== Conversation History ===== */
+.history-card {
+  height: 100%;
+}
+
+.conversation-item {
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.conversation-item:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.conversation-item.active {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.conversation-text {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #374151;
+}
+
+.conversation-item.active .conversation-text {
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.conversation-actions {
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.conversation-item:hover .conversation-actions {
+  opacity: 1;
+}
+
+.clear-all-btn {
+  color: #ef4444;
+  border-color: #fecaca;
+  background-color: white;
+  font-size: 0.8rem;
+  height: 28px;
+  padding: 0 8px;
+}
+
+.clear-all-btn:hover {
+  background-color: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* ===== Empty States ===== */
+.custom-empty {
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-empty-icon {
+  font-size: 3rem;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.custom-empty-text {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 768px) {
+  .graph-runner-container {
+    padding: 16px;
+  }
+
+  .result-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .graph-card-header {
+    padding: 12px 16px;
+  }
+
+  .graph-card-body {
+    padding: 16px;
+  }
+
+  .node-collapse .ant-collapse-header {
+    padding: 10px 12px !important;
+  }
+
+  .node-collapse .ant-collapse-content-box {
+    padding: 12px !important;
+  }
+}
