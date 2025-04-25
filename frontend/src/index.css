@@ -1045,6 +1045,21 @@ h1.text-2xl.font-bold {
   font-size: 1rem;
 }
 
+.edge-button {
+  width: 20px;
+  height: 20px;
+  background: #eee;
+  border: 1px solid #fff;
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.edge-button:hover {
+  box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.08);
+}
+
 /* ===== Responsive Adjustments ===== */
 @media (max-width: 768px) {
   .graph-runner-container {
@@ -1071,3 +1086,4 @@ h1.text-2xl.font-bold {
     padding: 12px !important;
   }
 }
+

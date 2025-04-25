@@ -5,6 +5,7 @@ import ReactFlow, {
   Controls,
   MiniMap,
   NodeTypes,
+  EdgeTypes,
   Connection,
   Edge,
   Node,
@@ -13,7 +14,12 @@ import ReactFlow, {
   OnConnect,
   applyNodeChanges,
   applyEdgeChanges,
-  ConnectionLineType
+  ConnectionLineType,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
+  useReactFlow,
+  EdgeProps,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
@@ -23,6 +29,70 @@ import AgentNodeComponent from './AgentNodeComponent';
 const nodeTypes: NodeTypes = {
   agent: AgentNodeComponent,
 };
+
+/**
+ * 自定义边组件，带有删除按钮
+ * @param {ButtonEdgeProps} props - 边属性
+ * @returns {JSX.Element} 渲染的边组件
+ */
+const ButtonEdge: React.FC<EdgeProps> = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style = {},
+  markerEnd,
+}) => {
+  const { setEdges } = useReactFlow();
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+  
+  /**
+   * 删除指定ID的边
+   * @function onEdgeClick
+   * @returns {void}
+   */
+  const onEdgeClick = () => {
+    setEdges((edges) => {
+        return edges.filter((edge) => edge.id !== id)
+    });
+  }
+  return (
+    <>
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style}></BaseEdge>
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            fontSize: 12,
+            // EdgeLabelRenderer 内部的元素默认没有 pointer-events
+            // 如果你有交互元素，设置 pointer-events: all
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <button className="edge-button" onClick={onEdgeClick}>
+            ×
+          </button>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  )
+}
+
+const edgeTypes: EdgeTypes = {
+  button:  ButtonEdge,
+}
 
 const GraphCanvas: React.FC = () => {
   const {
@@ -73,6 +143,7 @@ const GraphCanvas: React.FC = () => {
         if (targetNode) {
           newEdges.push({
             id: `e-${sourceNode.id}-${targetNode.id}`,
+            type: 'button',
             source: sourceNode.id,
             target: targetNode.id,
           });
@@ -101,22 +172,34 @@ const GraphCanvas: React.FC = () => {
 
   // Handle edge changes
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => {
-      const updatedEdges = applyEdgeChanges(changes, edges);
-      setEdges(updatedEdges);
-
-      // Handle edge deletion
-      changes.forEach(change => {
-        if (change.type === 'remove' && change.id) {
-          // Extract source and target node IDs from edge ID
-          const edgeToRemove = edges.find(edge => edge.id === change.id);
-          if (edgeToRemove && edgeToRemove.source && edgeToRemove.target) {
-            removeConnection(edgeToRemove.source, edgeToRemove.target);
+    (changes: any[]) => {
+      setEdges((edges) => {
+        const newEdges = applyEdgeChanges(changes, edges);
+        
+        // Handle edge changes
+        changes.forEach(change => {
+          if (change.type === 'reset') {
+            // Handle reset type changes
+            // Find edges that are in the current set but not in the new set
+            const edgesToRemove = edges.filter(edge => !newEdges.some(newEdge => newEdge.id === edge.id));
+            edgesToRemove.forEach(edge => {
+              if (edge.source && edge.target) {
+                removeConnection(edge.source, edge.target);
+              }
+            });
+          } else if (change.type === 'remove') {
+            // Handle remove type changes
+            const edgeToRemove = edges.find(edge => edge.id === change.id);
+            if (edgeToRemove?.source && edgeToRemove?.target) {
+              removeConnection(edgeToRemove.source, edgeToRemove.target);
+            }
           }
-        }
+        });
+
+        return newEdges;
       });
     },
-    [edges, removeConnection]
+    [removeConnection]
   );
 
   // Handle new connections
@@ -129,6 +212,7 @@ const GraphCanvas: React.FC = () => {
         // Add new edge to display
         const newEdge: Edge = {
           id: `e-${connection.source}-${connection.target}`,
+          type: 'button',
           source: connection.source,
           target: connection.target,
           sourceHandle: connection.sourceHandle,
@@ -156,6 +240,7 @@ const GraphCanvas: React.FC = () => {
         onConnect={onConnect}
         onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         connectionLineType={ConnectionLineType.Straight}
         defaultEdgeOptions={{
