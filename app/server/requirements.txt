@@ -1,0 +1,2 @@
+bilibili-api-python
+beautifulsoup4
