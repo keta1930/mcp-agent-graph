@@ -88,7 +88,8 @@ const NodePropertiesPanel: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (selectedNode) {
+    if (selectedNode && node) {
+      console.log(`删除节点: ${node.name}`);
       removeNode(selectedNode);
     }
   };
@@ -111,7 +112,7 @@ const NodePropertiesPanel: React.FC = () => {
       title={
         <div className="flex items-center">
           {node.is_subgraph ?
-            <BranchesOutlined style={{ color: '#1677ff', marginRight: '8px' }} /> :
+            <BranchesOutlined style={{ color: '#1677ff', marginRight: '8px', fontSize: '18px' }} /> :
             <RobotOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
           }
           <span>{node.name}</span>

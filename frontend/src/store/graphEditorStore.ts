@@ -1,4 +1,4 @@
-// src/store/graphEditorStore.ts - 简化版
+// src/store/graphEditorStore.ts
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import * as graphService from '../services/graphService';
@@ -35,6 +35,7 @@ interface GraphConfig {
 interface GraphEditorState {
   graphs: string[];
   currentGraph: GraphConfig | null;
+  originalGraph: GraphConfig | null; // 存储原始图结构，用于UI显示
   loading: boolean;
   error?: string;
   selectedNode: string | null;
@@ -63,9 +64,129 @@ interface GraphEditorState {
   generateMCPScript: (graphName: string) => Promise<any>;
 }
 
+// 重构子图的辅助函数
+function restructureSubgraphs(graph: GraphConfig): GraphConfig {
+  if (!graph || !graph.nodes) return graph;
+
+  const processedGraph = {...graph};
+  const nodesByPrefix = {};
+  const nodeConnections = {};
+
+  // 1. 识别所有可能的子图前缀并收集连接信息
+  processedGraph.nodes.forEach(node => {
+    // 收集所有节点的输入输出连接
+    nodeConnections[node.name] = {
+      inputs: node.input_nodes || [],
+      outputs: node.output_nodes || []
+    };
+
+    if (node.name.includes('.')) {
+      const prefix = node.name.split('.')[0];
+      if (!nodesByPrefix[prefix]) {
+        nodesByPrefix[prefix] = [];
+      }
+      nodesByPrefix[prefix].push(node);
+    }
+  });
+
+  // 2. 对每个前缀，检查是否代表一个子图
+  Object.keys(nodesByPrefix).forEach(prefix => {
+    const nodes = nodesByPrefix[prefix];
+    if (nodes.length > 0 && nodes[0]._subgraph_name) {
+      const subgraphName = nodes[0]._subgraph_name;
+
+      // 找出子图的起始和结束节点
+      const startNodes = nodes.filter(node =>
+        node.is_start || node.input_nodes.includes("start")
+      );
+
+      const endNodes = nodes.filter(node =>
+        node.is_end || node.output_nodes.includes("end")
+      );
+
+      // 收集子图的外部连接
+      const externalInputs = new Set<string>();
+      const externalOutputs = new Set<string>();
+
+      // 找出子图的输入输出连接
+      processedGraph.nodes.forEach(node => {
+        // 如果节点不是子图的一部分
+        if (!node.name.startsWith(prefix + '.')) {
+          // 查找输出到子图的连接
+          (node.output_nodes || []).forEach(output => {
+            if (output.startsWith(prefix + '.')) {
+              externalInputs.add(node.name);
+            }
+          });
+
+          // 查找来自子图的输入
+          (node.input_nodes || []).forEach(input => {
+            if (input.startsWith(prefix + '.')) {
+              externalOutputs.add(node.name);
+            }
+          });
+        }
+      });
+
+      // 3. 创建替代子图的单个节点
+      const position = startNodes.length > 0 ?
+        startNodes[0].position :
+        (nodes[0].position || { x: 100, y: 100 });
+
+      const subgraphNode = {
+        id: uuidv4(),
+        name: prefix,
+        is_subgraph: true,
+        subgraph_name: subgraphName,
+        mcp_servers: [],
+        system_prompt: "",
+        user_prompt: "",
+        input_nodes: Array.from(externalInputs),
+        output_nodes: Array.from(externalOutputs),
+        output_enabled: true,
+        is_start: startNodes.some(n => n.is_start),
+        is_end: endNodes.some(n => n.is_end),
+        position: position
+      };
+
+      // 为子图节点添加"start"或"end"连接
+      if (subgraphNode.is_start && !subgraphNode.input_nodes.includes("start")) {
+        subgraphNode.input_nodes.push("start");
+      }
+      if (subgraphNode.is_end && !subgraphNode.output_nodes.includes("end")) {
+        subgraphNode.output_nodes.push("end");
+      }
+
+      // 4. 更新节点列表
+      processedGraph.nodes = processedGraph.nodes.filter(
+        node => !node.name.startsWith(prefix + '.')
+      );
+      processedGraph.nodes.push(subgraphNode);
+
+      // 5. 更新其他节点的连接引用
+      processedGraph.nodes.forEach(node => {
+        if (node.name !== prefix) {
+          // 更新输入引用
+          node.input_nodes = (node.input_nodes || []).map(input => {
+            return input.startsWith(prefix + '.') ? prefix : input;
+          });
+
+          // 更新输出引用
+          node.output_nodes = (node.output_nodes || []).map(output => {
+            return output.startsWith(prefix + '.') ? prefix : output;
+          });
+        }
+      });
+    }
+  });
+
+  return processedGraph;
+}
+
 export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   graphs: [],
   currentGraph: null,
+  originalGraph: null,
   loading: false,
   selectedNode: null,
   dirty: false,
@@ -89,7 +210,12 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       description,
       nodes: []
     };
-    set({ currentGraph: newGraph, selectedNode: null, dirty: true });
+    set({
+      currentGraph: newGraph,
+      originalGraph: newGraph,
+      selectedNode: null,
+      dirty: true
+    });
   },
 
   loadGraph: async (name) => {
@@ -107,7 +233,16 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
         }))
       };
 
-      set({ currentGraph: graphWithIds, loading: false, selectedNode: null, dirty: false });
+      // 重构子图以便于UI显示
+      const restructuredGraph = restructureSubgraphs(graphWithIds);
+
+      set({
+        currentGraph: restructuredGraph,
+        originalGraph: restructuredGraph,
+        loading: false,
+        selectedNode: null,
+        dirty: false
+      });
     } catch (error) {
       set({
         loading: false,
@@ -117,63 +252,70 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   },
 
   saveGraph: async () => {
-  const { currentGraph } = get();
-  if (!currentGraph) return;
+    const { currentGraph } = get();
+    if (!currentGraph) return;
 
-  try {
-    set({ loading: true, error: undefined });
+    try {
+      set({ loading: true, error: undefined });
 
-    // 构建符合后端格式的简单对象
-    const backendGraph = {
-      name: currentGraph.name,
-      description: currentGraph.description || "",
-      nodes: currentGraph.nodes.map(node => {
-        const result = {
-          name: node.name,
-          is_subgraph: node.is_subgraph,
-          mcp_servers: [],
-          system_prompt: "",
-          user_prompt: "",
-          input_nodes: [],
-          output_nodes: [],
-          output_enabled: true,
-          is_start: node.is_start,
-          is_end: node.is_end,
-          position: node.position
-        };
+      // 保存原始图结构
+      const originalGraph = JSON.parse(JSON.stringify(currentGraph));
 
-        // 填充数组和文本
-        if (node.mcp_servers && Array.isArray(node.mcp_servers)) result.mcp_servers = node.mcp_servers;
-        if (node.input_nodes && Array.isArray(node.input_nodes)) result.input_nodes = node.input_nodes;
-        if (node.output_nodes && Array.isArray(node.output_nodes)) result.output_nodes = node.output_nodes;
-        if (typeof node.system_prompt === 'string') result.system_prompt = node.system_prompt;
-        if (typeof node.user_prompt === 'string') result.user_prompt = node.user_prompt;
-        if (node.output_enabled !== undefined) result.output_enabled = node.output_enabled;
+      // 构建符合后端格式的简单对象
+      const backendGraph = {
+        name: currentGraph.name,
+        description: currentGraph.description || "",
+        nodes: currentGraph.nodes.map(node => {
+          const result = {
+            name: node.name,
+            is_subgraph: node.is_subgraph,
+            mcp_servers: [],
+            system_prompt: "",
+            user_prompt: "",
+            input_nodes: [],
+            output_nodes: [],
+            output_enabled: true,
+            is_start: node.is_start,
+            is_end: node.is_end,
+            position: node.position
+          };
 
-        // 根据节点类型添加特定字段
-        if (node.is_subgraph) {
-          result.subgraph_name = node.subgraph_name || "";
-        } else {
-          result.model_name = node.model_name || "";
-        }
+          // 填充数组和文本
+          if (node.mcp_servers && Array.isArray(node.mcp_servers)) result.mcp_servers = node.mcp_servers;
+          if (node.input_nodes && Array.isArray(node.input_nodes)) result.input_nodes = node.input_nodes;
+          if (node.output_nodes && Array.isArray(node.output_nodes)) result.output_nodes = node.output_nodes;
+          if (typeof node.system_prompt === 'string') result.system_prompt = node.system_prompt;
+          if (typeof node.user_prompt === 'string') result.user_prompt = node.user_prompt;
+          if (node.output_enabled !== undefined) result.output_enabled = node.output_enabled;
 
-        return result;
-      })
-    };
+          // 根据节点类型添加特定字段
+          if (node.is_subgraph) {
+            result.subgraph_name = node.subgraph_name || "";
+          } else {
+            result.model_name = node.model_name || "";
+          }
 
-    console.log('保存图数据:', JSON.stringify(backendGraph, null, 2));
-    await graphService.createGraph(backendGraph);
+          return result;
+        })
+      };
 
-    set({ loading: false, dirty: false });
-    await get().fetchGraphs();
-  } catch (error) {
-    console.error('保存图时出错:', error);
-    set({
-      loading: false,
-      error: error instanceof Error ? error.message : '保存图失败'
-    });
-  }
-},
+      console.log('保存图数据:', JSON.stringify(backendGraph, null, 2));
+      await graphService.createGraph(backendGraph);
+
+      set({
+        loading: false,
+        dirty: false,
+        originalGraph: originalGraph
+      });
+      await get().fetchGraphs();
+    } catch (error) {
+      console.error('保存图时出错:', error);
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : '保存图失败'
+      });
+    }
+  },
 
   deleteGraph: async (name) => {
     try {
@@ -185,7 +327,7 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       await get().fetchGraphs();
       const { currentGraph } = get();
       if (currentGraph && currentGraph.name === name) {
-        set({ currentGraph: null });
+        set({ currentGraph: null, originalGraph: null });
       }
     } catch (error) {
       set({
@@ -203,7 +345,10 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       // 更新当前图（如果是被重命名的图）
       const { currentGraph } = get();
       if (currentGraph && currentGraph.name === oldName) {
-        set({ currentGraph: { ...currentGraph, name: newName } });
+        set({
+          currentGraph: { ...currentGraph, name: newName },
+          originalGraph: { ...currentGraph, name: newName }
+        });
       }
 
       set({ loading: false });
@@ -297,15 +442,41 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
     const nodeToRemove = currentGraph.nodes.find(node => node.id === id);
     if (!nodeToRemove) return;
 
+    console.log(`准备删除节点: ${nodeToRemove.name}`, nodeToRemove);
+
     // 移除节点
     const filteredNodes = currentGraph.nodes.filter(node => node.id !== id);
 
     // 从其他节点的输入/输出列表中移除引用
-    const updatedNodes = filteredNodes.map(node => ({
-      ...node,
-      input_nodes: node.input_nodes.filter(n => n !== nodeToRemove.name),
-      output_nodes: node.output_nodes.filter(n => n !== nodeToRemove.name)
-    }));
+    const updatedNodes = filteredNodes.map(node => {
+      const updatedNode = {...node};
+
+      // 移除输入引用
+      if (updatedNode.input_nodes && updatedNode.input_nodes.includes(nodeToRemove.name)) {
+        updatedNode.input_nodes = updatedNode.input_nodes.filter(n => n !== nodeToRemove.name);
+        console.log(`从节点 ${updatedNode.name} 的输入中移除了 ${nodeToRemove.name}`);
+      }
+
+      // 移除输出引用
+      if (updatedNode.output_nodes && updatedNode.output_nodes.includes(nodeToRemove.name)) {
+        updatedNode.output_nodes = updatedNode.output_nodes.filter(n => n !== nodeToRemove.name);
+        console.log(`从节点 ${updatedNode.name} 的输出中移除了 ${nodeToRemove.name}`);
+      }
+
+      return updatedNode;
+    });
+
+    // 确保图还有起始和结束节点
+    const hasStart = updatedNodes.some(node =>
+      node.is_start || (node.input_nodes && node.input_nodes.includes("start"))
+    );
+
+    const hasEnd = updatedNodes.some(node =>
+      node.is_end || (node.output_nodes && node.output_nodes.includes("end"))
+    );
+
+    console.log(`移除节点后: 起始节点存在: ${hasStart}, 结束节点存在: ${hasEnd}`);
+    console.log('更新后的节点:', updatedNodes.map(n => n.name));
 
     // 如果选中的节点被移除，则清除选择
     if (selectedNode === id) {
@@ -391,6 +562,8 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
     const targetNode = currentGraph.nodes.find(node => node.id === targetId);
 
     if (!sourceNode || !targetNode) return;
+
+    console.log(`移除连接: ${sourceNode.name} -> ${targetNode.name}`);
 
     // 更新节点的输入/输出列表
     const updatedNodes = currentGraph.nodes.map(node => {

@@ -32,8 +32,6 @@ const nodeTypes: NodeTypes = {
 
 /**
  * 自定义边组件，带有删除按钮
- * @param {ButtonEdgeProps} props - 边属性
- * @returns {JSX.Element} 渲染的边组件
  */
 const ButtonEdge: React.FC<EdgeProps> = ({
   id,
@@ -56,16 +54,12 @@ const ButtonEdge: React.FC<EdgeProps> = ({
     targetPosition,
   });
 
-  /**
-   * 删除指定ID的边
-   * @function onEdgeClick
-   * @returns {void}
-   */
   const onEdgeClick = () => {
     setEdges((edges) => {
         return edges.filter((edge) => edge.id !== id)
     });
   }
+
   return (
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} style={style}></BaseEdge>
@@ -75,8 +69,6 @@ const ButtonEdge: React.FC<EdgeProps> = ({
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             fontSize: 12,
-            // EdgeLabelRenderer 内部的元素默认没有 pointer-events
-            // 如果你有交互元素，设置 pointer-events: all
             pointerEvents: 'all',
           }}
           className="nodrag nopan"

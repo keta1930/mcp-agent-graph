@@ -1,6 +1,6 @@
 // src/components/graph-runner/ResultPanel.tsx
-import React from 'react';
-import { Spin, Empty, Tag, Collapse, Typography, Tooltip } from 'antd';
+import React, { useState } from 'react';
+import { Spin, Empty, Tag, Collapse, Typography, Tooltip, Divider, Button } from 'antd';
 import {
   MessageOutlined,
   CheckCircleOutlined,
@@ -13,13 +13,227 @@ import {
   CodeOutlined,
   ExceptionOutlined,
   BranchesOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  DownOutlined,
+  RocketOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import { useGraphRunnerStore } from '../../store/graphRunnerStore';
 
 const { Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
+// 帮助函数：处理子图节点路径
+const processNodePath = (nodeName: string) => {
+  if (!nodeName || !nodeName.includes('.')) return { name: nodeName, path: null };
+
+  const parts = nodeName.split('.');
+  const name = parts.pop() || '';
+  const path = parts.join('.');
+
+  return { name, path };
+};
+
+// 自定义折叠面板头部
+const CustomPanelHeader = ({
+  node,
+  isSubgraph = false,
+  level = 0
+}: {
+  node: any,
+  isSubgraph?: boolean,
+  level?: number
+}) => {
+  const { name, path } = processNodePath(node.node_name);
+
+  return (
+    <div className="node-panel-header">
+      <div className="node-header-title">
+        {isSubgraph ? (
+          <BranchesOutlined className="node-icon subgraph-icon" />
+        ) : (
+          <RocketOutlined className="node-icon" />
+        )}
+
+        <span className="node-name">
+          {name}
+          {node.is_start_input && (
+            <Tag className="node-tag start-tag">Input</Tag>
+          )}
+          {path && (
+            <Tooltip title={`From subgraph: ${path}`}>
+              <Tag className="node-tag path-tag">{path}</Tag>
+            </Tooltip>
+          )}
+          {node.error && (
+            <Tag className="node-tag error-tag">Error</Tag>
+          )}
+          {level !== undefined && level > 0 && (
+            <Tag className="node-tag level-tag">Level {level}</Tag>
+          )}
+        </span>
+      </div>
+
+      <div className="node-header-status">
+        {isSubgraph && (
+          <Tag color="blue" icon={<BranchesOutlined />}>Subgraph</Tag>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 节点内容组件
+const NodeContent = ({ node }: { node: any }) => {
+  const [showAll, setShowAll] = useState(false);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  return (
+    <div className="node-content">
+      {node.input && (
+        <div className="node-io-section">
+          <div className="node-io-header">
+            <RightOutlined className="node-io-icon" />
+            <span className="node-io-label">Input</span>
+          </div>
+          <div className="node-io-content">
+            {showAll || node.input.length < 500 ? node.input : (
+              <>
+                {node.input.substring(0, 500)}...
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => setShowAll(true)}
+                >
+                  Show more
+                </Button>
+              </>
+            )}
+          </div>
+          {node.input && (
+            <Button
+              type="text"
+              icon={<CopyOutlined />}
+              size="small"
+              className="copy-button"
+              onClick={() => copyToClipboard(node.input)}
+            >
+              Copy
+            </Button>
+          )}
+        </div>
+      )}
+
+      {node.output && (
+        <div className="node-io-section">
+          <div className="node-io-header">
+            <MessageOutlined className="node-io-icon" />
+            <span className="node-io-label">Output</span>
+          </div>
+          <div className="node-io-content">
+            {showAll || node.output.length < 500 ? node.output : (
+              <>
+                {node.output.substring(0, 500)}...
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => setShowAll(true)}
+                >
+                  Show more
+                </Button>
+              </>
+            )}
+          </div>
+          {node.output && (
+            <Button
+              type="text"
+              icon={<CopyOutlined />}
+              size="small"
+              className="copy-button"
+              onClick={() => copyToClipboard(node.output)}
+            >
+              Copy
+            </Button>
+          )}
+        </div>
+      )}
+
+      {node.error && (
+        <div className="node-io-section error-section">
+          <div className="node-io-header">
+            <ExceptionOutlined className="node-io-icon error-icon" />
+            <span className="node-io-label">Error</span>
+          </div>
+          <div className="node-error">
+            {node.error}
+          </div>
+        </div>
+      )}
+
+      {node.tool_calls && node.tool_calls.length > 0 && (
+        <div className="node-io-section">
+          <div className="node-io-header">
+            <CodeOutlined className="node-io-icon" />
+            <span className="node-io-label">Tool Calls ({node.tool_calls.length})</span>
+          </div>
+          <div className="subgraph-collapse">
+            <Collapse ghost>
+              {node.tool_calls.map((tool: any, idx: number) => (
+                <Panel
+                  header={<Text strong>{tool.name || 'Unknown tool'}</Text>}
+                  key={idx}
+                >
+                  <pre className="tool-call-content">{JSON.stringify(tool, null, 2)}</pre>
+                </Panel>
+              ))}
+            </Collapse>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 子图节点组件
+const SubgraphNode = ({ node }: { node: any }) => {
+  return (
+    <div className="subgraph-node">
+      <NodeContent node={node} />
+
+      {node.is_subgraph && node.subgraph_results && node.subgraph_results.length > 0 && (
+        <div className="subgraph-results">
+          <Divider>
+            <BranchesOutlined /> Subgraph Nodes
+          </Divider>
+
+          <Collapse
+            ghost
+            className="subgraph-nodes-collapse"
+          >
+            {node.subgraph_results.map((subNode: any, idx: number) => (
+              <Panel
+                key={idx}
+                header={<CustomPanelHeader node={subNode} />}
+              >
+                <NodeContent node={subNode} />
+
+                {/* 递归处理嵌套子图 */}
+                {subNode.is_subgraph && subNode.subgraph_results && (
+                  <SubgraphNode node={subNode} />
+                )}
+              </Panel>
+            ))}
+          </Collapse>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 主组件
 const ResultPanel: React.FC = () => {
   const { conversations, currentConversation, loading, parallelExecution } = useGraphRunnerStore();
 
@@ -29,10 +243,10 @@ const ResultPanel: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="graph-card">
+      <div className="graph-card running-card">
         <div className="graph-card-header">
           <h3 className="graph-card-title">
-            <SyncOutlined spin style={{ marginRight: '8px' }} />
+            <SyncOutlined spin className="card-icon" />
             Execution in Progress
           </h3>
         </div>
@@ -49,7 +263,7 @@ const ResultPanel: React.FC = () => {
       <div className="graph-card">
         <div className="graph-card-header">
           <h3 className="graph-card-title">
-            <MessageOutlined style={{ marginRight: '8px' }} />
+            <MessageOutlined className="card-icon" />
             Results
           </h3>
         </div>
@@ -65,25 +279,37 @@ const ResultPanel: React.FC = () => {
     <div className="graph-card">
       <div className="graph-card-header">
         <h3 className="graph-card-title">
-          <MessageOutlined style={{ marginRight: '8px' }} />
+          <MessageOutlined className="card-icon" />
           Results
         </h3>
 
-        {currentResult.completed ? (
-          <Tag className="status-tag status-completed">
-            <CheckCircleOutlined /> Completed
-          </Tag>
-        ) : (
-          <Tag className="status-tag status-processing">
-            <ClockCircleOutlined /> In Progress
-          </Tag>
-        )}
+        <div className="result-status-tags">
+          {currentResult.completed ? (
+            <Tag className="status-tag status-completed" icon={<CheckCircleOutlined />}>
+              Completed
+            </Tag>
+          ) : (
+            <Tag className="status-tag status-processing" icon={<ClockCircleOutlined />}>
+              In Progress
+            </Tag>
+          )}
 
-        {currentResult.error && (
-          <Tag className="status-tag status-error">
-            <WarningOutlined /> Error
-          </Tag>
-        )}
+          {currentResult.error && (
+            <Tag className="status-tag status-error" icon={<WarningOutlined />}>
+              Error
+            </Tag>
+          )}
+
+          {parallelExecution ? (
+            <Tag className="status-tag status-parallel" icon={<ThunderboltOutlined />}>
+              Parallel
+            </Tag>
+          ) : (
+            <Tag className="status-tag status-sequential" icon={<RightOutlined />}>
+              Sequential
+            </Tag>
+          )}
+        </div>
       </div>
 
       <div className="graph-card-body">
@@ -92,8 +318,8 @@ const ResultPanel: React.FC = () => {
             <div className="result-info-item">
               <div className="result-info-label">Conversation ID</div>
               <div className="result-info-value">
-                <KeyOutlined style={{ marginRight: '6px', fontSize: '0.9rem' }} />
-                <Tooltip title="Click to copy">
+                <KeyOutlined className="result-info-icon" />
+                <Tooltip title={currentResult.conversation_id}>
                   <Text copyable={{ text: currentResult.conversation_id }}>
                     {currentResult.conversation_id.substring(0, 12)}...
                   </Text>
@@ -101,127 +327,79 @@ const ResultPanel: React.FC = () => {
               </div>
             </div>
 
-            {/* 新增: 执行模式信息 */}
             <div className="result-info-item">
-              <div className="result-info-label">Execution Mode</div>
+              <div className="result-info-label">Graph Name</div>
               <div className="result-info-value">
-                {parallelExecution ? (
-                  <Tag color="blue" icon={<ThunderboltOutlined />}>Parallel</Tag>
-                ) : (
-                  <Tag color="default" icon={<RightOutlined />}>Sequential</Tag>
-                )}
+                <BranchesOutlined className="result-info-icon" />
+                <Text>{currentResult.graph_name}</Text>
               </div>
             </div>
           </div>
         </div>
 
         <div className="result-section">
-          <h4 className="result-section-title">
-            <RightOutlined /> Input
-          </h4>
+          <div className="section-header">
+            <RightOutlined className="section-icon" />
+            <h4 className="section-title">Input</h4>
+          </div>
           <div className="result-content">
             {currentResult.input}
           </div>
+          <Button
+            type="text"
+            icon={<CopyOutlined />}
+            size="small"
+            className="copy-button"
+            onClick={() => navigator.clipboard.writeText(currentResult.input)}
+          >
+            Copy
+          </Button>
         </div>
 
         <div className="result-section">
-          <h4 className="result-section-title">
-            <MessageOutlined /> Output
-          </h4>
+          <div className="section-header">
+            <MessageOutlined className="section-icon" />
+            <h4 className="section-title">Output</h4>
+          </div>
           <div className="result-content">
             {currentResult.output}
           </div>
+          <Button
+            type="text"
+            icon={<CopyOutlined />}
+            size="small"
+            className="copy-button"
+            onClick={() => navigator.clipboard.writeText(currentResult.output)}
+          >
+            Copy
+          </Button>
         </div>
 
         <div className="result-section">
-          <h4 className="result-section-title">
-            <NodeIndexOutlined /> Node Execution Details
-          </h4>
+          <div className="section-header">
+            <NodeIndexOutlined className="section-icon" />
+            <h4 className="section-title">Node Execution Details</h4>
+          </div>
 
-          <div className="node-collapse">
+          <div className="node-execution-collapse">
             <Collapse expandIconPosition="end">
               {currentResult.node_results.map((node, index) => (
                 <Panel
                   key={index}
                   header={
-                    <div className="node-name">
-                      {node.node_name}
-                      {node.is_start_input && (
-                        <span className="node-badge node-badge-start">Start</span>
-                      )}
-                      {node.error && (
-                        <span className="node-badge node-badge-error">Error</span>
-                      )}
-                      {/* 新增: 显示节点层级 */}
-                      {node.level !== undefined && (
-                        <span className="node-badge node-badge-level">Level {node.level}</span>
-                      )}
-                    </div>
+                    <CustomPanelHeader
+                      node={node}
+                      isSubgraph={node.is_subgraph}
+                      level={node.level}
+                    />
                   }
+                  className={node.is_subgraph ? 'subgraph-panel' : 'node-panel'}
                 >
-                  <div className="node-item-content">
-                    <div>
-                      <div className="node-io-label">Input:</div>
-                      <div className="node-io-content">{node.input}</div>
-                    </div>
-
-                    <div>
-                      <div className="node-io-label">Output:</div>
-                      <div className="node-io-content">{node.output}</div>
-                    </div>
-
-                    {node.tool_calls && node.tool_calls.length > 0 && (
-                      <div>
-                        <div className="node-io-label">
-                          <CodeOutlined style={{ marginRight: '6px' }} />
-                          Tool Calls ({node.tool_calls.length})
-                        </div>
-                        <div className="subgraph-collapse">
-                          <Collapse>
-                            {node.tool_calls.map((tool, idx) => (
-                              <Panel
-                                header={tool.name || 'Unknown tool'}
-                                key={idx}
-                              >
-                                <pre>{JSON.stringify(tool, null, 2)}</pre>
-                              </Panel>
-                            ))}
-                          </Collapse>
-                        </div>
-                      </div>
-                    )}
-
-                    {node.error && (
-                      <div>
-                        <div className="node-io-label">
-                          <ExceptionOutlined style={{ marginRight: '6px', color: '#ef4444' }} />
-                          Error:
-                        </div>
-                        <div className="node-error">{node.error}</div>
-                      </div>
-                    )}
-
-                    {node.is_subgraph && node.subgraph_results && (
-                      <div>
-                        <div className="node-io-label">
-                          <BranchesOutlined style={{ marginRight: '6px' }} />
-                          Subgraph Results:
-                        </div>
-                        <div className="subgraph-collapse">
-                          <Collapse>
-                            {node.subgraph_results.map((subResult, subIdx) => (
-                              <Panel
-                                header={`Subnode: ${subResult.node_name}`}
-                                key={subIdx}
-                              >
-                                <pre>{JSON.stringify(subResult, null, 2)}</pre>
-                              </Panel>
-                            ))}
-                          </Collapse>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {node.is_subgraph ? (
+                    <SubgraphNode node={node} />
+                  ) : (
+                    <NodeContent node={node} />
+                  )}
                 </Panel>
               ))}
             </Collapse>

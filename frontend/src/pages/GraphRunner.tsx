@@ -8,8 +8,7 @@ import ConversationHistory from '../components/graph-runner/ConversationHistory'
 import { useGraphRunnerStore } from '../store/graphRunnerStore';
 
 // 导入样式文件
-import '../components/graph-runner/InputPanel.css';
-import '../components/graph-runner/ResultPanel.css';
+import '../styles/graph-runner.css';
 
 const GraphRunner: React.FC = () => {
   const { fetchGraphs, error } = useGraphRunnerStore();

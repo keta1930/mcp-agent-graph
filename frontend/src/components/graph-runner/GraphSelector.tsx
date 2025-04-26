@@ -1,7 +1,7 @@
 // src/components/graph-runner/GraphSelector.tsx
 import React from 'react';
-import { Select, Typography } from 'antd';
-import { ApartmentOutlined } from '@ant-design/icons';
+import { Select, Typography, Empty } from 'antd';
+import { ApartmentOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useGraphRunnerStore } from '../../store/graphRunnerStore';
 
 const { Option } = Select;
@@ -14,7 +14,7 @@ const GraphSelector: React.FC = () => {
     <div className="graph-card graph-selector">
       <div className="graph-card-header">
         <h3 className="graph-card-title">
-          <ApartmentOutlined style={{ marginRight: '8px' }} />
+          <ApartmentOutlined className="card-icon" />
           Select Graph
         </h3>
       </div>
@@ -33,10 +33,31 @@ const GraphSelector: React.FC = () => {
           suffixIcon={<ApartmentOutlined />}
           optionFilterProp="children"
           showSearch
-          notFoundContent="No graphs available"
+          notFoundContent={
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="No graphs available"
+              className="select-empty"
+            />
+          }
+          dropdownRender={(menu) => (
+            <div className="custom-dropdown">
+              <div className="dropdown-header">
+                <AppstoreOutlined className="dropdown-icon" />
+                <span>Available Graphs</span>
+              </div>
+              {menu}
+            </div>
+          )}
+          className="graph-select"
         >
           {graphs.map(graph => (
-            <Option key={graph} value={graph}>{graph}</Option>
+            <Option key={graph} value={graph}>
+              <div className="graph-option">
+                <ApartmentOutlined className="graph-option-icon" />
+                <span>{graph}</span>
+              </div>
+            </Option>
           ))}
         </Select>
       </div>

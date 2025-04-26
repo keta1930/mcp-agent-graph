@@ -1,9 +1,14 @@
 // src/components/graph-runner/InputPanel.tsx
 import React, { useState } from 'react';
 import { Input, Button, message, Typography, Switch, Tooltip, Space } from 'antd';
-import { SendOutlined, RocketOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import {
+  SendOutlined,
+  RocketOutlined,
+  ThunderboltOutlined,
+  InfoCircleOutlined,
+  ClearOutlined
+} from '@ant-design/icons';
 import { useGraphRunnerStore } from '../../store/graphRunnerStore';
-import './InputPanel.css';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -44,50 +49,64 @@ const InputPanel: React.FC = () => {
     }
   };
 
+  const clearInput = () => {
+    setInput('');
+  };
+
   return (
     <div className="graph-card input-panel">
       <div className="graph-card-header">
         <h3 className="graph-card-title">
-          <RocketOutlined style={{ marginRight: '8px' }} />
+          <RocketOutlined className="card-icon" />
           Input
         </h3>
         {selectedGraph && (
-          <Text type="secondary" style={{ fontSize: '0.9rem' }}>
+          <Text type="secondary" className="selected-graph-info">
             Running: <Text strong>{selectedGraph}</Text>
           </Text>
         )}
       </div>
       <div className="graph-card-body">
-        <TextArea
-          rows={4}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Enter your input text here..."
-          disabled={!selectedGraph || loading}
-          onKeyDown={handleKeyDown}
-          className="mb-4"
-        />
+        <div className="textarea-container">
+          <TextArea
+            rows={4}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Enter your input text here..."
+            disabled={!selectedGraph || loading}
+            onKeyDown={handleKeyDown}
+            className="custom-textarea"
+          />
+          {input && (
+            <Button
+              type="text"
+              icon={<ClearOutlined />}
+              className="clear-input-button"
+              onClick={clearInput}
+            />
+          )}
+        </div>
 
-        <div className="flex justify-between items-center input-spacing">
-          <div className="flex items-center">
+        <div className="input-controls">
+          <div className="left-controls">
             <Button
               type="primary"
               icon={<SendOutlined />}
               loading={loading}
-              disabled={!selectedGraph}
+              disabled={!selectedGraph || !input.trim()}
               onClick={handleSubmit}
               size="large"
-              className="flat-execute-button"
+              className="execute-button"
             >
               Execute
             </Button>
 
-            <Text type="secondary" className="text-xs ml-4">
+            <Text type="secondary" className="keyboard-hint">
               Press Ctrl+Enter to submit
             </Text>
           </div>
 
-          <div className="parallel-execution-toggle">
+          <div className="parallel-execution-control">
             <Tooltip title="When enabled, nodes at the same level will be executed in parallel">
               <Space>
                 <Text type="secondary">Parallel Execution</Text>
@@ -97,7 +116,9 @@ const InputPanel: React.FC = () => {
                   checked={parallelExecution}
                   onChange={toggleParallelExecution}
                   disabled={loading}
+                  className="parallel-switch"
                 />
+                <InfoCircleOutlined className="info-icon" />
               </Space>
             </Tooltip>
           </div>

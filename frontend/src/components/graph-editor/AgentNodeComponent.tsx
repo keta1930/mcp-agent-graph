@@ -56,7 +56,10 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {is_subgraph ? (
-              <BranchesOutlined style={{ color: '#1677ff' }} />
+              <BranchesOutlined style={{
+                color: '#1677ff',
+                fontSize: is_subgraph ? '18px' : '14px' // 放大子图图标
+              }} />
             ) : (
               <RobotOutlined style={{ color: '#52c41a' }} />
             )}
@@ -71,9 +74,13 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         }
         style={{
           width: 180,
-          border: selected ? '2px solid #1677ff' : '1px solid #d9d9d9',
+          border: selected ? '2px solid #1677ff' :
+                 is_subgraph ? '1px solid #1677ff' : '1px solid #d9d9d9', // 子图节点特殊边框
           borderRadius: '4px',
-          boxShadow: hasDisconnectedServers ? '0 0 0 1px #faad14' : '0 1px 2px rgba(0,0,0,0.1)'
+          boxShadow: is_subgraph ? '0 0 8px rgba(22,119,255,0.2)' : // 子图节点添加阴影效果
+                    hasDisconnectedServers ? '0 0 0 1px #faad14' :
+                    '0 1px 2px rgba(0,0,0,0.1)',
+          background: is_subgraph ? 'linear-gradient(to bottom, #f5f9ff, #ffffff)' : 'white' // 子图背景渐变
         }}
         bodyStyle={{ padding: '8px' }}
       >
@@ -108,6 +115,20 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
             </div>
           )}
         </div>
+
+        {/* 为子图添加标记 */}
+        {is_subgraph && (
+          <div style={{
+            marginTop: '8px',
+            padding: '4px',
+            borderTop: '1px dashed #e8e8e8',
+            fontSize: '11px',
+            color: '#1677ff'
+          }}>
+            <BranchesOutlined style={{ marginRight: '4px' }} />
+            子图: {subgraph_name}
+          </div>
+        )}
       </Card>
 
       <Handle

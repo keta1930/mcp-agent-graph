@@ -1,4 +1,4 @@
-// src/services/graphService.ts - Add JSON sanitization functionality
+// src/services/graphService.ts
 import api from './api';
 import { BackendGraphConfig, GraphCardResponse, MCPScriptResponse } from '../types/graph';
 
@@ -49,6 +49,23 @@ export const getGraph = async (graphName: string): Promise<any> => {
 export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
   // Ensure request body format is correct and clean special characters
   const cleanedGraph = sanitizeForJson(graph);
+
+  // 确保没有空引用
+  cleanedGraph.nodes.forEach(node => {
+    // 确保所有数组属性有效
+    if (!Array.isArray(node.input_nodes)) node.input_nodes = [];
+    if (!Array.isArray(node.output_nodes)) node.output_nodes = [];
+    if (!Array.isArray(node.mcp_servers)) node.mcp_servers = [];
+
+    // 过滤掉引用不存在的节点
+    const allNodeNames = cleanedGraph.nodes.map(n => n.name);
+    node.input_nodes = node.input_nodes.filter(
+      input => input === "start" || allNodeNames.includes(input)
+    );
+    node.output_nodes = node.output_nodes.filter(
+      output => output === "end" || allNodeNames.includes(output)
+    );
+  });
 
   const requestBody = {
     name: cleanedGraph.name,
@@ -115,7 +132,7 @@ export const executeGraph = async (input: {
   graph_name: string;
   input_text: string;
   conversation_id?: string;
-  parallel?: boolean; // 新增并行执行参数
+  parallel?: boolean;
 }): Promise<any> => {
   const response = await api.post('/graphs/execute', input);
   return response.data;
