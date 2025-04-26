@@ -373,21 +373,21 @@ pre, code, .tool-description, .tool-schema {
     font-size: 14px;
     margin-right: 8px;
   }
-  
+
   .ant-card-body {
     padding: 16px;
   }
-  
+
   .ant-modal {
     max-width: 95% !important;
     margin: 0 auto;
   }
-  
+
   .ant-modal-body {
     max-height: 80vh;
     padding: 16px;
   }
-  
+
   .tool-item {
     padding: 12px;
     margin-bottom: 16px;
@@ -1043,6 +1043,21 @@ h1.text-2xl.font-bold {
 .custom-empty-text {
   color: #6b7280;
   font-size: 1rem;
+}
+
+.edge-button {
+  width: 20px;
+  height: 20px;
+  background: #eee;
+  border: 1px solid #fff;
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.edge-button:hover {
+  box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.08);
 }
 
 /* ===== Responsive Adjustments ===== */

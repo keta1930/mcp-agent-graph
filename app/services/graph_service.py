@@ -34,10 +34,14 @@ class GraphService:
 
     def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
         """保存图配置"""
-        # 计算节点层级
         print("save_graph", graph_name, config)
-        print("开始计算")
-        config_with_levels = self._calculate_node_levels(config)
+
+        # 先展开所有子图到扁平结构
+        flattened_config = self._flatten_all_subgraphs(config)
+
+        # 对扁平化后的图计算一次层级
+        config_with_levels = self._calculate_node_levels(flattened_config)
+
         return FileManager.save_agent(graph_name, config_with_levels)
 
     def delete_graph(self, graph_name: str) -> bool:
@@ -47,6 +51,137 @@ class GraphService:
     def rename_graph(self, old_name: str, new_name: str) -> bool:
         """重命名图"""
         return FileManager.rename_agent(old_name, new_name)
+
+    def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
+        """将图中所有子图完全展开为扁平结构，并更新节点引用关系"""
+        import copy
+        flattened_config = copy.deepcopy(graph_config)
+        flattened_nodes = []
+
+        # 子图名称到输出节点的映射
+        subgraph_outputs = {}
+
+        # 第一阶段：展开所有子图节点
+        for node in graph_config.get("nodes", []):
+            if node.get("is_subgraph", False):
+                # 获取子图配置
+                subgraph_name = node.get("subgraph_name")
+                if not subgraph_name:
+                    continue
+
+                subgraph_config = self.get_graph(subgraph_name)
+                if not subgraph_config:
+                    continue
+
+                # 记录子图的输入输出连接
+                node_name = node["name"]
+                parent_inputs = node.get("input_nodes", [])
+                parent_outputs = node.get("output_nodes", [])
+
+                # 递归展开子图（处理嵌套子图）
+                subgraph_flattened = self._flatten_all_subgraphs(subgraph_config)
+
+                # 找出子图中的输出节点（连接到"end"的节点或标记为is_end的节点）
+                subgraph_output_nodes = []
+                for sub_node in subgraph_flattened.get("nodes", []):
+                    if "end" in sub_node.get("output_nodes", []) or sub_node.get("is_end", False):
+                        subgraph_output_nodes.append(sub_node["name"])
+
+                # 记录此子图的输出节点（添加前缀后）
+                prefixed_output_nodes = [f"{node_name}.{output_node}" for output_node in subgraph_output_nodes]
+                subgraph_outputs[node_name] = prefixed_output_nodes
+
+                # 给子图内的节点添加前缀并处理连接关系
+                prefix = f"{node_name}."
+                for sub_node in subgraph_flattened.get("nodes", []):
+                    # 复制节点并更新名称
+                    sub_node_copy = copy.deepcopy(sub_node)
+                    original_name = sub_node["name"]
+                    sub_node_copy["name"] = prefix + original_name
+
+                    # 更新内部连接关系，添加前缀
+                    if "input_nodes" in sub_node_copy:
+                        new_inputs = []
+                        for input_node in sub_node_copy["input_nodes"]:
+                            if input_node == "start":
+                                # 保留start，稍后处理
+                                new_inputs.append(input_node)
+                            else:
+                                # 为子图内部节点添加前缀
+                                new_inputs.append(prefix + input_node)
+                        sub_node_copy["input_nodes"] = new_inputs
+
+                    if "output_nodes" in sub_node_copy:
+                        new_outputs = []
+                        for output_node in sub_node_copy["output_nodes"]:
+                            if output_node == "end":
+                                # 保留end，稍后处理
+                                new_outputs.append(output_node)
+                            else:
+                                # 为子图内部节点添加前缀
+                                new_outputs.append(prefix + output_node)
+                        sub_node_copy["output_nodes"] = new_outputs
+
+                    # 处理与外部图的连接
+                    # 将"start"替换为父图中指向子图的节点
+                    if "input_nodes" in sub_node_copy and "start" in sub_node_copy["input_nodes"]:
+                        input_idx = sub_node_copy["input_nodes"].index("start")
+                        sub_node_copy["input_nodes"][input_idx:input_idx + 1] = parent_inputs
+
+                    # 将"end"替换为父图中子图指向的节点
+                    if "output_nodes" in sub_node_copy and "end" in sub_node_copy["output_nodes"]:
+                        output_idx = sub_node_copy["output_nodes"].index("end")
+                        sub_node_copy["output_nodes"][output_idx:output_idx + 1] = parent_outputs
+
+                        # 重置子图内的end节点标志，除非这是最外层图
+                        if sub_node_copy.get("is_end", False):
+                            sub_node_copy["is_end"] = False
+
+                    # 记录原始信息用于结果展示
+                    sub_node_copy["_original_name"] = original_name
+                    sub_node_copy["_node_path"] = prefix
+                    sub_node_copy["_subgraph_name"] = subgraph_name
+
+                    flattened_nodes.append(sub_node_copy)
+            else:
+                # 普通节点直接添加
+                flattened_nodes.append(copy.deepcopy(node))
+
+        # 第二阶段：更新所有节点的输入引用，将引用整个子图的改为引用具体输出节点
+        for node in flattened_nodes:
+            if "input_nodes" in node:
+                updated_inputs = []
+                for input_node in node["input_nodes"]:
+                    if input_node in subgraph_outputs:
+                        # 如果引用了子图，替换为子图的实际输出节点
+                        updated_inputs.extend(subgraph_outputs[input_node])
+                        # 记录这是从子图引用转换而来
+                        node["_input_from_subgraph"] = {
+                            "original": input_node,
+                            "expanded": subgraph_outputs[input_node]
+                        }
+                    else:
+                        # 保持原有引用
+                        updated_inputs.append(input_node)
+                node["input_nodes"] = updated_inputs
+
+        flattened_config["nodes"] = flattened_nodes
+
+        # 第三阶段：确保展开后的图仍然有起始和结束节点
+        has_start = False
+        has_end = False
+        for node in flattened_nodes:
+            if node.get("is_start", False) or "start" in node.get("input_nodes", []):
+                has_start = True
+            if node.get("is_end", False) or "end" in node.get("output_nodes", []):
+                has_end = True
+
+        if not has_start:
+            print("警告：展开后的图没有起始节点")
+        if not has_end:
+            print("警告：展开后的图没有结束节点")
+
+        return flattened_config
 
     def _calculate_node_levels(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
         """重新设计的层级计算算法，正确处理所有依赖关系"""
@@ -744,28 +879,15 @@ class GraphService:
             for input_node in input_nodes:
                 if input_node == "start":
                     continue
-
                 if input_node not in completed_nodes:
-                    # 如果没有直接匹配，检查子图节点名称匹配
-                    found_subgraph_node = False
-                    for completed_node in completed_nodes:
-                        # 使用_original_name 和 _node_path 判断子图最终节点
-                        if completed_node.startswith(input_node + "."):
-                            node_state = conversation.get("node_states", {}).get(completed_node, {})
-                            if node_state.get("result", {}).get("_original_name") == "summarize_results":
-                                found_subgraph_node = True
-                                break
-
-                    if not found_subgraph_node:
-                        all_inputs_ready = False
-                        break
+                    all_inputs_ready = False
+                    break
 
             if all_inputs_ready:
                 next_nodes.add(node["name"])
 
         # 更新会话的待执行节点
         conversation["pending_nodes"] = next_nodes
-
         return next_nodes
 
     def _get_node_input(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
@@ -784,19 +906,11 @@ class GraphService:
                         inputs.append(result["input"])
                         break
             else:
-                # 直接检查节点状态
+                # 直接检查节点状态，不再特殊处理子图引用
                 if input_node_name in conversation["node_states"]:
                     node_state = conversation["node_states"][input_node_name]
                     if "result" in node_state:
                         inputs.append(node_state["result"]["output"])
-                else:
-                    for node_id, node_state in conversation["node_states"].items():
-                        if node_id.startswith(input_node_name + "."):
-                            # 检查是否是子图的最终节点
-                            if "result" in node_state and node_state["result"].get(
-                                    "_original_name") == "summarize_results":
-                                inputs.append(node_state["result"]["output"])
-                                break
 
         # 合并所有输入
         return "\n\n".join(inputs)
@@ -1123,47 +1237,30 @@ class GraphService:
         for current_level in range(max_level + 1):
             logger.info(f"开始执行层级 {current_level} 的节点")
 
-            # 找出当前层级的所有节点
-            level_nodes = []
+            # 找出当前层级的所有可执行节点
+            executable_nodes = []
             for node in graph_config.get("nodes", []):
                 if node.get("level", 0) == current_level:
                     # 检查节点是否可执行（所有依赖都已完成）
                     can_execute = True
 
-                    # 如果是起始节点，直接可执行
-                    if node.get("is_start", False) or "start" in node.get("input_nodes", []):
-                        level_nodes.append(node)
-                        continue
-
-                    # 检查所有输入节点是否已完成
                     for input_node_name in node.get("input_nodes", []):
                         if input_node_name != "start" and input_node_name not in conversation["completed_nodes"]:
                             can_execute = False
                             break
 
                     if can_execute:
-                        level_nodes.append(node)
-
-            if not level_nodes:
-                logger.info(f"层级 {current_level} 没有可执行的节点")
-                continue
+                        executable_nodes.append(node)
 
             # 并行执行当前层级的节点
             tasks = []
-            for node in level_nodes:
-                # 获取节点输入
+            for node in executable_nodes:
                 node_input = self._get_node_input(node, conversation)
-
-                # 创建执行任务
-                logger.info(f"准备并行执行节点: {node['name']}")
                 tasks.append(self._execute_node(node, node_input, conversation_id))
 
             # 等待所有任务完成
-            await asyncio.gather(*tasks)
-
-            logger.info(f"层级 {current_level} 的节点执行完成")
-
-        logger.info("并行执行完成")
+            if tasks:
+                await asyncio.gather(*tasks)
 
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含层次结构的会话详情"""
