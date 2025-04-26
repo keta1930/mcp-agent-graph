@@ -43,6 +43,7 @@ class MCPServer:
         self.tools = []
         self.error = None
         self.init_attempted = False
+        self._call_lock = asyncio.Lock()  # 添加锁以防止并发问题
 
     async def connect(self) -> bool:
         """连接到服务器，返回是否成功"""
@@ -171,23 +172,25 @@ class MCPServer:
             raise ValueError(f"服务器 '{self.name}' 没有提供工具 '{tool_name}'")
 
         try:
-            try:
-                async with asyncio.timeout(TOOL_CALL_TIMEOUT):
-                    result = await self.session.call_tool(tool_name, params)
-                return {
-                    "tool_name": tool_name,
-                    "server_name": self.name,
-                    "content": result.content
-                }
-            except asyncio.TimeoutError:
-                error_message = f"Tool execution timed out after {TOOL_CALL_TIMEOUT} seconds. The operation was canceled."
-                logger.error(f"调用工具 '{tool_name}' 超时 (超过 {TOOL_CALL_TIMEOUT} 秒)")
-                return {
-                    "tool_name": tool_name,
-                    "server_name": self.name,
-                    "error": error_message,
-                    "content": f"ERROR: {error_message}"
-                }
+            # 使用锁来保护会话调用，防止并发访问造成问题
+            async with self._call_lock:
+                try:
+                    async with asyncio.timeout(TOOL_CALL_TIMEOUT):
+                        result = await self.session.call_tool(tool_name, params)
+                    return {
+                        "tool_name": tool_name,
+                        "server_name": self.name,
+                        "content": result.content
+                    }
+                except asyncio.TimeoutError:
+                    error_message = f"Tool execution timed out after {TOOL_CALL_TIMEOUT} seconds. The operation was canceled."
+                    logger.error(f"调用工具 '{tool_name}' 超时 (超过 {TOOL_CALL_TIMEOUT} 秒)")
+                    return {
+                        "tool_name": tool_name,
+                        "server_name": self.name,
+                        "error": error_message,
+                        "content": f"ERROR: {error_message}"
+                    }
         except Exception as e:
             error_message = str(e)
             logger.error(f"调用工具 '{tool_name}' 时出错: {error_message}")
@@ -319,13 +322,14 @@ async def execute_node(request: ModelRequestData):
         all_tools = []
         tool_to_server = {}  # 工具名到服务器的映射
 
-        # 首先确保所有需要的服务器都已连接
+        # 首先确保所有需要的服务器都已连接 - 可以使用任务并行处理
+        server_connect_tasks = []
         for server_name in request.mcp_servers:
             if server_name not in SERVERS:
                 # 如果配置中存在但未连接，尝试连接
                 if CONFIG.get('mcpServers', {}).get(server_name):
                     logger.info(f"服务器 '{server_name}' 未连接，尝试连接...")
-                    await connect_single_server(server_name)
+                    server_connect_tasks.append(connect_single_server(server_name))
                 else:
                     logger.error(f"找不到服务器配置: {server_name}")
                     return {
@@ -333,7 +337,12 @@ async def execute_node(request: ModelRequestData):
                         "error": f"找不到服务器配置: {server_name}"
                     }
 
-            # 再次检查连接状态
+        # 如果有需要连接的服务器，并行连接它们
+        if server_connect_tasks:
+            await asyncio.gather(*server_connect_tasks)
+
+        # 再次检查所有服务器的连接状态
+        for server_name in request.mcp_servers:
             if server_name not in SERVERS or not SERVERS[server_name].is_connected():
                 logger.error(f"服务器 '{server_name}' 无法连接")
                 return {
@@ -353,7 +362,6 @@ async def execute_node(request: ModelRequestData):
                     }
                 })
                 tool_to_server[tool.name] = server_name
-
 
         # 确保消息格式正确
         messages = []
@@ -381,13 +389,15 @@ async def execute_node(request: ModelRequestData):
 
             try:
                 if all_tools:
-                    response = client.chat.completions.create(
+                    response = await asyncio.to_thread(
+                        client.chat.completions.create,
                         model=request.model,
                         messages=messages,
                         tools=all_tools
                     )
                 else:
-                    response = client.chat.completions.create(
+                    response = await asyncio.to_thread(
+                        client.chat.completions.create,
                         model=request.model,
                         messages=messages
                     )
@@ -400,9 +410,11 @@ async def execute_node(request: ModelRequestData):
 
                 # 如果有工具调用且不需要二阶段输出，处理工具调用
                 if response.choices[0].message.tool_calls and not request.output_enabled:
-                    tool_calls_results = []
-                    tool_content_parts = []
-                    for tool_call in response.choices[0].message.tool_calls:
+                    # 创建并发工具调用任务
+                    tool_call_tasks = []
+                    tool_calls_mapping = {}  # 用于跟踪工具调用和结果的映射
+
+                    for i, tool_call in enumerate(response.choices[0].message.tool_calls):
                         tool_name = tool_call.function.name
 
                         try:
@@ -414,36 +426,60 @@ async def execute_node(request: ModelRequestData):
                         # 确定工具所属的服务器
                         if tool_name not in tool_to_server:
                             logger.error(f"未找到工具 '{tool_name}' 所属的服务器")
-                            tool_calls_results.append({
+                            error_result = {
                                 "tool_name": tool_name,
                                 "error": f"未找到工具所属的服务器"
-                            })
+                            }
+                            tool_calls_mapping[i] = error_result
                             continue
 
                         server_name = tool_to_server[tool_name]
 
-                        # 调用工具
+                        # 调用工具 - 创建异步任务
                         logger.info(f"通过服务器 {server_name} 调用工具 {tool_name}")
-                        try:
-                            tool_result = await SERVERS[server_name].call_tool(tool_name, tool_args)
-                            tool_calls_results.append(tool_result)
+                        task = asyncio.create_task(SERVERS[server_name].call_tool(tool_name, tool_args))
+                        tool_call_tasks.append(task)
+                        tool_calls_mapping[i] = task  # 存储任务引用
 
-                            if "content" in tool_result:
-                                tool_content = tool_result.get("content", "")
-                                if tool_content:
-                                    tool_content_parts.append(f"【{tool_name} result】: {tool_content}")
-                        except Exception as e:
-                            logger.error(f"调用工具 '{tool_name}' 时出错: {str(e)}")
-                            tool_calls_results.append({
-                                "tool_name": tool_name,
-                                "server_name": server_name,
-                                "error": str(e)
-                            })
+                    # 并行执行所有工具调用
+                    if tool_call_tasks:
+                        await asyncio.gather(*tool_call_tasks)
 
-                    # 返回工具调用结果（单阶段执行）
-                    result["tool_calls"] = tool_calls_results
-                    if tool_content_parts:
-                        result["content"] = "\n\n".join(tool_content_parts)
+                        # 处理结果
+                        tool_calls_results = []
+                        tool_content_parts = []
+
+                        for i, tool_call in enumerate(response.choices[0].message.tool_calls):
+                            tool_name = tool_call.function.name
+
+                            if i in tool_calls_mapping:
+                                task_or_result = tool_calls_mapping[i]
+
+                                # 如果是任务，获取结果；如果是直接结果，直接使用
+                                if isinstance(task_or_result, asyncio.Task):
+                                    try:
+                                        tool_result = task_or_result.result()
+                                        tool_calls_results.append(tool_result)
+
+                                        if "content" in tool_result:
+                                            tool_content = tool_result.get("content", "")
+                                            if tool_content:
+                                                tool_content_parts.append(f"【{tool_name} result】: {tool_content}")
+                                    except Exception as e:
+                                        logger.error(f"获取工具 '{tool_name}' 调用结果时出错: {str(e)}")
+                                        tool_calls_results.append({
+                                            "tool_name": tool_name,
+                                            "server_name": tool_to_server.get(tool_name, "unknown"),
+                                            "error": str(e)
+                                        })
+                                else:
+                                    # 直接的错误结果
+                                    tool_calls_results.append(task_or_result)
+
+                        # 更新结果
+                        result["tool_calls"] = tool_calls_results
+                        if tool_content_parts:
+                            result["content"] = "\n\n".join(tool_content_parts)
 
                 return result
             except Exception as e:
@@ -465,8 +501,9 @@ async def execute_node(request: ModelRequestData):
 
             # 1. 调用模型
             try:
-                # 始终传入所有工具
-                response = client.chat.completions.create(
+                # 使用to_thread将同步API调用转为异步
+                response = await asyncio.to_thread(
+                    client.chat.completions.create,
                     model=request.model,
                     messages=messages,
                     tools=all_tools
@@ -487,6 +524,8 @@ async def execute_node(request: ModelRequestData):
                 # 2. 处理工具调用
                 tool_calls_results = []
                 tool_messages = []
+                tool_call_tasks = []
+                tool_calls_mapping = {}  # 工具调用ID到任务的映射
 
                 # 确保assistant消息内容是字符串
                 assistant_content = initial_message.content or ""
@@ -509,7 +548,7 @@ async def execute_node(request: ModelRequestData):
                     ]
                 })
 
-                # 执行每个工具调用
+                # 并行执行每个工具调用
                 for tool_call in tool_calls:
                     tool_name = tool_call.function.name
                     logger.info(f"处理工具调用: {tool_name}")
@@ -540,45 +579,60 @@ async def execute_node(request: ModelRequestData):
 
                     server_name = tool_to_server[tool_name]
 
-                    # 调用工具
+                    # 调用工具 - 创建异步任务
                     logger.info(f"通过服务器 {server_name} 调用工具 {tool_name}")
-                    try:
-                        tool_result = await SERVERS[server_name].call_tool(tool_name, tool_args)
-                        tool_content = tool_result.get("content", "")
+                    task = asyncio.create_task(SERVERS[server_name].call_tool(tool_name, tool_args))
+                    tool_call_tasks.append(task)
+                    tool_calls_mapping[tool_call.id] = (task, tool_name, server_name)
 
-                        # 确保tool_content是字符串
-                        if tool_content is None:
-                            tool_content = ""
-                        elif not isinstance(tool_content, str):
-                            tool_content = str(tool_content)
+                # 并行等待所有工具调用完成
+                if tool_call_tasks:
+                    await asyncio.gather(*tool_call_tasks)
 
-                        tool_calls_results.append(tool_result)
-                        total_tool_calls_results.append(tool_result)
+                    # 处理结果
+                    for tool_call in tool_calls:
+                        tool_call_id = tool_call.id
 
-                        # 添加工具响应消息
-                        tool_messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": tool_content
-                        })
+                        if tool_call_id in tool_calls_mapping:
+                            task, tool_name, server_name = tool_calls_mapping[tool_call_id]
 
-                        logger.info(f"工具 {tool_name} 调用成功")
-                    except Exception as e:
-                        logger.error(f"调用工具 '{tool_name}' 时出错: {str(e)}")
-                        error_content = f"错误: {str(e)}"
-                        tool_result = {
-                            "tool_name": tool_name,
-                            "server_name": server_name,
-                            "error": str(e)
-                        }
-                        tool_calls_results.append(tool_result)
-                        total_tool_calls_results.append(tool_result)
+                            try:
+                                tool_result = task.result()
+                                tool_content = tool_result.get("content", "")
 
-                        tool_messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": error_content
-                        })
+                                # 确保tool_content是字符串
+                                if tool_content is None:
+                                    tool_content = ""
+                                elif not isinstance(tool_content, str):
+                                    tool_content = str(tool_content)
+
+                                tool_calls_results.append(tool_result)
+                                total_tool_calls_results.append(tool_result)
+
+                                # 添加工具响应消息
+                                tool_messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tool_call_id,
+                                    "content": tool_content
+                                })
+
+                                logger.info(f"工具 {tool_name} 调用成功")
+                            except Exception as e:
+                                logger.error(f"获取工具 '{tool_name}' 调用结果时出错: {str(e)}")
+                                error_content = f"错误: {str(e)}"
+                                tool_result = {
+                                    "tool_name": tool_name,
+                                    "server_name": server_name,
+                                    "error": str(e)
+                                }
+                                tool_calls_results.append(tool_result)
+                                total_tool_calls_results.append(tool_result)
+
+                                tool_messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tool_call_id,
+                                    "content": error_content
+                                })
 
                 # 添加所有工具响应消息
                 messages.extend(tool_messages)

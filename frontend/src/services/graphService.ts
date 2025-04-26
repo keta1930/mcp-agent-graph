@@ -111,10 +111,16 @@ export const renameGraph = async (oldName: string, newName: string): Promise<any
 };
 
 // Execute a graph
-export const executeGraph = async (input: { graph_name: string; input_text: string; conversation_id?: string }): Promise<any> => {
+export const executeGraph = async (input: {
+  graph_name: string;
+  input_text: string;
+  conversation_id?: string;
+  parallel?: boolean; // 新增并行执行参数
+}): Promise<any> => {
   const response = await api.post('/graphs/execute', input);
   return response.data;
 };
+
 
 // Get a conversation
 export const getConversation = async (conversationId: string): Promise<any> => {

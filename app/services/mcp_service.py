@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import aiohttp
 import requests
 import subprocess
 import sys
@@ -25,19 +26,22 @@ class MCPService:
         self.client_started = False
         self.startup_retries = 5
         self.retry_delay = 1
+        self._session = None
 
     async def initialize(self) -> Dict[str, Dict[str, Any]]:
         """初始化MCP服务，启动客户端进程"""
         try:
             # 检查是否已有进程在运行
             try:
-                response = requests.get(f"{self.client_url}/")
-                self.client_started = True
-                logger.info("发现现有MCP Client已在运行")
-                config_path = str(settings.MCP_PATH)
-                self._notify_config_change(config_path)
-                return {"status": {"message": "MCP Client已连接"}}
-            except (requests.RequestException, ConnectionError):
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(f"{self.client_url}/") as response:
+                        if response.status == 200:
+                            self.client_started = True
+                            logger.info("发现现有MCP Client已在运行")
+                            config_path = str(settings.MCP_PATH)
+                            self._notify_config_change(config_path)
+                            return {"status": {"message": "MCP Client已连接"}}
+            except (aiohttp.ClientError, ConnectionError):
                 pass
 
             # 启动Client进程
@@ -85,13 +89,14 @@ class MCPService:
             # 增加等待时间
             for i in range(10):
                 try:
-                    time.sleep(2)
-                    response = requests.get(f"{self.client_url}/")
-                    if response.status_code == 200:
-                        self.client_started = True
-                        logger.info("MCP Client进程已启动并响应")
-                        break
-                except (requests.RequestException, ConnectionError) as e:
+                    await asyncio.sleep(2)
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f"{self.client_url}/") as response:
+                            if response.status == 200:
+                                self.client_started = True
+                                logger.info("MCP Client进程已启动并响应")
+                                break
+                except (aiohttp.ClientError, ConnectionError) as e:
                     logger.warning(f"尝试连接MCP Client (尝试 {i + 1}/10): {str(e)}")
 
                     # 检查进程是否仍在运行
@@ -122,6 +127,12 @@ class MCPService:
             traceback.print_exc()
             return {"status": {"error": f"启动失败: {str(e)}"}}
 
+    async def _get_session(self):
+        """获取或创建aiohttp会话"""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
+
     async def notify_client_shutdown(self) -> bool:
         """通知Client关闭"""
         if not self.client_started:
@@ -129,23 +140,24 @@ class MCPService:
 
         try:
             logger.info("尝试通过HTTP API通知Client优雅关闭...")
-            response = requests.post(f"{self.client_url}/shutdown", timeout=5)
-            if response.status_code == 200:
-                logger.info("已成功通知Client开始关闭流程")
-                await asyncio.sleep(3)
+            session = await self._get_session()
+            async with session.post(f"{self.client_url}/shutdown", timeout=5) as response:
+                if response.status == 200:
+                    logger.info("已成功通知Client开始关闭流程")
+                    await asyncio.sleep(3)
 
-                # 检查进程是否已经自行退出
-                if self.client_process and self.client_process.poll() is not None:
-                    logger.info("验证Client进程已自行退出")
-                    self.client_process = None
-                    self.client_started = False
-                    return True
+                    # 检查进程是否已经自行退出
+                    if self.client_process and self.client_process.poll() is not None:
+                        logger.info("验证Client进程已自行退出")
+                        self.client_process = None
+                        self.client_started = False
+                        return True
 
-                logger.info("Client进程仍在运行，将使用强制方式关闭")
-                return False
-            else:
-                logger.warning(f"通知Client关闭返回异常状态码: {response.status_code}")
-                return False
+                    logger.info("Client进程仍在运行，将使用强制方式关闭")
+                    return False
+                else:
+                    logger.warning(f"通知Client关闭返回异常状态码: {response.status}")
+                    return False
         except Exception as e:
             logger.error(f"通知Client关闭时出错: {str(e)}")
             return False
@@ -205,12 +217,13 @@ class MCPService:
             if not self.client_started:
                 return {}
 
-            response = requests.get(f"{self.client_url}/servers")
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.error(f"获取服务器状态失败: {response.status_code} {response.text}")
-                return {}
+            session = await self._get_session()
+            async with session.get(f"{self.client_url}/servers") as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    logger.error(f"获取服务器状态失败: {response.status} {await response.text()}")
+                    return {}
 
         except Exception as e:
             logger.error(f"获取服务器状态时出错: {str(e)}")
@@ -239,16 +252,17 @@ class MCPService:
             if not self.client_started:
                 return {"status": "error", "error": "MCP Client未启动"}
 
-            response = requests.post(
+            session = await self._get_session()
+            async with session.post(
                 f"{self.client_url}/connect_server",
                 json={"server_name": server_name}
-            )
-
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.error(f"连接服务器请求失败: {response.status_code} {response.text}")
-                return {"status": "error", "error": response.text}
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    error_text = await response.text()
+                    logger.error(f"连接服务器请求失败: {response.status} {error_text}")
+                    return {"status": "error", "error": error_text}
 
         except Exception as e:
             logger.error(f"连接服务器时出错: {str(e)}")
@@ -260,24 +274,26 @@ class MCPService:
             if not self.client_started:
                 return {}
 
-            response = requests.get(f"{self.client_url}/tools")
-            if response.status_code == 200:
-                tools_by_server = {}
-                for tool in response.json():
-                    server_name = tool["server_name"]
-                    if server_name not in tools_by_server:
-                        tools_by_server[server_name] = []
+            session = await self._get_session()
+            async with session.get(f"{self.client_url}/tools") as response:
+                if response.status == 200:
+                    tools_data = await response.json()
+                    tools_by_server = {}
+                    for tool in tools_data:
+                        server_name = tool["server_name"]
+                        if server_name not in tools_by_server:
+                            tools_by_server[server_name] = []
 
-                    tools_by_server[server_name].append({
-                        "name": tool["name"],
-                        "description": tool["description"],
-                        "input_schema": tool["input_schema"]
-                    })
+                        tools_by_server[server_name].append({
+                            "name": tool["name"],
+                            "description": tool["description"],
+                            "input_schema": tool["input_schema"]
+                        })
 
-                return tools_by_server
-            else:
-                logger.error(f"获取工具列表失败: {response.status_code} {response.text}")
-                return {}
+                    return tools_by_server
+                else:
+                    logger.error(f"获取工具列表失败: {response.status} {await response.text()}")
+                    return {}
 
         except Exception as e:
             logger.error(f"获取工具列表时出错: {str(e)}")
@@ -289,25 +305,26 @@ class MCPService:
             if not self.client_started:
                 return {"error": "MCP Client未启动"}
 
-            response = requests.post(
+            session = await self._get_session()
+            async with session.post(
                 f"{self.client_url}/tool_call",
                 json={
                     "server_name": server_name,
                     "tool_name": tool_name,
                     "params": params
                 }
-            )
-
-            if response.status_code == 200:
-                return response.json()
-            else:
-                error_msg = f"调用工具失败: {response.status_code} {response.text}"
-                logger.error(error_msg)
-                return {
-                    "tool_name": tool_name,
-                    "server_name": server_name,
-                    "error": error_msg
-                }
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    error_text = await response.text()
+                    error_msg = f"调用工具失败: {response.status} {error_text}"
+                    logger.error(error_msg)
+                    return {
+                        "tool_name": tool_name,
+                        "server_name": server_name,
+                        "error": error_msg
+                    }
 
         except Exception as e:
             error_msg = f"调用工具时出错: {str(e)}"
@@ -329,7 +346,9 @@ class MCPService:
         try:
             if not self.client_started:
                 return {"status": "error", "error": "MCP Client未启动"}
-            print("\nrequest:\n",{
+
+            session = await self._get_session()
+            print("\nsessino.post:\n",f"{self.client_url}/execute_node",{
                     "model": model_name,
                     "api_key": api_key,
                     "base_url": base_url,
@@ -337,7 +356,7 @@ class MCPService:
                     "mcp_servers": mcp_servers,
                     "output_enabled": output_enabled
                 })
-            response = requests.post(
+            async with session.post(
                 f"{self.client_url}/execute_node",
                 json={
                     "model": model_name,
@@ -347,15 +366,16 @@ class MCPService:
                     "mcp_servers": mcp_servers,
                     "output_enabled": output_enabled
                 }
-            )
-            print("response:\n", response.json())
+            ) as response:
 
-            if response.status_code == 200:
-                return response.json()
-            else:
-                error_msg = f"执行节点失败: {response.status_code} {response.text}"
-                logger.error(error_msg)
-                return {"status": "error", "error": error_msg}
+                if response.status == 200:
+                    print("\nsessino.response:\n", response)
+                    return await response.json()
+                else:
+                    error_text = await response.text()
+                    error_msg = f"执行节点失败: {response.status} {error_text}"
+                    logger.error(error_msg)
+                    return {"status": "error", "error": error_msg}
 
         except Exception as e:
             error_msg = f"执行节点时出错: {str(e)}"
@@ -368,6 +388,11 @@ class MCPService:
         Args:
             force: 如果为True，无论之前是否已通知过Client，都会尝试终止进程
         """
+        # 关闭aiohttp会话
+        if self._session and not self._session.closed:
+            await self._session.close()
+            self._session = None
+
         if not self.client_process:
             logger.info("无需清理：Client进程不存在或已关闭")
             self.client_started = False

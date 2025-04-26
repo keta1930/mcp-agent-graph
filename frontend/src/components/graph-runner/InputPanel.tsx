@@ -1,7 +1,7 @@
 // src/components/graph-runner/InputPanel.tsx
 import React, { useState } from 'react';
-import { Input, Button, message, Typography } from 'antd';
-import { SendOutlined, RocketOutlined } from '@ant-design/icons';
+import { Input, Button, message, Typography, Switch, Tooltip, Space } from 'antd';
+import { SendOutlined, RocketOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useGraphRunnerStore } from '../../store/graphRunnerStore';
 import './InputPanel.css';
 
@@ -10,7 +10,14 @@ const { Text } = Typography;
 
 const InputPanel: React.FC = () => {
   const [input, setInput] = useState('');
-  const { selectedGraph, executeGraph, loading, currentConversation } = useGraphRunnerStore();
+  const {
+    selectedGraph,
+    executeGraph,
+    loading,
+    currentConversation,
+    parallelExecution,
+    toggleParallelExecution
+  } = useGraphRunnerStore();
 
   const handleSubmit = async () => {
     if (!input.trim()) {
@@ -61,22 +68,39 @@ const InputPanel: React.FC = () => {
           className="mb-4"
         />
 
-        <div className="flex justify-start items-center input-spacing">
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            loading={loading}
-            disabled={!selectedGraph}
-            onClick={handleSubmit}
-            size="large"
-            className="flat-execute-button"
-          >
-            Execute
-          </Button>
+        <div className="flex justify-between items-center input-spacing">
+          <div className="flex items-center">
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              loading={loading}
+              disabled={!selectedGraph}
+              onClick={handleSubmit}
+              size="large"
+              className="flat-execute-button"
+            >
+              Execute
+            </Button>
 
-          <Text type="secondary" className="text-xs ml-4">
-            Press Ctrl+Enter to submit
-          </Text>
+            <Text type="secondary" className="text-xs ml-4">
+              Press Ctrl+Enter to submit
+            </Text>
+          </div>
+
+          <div className="parallel-execution-toggle">
+            <Tooltip title="When enabled, nodes at the same level will be executed in parallel">
+              <Space>
+                <Text type="secondary">Parallel Execution</Text>
+                <Switch
+                  checkedChildren={<ThunderboltOutlined />}
+                  unCheckedChildren={<ThunderboltOutlined />}
+                  checked={parallelExecution}
+                  onChange={toggleParallelExecution}
+                  disabled={loading}
+                />
+              </Space>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </div>

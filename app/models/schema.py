@@ -59,6 +59,7 @@ class AgentNode(BaseModel):
     is_end: bool = Field(default=False, description="是否为结束节点")
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
     position: Optional[Dict[str, float]] = Field(default=None, description="节点在画布中的位置")
+    level: Optional[int] = Field(default=None, description="节点在图中的层级，用于确定执行顺序")
 
     @validator('name')
     def name_must_be_valid(cls, v):
@@ -79,6 +80,15 @@ class AgentNode(BaseModel):
             raise ValueError(f"子图节点 '{values['name']}' 必须指定子图名称")
         return v
 
+    @validator('level')
+    def validate_level(cls, v):
+        if v is None:
+            return None  # 允许为None，由后端计算
+        try:
+            return int(v)  # 尝试将其转换为整数
+        except (ValueError, TypeError):
+            return None  # 如果转换失败，返回None
+
 
 class GraphConfig(BaseModel):
     """图配置"""
@@ -98,6 +108,7 @@ class GraphInput(BaseModel):
     graph_name: str = Field(..., description="图名称")
     input_text: str = Field(..., description="输入文本")
     conversation_id: Optional[str] = Field(None, description="会话ID，用于继续现有会话")
+    parallel: bool = Field(default=False, description="是否启用并行执行")
 
 
 class NodeResult(BaseModel):

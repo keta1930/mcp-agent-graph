@@ -1,0 +1,160 @@
+/* src/components/graph-runner/ResultPanel.css */
+
+.result-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.result-info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-info-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.result-info-value {
+  display: flex;
+  align-items: center;
+}
+
+.node-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  display: inline-block;
+}
+
+.node-badge-start {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.node-badge-error {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+}
+
+.node-badge-level {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.custom-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+.custom-empty-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+  color: #ccc;
+}
+
+.custom-empty-text {
+  font-size: 14px;
+}
+
+.result-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.result-loading .ant-spin {
+  margin-bottom: 16px;
+}
+
+.status-tag {
+  margin-left: 12px;
+}
+
+.status-completed {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border-color: #b7eb8f;
+}
+
+.status-processing {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border-color: #91d5ff;
+}
+
+.status-error {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+  border-color: #ffccc7;
+}
+
+.result-section {
+  margin-bottom: 24px;
+}
+
+.result-section-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.result-content {
+  padding: 12px;
+  background-color: #fafafa;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.node-collapse .ant-collapse-header {
+  align-items: center !important;
+}
+
+.node-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.node-io-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.node-io-content {
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.node-error {
+  padding: 8px;
+  background-color: #fff2f0;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #ff4d4f;
+}
+
+.subgraph-collapse {
+  margin-top: 8px;
+}

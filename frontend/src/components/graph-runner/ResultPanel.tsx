@@ -12,7 +12,8 @@ import {
   SyncOutlined,
   CodeOutlined,
   ExceptionOutlined,
-  BranchesOutlined
+  BranchesOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import { useGraphRunnerStore } from '../../store/graphRunnerStore';
 
@@ -20,7 +21,7 @@ const { Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
 const ResultPanel: React.FC = () => {
-  const { conversations, currentConversation, loading } = useGraphRunnerStore();
+  const { conversations, currentConversation, loading, parallelExecution } = useGraphRunnerStore();
 
   const currentResult = currentConversation
     ? conversations[currentConversation]
@@ -99,6 +100,18 @@ const ResultPanel: React.FC = () => {
                 </Tooltip>
               </div>
             </div>
+
+            {/* 新增: 执行模式信息 */}
+            <div className="result-info-item">
+              <div className="result-info-label">Execution Mode</div>
+              <div className="result-info-value">
+                {parallelExecution ? (
+                  <Tag color="blue" icon={<ThunderboltOutlined />}>Parallel</Tag>
+                ) : (
+                  <Tag color="default" icon={<RightOutlined />}>Sequential</Tag>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -138,6 +151,10 @@ const ResultPanel: React.FC = () => {
                       )}
                       {node.error && (
                         <span className="node-badge node-badge-error">Error</span>
+                      )}
+                      {/* 新增: 显示节点层级 */}
+                      {node.level !== undefined && (
+                        <span className="node-badge node-badge-level">Level {node.level}</span>
                       )}
                     </div>
                   }

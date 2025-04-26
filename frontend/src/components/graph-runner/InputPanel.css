@@ -17,3 +17,52 @@
 .input-spacing {
   margin-top: 12px;
 }
+
+.input-panel {
+  margin-bottom: 24px;
+}
+
+.input-spacing {
+  margin-top: 12px;
+}
+
+.flat-execute-button {
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flat-execute-button .anticon {
+  margin-right: 8px;
+}
+
+.parallel-execution-toggle {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.parallel-execution-toggle .ant-switch {
+  margin-left: 8px;
+}
+
+.parallel-execution-toggle .ant-switch-checked {
+  background-color: #1890ff;
+}
+
+/* 响应式设计，在小屏幕上垂直堆叠 */
+@media (max-width: 768px) {
+  .input-spacing {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .parallel-execution-toggle {
+    margin-top: 12px;
+    width: 100%;
+    justify-content: space-between;
+  }
+}

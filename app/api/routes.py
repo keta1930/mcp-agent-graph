@@ -249,7 +249,9 @@ async def create_graph(graph: GraphConfig):
     """创建新图或更新现有图"""
     try:
         # 验证图配置
+        print("")
         valid, error = graph_service.validate_graph(graph.dict())
+        print("valid, error",valid, error)
         if not valid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -257,6 +259,7 @@ async def create_graph(graph: GraphConfig):
             )
 
         # 保存图
+        print("保存图")
         success = graph_service.save_graph(graph.name, graph.dict())
         if not success:
             raise HTTPException(
@@ -364,13 +367,15 @@ async def execute_graph(input_data: GraphInput):
             # 继续现有会话
             result = await graph_service.continue_conversation(
                 input_data.conversation_id,
-                input_data.input_text
+                input_data.input_text,
+                input_data.parallel
             )
         else:
             # 创建新会话
             result = await graph_service.execute_graph(
                 input_data.graph_name,
-                input_data.input_text
+                input_data.input_text,
+                input_data.parallel
             )
         print("\n\n========369result========\n",result)
 

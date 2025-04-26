@@ -10,6 +10,7 @@ interface GraphRunnerState {
   currentConversation: string | null;
   loading: boolean;
   error?: string;
+  parallelExecution: boolean; // 新增：并行执行选项
 
   // Actions
   fetchGraphs: () => Promise<void>;
@@ -18,6 +19,8 @@ interface GraphRunnerState {
   getConversation: (conversationId: string) => Promise<void>;
   deleteConversation: (conversationId: string) => Promise<void>;
   clearConversations: () => void;
+  toggleParallelExecution: () => void; // 新增：切换并行执行选项
+  setParallelExecution: (enabled: boolean) => void; // 新增：设置并行执行选项
 }
 
 export const useGraphRunnerStore = create<GraphRunnerState>((set, get) => ({
@@ -27,6 +30,7 @@ export const useGraphRunnerStore = create<GraphRunnerState>((set, get) => ({
   currentConversation: null,
   loading: false,
   error: undefined,
+  parallelExecution: false, // 默认不启用并行执行
 
   fetchGraphs: async () => {
     try {
@@ -46,7 +50,7 @@ export const useGraphRunnerStore = create<GraphRunnerState>((set, get) => ({
   },
 
   executeGraph: async (input, conversationId) => {
-    const { selectedGraph } = get();
+    const { selectedGraph, parallelExecution } = get(); // 获取并行执行标志
     if (!selectedGraph) {
       throw new Error('No graph selected');
     }
@@ -57,7 +61,8 @@ export const useGraphRunnerStore = create<GraphRunnerState>((set, get) => ({
       const result = await graphService.executeGraph({
         graph_name: selectedGraph,
         input_text: input,
-        conversation_id: conversationId
+        conversation_id: conversationId,
+        parallel: parallelExecution // 传递并行执行标志
       });
 
       // 更新会话
@@ -133,5 +138,17 @@ export const useGraphRunnerStore = create<GraphRunnerState>((set, get) => ({
       conversations: {},
       currentConversation: null
     });
+  },
+
+  // 新增：切换并行执行选项
+  toggleParallelExecution: () => {
+    set(state => ({
+      parallelExecution: !state.parallelExecution
+    }));
+  },
+
+  // 新增：设置并行执行选项
+  setParallelExecution: (enabled) => {
+    set({ parallelExecution: enabled });
   }
 }));

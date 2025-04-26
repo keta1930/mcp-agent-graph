@@ -9,7 +9,7 @@ from app.core.file_manager import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.models.schema import GraphConfig, AgentNode, NodeResult, GraphResult
-
+import copy
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +34,11 @@ class GraphService:
 
     def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
         """保存图配置"""
-        return FileManager.save_agent(graph_name, config)
+        # 计算节点层级
+        print("save_graph", graph_name, config)
+        print("开始计算")
+        config_with_levels = self._calculate_node_levels(config)
+        return FileManager.save_agent(graph_name, config_with_levels)
 
     def delete_graph(self, graph_name: str) -> bool:
         """删除图配置"""
@@ -44,8 +48,189 @@ class GraphService:
         """重命名图"""
         return FileManager.rename_agent(old_name, new_name)
 
+    def _calculate_node_levels(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
+        """重新设计的层级计算算法，正确处理所有依赖关系"""
+        try:
+            graph_copy = copy.deepcopy(graph_config)
+            nodes = graph_copy.get("nodes", [])
+
+            print(f"开始计算层级，共 {len(nodes)} 个节点")
+
+            # 创建节点名称到节点对象的映射
+            node_map = {node["name"]: node for node in nodes}
+
+            # 构建依赖关系图（谁依赖谁）
+            depends_on = {}
+            for node in nodes:
+                node_name = node["name"]
+                depends_on[node_name] = set()
+
+            # 处理输入依赖：如果B的input_nodes包含A，则B依赖A
+            for node in nodes:
+                node_name = node["name"]
+
+                for input_name in node.get("input_nodes", []):
+                    if input_name != "start" and input_name in node_map:
+                        depends_on[node_name].add(input_name)
+                        print(f"节点 {node_name} 依赖输入节点 {input_name}")
+
+            # 处理输出依赖：如果A的output_nodes包含B，则B依赖A
+            for node in nodes:
+                node_name = node["name"]
+
+                for output_name in node.get("output_nodes", []):
+                    if output_name != "end" and output_name in node_map:
+                        depends_on[output_name].add(node_name)
+                        print(f"节点 {output_name} 依赖输出源 {node_name}")
+
+            # 找出起始节点（直接连接到start且没有其他依赖，或者没有任何依赖的节点）
+            start_nodes = []
+            for node in nodes:
+                node_name = node["name"]
+
+                # 如果节点直接连接到start且没有其他实际依赖（排除start）
+                if (node.get("is_start", False) or "start" in node.get("input_nodes", [])):
+                    # 检查是否只依赖"start"
+                    if not depends_on[node_name]:
+                        start_nodes.append(node_name)
+                        print(f"节点 {node_name} 是纯起始节点，仅依赖start")
+
+            # 如果没有找到纯起始节点，寻找拓扑排序的起点
+            if not start_nodes:
+                # 找出没有入边的节点（没有被其他节点依赖的节点）
+                no_incoming = set()
+                for node_name in node_map:
+                    if not any(node_name in deps for deps in depends_on.values()):
+                        no_incoming.add(node_name)
+
+                if no_incoming:
+                    start_nodes = list(no_incoming)
+                    print(f"使用拓扑排序找到的起始节点: {start_nodes}")
+                else:
+                    # 如果所有节点都有依赖关系（可能存在循环），使用所有直接连接到start的节点
+                    for node in nodes:
+                        if node.get("is_start", False) or "start" in node.get("input_nodes", []):
+                            start_nodes.append(node["name"])
+                            print(f"图可能存在循环依赖，使用连接到start的节点 {node['name']} 作为起始节点")
+
+            # 如果仍然没有找到起始节点，使用任意节点作为起点
+            if not start_nodes and nodes:
+                start_nodes = [nodes[0]["name"]]
+                print(f"未找到合适的起始节点，使用第一个节点 {start_nodes[0]} 作为起始点")
+
+            # 初始化所有节点的层级
+            levels = {node_name: -1 for node_name in node_map}
+
+            # 所有起始节点的层级为0
+            for node_name in start_nodes:
+                levels[node_name] = 0
+                print(f"起始节点 {node_name} 的层级设为0")
+
+            # 反复迭代，直到所有节点的层级都稳定
+            changed = True
+            max_iterations = len(nodes) * 2  # 防止无限循环
+            iteration = 0
+
+            while changed and iteration < max_iterations:
+                changed = False
+                iteration += 1
+                print(f"\n开始第 {iteration} 次迭代")
+
+                for node_name, deps in depends_on.items():
+                    old_level = levels[node_name]
+
+                    # 如果是起始节点，不更新层级
+                    if node_name in start_nodes:
+                        continue
+
+                    # 计算所有依赖的最大层级
+                    max_dep_level = -1
+                    all_deps_have_level = True
+
+                    for dep in deps:
+                        if levels[dep] >= 0:
+                            max_dep_level = max(max_dep_level, levels[dep])
+                        else:
+                            all_deps_have_level = False
+
+                    # 如果所有依赖都有层级
+                    if all_deps_have_level and deps:
+                        new_level = max_dep_level + 1
+
+                        if old_level != new_level:
+                            levels[node_name] = new_level
+                            changed = True
+                            print(f"  节点 {node_name} 的层级从 {old_level} 更新为 {new_level}")
+                    elif not deps:
+                        # 如果节点没有依赖，设置为0
+                        if old_level != 0:
+                            levels[node_name] = 0
+                            changed = True
+                            print(f"  节点 {node_name} 没有依赖，层级设为0")
+
+                print(f"第 {iteration} 次迭代完成，是否有变化: {changed}")
+
+            # 处理可能因循环依赖而未被赋值的节点
+            for node_name in levels:
+                if levels[node_name] < 0:
+                    print(f"节点 {node_name} 未能确定层级，可能存在循环依赖")
+
+                    # 找出所有依赖节点的最大层级和所有被依赖节点的最小层级
+                    max_dep_level = -1
+                    min_dependent_level = float('inf')
+
+                    # 检查依赖
+                    for dep in depends_on[node_name]:
+                        if levels[dep] >= 0:
+                            max_dep_level = max(max_dep_level, levels[dep])
+
+                    # 检查被依赖
+                    for other_name, deps in depends_on.items():
+                        if node_name in deps and levels[other_name] >= 0:
+                            min_dependent_level = min(min_dependent_level, levels[other_name])
+
+                    if max_dep_level >= 0:
+                        # 如果有已知层级的依赖，层级为最大依赖层级+1
+                        levels[node_name] = max_dep_level + 1
+                        print(f"  基于依赖设置循环节点 {node_name} 的层级为 {levels[node_name]}")
+                    elif min_dependent_level < float('inf'):
+                        # 如果有已知层级的被依赖节点，层级为最小被依赖层级-1
+                        levels[node_name] = max(0, min_dependent_level - 1)
+                        print(f"  基于被依赖设置循环节点 {node_name} 的层级为 {levels[node_name]}")
+                    else:
+                        # 如果都未知，设为1
+                        levels[node_name] = 1
+                        print(f"  无法确定依赖关系，设置节点 {node_name} 的层级为1")
+
+            # 更新节点层级
+            for node in nodes:
+                node_name = node["name"]
+                node["level"] = levels[node_name]
+
+            # 打印最终层级
+            print("\n最终节点层级:")
+            for node in nodes:
+                print(f"  节点 {node['name']}: 层级 {node['level']}")
+
+            return graph_copy
+        except Exception as e:
+            import traceback
+            print(f"计算节点层级时出错: {str(e)}")
+            print(traceback.format_exc())
+
+            # 出错时，为所有节点设置默认层级
+            for node in graph_config.get("nodes", []):
+                try:
+                    node["level"] = 0
+                except:
+                    pass
+            return graph_config
+
     def preprocess_graph(self, graph_config: Dict[str, Any], prefix_path: str = "") -> Dict[str, Any]:
         """将包含子图的复杂图展开为扁平化结构"""
+        # 首先计算原始图的层级
+        graph_config = self._calculate_node_levels(graph_config)
+
         import copy
         processed_config = copy.deepcopy(graph_config)
         processed_nodes = []
@@ -89,6 +274,9 @@ class GraphService:
                 processed_nodes.append(node_copy)
 
         processed_config["nodes"] = processed_nodes
+
+        # 重新计算展开后的图的层级
+        processed_config = self._calculate_node_levels(processed_config)
 
         print("\nprocessed_config:\n", processed_config)
         return processed_config
@@ -270,7 +458,8 @@ class GraphService:
             "node_states": {},
             "pending_nodes": set(),
             "completed_nodes": set(),
-            "results": []
+            "results": [],
+            "parallel": False  # 默认使用顺序执行
         }
 
         return conversation_id
@@ -286,7 +475,8 @@ class GraphService:
             "node_states": {},
             "pending_nodes": set(),
             "completed_nodes": set(),
-            "results": []
+            "results": [],
+            "parallel": False  # 默认使用顺序执行
         }
 
         return conversation_id
@@ -788,7 +978,7 @@ class GraphService:
         # 合并所有输出
         return "\n\n".join(outputs)
 
-    async def execute_graph(self, graph_name: str, input_text: str) -> Dict[str, Any]:
+    async def execute_graph(self, graph_name: str, input_text: str, parallel: bool = False) -> Dict[str, Any]:
         """执行整个图并返回结果"""
         # 加载原始图配置
         original_config = self.get_graph(graph_name)
@@ -806,19 +996,25 @@ class GraphService:
         # 创建会话
         conversation_id = self.create_conversation_with_config(graph_name, flattened_config)
 
-        # 保存原始配置（用于结果呈现）
+        # 保存原始配置和并行执行设置
         self.active_conversations[conversation_id]["original_config"] = original_config
+        self.active_conversations[conversation_id]["parallel"] = parallel
 
         # 记录展开信息
         logger.info(
             f"图 '{graph_name}' 已展开: {len(original_config.get('nodes', []))} 个原始节点 -> {len(flattened_config.get('nodes', []))} 个展开节点")
 
-        # 执行第一步（起始节点）
-        step_result = await self._execute_graph_step(conversation_id, input_text)
+        # 执行图
+        if parallel:
+            await self._execute_graph_parallel(conversation_id, input_text)
+        else:
+            # 顺序执行
+            # 执行第一步（起始节点）
+            step_result = await self._execute_graph_step(conversation_id, input_text)
 
-        # 继续执行，直到完成
-        while not step_result["is_complete"]:
-            step_result = await self._execute_graph_step(conversation_id)
+            # 继续执行，直到完成
+            while not step_result["is_complete"]:
+                step_result = await self._execute_graph_step(conversation_id)
 
         # 获取最终输出
         conversation = self.active_conversations[conversation_id]
@@ -836,7 +1032,7 @@ class GraphService:
 
         return result
 
-    async def continue_conversation(self, conversation_id: str, input_text: str) -> Dict[str, Any]:
+    async def continue_conversation(self, conversation_id: str, input_text: str, parallel: bool = False) -> Dict[str, Any]:
         """继续现有会话"""
         conversation = self.get_conversation(conversation_id)
         if not conversation:
@@ -856,7 +1052,8 @@ class GraphService:
             "node_states": {},
             "pending_nodes": set(),
             "completed_nodes": set(),
-            "results": [r for r in previous_results if r.get("is_start_input", False)]
+            "results": [r for r in previous_results if r.get("is_start_input", False)],
+            "parallel": parallel  # 设置并行执行标志
         }
 
         # 添加新的用户输入
@@ -870,12 +1067,17 @@ class GraphService:
             "tool_results": []
         })
 
-        # 执行第一步
-        step_result = await self._execute_graph_step(conversation_id, input_text)
+        # 执行图
+        if parallel:
+            await self._execute_graph_parallel(conversation_id, input_text)
+        else:
+            # 顺序执行
+            # 执行第一步（起始节点）
+            step_result = await self._execute_graph_step(conversation_id, input_text)
 
-        # 继续执行，直到完成
-        while not step_result["is_complete"]:
-            step_result = await self._execute_graph_step(conversation_id)
+            # 继续执行，直到完成
+            while not step_result["is_complete"]:
+                step_result = await self._execute_graph_step(conversation_id)
 
         # 获取最终输出
         final_output = self._get_final_output(conversation)
@@ -891,6 +1093,77 @@ class GraphService:
         }
 
         return result
+
+    async def _execute_graph_parallel(self, conversation_id: str, input_text: str = None):
+        """并行执行图"""
+        conversation = self.get_conversation(conversation_id)
+        if not conversation:
+            raise ValueError(f"找不到会话 '{conversation_id}'")
+
+        graph_config = conversation["graph_config"]
+
+        # 记录用户输入
+        if input_text is not None:
+            conversation["results"].append({
+                "is_start_input": True,
+                "node_name": "start",
+                "input": input_text,
+                "output": "",
+                "tool_calls": [],
+                "tool_results": []
+            })
+
+        # 获取图中的最大层级
+        max_level = 0
+        for node in graph_config.get("nodes", []):
+            level = node.get("level", 0)
+            max_level = max(max_level, level)
+
+        # 按层级依次执行
+        for current_level in range(max_level + 1):
+            logger.info(f"开始执行层级 {current_level} 的节点")
+
+            # 找出当前层级的所有节点
+            level_nodes = []
+            for node in graph_config.get("nodes", []):
+                if node.get("level", 0) == current_level:
+                    # 检查节点是否可执行（所有依赖都已完成）
+                    can_execute = True
+
+                    # 如果是起始节点，直接可执行
+                    if node.get("is_start", False) or "start" in node.get("input_nodes", []):
+                        level_nodes.append(node)
+                        continue
+
+                    # 检查所有输入节点是否已完成
+                    for input_node_name in node.get("input_nodes", []):
+                        if input_node_name != "start" and input_node_name not in conversation["completed_nodes"]:
+                            can_execute = False
+                            break
+
+                    if can_execute:
+                        level_nodes.append(node)
+
+            if not level_nodes:
+                logger.info(f"层级 {current_level} 没有可执行的节点")
+                continue
+
+            # 并行执行当前层级的节点
+            tasks = []
+            for node in level_nodes:
+                # 获取节点输入
+                node_input = self._get_node_input(node, conversation)
+
+                # 创建执行任务
+                logger.info(f"准备并行执行节点: {node['name']}")
+                tasks.append(self._execute_node(node, node_input, conversation_id))
+
+            # 等待所有任务完成
+            await asyncio.gather(*tasks)
+
+            logger.info(f"层级 {current_level} 的节点执行完成")
+
+        logger.info("并行执行完成")
 
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含层次结构的会话详情"""

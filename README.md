@@ -39,30 +39,32 @@ HOST  → CLIENT  → SERVER
 ### Visual Agent Graph Editor
 Visually create agent workflows by connecting nodes in a graph. Each node represents an agent with its own configuration, behaviors, and capabilities.
 
-![Graph Editor Interface - Visual design of nodes and connections](img_3.png)
-![Graph Executor Interface - Running agent workflows](img_6.png)
-![Graph Executor Interface - Result](img_7.png)
+![Graph Editor Interface - Visual design of nodes and connections](fig/img_3.png)
+![Graph Executor Interface - Running agent workflows](fig/img_6.png)
+![Graph Executor Interface - Result](fig/img_7.png)
 
 ### MCP Server Integration
 Enhance your agent capabilities through MCP servers. Each agent node can access specialized capabilities from multiple MCP servers, such as web search, code execution, data analysis, and more.
 
-![MCP Manager Interface - Server overview](img.png)
-![MCP Manager Interface - Detailed server configuration](img_1.png)
-![MCP Manager Interface - Tool capability management](img_2.png)
+![MCP Manager Interface - Server overview](fig/img.png)
+![MCP Manager Interface - Detailed server configuration](fig/img_1.png)
+![MCP Manager Interface - Tool capability management](fig/img_2.png)
 
 ### Nested Graphs (Graph as Node)
 Build hierarchical agent systems by using entire graphs as nodes within larger graphs. This creates modular, reusable agent components, enabling a "worlds within worlds" architecture.
 
 > This is a nested doll feature 😉
 
-![Nested Graph Interface - Hierarchical agent system design](img_4.png)
+![Nested Graph Interface - Hierarchical agent system design](fig/img_4.png)
 
 ### Graph to MCP Server Export
 Export any graph as a standalone MCP server that can be used as a tool by other agents or applications. This feature converts your agent graph into a reusable service that can be composed into larger systems.
 
 > This is a nested doll within a nested doll feature 😉
 
-![Export MCP Server Interface - Converting graphs to standalone services](img_5.png)
+![Export MCP Server Interface - Converting graphs to standalone services](fig/img_5.png)
+![Use in Cline](fig/img_8.png)
+![Use in Cline](fig/img_9.png)
 
 ## 🚀 Deployment Guide
 
