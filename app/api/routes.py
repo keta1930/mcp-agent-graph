@@ -590,12 +590,16 @@ async def generate_mcp_script(graph_name: str):
         host = "http://localhost:9999"
 
         # 生成脚本
-        script = graph_service.generate_mcp_script(graph_name, graph_config, host)
+        result = graph_service.generate_mcp_script(graph_name, graph_config, host)
 
-        return {
-            "graph_name": graph_name,
-            "script": script
-        }
+        # 确保响应格式统一
+        if isinstance(result, str):
+            return {
+                "graph_name": graph_name,
+                "script": result
+            }
+
+        return result
     except HTTPException:
         raise
     except Exception as e:

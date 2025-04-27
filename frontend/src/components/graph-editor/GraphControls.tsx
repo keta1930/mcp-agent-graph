@@ -1,13 +1,14 @@
 // src/components/graph-editor/GraphControls.tsx
 import React, { useState } from 'react';
-import { Button, Modal, Form, Input, Select, Tooltip, message, Space } from 'antd';
+import { Button, Modal, Form, Input, Select, Tooltip, message, Space, Radio } from 'antd';
 import {
   PlusOutlined,
   SaveOutlined,
   CodeOutlined,
   CopyOutlined,
   CheckOutlined,
-  DeleteOutlined  // Added import for delete icon
+  DeleteOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
@@ -30,7 +31,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
     renameGraph,
     dirty,
     generateMCPScript,
-    deleteGraph  // Added deleteGraph from store
+    deleteGraph
   } = useGraphEditorStore();
 
   const { config, status } = useMCPStore();
@@ -38,8 +39,11 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   const [loading, setLoading] = useState(false);
   const [newGraphModalVisible, setNewGraphModalVisible] = useState(false);
   const [mcpScriptModalVisible, setMcpScriptModalVisible] = useState(false);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);  // Added state for delete modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [mcpScript, setMcpScript] = useState("");
+  const [parallelScript, setParallelScript] = useState("");
+  const [sequentialScript, setSequentialScript] = useState("");
+  const [scriptType, setScriptType] = useState<'sequential' | 'parallel'>('sequential');
   const [copied, setCopied] = useState(false);
 
   const [form] = Form.useForm();
@@ -135,7 +139,13 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
       }
 
       const response = await generateMCPScript(currentGraph.name);
-      setMcpScript(response.script);
+
+      // 保存两种脚本类型
+      setSequentialScript(response.sequential_script || response.default_script || response.script);
+      setParallelScript(response.parallel_script || "");
+      setMcpScript(response.sequential_script || response.default_script || response.script);
+      setScriptType('sequential'); // 默认选择串行脚本
+
       setMcpScriptModalVisible(true);
     } catch (error) {
       message.error(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -145,7 +155,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   };
 
   const handleCopyScript = () => {
-    navigator.clipboard.writeText(mcpScript).then(() => {
+    // 根据当前选择的脚本类型复制相应的脚本
+    const scriptToCopy = scriptType === 'parallel' ? parallelScript : sequentialScript;
+
+    navigator.clipboard.writeText(scriptToCopy).then(() => {
       setCopied(true);
       message.success('Script copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
@@ -267,7 +280,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         )}
       </Modal>
 
-      {/* MCP script modal */}
+      {/* MCP script modal with script type selector */}
       <Modal
         title="MCP Server Script"
         open={mcpScriptModalVisible}
@@ -282,6 +295,27 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
           </Button>
         ]}
       >
+        <div style={{ marginBottom: '16px' }}>
+          <Radio.Group
+            value={scriptType}
+            onChange={(e) => {
+              setScriptType(e.target.value);
+              // 切换当前显示的脚本
+              setMcpScript(e.target.value === 'parallel' ? parallelScript : sequentialScript);
+            }}
+            optionType="button"
+            buttonStyle="solid"
+          >
+            <Radio.Button value="sequential">Sequential Execution</Radio.Button>
+            <Radio.Button value="parallel">Parallel Execution</Radio.Button>
+          </Radio.Group>
+          <Tooltip title={scriptType === 'parallel' ?
+            "Parallel execution runs nodes in parallel where possible based on dependency levels" :
+            "Sequential execution runs nodes one after another in order of dependencies"}>
+            <InfoCircleOutlined style={{ marginLeft: '8px' }} />
+          </Tooltip>
+        </div>
+
         <div className="bg-gray-100 p-4 rounded overflow-auto max-h-96">
           <pre>{mcpScript}</pre>
         </div>

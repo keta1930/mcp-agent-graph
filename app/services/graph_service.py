@@ -10,6 +10,7 @@ from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.models.schema import GraphConfig, AgentNode, NodeResult, GraphResult
 import copy
+import os
 logger = logging.getLogger(__name__)
 
 
@@ -1280,71 +1281,52 @@ class GraphService:
 
         return result
 
-    def generate_mcp_script(self, graph_name: str, graph_config: Dict[str, Any], host_url: str) -> str:
+    def generate_mcp_script(self, graph_name: str, graph_config: Dict[str, Any], host_url: str) -> Dict[str, Any]:
         """生成MCP服务器脚本"""
+
+        # 获取图的描述
         description = graph_config.get("description", "")
         sanitized_graph_name = graph_name.replace(" ", "_").replace("-", "_")
 
-        script = f'''
-from fastmcp import FastMCP
-import requests
-import json
+        # 获取模板文件路径
+        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
+        parallel_template_path = os.path.join(template_dir, "mcp_parallel_template.py")
+        sequential_template_path = os.path.join(template_dir, "mcp_sequential_template.py")
 
-mcp = FastMCP(
-    name="{sanitized_graph_name}_graph",
-    instructions="""This server provides access to the MAG graph '{graph_name}'. 
-    {description}
-    First call get_graph_card() to see input and output format, then call execute_graph() to run the graph."""
-    )
+        # 读取模板文件
+        try:
+            with open(parallel_template_path, 'r', encoding='utf-8') as f:
+                parallel_template = f.read()
 
-@mcp.tool()
-def get_graph_card() -> str:
-    """Returns information about the graph, including its description, input/output formats, and usage instructions."""
-    try:
-        response = requests.get("{host_url}/api/graphs/{graph_name}/card")
-        if response.status_code == 200:
-            card = response.json()
-            return json.dumps(card, indent=2)
-        else:
-            return f"Error fetching graph card: {{response.status_code}} {{response.text}}"
-    except Exception as e:
-        return f"Error: {{str(e)}}"
+            with open(sequential_template_path, 'r', encoding='utf-8') as f:
+                sequential_template = f.read()
+        except FileNotFoundError:
+            # 如果模板文件不存在，返回错误
+            logger.error(f"找不到MCP脚本模板文件")
+            return {
+                "graph_name": graph_name,
+                "error": "找不到MCP脚本模板文件",
+                "script": ""
+            }
 
-@mcp.tool()
-def execute_graph(input_text: str, conversation_id: str = None) -> str:
-    """Executes the graph with the given input text.
+        # 替换模板中的变量
+        format_values = {
+            "graph_name": graph_name,
+            "sanitized_graph_name": sanitized_graph_name,
+            "description": description,
+            "host_url": host_url
+        }
 
-    Args:
-        input_text: The input text to send to the graph
-        conversation_id: Optional. A conversation ID from a previous execution to continue the conversation
+        parallel_script = parallel_template.format(**format_values)
+        sequential_script = sequential_template.format(**format_values)
 
-    Returns:
-        The result of the graph execution
-    """
-    try:
-        payload = {{"input_text": input_text, "graph_name": "{graph_name}"}}
-        if conversation_id:
-            payload["conversation_id"] = conversation_id
-
-        response = requests.post("{host_url}/api/graphs/execute", json=payload)
-
-        if response.status_code == 200:
-            result = response.json()
-            # Format the output in a readable way
-            output = f"""RESULT:
-                Conversation ID: {{result.get('conversation_id')}}
-                Output: {{result.get('output')}}
-                Completed: {{result.get('completed', False)}}"""
-            return output
-        else:
-            return f"Error executing graph: {{response.status_code}} {{response.text}}"
-    except Exception as e:
-        return f"Error: {{str(e)}}"
-
-if __name__ == "__main__":
-    mcp.run(transport="stdio")
-    '''
-        return script
+        # 返回脚本内容
+        return {
+            "graph_name": graph_name,
+            "parallel_script": parallel_script,
+            "sequential_script": sequential_script,
+            "default_script": sequential_script
+        }
 
 
 # 创建全局图服务实例
