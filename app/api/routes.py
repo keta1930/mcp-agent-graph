@@ -514,68 +514,6 @@ async def _perform_shutdown():
     except Exception as e:
         logger.error(f"执行关闭流程时出错: {str(e)}")
 
-@router.get("/graphs/{graph_name}/card", response_model=Dict[str, Any])
-async def get_graph_card(graph_name: str):
-    """获取图的调用信息（Graph Card）"""
-    try:
-        # 获取图配置
-        graph_config = graph_service.get_graph(graph_name)
-        if not graph_config:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到图 '{graph_name}'"
-            )
-
-        # 提取必要信息生成Graph Card
-        card = {
-            "graph_name": graph_name,
-            "description": graph_config.get("description", ""),
-            "input_format": {
-                "type": "object",
-                "properties": {
-                    "input_text": {
-                        "type": "string",
-                        "description": "输入文本，将被发送到图的起始节点"
-                    },
-                    "conversation_id": {
-                        "type": "string",
-                        "description": "可选。会话ID，用于继续现有会话"
-                    }
-                },
-                "required": ["input_text"]
-            },
-            "output_format": {
-                "type": "object",
-                "properties": {
-                    "conversation_id": {
-                        "type": "string",
-                        "description": "会话ID，可用于继续对话"
-                    },
-                    "output": {
-                        "type": "string",
-                        "description": "图执行的最终输出"
-                    },
-                    "completed": {
-                        "type": "boolean",
-                        "description": "图执行是否完成"
-                    }
-                }
-            },
-            "api_endpoint": f"/api/graphs/{graph_name}/execute",
-            "method": "POST"
-        }
-
-        return card
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取图卡片时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取图卡片时出错: {str(e)}"
-        )
-
-
 @router.get("/graphs/{graph_name}/generate_mcp", response_model=Dict[str, Any])
 async def generate_mcp_script(graph_name: str):
     """生成MCP服务器脚本"""
