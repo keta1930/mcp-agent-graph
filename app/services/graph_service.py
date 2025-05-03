@@ -104,6 +104,28 @@ class GraphService:
         # 使用会话管理器创建会话
         return self.conversation_manager.create_conversation(graph_name, graph_config)
 
+    def _load_existing_conversations(self) -> None:
+        """加载已有的会话文件"""
+        try:
+            conversation_ids = FileManager.list_conversations()
+            logger.info(f"找到 {len(conversation_ids)} 个现有会话文件")
+
+            # 尝试加载部分会话信息，但不放入内存
+            for conversation_id in conversation_ids[:5]:  # 仅加载前5个作为示例
+                json_data = FileManager.load_conversation_json(conversation_id)
+                if json_data:
+                    graph_name = json_data.get("graph_name", "未知图")
+                    start_time = json_data.get("start_time", "未知时间")
+                    completed = json_data.get("completed", False)
+                    status = "已完成" if completed else "未完成"
+                    logger.info(f"会话: {conversation_id}, 图: {graph_name}, 开始时间: {start_time}, 状态: {status}")
+                else:
+                    logger.warning(f"会话 {conversation_id} 的JSON文件不存在或无法解析")
+        except Exception as e:
+            logger.error(f"加载现有会话时出错: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+
     def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """使用指定配置创建新的会话"""
         # 使用会话管理器创建会话
@@ -203,16 +225,29 @@ class GraphService:
             model_service
         )
 
-    async def continue_conversation(self, conversation_id: str, input_text: str, parallel: bool = False) -> Dict[
-        str, Any]:
+    async def continue_conversation(self,
+                                    conversation_id: str,
+                                    input_text: str = None,
+                                    parallel: bool = False,
+                                    continue_from_checkpoint: bool = False) -> Dict[str, Any]:
         """继续现有会话"""
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        if not conversation:
+            raise ValueError(f"找不到会话 '{conversation_id}'")
+
         # 使用执行器继续会话
-        return await self.executor.continue_conversation(
+        result = await self.executor.continue_conversation(
             conversation_id,
             input_text,
             parallel,
-            model_service
+            model_service,
+            continue_from_checkpoint
         )
+
+        # 确保更新后的结果被保存到文件
+        self.conversation_manager.update_conversation_file(conversation_id)
+
+        return result
 
     async def _execute_graph_parallel(self, conversation_id: str, input_text: str = None):
         """并行执行图"""

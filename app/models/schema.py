@@ -104,10 +104,11 @@ class GraphConfig(BaseModel):
 
 class GraphInput(BaseModel):
     """图执行输入"""
-    graph_name: str = Field(..., description="图名称")
-    input_text: str = Field(..., description="输入文本")
+    graph_name: Optional[str] = Field(None, description="图名称")
+    input_text: Optional[str] = Field(None, description="输入文本")
     conversation_id: Optional[str] = Field(None, description="会话ID，用于继续现有会话")
     parallel: bool = Field(default=False, description="是否启用并行执行")
+    continue_from_checkpoint: bool = Field(default=False, description="是否从断点继续执行")
 
 
 class NodeResult(BaseModel):

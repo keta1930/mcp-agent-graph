@@ -127,6 +127,10 @@ class GraphExecutor:
                 if node["name"] in conversation["pending_nodes"]:
                     conversation["pending_nodes"].remove(node["name"])
                 conversation["results"].append(result)
+
+                # 增量更新会话文件
+                self.conversation_manager.update_conversation_file(conversation_id)
+
             return result
 
         except Exception as e:
@@ -154,6 +158,9 @@ class GraphExecutor:
                 if node["name"] in conversation["pending_nodes"]:
                     conversation["pending_nodes"].remove(node["name"])
                 conversation["results"].append(error_result)
+
+                # 即使出错也更新会话文件
+                self.conversation_manager.update_conversation_file(conversation_id)
 
             return error_result
 
@@ -312,50 +319,102 @@ class GraphExecutor:
 
     async def continue_conversation(self,
                                     conversation_id: str,
-                                    input_text: str,
+                                    input_text: str = None,
                                     parallel: bool = False,
-                                    model_service=None) -> Dict[str, Any]:
+                                    model_service=None,
+                                    continue_from_checkpoint: bool = False) -> Dict[str, Any]:
         """继续现有会话"""
         conversation = self.conversation_manager.get_conversation(conversation_id)
         if not conversation:
             raise ValueError(f"找不到会话 '{conversation_id}'")
 
-        # 重置会话状态，保留图配置和以前的结果
-        previous_results = conversation.get("results", [])
+        # 获取图配置和名称
         original_config = conversation.get("original_config")
         graph_config = conversation.get("graph_config")
         graph_name = conversation.get("graph_name")
 
-        # 重新创建会话
-        self.conversation_manager.active_conversations[conversation_id] = {
-            "graph_name": graph_name,
-            "graph_config": graph_config,
-            "original_config": original_config,
-            "node_states": {},
-            "pending_nodes": set(),
-            "completed_nodes": set(),
-            "results": [r for r in previous_results if r.get("is_start_input", False)],
-            "parallel": parallel  # 设置并行执行标志
-        }
+        # 如果是从断点继续而不是提供新输入
+        if continue_from_checkpoint:
+            logger.info(f"从断点继续会话 {conversation_id}")
 
-        # 添加新的用户输入
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        conversation["results"].append({
-            "is_start_input": True,
-            "node_name": "user_input",
-            "input": input_text,
-            "output": "",
-            "tool_calls": [],
-            "tool_results": []
-        })
+            # 保留原有的节点状态和结果，只重新计算待执行节点
+            previous_results = conversation.get("results", [])
+            completed_nodes = conversation.get("completed_nodes", set())
+            node_states = conversation.get("node_states", {})
+
+            # 重新计算待执行节点
+            conversation["pending_nodes"] = set()
+            for node in graph_config.get("nodes", []):
+                # 跳过已完成的节点
+                if node["name"] in completed_nodes:
+                    continue
+
+                # 检查输入节点是否都已完成
+                input_nodes = node.get("input_nodes", [])
+                all_inputs_ready = True
+
+                for input_node in input_nodes:
+                    if input_node == "start":
+                        continue
+                    if input_node not in completed_nodes:
+                        all_inputs_ready = False
+                        break
+
+                if all_inputs_ready:
+                    conversation["pending_nodes"].add(node["name"])
+
+            logger.info(f"重新计算待执行节点：{conversation['pending_nodes']}")
+        else:
+            # 提供了新输入，需要重置会话状态，保留图配置和以前的结果
+            previous_results = conversation.get("results", [])
+
+            # 重新创建会话
+            self.conversation_manager.active_conversations[conversation_id] = {
+                "graph_name": graph_name,
+                "graph_config": graph_config,
+                "original_config": original_config,
+                "node_states": {},
+                "pending_nodes": set(),
+                "completed_nodes": set(),
+                "results": [r for r in previous_results if r.get("is_start_input", False)],
+                "parallel": parallel
+            }
+
+            # 添加新的用户输入
+            conversation = self.conversation_manager.get_conversation(conversation_id)
+            if input_text:
+                conversation["results"].append({
+                    "is_start_input": True,
+                    "node_name": "user_input",
+                    "input": input_text,
+                    "output": "",
+                    "tool_calls": [],
+                    "tool_results": []
+                })
+
+        # 检查是否还有待执行的节点
+        if not conversation["pending_nodes"]:
+            # 无待执行节点，返回当前状态
+            final_output = self.conversation_manager._get_final_output(conversation)
+            return {
+                "conversation_id": conversation_id,
+                "graph_name": graph_name,
+                "input": input_text or "",
+                "output": final_output,
+                "node_results": self.conversation_manager._restructure_results(conversation),
+                "completed": True
+            }
 
         # 执行图
         if parallel:
-            await self._execute_graph_parallel(conversation_id, input_text, model_service)
+            await self._execute_graph_parallel(conversation_id, input_text if not continue_from_checkpoint else None,
+                                               model_service)
         else:
-            # 顺序执行
-            # 执行第一步（起始节点）
-            step_result = await self._execute_graph_step(conversation_id, input_text, model_service)
+            # 用新输入执行第一步，或者如果是从断点继续则不需要新输入
+            if not continue_from_checkpoint and input_text:
+                step_result = await self._execute_graph_step(conversation_id, input_text, model_service)
+            else:
+                step_result = await self._execute_graph_step(conversation_id, None, model_service)
 
             # 继续执行，直到完成
             while not step_result["is_complete"]:
@@ -369,7 +428,7 @@ class GraphExecutor:
         result = {
             "conversation_id": conversation_id,
             "graph_name": graph_name,
-            "input": input_text,
+            "input": input_text or "",
             "output": final_output,
             "node_results": self.conversation_manager._restructure_results(conversation),
             "completed": True

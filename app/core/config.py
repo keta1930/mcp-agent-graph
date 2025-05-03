@@ -54,10 +54,16 @@ class Settings:
         """获取MCP配置文件路径"""
         return self.MAG_DIR / "mcp.json"
 
+    @property
+    def CONVERSATION_DIR(self) -> Path:
+        """获取会话存储目录"""
+        return self.MAG_DIR / "conversation"
+
     def ensure_directories(self) -> None:
         """确保所有必要的目录存在"""
         self.MAG_DIR.mkdir(exist_ok=True)
         self.AGENT_DIR.mkdir(exist_ok=True)
+        self.CONVERSATION_DIR.mkdir(exist_ok=True)
 
     def get_agent_path(self, agent_name: str) -> Path:
         """获取指定Agent的配置文件路径"""

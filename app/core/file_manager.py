@@ -130,3 +130,113 @@ class FileManager:
         except Exception as e:
             logger.error(f"Error renaming agent {old_name} to {new_name}: {str(e)}")
             return False
+
+    # ===== 会话文件管理 =====
+
+    @staticmethod
+    def get_conversation_md_path(conversation_id: str) -> Path:
+        """获取会话Markdown文件路径"""
+        return settings.CONVERSATION_DIR / f"{conversation_id}.md"
+
+    @staticmethod
+    def get_conversation_json_path(conversation_id: str) -> Path:
+        """获取会话JSON文件路径"""
+        return settings.CONVERSATION_DIR / f"{conversation_id}.json"
+
+    @staticmethod
+    def save_conversation(conversation_id: str, graph_name: str,
+                          start_time: str, md_content: str, json_content: Dict[str, Any]) -> bool:
+        """保存会话内容到Markdown和JSON文件"""
+        try:
+            # 保存Markdown文件
+            md_path = FileManager.get_conversation_md_path(conversation_id)
+            with open(md_path, 'w', encoding='utf-8') as f:
+                f.write(md_content)
+
+            # 保存JSON文件
+            json_path = FileManager.get_conversation_json_path(conversation_id)
+            FileManager.save_json(json_path, json_content)
+
+            return True
+        except Exception as e:
+            logger.error(f"保存会话 {conversation_id} 时出错: {str(e)}")
+            return False
+
+    @staticmethod
+    def update_conversation(conversation_id: str, md_content: str, json_content: Dict[str, Any]) -> bool:
+        """更新会话内容"""
+        try:
+            # 更新Markdown文件
+            md_path = FileManager.get_conversation_md_path(conversation_id)
+            with open(md_path, 'w', encoding='utf-8') as f:
+                f.write(md_content)
+
+            # 更新JSON文件
+            json_path = FileManager.get_conversation_json_path(conversation_id)
+            FileManager.save_json(json_path, json_content)
+
+            return True
+        except Exception as e:
+            logger.error(f"更新会话 {conversation_id} 时出错: {str(e)}")
+            return False
+
+    @staticmethod
+    def load_conversation_md(conversation_id: str) -> Optional[str]:
+        """加载会话Markdown内容"""
+        try:
+            md_path = FileManager.get_conversation_md_path(conversation_id)
+            if not md_path.exists():
+                return None
+            with open(md_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"加载会话Markdown {conversation_id} 时出错: {str(e)}")
+            return None
+
+    @staticmethod
+    def load_conversation_json(conversation_id: str) -> Optional[Dict[str, Any]]:
+        """加载会话JSON内容"""
+        try:
+            json_path = FileManager.get_conversation_json_path(conversation_id)
+            if not json_path.exists():
+                return None
+            return FileManager.load_json(json_path)
+        except Exception as e:
+            logger.error(f"加载会话JSON {conversation_id} 时出错: {str(e)}")
+            return None
+
+    @staticmethod
+    def delete_conversation(conversation_id: str) -> bool:
+        """删除会话文件"""
+        try:
+            success = True
+
+            # 删除Markdown文件
+            md_path = FileManager.get_conversation_md_path(conversation_id)
+            if md_path.exists():
+                md_path.unlink()
+            else:
+                success = False
+
+            # 删除JSON文件
+            json_path = FileManager.get_conversation_json_path(conversation_id)
+            if json_path.exists():
+                json_path.unlink()
+            else:
+                success = False
+
+            return success
+        except Exception as e:
+            logger.error(f"删除会话 {conversation_id} 时出错: {str(e)}")
+            return False
+
+    @staticmethod
+    def list_conversations() -> List[str]:
+        """列出所有会话"""
+        try:
+            # 使用Markdown文件作为参考
+            md_files = [f.stem for f in settings.CONVERSATION_DIR.glob("*.md")]
+            return md_files
+        except Exception as e:
+            logger.error(f"列出会话时出错: {str(e)}")
+            return []

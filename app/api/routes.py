@@ -9,6 +9,7 @@ from urllib.parse import unquote
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
+from app.core.file_manager import FileManager
 from app.models.schema import (
     MCPConfig, ModelConfig, GraphConfig, GraphInput,
     GraphResult, NodeResult, ModelConfigList
@@ -437,6 +438,95 @@ async def delete_conversation(conversation_id: str):
             detail=f"删除会话时出错: {str(e)}"
         )
 
+@router.get("/conversations", response_model=List[str])
+async def list_conversations():
+    """列出所有会话"""
+    try:
+        return FileManager.list_conversations()
+    except Exception as e:
+        logger.error(f"列出会话时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"列出会话时出错: {str(e)}"
+        )
+
+
+@router.post("/graphs/continue", response_model=GraphResult)
+async def continue_graph_execution(input_data: GraphInput):
+    """从文件恢复并继续执行会话"""
+    try:
+        conversation_id = input_data.conversation_id
+        if not conversation_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="必须提供会话ID以继续执行"
+            )
+
+        # 检查会话是否存在
+        if not FileManager.load_conversation_json(conversation_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到会话 '{conversation_id}'"
+            )
+
+        # 如果是从断点继续，设置标志位并传递到continue_conversation
+        continue_from_checkpoint = input_data.continue_from_checkpoint or not input_data.input_text
+
+        # 继续执行会话
+        result = await graph_service.continue_conversation(
+            conversation_id,
+            input_data.input_text,
+            input_data.parallel,
+            continue_from_checkpoint
+        )
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"继续执行会话时出错: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"继续执行会话时出错: {str(e)}"
+        )
+
+
+@router.get("/conversations/detail/{conversation_id}", response_model=Dict[str, Any])
+async def get_conversation_detail(conversation_id: str):
+    """获取会话详细信息"""
+    try:
+        # 尝试从内存中获取
+        conversation = graph_service.get_conversation_with_hierarchy(conversation_id)
+        if conversation:
+            return conversation
+
+        # 如果内存中不存在，尝试从文件加载
+        json_data = FileManager.load_conversation_json(conversation_id)
+        if not json_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到会话 '{conversation_id}'"
+            )
+
+        # 返回基本信息
+        return {
+            "conversation_id": conversation_id,
+            "graph_name": json_data.get("graph_name", "未知图"),
+            "start_time": json_data.get("start_time", "未知时间"),
+            "completed": json_data.get("completed", False),
+            "from_file": True
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取会话详情时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取会话详情时出错: {str(e)}"
+        )
+
 @router.get("/conversations/{conversation_id}/hierarchy", response_model=Dict[str, Any])
 async def get_conversation_hierarchy(conversation_id: str):
     """获取会话层次结构"""
@@ -466,6 +556,15 @@ async def shutdown_service(background_tasks: BackgroundTasks):
     try:
         active_conversations = list(graph_service.active_conversations.keys())
         logger.info(f"当前有 {len(active_conversations)} 个活跃会话")
+
+        # 保存所有活跃会话到文件中
+        for conv_id in active_conversations:
+            try:
+                graph_service.conversation_manager.update_conversation_file(conv_id)
+                logger.info(f"已保存会话: {conv_id}")
+            except Exception as e:
+                logger.error(f"保存会话 {conv_id} 时出错: {str(e)}")
+
         background_tasks.add_task(_perform_shutdown)
 
         return {
@@ -479,7 +578,6 @@ async def shutdown_service(background_tasks: BackgroundTasks):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"关闭服务失败: {str(e)}"
         )
-
 
 async def _perform_shutdown():
     """执行实际的关闭操作"""

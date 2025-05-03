@@ -1,6 +1,10 @@
 import logging
 import uuid
+import time
+import copy
 from typing import Dict, List, Any, Optional, Set
+from app.core.file_manager import FileManager
+from app.utils.conversation_template import ConversationTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +17,12 @@ class ConversationManager:
 
     def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """创建新的会话"""
-        conversation_id = str(uuid.uuid4())
+        # 生成有意义的会话ID
+        file_id = ConversationTemplate.generate_conversation_filename(graph_name)
+        conversation_id = file_id
+
+        # 记录开始时间
+        start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
         # 初始化会话状态
         self.active_conversations[conversation_id] = {
@@ -23,38 +32,116 @@ class ConversationManager:
             "pending_nodes": set(),
             "completed_nodes": set(),
             "results": [],
-            "parallel": False
+            "parallel": False,
+            "start_time": start_time,
+            "conversation_id": conversation_id
         }
+
+        # 创建初始模板和JSON
+        initial_md = ConversationTemplate.generate_header(graph_name, conversation_id, "", start_time)
+        initial_md += ConversationTemplate.generate_final_output("")
+
+        # 准备JSON内容 - 去除不可序列化的集合类型
+        json_content = self._prepare_json_content(self.active_conversations[conversation_id])
+
+        # 保存到文件
+        FileManager.save_conversation(conversation_id, graph_name, start_time, initial_md, json_content)
 
         return conversation_id
 
     def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """使用指定配置创建新的会话"""
-        conversation_id = str(uuid.uuid4())
-
-        # 初始化会话状态
-        self.active_conversations[conversation_id] = {
-            "graph_name": graph_name,
-            "graph_config": graph_config,
-            "node_states": {},
-            "pending_nodes": set(),
-            "completed_nodes": set(),
-            "results": [],
-            "parallel": False
-        }
-
-        return conversation_id
+        return self.create_conversation(graph_name, graph_config)
 
     def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取会话状态"""
-        return self.active_conversations.get(conversation_id)
+        # 先查找内存中的活跃会话
+        if conversation_id in self.active_conversations:
+            return self.active_conversations[conversation_id]
+
+        # 如果内存中不存在，尝试从JSON文件加载
+        conversation_json = FileManager.load_conversation_json(conversation_id)
+        if conversation_json:
+            # 从JSON恢复会话状态
+            logger.info(f"从JSON文件恢复会话 {conversation_id}")
+            conversation = self._restore_conversation_from_json(conversation_json)
+            if conversation:
+                # 加入活跃会话
+                self.active_conversations[conversation_id] = conversation
+                return conversation
+            else:
+                logger.error(f"无法从JSON恢复会话 {conversation_id}")
+
+        return None
+
+    def _restore_conversation_from_json(self, json_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """从JSON数据恢复会话状态"""
+        try:
+            # 重建会话对象
+            conversation = copy.deepcopy(json_data)
+
+            # 恢复集合类型
+            if "pending_nodes_list" in conversation:
+                conversation["pending_nodes"] = set(conversation.pop("pending_nodes_list", []))
+            else:
+                conversation["pending_nodes"] = set()
+
+            if "completed_nodes_list" in conversation:
+                conversation["completed_nodes"] = set(conversation.pop("completed_nodes_list", []))
+            else:
+                conversation["completed_nodes"] = set()
+
+            return conversation
+        except Exception as e:
+            logger.error(f"从JSON恢复会话状态时出错: {str(e)}")
+            return None
+
+    def _prepare_json_content(self, conversation: Dict[str, Any]) -> Dict[str, Any]:
+        """准备可序列化的JSON内容"""
+        # 深拷贝以避免修改原始数据
+        json_content = copy.deepcopy(conversation)
+
+        # 将集合转换为列表
+        if "pending_nodes" in json_content:
+            json_content["pending_nodes_list"] = list(json_content.pop("pending_nodes", []))
+
+        if "completed_nodes" in json_content:
+            json_content["completed_nodes_list"] = list(json_content.pop("completed_nodes", []))
+
+        return json_content
 
     def delete_conversation(self, conversation_id: str) -> bool:
         """删除会话"""
+        # 从内存中移除会话
         if conversation_id in self.active_conversations:
             del self.active_conversations[conversation_id]
-            return True
-        return False
+
+        # 删除会话文件
+        return FileManager.delete_conversation(conversation_id)
+
+    def update_conversation_file(self, conversation_id: str) -> bool:
+        """更新会话文件"""
+        if conversation_id not in self.active_conversations:
+            logger.error(f"尝试更新不存在的会话: {conversation_id}")
+            return False
+
+        conversation = self.active_conversations[conversation_id]
+
+        try:
+            # 准备层次结构的会话数据
+            conversation_with_hierarchy = self.get_conversation_with_hierarchy(conversation_id)
+
+            # 生成新的Markdown内容
+            md_content = ConversationTemplate.generate_template(conversation_with_hierarchy)
+
+            # 准备JSON内容
+            json_content = self._prepare_json_content(conversation)
+
+            # 保存更新后的内容
+            return FileManager.update_conversation(conversation_id, md_content, json_content)
+        except Exception as e:
+            logger.error(f"更新会话文件 {conversation_id} 时出错: {str(e)}")
+            return False
 
     def _restructure_results(self, conversation: Dict[str, Any]) -> List[Dict[str, Any]]:
         """将扁平化的执行结果重组为层次化结构，便于展示"""
@@ -246,7 +333,8 @@ class ConversationManager:
             "input": next((r["input"] for r in conversation.get("results", []) if r.get("is_start_input", False)), ""),
             "output": self._get_final_output(conversation),
             "completed": self._is_graph_complete(conversation),
-            "node_results": self._restructure_results(conversation)
+            "node_results": self._restructure_results(conversation),
+            "start_time": conversation.get("start_time", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         }
 
         return result
