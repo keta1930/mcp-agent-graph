@@ -84,7 +84,7 @@ class MCPServer:
                     server_params = StdioServerParameters(
                         command=command,
                         args=args,
-                        env=os.environ.copy()  # 使用当前环境变量，这是关键差异
+                        env=os.environ.copy()
                     )
 
                     # 使用try-except捕获特定错误

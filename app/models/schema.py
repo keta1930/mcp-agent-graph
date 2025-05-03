@@ -10,7 +10,6 @@ class MCPServerConfig(BaseModel):
     command: Optional[str] = None
     args: List[str] = Field(default_factory=list, description="服务器启动参数")
     transportType: str = Field(default="stdio", description="传输类型")
-    base_url: Optional[str] = None
 
     class Config:
         extra = "allow"

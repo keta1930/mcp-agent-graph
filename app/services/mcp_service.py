@@ -348,14 +348,6 @@ class MCPService:
                 return {"status": "error", "error": "MCP Client未启动"}
 
             session = await self._get_session()
-            print("\nsessino.post:\n",f"{self.client_url}/execute_node",{
-                    "model": model_name,
-                    "api_key": api_key,
-                    "base_url": base_url,
-                    "messages": messages,
-                    "mcp_servers": mcp_servers,
-                    "output_enabled": output_enabled
-                })
             async with session.post(
                 f"{self.client_url}/execute_node",
                 json={
@@ -367,7 +359,6 @@ class MCPService:
                     "output_enabled": output_enabled
                 }
             ) as response:
-
                 if response.status == 200:
                     print("\nsessino.response:\n", response)
                     return await response.json()
