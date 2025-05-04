@@ -49,22 +49,64 @@ class GraphExecutor:
 
     def _create_agent_messages(self,
                                node: Dict[str, Any],
-                               input_text: str) -> List[Dict[str, str]]:
-        """创建Agent的消息列表"""
+                               input_text: str,
+                               node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
+        """创建Agent的消息列表，支持在提示词中使用{node_name}格式的占位符
+
+        Args:
+            node: 节点配置
+            input_text: 传统输入文本（所有输入节点合并的内容）
+            node_outputs: 输入节点名称到输出内容的映射
+        """
         messages = []
 
-        # 创建系统提示词
+        # 如果没有提供节点输出映射，则使用空字典
+        if node_outputs is None:
+            node_outputs = {}
+
+        # 跟踪已使用的输入节点
+        used_input_nodes = set()
+
+        # 处理系统提示词
         system_prompt = node.get("system_prompt", "")
         if system_prompt:
+            # 查找并替换占位符
+            for node_name, output in node_outputs.items():
+                placeholder = "{" + node_name + "}"
+                if placeholder in system_prompt:
+                    system_prompt = system_prompt.replace(placeholder, output)
+                    used_input_nodes.add(node_name)
+
             messages.append({"role": "system", "content": system_prompt})
 
-        # 添加用户提示词（如果有）
+        # 处理用户提示词
         user_prompt = node.get("user_prompt", "")
         if user_prompt:
-            user_prompt = user_prompt + input_text
+            # 查找并替换占位符
+            for node_name, output in node_outputs.items():
+                placeholder = "{" + node_name + "}"
+                if placeholder in user_prompt:
+                    user_prompt = user_prompt.replace(placeholder, output)
+                    used_input_nodes.add(node_name)
+
+            # 收集未使用的输入内容
+            unused_inputs = []
+            for node_name, output in node_outputs.items():
+                if node_name not in used_input_nodes and output.strip():
+                    unused_inputs.append(output)
+
+            # 如果存在未使用的输入内容，附加到用户提示词末尾
+            if unused_inputs and (user_prompt.strip() or not used_input_nodes):
+                # 确保有分隔符
+                if user_prompt and not user_prompt.endswith("\n"):
+                    user_prompt += "\n\n"
+                user_prompt += "\n\n".join(unused_inputs)
+
             messages.append({"role": "user", "content": user_prompt})
         else:
+            # 如果没有设置用户提示词，直接使用input_text
             messages.append({"role": "user", "content": input_text})
+
         return messages
 
     async def _execute_node(self,
@@ -78,8 +120,28 @@ class GraphExecutor:
             if not conversation:
                 raise ValueError(f"找不到会话 '{conversation_id}'")
 
+            # 准备输入节点的输出映射
+            node_outputs = {}
+
+            # 处理所有输入节点
+            for input_node_name in node.get("input_nodes", []):
+                if input_node_name == "start":
+                    # 查找用户输入
+                    for result in conversation["results"]:
+                        if result.get("is_start_input", False):
+                            node_outputs["start"] = result["input"]
+                            break
+                else:
+                    # 查找节点输出
+                    if input_node_name in conversation["node_states"]:
+                        node_state = conversation["node_states"][input_node_name]
+                        if "result" in node_state:
+                            # 使用节点的原始名称作为键
+                            original_name = node_state["result"].get("_original_name", input_node_name)
+                            node_outputs[input_node_name] = node_state["result"]["output"]
+
             # 创建消息
-            messages = self._create_agent_messages(node, input_text)
+            messages = self._create_agent_messages(node, input_text, node_outputs)
 
             # 从节点获取模型信息
             model_name = node["model_name"]
