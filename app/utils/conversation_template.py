@@ -24,10 +24,12 @@ class ConversationTemplate:
 **开始时间**: {start_time}
 **会话ID**: {conversation_id}
 
-## 输入
+<summary><b>📝 用户输入</b></summary>
+
 ```
 {input_text}
 ```
+
 
 ## 执行进度
 """
@@ -41,11 +43,11 @@ class ConversationTemplate:
 
         # 处理工具调用
         tool_calls_content = ""
-        tool_calls = node.get("tool_calls", [])
+        tool_calls = node.get("tool_results", [])
         tool_results = node.get("tool_results", [])
 
         if tool_calls or tool_results:
-            tool_calls_content = "\n**工具调用**:\n"
+            tool_calls_content = "\n\n<summary><b>🔧 工具调用</b></summary>\n\n"
             for i, tool in enumerate(tool_calls):
                 tool_name = tool.get("tool_name", "未知工具")
                 tool_calls_content += f"- **{tool_name}**\n"
@@ -62,24 +64,32 @@ class ConversationTemplate:
         # 处理子图
         subgraph_content = ""
         if node.get("is_subgraph", False):
-            subgraph_content = "\n**子图**: " + node.get("subgraph_name", "未知子图") + "\n"
+            subgraph_content = f"\n<details>\n<summary><b>📊 子图: {node.get('subgraph_name', '未知子图')}</b></summary>\n\n"
             subgraph_results = node.get("subgraph_results", [])
             for sub_node in subgraph_results:
                 subgraph_content += ConversationTemplate.generate_node_section(sub_node)
 
-        return f"""
-### 节点: {node_name}
-**输入**:
-```
-{node_input}
-```
+            subgraph_content += "</details>\n"
 
-**输出**:
-```
+        return f"""
+<details>
+<summary><b>🔄 节点: {node_name}</b></summary>
+
+
+<summary><b> 输入</b></summary>
+
+{node_input}
+
+
+
+<summary><b> 输出</b></summary>
+
 {node_output}
-```
+
+
 {tool_calls_content}
 {subgraph_content}
+</details>
 """
 
     @staticmethod
@@ -87,9 +97,12 @@ class ConversationTemplate:
         """生成最终输出部分"""
         return f"""
 ## 最终输出
-```
+
+<details open>
+<summary><b>📊 执行结果</b></summary>
+
 {output}
-```
+</details>
 """
 
     @staticmethod

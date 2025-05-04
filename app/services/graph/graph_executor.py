@@ -444,7 +444,7 @@ class GraphExecutor:
 
         graph_config = conversation["graph_config"]
 
-        # 记录用户输入
+        # 记录用户输入，只有当不是断点续传时才添加
         if input_text is not None:
             conversation["results"].append({
                 "is_start_input": True,
@@ -454,6 +454,13 @@ class GraphExecutor:
                 "tool_calls": [],
                 "tool_results": []
             })
+
+        # 检查是否是第一次执行（无已完成节点且无待处理节点）
+        if not conversation["completed_nodes"] and not conversation["pending_nodes"]:
+            # 找到起始节点
+            start_nodes = self._find_start_nodes(graph_config)
+            conversation["pending_nodes"] = set(node["name"] for node in start_nodes)
+            logger.info(f"首次执行，起始节点: {conversation['pending_nodes']}")
 
         # 获取图中的最大层级
         max_level = 0
@@ -465,27 +472,58 @@ class GraphExecutor:
         for current_level in range(max_level + 1):
             logger.info(f"开始执行层级 {current_level} 的节点")
 
-            # 找出当前层级的所有可执行节点
+            # 找出当前层级的可执行节点（在pending_nodes中且所有依赖已完成）
             executable_nodes = []
             for node in graph_config.get("nodes", []):
-                if node.get("level", 0) == current_level:
-                    # 检查节点是否可执行（所有依赖都已完成）
-                    can_execute = True
+                # 只考虑当前层级的节点
+                if node.get("level", 0) != current_level:
+                    continue
 
-                    for input_node_name in node.get("input_nodes", []):
-                        if input_node_name != "start" and input_node_name not in conversation["completed_nodes"]:
-                            can_execute = False
-                            break
+                # 只处理pending_nodes中的节点
+                if node["name"] not in conversation["pending_nodes"]:
+                    continue
 
-                    if can_execute:
-                        executable_nodes.append(node)
+                # 检查节点是否可执行（所有依赖都已完成）
+                can_execute = True
+                for input_node_name in node.get("input_nodes", []):
+                    if input_node_name != "start" and input_node_name not in conversation["completed_nodes"]:
+                        can_execute = False
+                        logger.info(f"节点 '{node['name']}' 依赖节点 '{input_node_name}' 未完成，无法执行")
+                        break
+
+                if can_execute:
+                    logger.info(f"添加待执行节点: {node['name']}")
+                    executable_nodes.append(node)
+
+            # 如果没有可执行节点，跳到下一层级
+            if not executable_nodes:
+                logger.info(f"层级 {current_level} 没有可执行节点")
+                continue
 
             # 并行执行当前层级的节点
             tasks = []
             for node in executable_nodes:
+                # 获取节点输入（这里保证了正确的上下文传递）
                 node_input = self._get_node_input(node, conversation)
+                logger.info(f"执行节点 '{node['name']}', 输入长度: {len(node_input)}")
                 tasks.append(self._execute_node(node, node_input, conversation_id, model_service))
 
             # 等待所有任务完成
             if tasks:
                 await asyncio.gather(*tasks)
+
+            # 从 pending_nodes 中移除已执行的节点
+            for node in executable_nodes:
+                if node["name"] in conversation["pending_nodes"]:
+                    conversation["pending_nodes"].remove(node["name"])
+                    logger.info(f"节点 '{node['name']}' 执行完成，从待处理列表中移除")
+
+            # 如果没有更多待处理节点，计算下一批
+            if not conversation["pending_nodes"]:
+                next_pending_nodes = self.conversation_manager._get_next_pending_nodes(conversation)
+                if next_pending_nodes:
+                    conversation["pending_nodes"] = next_pending_nodes
+                    logger.info(f"当前批次执行完毕，新增待处理节点: {next_pending_nodes}")
+                else:
+                    logger.info("没有更多待处理节点，执行完成")
+                    break

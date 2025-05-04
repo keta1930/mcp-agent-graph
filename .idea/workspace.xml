@@ -5,17 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="612d43e6-dea4-40fd-9f46-1a3eec5d0069" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/app/services/graph/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/utils/conversation_template.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/core/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/core/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/core/file_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/core/file_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/schema.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph/conversation_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/graph/conversation_manager.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/services/graph/graph_executor.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/graph/graph_executor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/graph_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/mcp_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/mcp_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/conversation_template.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/utils/conversation_template.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +21,17 @@
       <list>
         <option value="Python Script" />
       </list>
+    </option>
+  </component>
+  <component name="FlaskConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass">
+    <envs>
+      <env key="FLASK_APP" value="app" />
+    </envs>
+    <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass" />
+    <option name="myEnvs">
+      <map>
+        <entry key="FLASK_APP" value="app" />
+      </map>
     </option>
   </component>
   <component name="Git.Settings">
@@ -84,7 +89,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1746267303598</updated>
-      <workItem from="1746267303598" duration="13449000" />
+      <workItem from="1746267303598" duration="25527000" />
     </task>
     <servers />
   </component>
@@ -92,6 +97,6 @@
     <option name="version" value="3" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$main.coverage" NAME="main 覆盖结果" MODIFIED="1746283060790" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$main.coverage" NAME="main 覆盖结果" MODIFIED="1746328512641" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
