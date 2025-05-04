@@ -4,7 +4,7 @@ import time
 import copy
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
-from app.utils.conversation_template import ConversationTemplate
+from app.utils.conversation_template import ConversationTemplate,HTMLConversationTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +41,50 @@ class ConversationManager:
         initial_md = ConversationTemplate.generate_header(graph_name, conversation_id, "", start_time)
         initial_md += ConversationTemplate.generate_final_output("")
 
+        # 创建初始HTML
+        initial_html = HTMLConversationTemplate.generate_html_template({
+            "conversation_id": conversation_id,
+            "graph_name": graph_name,
+            "start_time": start_time,
+            "input": "",
+            "output": "",
+            "node_results": []
+        })
+
         # 准备JSON内容 - 去除不可序列化的集合类型
         json_content = self._prepare_json_content(self.active_conversations[conversation_id])
 
         # 保存到文件
-        FileManager.save_conversation(conversation_id, graph_name, start_time, initial_md, json_content)
+        FileManager.save_conversation(conversation_id, graph_name, start_time, initial_md, json_content, initial_html)
 
         return conversation_id
+
+    def update_conversation_file(self, conversation_id: str) -> bool:
+        """更新会话文件"""
+        if conversation_id not in self.active_conversations:
+            logger.error(f"尝试更新不存在的会话: {conversation_id}")
+            return False
+
+        conversation = self.active_conversations[conversation_id]
+
+        try:
+            # 准备层次结构的会话数据
+            conversation_with_hierarchy = self.get_conversation_with_hierarchy(conversation_id)
+
+            # 生成新的Markdown内容
+            md_content = ConversationTemplate.generate_template(conversation_with_hierarchy)
+
+            # 生成新的HTML内容
+            html_content = HTMLConversationTemplate.generate_html_template(conversation_with_hierarchy)
+
+            # 准备JSON内容
+            json_content = self._prepare_json_content(conversation)
+
+            # 保存更新后的内容
+            return FileManager.update_conversation(conversation_id, md_content, json_content, html_content)
+        except Exception as e:
+            logger.error(f"更新会话文件 {conversation_id} 时出错: {str(e)}")
+            return False
 
     def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """使用指定配置创建新的会话"""
@@ -118,30 +155,6 @@ class ConversationManager:
 
         # 删除会话文件
         return FileManager.delete_conversation(conversation_id)
-
-    def update_conversation_file(self, conversation_id: str) -> bool:
-        """更新会话文件"""
-        if conversation_id not in self.active_conversations:
-            logger.error(f"尝试更新不存在的会话: {conversation_id}")
-            return False
-
-        conversation = self.active_conversations[conversation_id]
-
-        try:
-            # 准备层次结构的会话数据
-            conversation_with_hierarchy = self.get_conversation_with_hierarchy(conversation_id)
-
-            # 生成新的Markdown内容
-            md_content = ConversationTemplate.generate_template(conversation_with_hierarchy)
-
-            # 准备JSON内容
-            json_content = self._prepare_json_content(conversation)
-
-            # 保存更新后的内容
-            return FileManager.update_conversation(conversation_id, md_content, json_content)
-        except Exception as e:
-            logger.error(f"更新会话文件 {conversation_id} 时出错: {str(e)}")
-            return False
 
     def _restructure_results(self, conversation: Dict[str, Any]) -> List[Dict[str, Any]]:
         """将扁平化的执行结果重组为层次化结构，便于展示"""
