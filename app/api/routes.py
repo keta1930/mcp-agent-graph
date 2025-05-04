@@ -492,41 +492,6 @@ async def continue_graph_execution(input_data: GraphInput):
             detail=f"继续执行会话时出错: {str(e)}"
         )
 
-
-@router.get("/conversations/detail/{conversation_id}", response_model=Dict[str, Any])
-async def get_conversation_detail(conversation_id: str):
-    """获取会话详细信息"""
-    try:
-        # 尝试从内存中获取
-        conversation = graph_service.get_conversation_with_hierarchy(conversation_id)
-        if conversation:
-            return conversation
-
-        # 如果内存中不存在，尝试从文件加载
-        json_data = FileManager.load_conversation_json(conversation_id)
-        if not json_data:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到会话 '{conversation_id}'"
-            )
-
-        # 返回基本信息
-        return {
-            "conversation_id": conversation_id,
-            "graph_name": json_data.get("graph_name", "未知图"),
-            "start_time": json_data.get("start_time", "未知时间"),
-            "completed": json_data.get("completed", False),
-            "from_file": True
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取会话详情时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取会话详情时出错: {str(e)}"
-        )
-
 @router.get("/conversations/{conversation_id}/hierarchy", response_model=Dict[str, Any])
 async def get_conversation_hierarchy(conversation_id: str):
     """获取会话层次结构"""

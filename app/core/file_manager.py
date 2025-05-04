@@ -44,6 +44,8 @@ class FileManager:
     def save_json(file_path: Path, data: Dict[str, Any]) -> bool:
         """保存JSON配置到文件"""
         try:
+            # 确保目录存在
+            file_path.parent.mkdir(parents=True, exist_ok=True)
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             return True
@@ -134,19 +136,24 @@ class FileManager:
     # ===== 会话文件管理 =====
 
     @staticmethod
+    def get_conversation_dir(conversation_id: str) -> Path:
+        """获取会话目录路径"""
+        return settings.CONVERSATION_DIR / conversation_id
+
+    @staticmethod
     def get_conversation_md_path(conversation_id: str) -> Path:
         """获取会话Markdown文件路径"""
-        return settings.CONVERSATION_DIR / f"{conversation_id}.md"
+        return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.md"
 
     @staticmethod
     def get_conversation_json_path(conversation_id: str) -> Path:
         """获取会话JSON文件路径"""
-        return settings.CONVERSATION_DIR / f"{conversation_id}.json"
+        return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.json"
 
     @staticmethod
     def get_conversation_html_path(conversation_id: str) -> Path:
         """获取会话HTML文件路径"""
-        return settings.CONVERSATION_DIR / f"{conversation_id}.html"
+        return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.html"
 
     @staticmethod
     def save_conversation(conversation_id: str, graph_name: str,
@@ -154,6 +161,10 @@ class FileManager:
                           html_content: str = None) -> bool:
         """保存会话内容到Markdown、JSON和HTML文件"""
         try:
+            # 创建会话目录
+            conversation_dir = FileManager.get_conversation_dir(conversation_id)
+            conversation_dir.mkdir(parents=True, exist_ok=True)
+
             # 保存Markdown文件
             md_path = FileManager.get_conversation_md_path(conversation_id)
             with open(md_path, 'w', encoding='utf-8') as f:
@@ -179,6 +190,10 @@ class FileManager:
                             html_content: str = None) -> bool:
         """更新会话内容"""
         try:
+            # 确保会话目录存在
+            conversation_dir = FileManager.get_conversation_dir(conversation_id)
+            conversation_dir.mkdir(parents=True, exist_ok=True)
+
             # 更新Markdown文件
             md_path = FileManager.get_conversation_md_path(conversation_id)
             with open(md_path, 'w', encoding='utf-8') as f:
@@ -204,30 +219,32 @@ class FileManager:
         """删除会话文件"""
         try:
             success = True
+            conversation_dir = FileManager.get_conversation_dir(conversation_id)
 
-            # 删除Markdown文件
-            md_path = FileManager.get_conversation_md_path(conversation_id)
-            if md_path.exists():
-                md_path.unlink()
-            else:
+            # 检查会话目录是否存在
+            if not conversation_dir.exists():
+                return False
+
+            # 删除目录中的所有文件
+            for file_path in conversation_dir.glob("*"):
+                try:
+                    file_path.unlink()
+                except Exception as e:
+                    logger.error(f"删除文件 {file_path} 时出错: {str(e)}")
+                    success = False
+
+            # 删除会话目录
+            try:
+                conversation_dir.rmdir()
+            except Exception as e:
+                logger.error(f"删除会话目录 {conversation_dir} 时出错: {str(e)}")
                 success = False
-
-            # 删除JSON文件
-            json_path = FileManager.get_conversation_json_path(conversation_id)
-            if json_path.exists():
-                json_path.unlink()
-            else:
-                success = False
-
-            # 删除HTML文件
-            html_path = FileManager.get_conversation_html_path(conversation_id)
-            if html_path.exists():
-                html_path.unlink()
 
             return success
         except Exception as e:
             logger.error(f"删除会话 {conversation_id} 时出错: {str(e)}")
             return False
+
     @staticmethod
     def load_conversation_md(conversation_id: str) -> Optional[str]:
         """加载会话Markdown内容"""
@@ -253,14 +270,14 @@ class FileManager:
             logger.error(f"加载会话JSON {conversation_id} 时出错: {str(e)}")
             return None
 
-
     @staticmethod
     def list_conversations() -> List[str]:
         """列出所有会话"""
         try:
-            # 使用Markdown文件作为参考
-            md_files = [f.stem for f in settings.CONVERSATION_DIR.glob("*.md")]
-            return md_files
+            # 列出会话目录中的所有子目录
+            conversation_dirs = [d.name for d in settings.CONVERSATION_DIR.iterdir()
+                                 if d.is_dir() and (d / f"{d.name}.md").exists()]
+            return conversation_dirs
         except Exception as e:
             logger.error(f"列出会话时出错: {str(e)}")
             return []
