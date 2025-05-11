@@ -11,9 +11,6 @@ class GraphProcessor:
     def __init__(self, get_graph_func):
         """
         初始化图处理器
-
-        Args:
-            get_graph_func: 用于获取图配置的函数
         """
         self.get_graph = get_graph_func
 
@@ -149,7 +146,7 @@ class GraphProcessor:
         return flattened_config
 
     def _calculate_node_levels(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
-        """重新设计的层级计算算法，正确处理所有依赖关系"""
+        """重新设计的层级计算算法，正确处理所有依赖关系，包括handoffs引起的循环"""
         try:
             graph_copy = copy.deepcopy(graph_config)
             nodes = graph_copy.get("nodes", [])
@@ -175,13 +172,23 @@ class GraphProcessor:
                         print(f"节点 {node_name} 依赖输入节点 {input_name}")
 
             # 处理输出依赖：如果A的output_nodes包含B，则B依赖A
+            # 但忽略handoffs节点产生的循环依赖
             for node in nodes:
                 node_name = node["name"]
+                handoffs = node.get("handoffs")
 
-                for output_name in node.get("output_nodes", []):
-                    if output_name != "end" and output_name in node_map:
-                        depends_on[output_name].add(node_name)
-                        print(f"节点 {output_name} 依赖输出源 {node_name}")
+                # 如果节点有handoffs参数，不建立从output_nodes到该节点的依赖
+                # 这样可以避免handoffs引起的循环依赖影响层级计算
+                if handoffs is None:
+                    for output_name in node.get("output_nodes", []):
+                        if output_name != "end" and output_name in node_map:
+                            # 检查目标节点是否有指向当前节点的依赖（循环依赖）
+                            target_node = node_map[output_name]
+                            if node_name not in target_node.get("output_nodes", []):
+                                depends_on[output_name].add(node_name)
+                                print(f"节点 {output_name} 依赖输出源 {node_name}")
+                else:
+                    print(f"节点 {node_name} 有handoffs参数 ({handoffs})，忽略其输出节点依赖以避免循环")
 
             # 找出起始节点（直接连接到start且没有其他依赖，或者没有任何依赖的节点）
             start_nodes = []
@@ -298,9 +305,16 @@ class GraphProcessor:
                         levels[node_name] = max(0, min_dependent_level - 1)
                         print(f"  基于被依赖设置循环节点 {node_name} 的层级为 {levels[node_name]}")
                     else:
-                        # 如果都未知，设为1
-                        levels[node_name] = 1
-                        print(f"  无法确定依赖关系，设置节点 {node_name} 的层级为1")
+                        # 如果都未知，检查节点是否有handoffs参数
+                        node = node_map[node_name]
+                        if node.get("handoffs") is not None:
+                            # handoffs节点尽量放在较低层级，让它的输出节点先执行
+                            levels[node_name] = 1
+                            print(f"  节点 {node_name} 有handoffs参数，设置层级为1")
+                        else:
+                            # 其他情况设为1
+                            levels[node_name] = 1
+                            print(f"  无法确定依赖关系，设置节点 {node_name} 的层级为1")
 
             # 更新节点层级
             for node in nodes:

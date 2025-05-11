@@ -42,7 +42,6 @@ class ModelConfigList(BaseModel):
     """模型配置列表"""
     models: List[ModelConfig] = Field(default_factory=list)
 
-
 class AgentNode(BaseModel):
     """Agent节点配置"""
     name: str = Field(..., description="节点名称")
@@ -59,6 +58,12 @@ class AgentNode(BaseModel):
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
     position: Optional[Dict[str, float]] = Field(default=None, description="节点在画布中的位置")
     level: Optional[int] = Field(default=None, description="节点在图中的层级，用于确定执行顺序")
+    handoffs: Optional[int] = Field(default=None, description="节点可以执行的选择次数，用于支持循环流程")
+    description: Optional[str] = Field(default="", description="节点描述，用于工具选择提示")
+    global_output: bool = Field(default=False, description="是否全局管理此节点的输出")
+    context: List[str] = Field(default_factory=list, description="需要引用的全局管理节点列表")
+    context_mode: str = Field(default="all", description="全局内容获取模式，可选值：all, latest, latest_n")
+    context_n: int = Field(default=1, description="获取最新的n次输出，当context_mode为latest_n时有效")
 
     @validator('name')
     def name_must_be_valid(cls, v):

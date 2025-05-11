@@ -195,44 +195,60 @@ class ModelService:
     async def call_model(self,
                          model_name: str,
                          messages: List[Dict[str, Any]],
-                         stream: bool = False) -> Union[str, Dict[str, Any]]:
-        """调用模型API"""
+                         tools: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """调用模型API，支持handoffs工具调用"""
         client = self.clients.get(model_name)
         if not client:
-            raise ValueError(f"模型 '{model_name}' 未配置或初始化失败")
+            return {"status": "error", "error": f"模型 '{model_name}' 未配置或初始化失败"}
 
         model_config = self.get_model(model_name)
         if not model_config:
-            raise ValueError(f"找不到模型 '{model_name}' 的配置")
+            return {"status": "error", "error": f"找不到模型 '{model_name}' 的配置"}
 
         try:
-            if stream:
-                response_stream = client.chat.completions.create(
-                    model=model_config["model"],
-                    messages=messages,
-                    stream=True
-                )
+            # 准备调用参数
+            params = {
+                "model": model_config["model"],
+                "messages": messages
+            }
 
-                result = ""
-                for chunk in response_stream:
-                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                        result += chunk.choices[0].delta.content
+            # 如果提供了工具，添加到参数中
+            if tools:
+                params["tools"] = tools
 
-                return result
-            else:
-                response = client.chat.completions.create(
-                    model=model_config["model"],
-                    messages=messages
-                )
+            # 调用模型API
+            response = client.chat.completions.create(**params)
 
-                if response.choices and response.choices[0].message.content:
-                    return response.choices[0].message.content
-                return ""
+            # 处理工具调用
+            tool_calls = []
+            if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
+                for tool_call in response.choices[0].message.tool_calls:
+                    try:
+                        tool_args = json.loads(tool_call.function.arguments)
+                    except json.JSONDecodeError:
+                        logger.error(f"工具参数JSON无效: {tool_call.function.arguments}")
+                        tool_args = {}
+
+                    tool_name = tool_call.function.name
+
+                    # 处理handoffs工具
+                    if tool_name.startswith("transfer_to_"):
+                        selected_node = tool_name[len("transfer_to_"):]
+                        tool_calls.append({
+                            "tool_name": tool_name,
+                            "content": f"选择了节点: {selected_node}",
+                            "selected_node": selected_node
+                        })
+
+            return {
+                "status": "success",
+                "content": response.choices[0].message.content or "",
+                "tool_calls": tool_calls
+            }
 
         except Exception as e:
             logger.error(f"调用模型 '{model_name}' 时出错: {str(e)}")
-            raise
-
+            return {"status": "error", "error": str(e)}
 
 # 创建全局模型服务实例
 model_service = ModelService()
