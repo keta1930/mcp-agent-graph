@@ -4,7 +4,7 @@ import time
 import copy
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
-from app.utils.conversation_template import ConversationTemplate,HTMLConversationTemplate
+from app.utils.conversation_template import ConversationTemplate, HTMLConversationTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -24,19 +24,17 @@ class ConversationManager:
         # 记录开始时间
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-        # 初始化会话状态
+        # 初始化会话状态 - 不再使用pending_nodes和current_path
         self.active_conversations[conversation_id] = {
             "graph_name": graph_name,
             "graph_config": graph_config,
             "node_states": {},
-            "pending_nodes": set(),
-            "completed_nodes": set(),
             "results": [],
             "parallel": False,
             "start_time": start_time,
             "conversation_id": conversation_id,
-            "handoffs_counters": {},  # 添加handoffs计数器
-            "global_outputs": {}  # 添加全局输出存储
+            "handoffs_counters": {},  # handoffs计数器
+            "global_outputs": {}  # 全局输出存储
         }
 
         # 创建初始模板和JSON
@@ -53,7 +51,7 @@ class ConversationManager:
             "node_results": []
         })
 
-        # 准备JSON内容 - 去除不可序列化的集合类型
+        # 准备JSON内容
         json_content = self._prepare_json_content(self.active_conversations[conversation_id])
 
         # 保存到文件
@@ -156,17 +154,6 @@ class ConversationManager:
             # 重建会话对象
             conversation = copy.deepcopy(json_data)
 
-            # 恢复集合类型
-            if "pending_nodes_list" in conversation:
-                conversation["pending_nodes"] = set(conversation.pop("pending_nodes_list", []))
-            else:
-                conversation["pending_nodes"] = set()
-
-            if "completed_nodes_list" in conversation:
-                conversation["completed_nodes"] = set(conversation.pop("completed_nodes_list", []))
-            else:
-                conversation["completed_nodes"] = set()
-
             # 确保handoffs_counters存在
             if "handoffs_counters" not in conversation:
                 conversation["handoffs_counters"] = {}
@@ -184,13 +171,6 @@ class ConversationManager:
         """准备可序列化的JSON内容"""
         # 深拷贝以避免修改原始数据
         json_content = copy.deepcopy(conversation)
-
-        # 将集合转换为列表
-        if "pending_nodes" in json_content:
-            json_content["pending_nodes_list"] = list(json_content.pop("pending_nodes", []))
-
-        if "completed_nodes" in json_content:
-            json_content["completed_nodes_list"] = list(json_content.pop("completed_nodes", []))
 
         # 确保handoffs_counters存在
         if "handoffs_counters" not in json_content:
@@ -359,44 +339,53 @@ class ConversationManager:
         return "\n\n".join(outputs)
 
     def _get_final_output(self, conversation: Dict[str, Any]) -> str:
-        """获取图的最终输出 - 支持真正的循环执行"""
+        """获取图的最终输出 - 基于层级的简化方法"""
         graph_config = conversation["graph_config"]
-        current_path = conversation.get("current_path", [])
+        results = conversation.get("results", [])
 
-        # 如果没有执行路径，返回空
-        if not current_path:
+        # 如果没有结果，返回空
+        if not results:
             return ""
 
-        # 找出当前路径上的最后一个节点
-        last_node_name = current_path[-1]
-
-        # 1. 如果最后一个节点是终止节点，使用它的输出
-        for node in graph_config["nodes"]:
-            if node["name"] == last_node_name:
-                if node.get("is_end", False) or "end" in node.get("output_nodes", []):
-                    # 查找其结果
-                    for result in reversed(conversation["results"]):
-                        if result.get("node_name") == last_node_name:
-                            return result["output"]
-
-        # 2. 如果找不到明确的终止节点输出，使用所有标记为终止节点的输出
-        end_outputs = []
+        # 找出所有的终止节点
+        end_nodes = []
         for node in graph_config["nodes"]:
             if node.get("is_end", False) or "end" in node.get("output_nodes", []):
-                node_name = node["name"]
-                for result in conversation["results"]:
-                    if result.get("node_name") == node_name:
-                        end_outputs.append(result["output"])
-
+                end_nodes.append(node["name"])
+        
+        # 收集所有终止节点的输出
+        end_outputs = []
+        for result in results:
+            if not result.get("is_start_input", False) and result.get("node_name") in end_nodes:
+                end_outputs.append(result["output"])
+        
+        # 如果找到了终止节点输出，返回它们的组合
         if end_outputs:
             return "\n\n".join(end_outputs)
-
-        # 3. 如果还找不到，使用最后一个执行的节点的输出
-        for result in reversed(conversation["results"]):
+        
+        # 如果没有找到终止节点输出，使用最后一个执行的节点
+        # 首先按照层级排序所有节点
+        executed_nodes = []
+        for result in results:
+            if not result.get("is_start_input", False):
+                node_name = result.get("node_name")
+                for node in graph_config["nodes"]:
+                    if node["name"] == node_name:
+                        level = node.get("level", 0)
+                        executed_nodes.append((result, level))
+                        break
+        
+        # 找出最高层级的节点
+        if executed_nodes:
+            executed_nodes.sort(key=lambda x: x[1], reverse=True)
+            return executed_nodes[0][0]["output"]
+        
+        # 如果上述都失败，返回最后一个结果
+        for result in reversed(results):
             if not result.get("is_start_input", False):
                 return result["output"]
-
-        # 如果以上都找不到，返回空字符串
+        
+        # 如果没有任何非输入结果，返回空字符串
         return ""
 
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
@@ -411,131 +400,56 @@ class ConversationManager:
             "graph_name": conversation.get("graph_name", ""),
             "input": next((r["input"] for r in conversation.get("results", []) if r.get("is_start_input", False)), ""),
             "output": self._get_final_output(conversation),
-            "completed": self._is_graph_complete(conversation),
+            "completed": self.is_graph_execution_complete(conversation),
             "node_results": self._restructure_results(conversation),
-            "start_time": conversation.get("start_time", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            "start_time": conversation.get("start_time", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+            # 添加以下两个字段以支持新的模板功能
+            "graph_config": conversation.get("graph_config", {}),
+            "results": conversation.get("results", [])
         }
 
         return result
 
-    def _is_graph_complete(self, conversation: Dict[str, Any]) -> bool:
-        """检查图是否已完成执行 - 支持真正的循环执行
-
-        在支持真正循环的情况下，图完成的条件是：
-        1. 没有待处理的节点
-        2. 没有未处理的handoffs选择
-        3. 当前路径上的最后一个节点是终止节点或没有输出节点
-        """
-        # 如果还有待执行节点，肯定未完成
-        if conversation["pending_nodes"]:
+    def is_graph_execution_complete(self, conversation: Dict[str, Any]) -> bool:
+        """检查图是否执行完毕 - 基于层级的简化判断方式"""
+        graph_config = conversation["graph_config"]
+        
+        # 如果没有结果，表示尚未开始执行
+        if not conversation.get("results", []):
             return False
-
-        # 检查是否有未处理的handoffs选择
-        for result in reversed(conversation.get("results", [])):
+        
+        # 查找是否有未处理的handoffs选择
+        for result in conversation.get("results", []):
             if not result.get("is_start_input", False) and result.get("_selected_handoff"):
-                # 有未处理的handoffs选择，图未完成
                 return False
-
-        # 检查当前路径上的最后一个节点
-        current_path = conversation.get("current_path", [])
-        if not current_path:
-            # 如果没有执行路径，则未完成
-            return False
-
-        # 获取最后执行的节点
-        last_node_name = current_path[-1]
-        graph_config = conversation["graph_config"]
-
-        last_node = None
-        for node in graph_config["nodes"]:
-            if node["name"] == last_node_name:
-                last_node = node
-                break
-
-        if not last_node:
-            # 找不到最后节点，异常情况
-            logger.error(f"无法找到最后执行的节点: {last_node_name}")
-            return True  # 保守返回已完成
-
-        # 判断是否是终止节点
-        if last_node.get("is_end", False):
-            return True
-
-        # 判断输出节点是否只包含"end"
-        output_nodes = last_node.get("output_nodes", [])
-        if "end" in output_nodes and len(output_nodes) == 1:
-            return True
-
-        # 如果没有待处理节点但最后节点不是终止节点，检查是否还有可执行的下一个节点
-        # 基于图结构检查，而不是依赖其他函数
-
-        # 检查是否有节点以当前节点为输入
-        has_next_node = False
-        for node in graph_config["nodes"]:
-            # 如果有节点以最后一个节点为输入，则图还未完成
-            if last_node_name in node.get("input_nodes", []):
-                has_next_node = True
-                break
-
-        # 检查最后节点的输出节点是否存在
-        for output_name in last_node.get("output_nodes", []):
-            if output_name != "end":
-                # 如果有非终止输出，则图还未完成
-                has_next_node = True
-                break
-
-        # 如果没有下一个可执行节点，则认为图已完成
-        return not has_next_node
-
-    def _get_next_pending_nodes(self, conversation: Dict[str, Any]) -> Set[str]:
-        """获取下一批可执行的节点 - 支持真正的循环执行
-
-        该函数与GraphExecutor中的_get_next_nodes功能相似，但是由ConversationManager实现，
-        用于检查图是否已完成以及确定下一批待执行节点。
-        """
-        graph_config = conversation["graph_config"]
-        current_path = conversation.get("current_path", [])
-
-        # 如果已有待执行的节点，直接返回
-        if conversation["pending_nodes"]:
-            return conversation["pending_nodes"]
-
-        # 如果没有当前路径，找起始节点
-        if not current_path:
-            start_nodes = set()
-            for node in graph_config["nodes"]:
-                if node.get("is_start", False) or "start" in node.get("input_nodes", []):
-                    start_nodes.add(node["name"])
-            return start_nodes
-
-        # 获取当前路径上的最后一个节点
-        last_node_name = current_path[-1] if current_path else None
-        if not last_node_name:
-            return set()
-
-        # 找到最后一个节点
-        last_node = None
-        for node in graph_config["nodes"]:
-            if node["name"] == last_node_name:
-                last_node = node
-                break
-
-        if not last_node:
-            logger.error(f"找不到当前路径上的最后一个节点: {last_node_name}")
-            return set()
-
-        # 找出所有以最后一个节点为输入的下一层节点
-        next_nodes = set()
-
-        # 1. 获取最后一个节点的直接输出节点
-        for output_node_name in last_node.get("output_nodes", []):
-            if output_node_name != "end":  # 排除结束标记
-                next_nodes.add(output_node_name)
-
-        # 2. 获取将最后一个节点作为输入的其他节点
-        for node in graph_config["nodes"]:
-            if last_node_name in node.get("input_nodes", []):
-                next_nodes.add(node["name"])
-
-        # 排除终止节点
-        return {node_name for node_name in next_nodes if node_name != "end"}
+        
+        # 获取最高层级
+        max_level = 0
+        for node in graph_config.get("nodes", []):
+            level = node.get("level", 0)
+            max_level = max(max_level, level)
+        
+        # 检查每个层级是否都有至少一个节点已执行
+        executed_nodes = set()
+        for result in conversation.get("results", []):
+            if not result.get("is_start_input", False):
+                executed_nodes.add(result.get("node_name"))
+        
+        # 检查每个层级
+        for level in range(max_level + 1):
+            level_nodes = [node for node in graph_config.get("nodes", []) 
+                          if node.get("level", 0) == level]
+            
+            # 检查此层级是否有节点已执行
+            level_executed = False
+            for node in level_nodes:
+                if node["name"] in executed_nodes:
+                    level_executed = True
+                    break
+            
+            if not level_executed:
+                # 发现未执行的层级
+                return False
+        
+        # 所有层级都至少有一个节点已执行
+        return True

@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../tutorials" vcs="Git" />
   </component>
 </project>

@@ -23,7 +23,6 @@ class GraphService:
     """图执行服务"""
 
     def __init__(self):
-        self.active_conversations: Dict[str, Dict[str, Any]] = {}
         # 初始化子服务
         self.processor = GraphProcessor(self.get_graph)
         self.conversation_manager = ConversationManager()
@@ -139,69 +138,8 @@ class GraphService:
         """删除会话"""
         return self.conversation_manager.delete_conversation(conversation_id)
 
-    def _find_start_nodes(self, graph_config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """查找图中的起始节点"""
-        return self.executor._find_start_nodes(graph_config)
-
-    def _find_next_nodes(self, current_node: Dict[str, Any], graph_config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """查找当前节点的下一个节点"""
-        return self.executor._find_next_nodes(current_node, graph_config)
-
-    def _create_agent_messages(self,
-                               node: Dict[str, Any],
-                               input_text: str
-                               ) -> List[Dict[str, str]]:
-        """创建Agent的消息列表"""
-        return self.executor._create_agent_messages(node, input_text)
-
-    async def _execute_node(self,
-                            node: Dict[str, Any],
-                            input_text: str,
-                            conversation_id: str) -> Dict[str, Any]:
-        """执行单个节点"""
-        return await self.executor._execute_node(node, input_text, conversation_id, model_service)
-
-    async def _execute_graph_step(self,
-                                  conversation_id: str,
-                                  input_text: str = None) -> Dict[str, Any]:
-        """执行图的一个步骤"""
-        return await self.executor._execute_graph_step(conversation_id, input_text, model_service)
-
-    def _is_graph_complete(self, conversation: Dict[str, Any]) -> bool:
-        """检查图是否已完成执行"""
-        return self.conversation_manager._is_graph_complete(conversation)
-
-    def _get_next_pending_nodes(self, conversation: Dict[str, Any]) -> Set[str]:
-        """获取下一批可执行的节点"""
-        return self.conversation_manager._get_next_pending_nodes(conversation)
-
-    def _get_node_input(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
-        """根据节点的输入节点计算输入内容"""
-        return self.executor._get_node_input(node, conversation)
-
-    def _restructure_results(self, conversation: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """将扁平化的执行结果重组为层次化结构，便于展示"""
-        return self.conversation_manager._restructure_results(conversation)
-
-    def _organize_subgraph_results(self, flattened_results: List[Dict[str, Any]], parent_prefix: str) -> List[
-        Dict[str, Any]]:
-        """整理子图的扁平化结果为有层次的结构"""
-        return self.conversation_manager._organize_subgraph_results(flattened_results, parent_prefix)
-
-    def _get_node_input_from_results(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
-        """根据节点的输入节点和结果获取输入内容"""
-        return self.conversation_manager._get_node_input_from_results(node, conversation)
-
-    def _get_node_output_from_results(self, node: Dict[str, Any], conversation: Dict[str, Any], prefix: str) -> str:
-        """获取子图的最终输出"""
-        return self.conversation_manager._get_node_output_from_results(node, conversation, prefix)
-
-    def _get_final_output(self, conversation: Dict[str, Any]) -> str:
-        """获取图的最终输出"""
-        return self.conversation_manager._get_final_output(conversation)
-
     async def execute_graph(self, graph_name: str, input_text: str, parallel: bool = False) -> Dict[str, Any]:
-        """执行整个图并返回结果"""
+        """执行整个图并返回结果 - 使用基于层级的新方法"""
         # 加载原始图配置
         original_config = self.get_graph(graph_name)
         if not original_config:
@@ -215,7 +153,7 @@ class GraphService:
         # 展开图配置，处理所有子图
         flattened_config = self.preprocess_graph(original_config)
 
-        # 使用执行器执行图
+        # 使用新的执行器执行图
         return await self.executor.execute_graph(
             graph_name,
             original_config,
@@ -230,7 +168,7 @@ class GraphService:
                                     input_text: str = None,
                                     parallel: bool = False,
                                     continue_from_checkpoint: bool = False) -> Dict[str, Any]:
-        """继续现有会话"""
+        """继续现有会话 - 使用基于层级的新方法"""
         conversation = self.conversation_manager.get_conversation(conversation_id)
         if not conversation:
             raise ValueError(f"找不到会话 '{conversation_id}'")
@@ -248,11 +186,6 @@ class GraphService:
         self.conversation_manager.update_conversation_file(conversation_id)
 
         return result
-
-    async def _execute_graph_parallel(self, conversation_id: str, input_text: str = None):
-        """并行执行图"""
-        # 使用执行器并行执行图
-        await self.executor._execute_graph_parallel(conversation_id, input_text, model_service)
 
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含层次结构的会话详情"""
