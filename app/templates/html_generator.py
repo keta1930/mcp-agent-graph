@@ -40,6 +40,8 @@ class HTMLGenerator:
     <title>图执行: {escape_html(graph_name)}</title>
     <!-- 引入Mermaid库 -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@9.3.0/dist/mermaid.min.js"></script>
+    <!-- 引入Marked.js用于Markdown渲染 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js"></script>
     <style>
         :root {{
             --primary-color: #3498db;
@@ -203,7 +205,6 @@ class HTMLGenerator:
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 15px;
-            white-space: pre-wrap;
             overflow-x: auto;
             font-size: 0.95em;
         }}
@@ -287,6 +288,108 @@ class HTMLGenerator:
             margin-top: 15px;
         }}
 
+        /* Markdown 渲染样式 */
+        .markdown-body {{
+            line-height: 1.6;
+        }}
+        
+        .markdown-body h1 {{
+            font-size: 1.8em;
+            margin-top: 0.8em;
+            margin-bottom: 0.6em;
+        }}
+        
+        .markdown-body h2 {{
+            font-size: 1.6em;
+            margin-top: 0.8em;
+            margin-bottom: 0.6em;
+        }}
+        
+        .markdown-body h3 {{
+            font-size: 1.4em;
+            margin-top: 0.6em;
+            margin-bottom: 0.4em;
+        }}
+        
+        .markdown-body h4 {{
+            font-size: 1.2em;
+            margin-top: 0.6em;
+            margin-bottom: 0.4em;
+        }}
+        
+        .markdown-body ul, .markdown-body ol {{
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            padding-left: 1.5em;
+        }}
+        
+        .markdown-body li {{
+            margin-bottom: 0.3em;
+        }}
+        
+        .markdown-body p {{
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }}
+        
+        .markdown-body blockquote {{
+            border-left: 3px solid var(--primary-color);
+            padding-left: 1em;
+            margin-left: 0;
+            color: #555;
+        }}
+        
+        .markdown-body code {{
+            font-family: 'Courier New', Courier, monospace;
+            padding: 2px 4px;
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 3px;
+            font-size: 0.9em;
+        }}
+        
+        .markdown-body pre {{
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+        }}
+        
+        .markdown-body pre code {{
+            background-color: transparent;
+            padding: 0;
+        }}
+        
+        .markdown-body table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 0.8em;
+            margin-bottom: 0.8em;
+        }}
+        
+        .markdown-body table th, .markdown-body table td {{
+            border: 1px solid #ddd;
+            padding: 8px;
+        }}
+        
+        .markdown-body table th {{
+            background-color: #f2f2f2;
+            text-align: left;
+        }}
+        
+        .markdown-body a {{
+            color: var(--primary-color);
+            text-decoration: none;
+        }}
+        
+        .markdown-body a:hover {{
+            text-decoration: underline;
+        }}
+        
+        .markdown-body img {{
+            max-width: 100%;
+            height: auto;
+        }}
+
         /* 暗黑模式 */
         @media (prefers-color-scheme: dark) {{
             :root {{
@@ -303,6 +406,26 @@ class HTMLGenerator:
             
             .tool-result {{
                 background-color: rgba(255,255,255,0.05);
+            }}
+            
+            .markdown-body blockquote {{
+                color: #aaa;
+            }}
+            
+            .markdown-body code {{
+                background-color: rgba(255,255,255,0.1);
+            }}
+            
+            .markdown-body pre {{
+                background-color: #2a2a2a;
+            }}
+            
+            .markdown-body table th {{
+                background-color: #333;
+            }}
+            
+            .markdown-body table th, .markdown-body table td {{
+                border-color: #444;
             }}
         }}
     </style>
@@ -358,7 +481,7 @@ class HTMLGenerator:
                         <button class="toggle-button">展开/折叠</button>
                     </div>
                     <div class="card-body">
-                        <pre>{escape_html(input_text)}</pre>
+                        <div class="markdown-content" data-markdown="{escape_html(input_text)}"></div>
                     </div>
                 </section>
 
@@ -393,7 +516,7 @@ class HTMLGenerator:
                         <button class="toggle-button">展开/折叠</button>
                     </div>
                     <div class="card-body">
-                        <pre>{escape_html(final_output)}</pre>
+                        <div class="markdown-content" data-markdown="{escape_html(final_output)}"></div>
                     </div>
                 </section>
             </div>
@@ -413,7 +536,46 @@ class HTMLGenerator:
             startOnLoad: true
         }});
 
+        // 配置Marked
+        marked.setOptions({{
+            breaks: true,
+            gfm: true,
+            headerIds: true,
+            langPrefix: 'language-',
+        }});
+
+        // 渲染所有Markdown内容
+        function renderMarkdown() {{
+            document.querySelectorAll('.markdown-content').forEach(element => {{
+                const markdown = element.getAttribute('data-markdown');
+                if (markdown) {{
+                    // 尝试将markdown渲染为HTML
+                    try {{
+                        const html = marked.parse(markdown);
+                        element.innerHTML = `<div class="markdown-body">${{html}}</div>`;
+                        element.classList.add('rendered');
+                    }} catch (error) {{
+                        console.error('Markdown渲染错误:', error);
+                        // 如果渲染失败，退回到纯文本显示
+                        element.innerHTML = `<pre>${{markdown}}</pre>`;
+                    }}
+                }}
+            }});
+
+            // 特殊处理：确保代码块中的内容正确显示
+            document.querySelectorAll('.markdown-body pre code').forEach(block => {{
+                // 对于Markdown中的代码块，确保它们能正确显示
+                if (!block.classList.contains('hljs') && !block.classList.contains('language-')) {{
+                    // 如果没有语法高亮类，添加一个通用类
+                    block.classList.add('language-plaintext');
+                }}
+            }});
+        }}
+
         document.addEventListener('DOMContentLoaded', function() {{
+            // 渲染Markdown
+            renderMarkdown();
+
             // 侧边栏切换
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
@@ -540,11 +702,15 @@ class HTMLGenerator:
                     <div class="card-body">
                         <div>
                             <div class="input-label">输入</div>
-                            <pre class="input-section">{escape_html(node_input)}</pre>
+                            <div class="input-section">
+                                <div class="markdown-content" data-markdown="{escape_html(node_input)}"></div>
+                            </div>
                         </div>
                         <div>
                             <div class="output-label">输出</div>
-                            <pre class="output-section">{escape_html(node_output)}</pre>
+                            <div class="output-section">
+                                <div class="markdown-content" data-markdown="{escape_html(node_output)}"></div>
+                            </div>
                         </div>
                         {tool_calls_content}
                         {subgraph_content}

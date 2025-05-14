@@ -4,7 +4,7 @@ import time
 import copy
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
-from app.utils.conversation_template import ConversationTemplate, HTMLConversationTemplate
+from app.templates.conversation_template import ConversationTemplate, HTMLConversationTemplate
 
 logger = logging.getLogger(__name__)
 

@@ -18,9 +18,9 @@ class MarkdownGenerator:
 <details open>
 <summary><b>📝 用户输入</b></summary>
 
-```
+
 {input_text}
-```
+
 </details>
 
 ## 执行进度
@@ -78,17 +78,17 @@ class MarkdownGenerator:
 <details>
 <summary><b>输入</b></summary>
 
-```
+
 {node_input}
-```
+
 </details>
 
 <details>
 <summary><b>输出</b></summary>
 
-```
+
 {node_output}
-```
+
 </details>
 
 {tool_calls_content}
@@ -122,9 +122,7 @@ class MarkdownGenerator:
 <details open>
 <summary><b>📊 执行结果</b></summary>
 
-```
 {output}
-```
 </details>
 """
 
