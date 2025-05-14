@@ -2,8 +2,7 @@ import time
 from typing import Dict, List, Any, Optional
 
 # 导入拆分后的子模块
-from .template_utils import generate_conversation_filename, format_timestamp
-from .template_utils import get_input_from_conversation, get_node_execution_sequence
+from .template_utils import generate_conversation_filename, format_timestamp,get_input_from_conversation, get_node_execution_sequence
 from .markdown_generator import MarkdownGenerator
 from .html_generator import HTMLGenerator
 from .flow_diagram import FlowDiagram

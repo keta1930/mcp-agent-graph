@@ -5,35 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="612d43e6-dea4-40fd-9f46-1a3eec5d0069" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/services/graph/output_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/req.json" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/backend/app/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../tutorials/.cursor/rules/python.mdc" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../tutorials/.cursorignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../tutorials/hash/hash.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../tutorials/hash/hash_sim.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/schema.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/graph/conversation_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/graph/conversation_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/graph/graph_executor.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/graph/graph_executor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/conversation_template.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/conversation_template.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/utils/template_utils.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/backend/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/backend/config.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/agentic_mcprag.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/agentic_mcprag.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/agentic_rag/nodes.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/agentic_rag/nodes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/agentic_rag_app.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/agentic_rag_app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/downloads/file_paths.json" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/downloads/file_paths.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/embedding/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/model/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/embedding/embedder.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/model/embedder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/fig.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/fig.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/hash_storage.db" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/hash_storage.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/llm/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/llm/llm_invoke.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/model/llm_invoke.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/llm/llm_model_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/model/llm_model_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/milvus_db/milvus_data_uploader.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/milvus_db/milvus_data_uploader.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/milvus_db/milvus_search.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/milvus_db/milvus_search.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/prompts/context_generation_prompt.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/prompts/context_generation_prompt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../tutorials/.idea/Notes.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../../tutorials/.idea/Notes.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../tutorials/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../tutorials/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../tutorials/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../tutorials/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../tutorials/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../tutorials/.idea/vcs.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,20 +43,20 @@
     </option>
   </component>
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "keta1930"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;keta1930&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/keta1930/mcp-agent-graph.git",
-    "accountId": "a91f58a3-c9a9-4fa7-ab63-1337a817873f"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/keta1930/mcp-agent-graph.git&quot;,
+    &quot;accountId&quot;: &quot;a91f58a3-c9a9-4fa7-ab63-1337a817873f&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 8
 }</component>
@@ -86,16 +70,19 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.api_server.executor": "Run",
     "Python.doc_load_app.executor": "Run",
     "Python.hash.executor": "Run",
     "Python.hash_sim.executor": "Run",
+    "Python.log_analyzer.executor": "Run",
     "Python.main.executor": "Run",
+    "Python.user_manager.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "ShowUsagesActions.previewPropertyKey": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "E:/AI-Instructions/AI-Instructions/project/QuantFactor/openweb_openapi/model",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "E:/AI-Instructions/AI-Instructions/RAGLAG/LingYu-AI-Platform",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -136,6 +123,8 @@
       <workItem from="1746267303598" duration="34706000" />
       <workItem from="1746883301537" duration="22207000" />
       <workItem from="1747027440611" duration="13989000" />
+      <workItem from="1747193812549" duration="6376000" />
+      <workItem from="1747230087246" duration="8441000" />
     </task>
     <servers />
   </component>
@@ -143,10 +132,12 @@
     <option name="version" value="3" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$main.coverage" NAME="main 覆盖结果" MODIFIED="1746978596856" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$user_manager.coverage" NAME="user_manager 覆盖结果" MODIFIED="1747212818682" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/authentication" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$main.coverage" NAME="main 覆盖结果" MODIFIED="1747231784038" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$log_analyzer.coverage" NAME="log_analyzer 覆盖结果" MODIFIED="1747212426029" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/authentication" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_v$doc_load_app.coverage" NAME="doc_load_app 覆盖结果" MODIFIED="1747043014231" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi" />
-    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$api_server.coverage" NAME="api_server 覆盖结果" MODIFIED="1746351670683" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/backend" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_v$hash.coverage" NAME="hash 覆盖结果" MODIFIED="1747038083189" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../tutorials/hash" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_v$api_server.coverage" NAME="api_server 覆盖结果" MODIFIED="1747236325529" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/backend" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_v$hash_sim.coverage" NAME="hash_sim 覆盖结果" MODIFIED="1747040629472" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../tutorials/hash" />
   </component>
 </project>

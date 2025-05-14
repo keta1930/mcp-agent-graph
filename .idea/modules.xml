@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../../tutorials/.idea/Notes.iml" filepath="$PROJECT_DIR$/../../tutorials/.idea/Notes.iml" />
       <module fileurl="file://$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/.idea/frontend.iml" filepath="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/.idea/frontend.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mcp-agent-graph.iml" filepath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/.idea/openweb_openapi.iml" filepath="$PROJECT_DIR$/../../project/QuantFactor/openweb_openapi/.idea/openweb_openapi.iml" />
     </modules>
   </component>
 </project>

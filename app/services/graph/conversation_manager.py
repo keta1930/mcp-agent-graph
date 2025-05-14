@@ -1,3 +1,4 @@
+import re
 import logging
 import uuid
 import time
@@ -5,7 +6,7 @@ import copy
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
 from app.templates.conversation_template import ConversationTemplate, HTMLConversationTemplate
-
+from app.services.graph.output_tools import _parse_placeholder,_format_content_with_default_style
 logger = logging.getLogger(__name__)
 
 
@@ -78,13 +79,17 @@ class ConversationManager:
         logger.info(f"已添加节点 '{node_name}' 的全局输出，当前共 {len(conversation['global_outputs'][node_name])} 条")
 
     def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all", n: int = 1) -> List[str]:
-        """获取节点的全局输出内容
-        """
+        """全局输出获取函数，确保在all模式下返回完整数据"""
         conversation = self.get_conversation(conversation_id)
         if not conversation or "global_outputs" not in conversation or node_name not in conversation["global_outputs"]:
+            logger.debug(f"找不到节点 '{node_name}' 的全局输出内容")
             return []
 
         outputs = conversation["global_outputs"][node_name]
+
+        # 记录调试信息
+        logger.debug(f"节点 '{node_name}' 的全局输出内容数量: {len(outputs)}")
+        logger.debug(f"请求模式: {mode}, n={n}")
 
         if mode == "latest":
             # 获取最新一条
@@ -92,9 +97,10 @@ class ConversationManager:
         elif mode == "latest_n":
             # 获取最新n条
             return outputs[-n:] if outputs else []
-        else:
-            # 获取全部
-            return outputs
+        else:  # all 模式
+            # 确保返回所有内容的副本
+            logger.debug(f"返回全部 {len(outputs)} 条记录")
+            return outputs.copy()
 
     def update_conversation_file(self, conversation_id: str) -> bool:
         """更新会话文件"""
@@ -339,11 +345,80 @@ class ConversationManager:
         return "\n\n".join(outputs)
 
     def _get_final_output(self, conversation: Dict[str, Any]) -> str:
-        """获取图的最终输出 - 基于层级的简化方法"""
+        """获取图的最终输出 - 修复模式选择逻辑"""
         graph_config = conversation["graph_config"]
         results = conversation.get("results", [])
 
-        # 如果没有结果，返回空
+        # 检查是否有自定义的end_template
+        end_template = graph_config.get("end_template")
+
+        # 如果有自定义模板，使用模板生成输出
+        if end_template:
+            # 收集所有节点的输出用于替换模板
+            node_outputs = {}
+
+            # 收集所有非开始节点的最新输出
+            for result in results:
+                if not result.get("is_start_input", False):
+                    node_name = result.get("node_name")
+                    node_outputs[node_name] = result["output"]
+
+            # 获取start节点内容（用户输入）
+            for result in results:
+                if result.get("is_start_input", False):
+                    node_outputs["start"] = result["input"]
+                    break
+
+            # 寻找并处理所有占位符
+            output = end_template
+
+            # 正则表达式匹配占位符
+            placeholder_pattern = r'\{([^}]+)\}'
+            placeholders = re.findall(placeholder_pattern, output)
+
+            for placeholder in placeholders:
+                # 解析占位符
+                node_name, mode, n = _parse_placeholder(placeholder)
+
+                # 如果是需要历史数据的模式，则总是从全局变量获取
+                if mode in ["all", "latest_n"]:
+                    # 从全局变量获取多条结果
+                    global_outputs = self._get_global_outputs(
+                        conversation["conversation_id"],
+                        node_name,
+                        mode,
+                        n
+                    )
+
+                    if global_outputs:
+                        # 使用默认格式化方法
+                        replacement = _format_content_with_default_style(global_outputs)
+                        output = output.replace(f"{{{placeholder}}}", replacement)
+                    else:
+                        # 未找到内容，替换为空字符串
+                        output = output.replace(f"{{{placeholder}}}", "")
+                else:
+                    # 对于单条结果的模式，可以从node_outputs获取
+                    if node_name in node_outputs:
+                        replacement = node_outputs[node_name]
+                        output = output.replace(f"{{{placeholder}}}", replacement)
+                    else:
+                        # 尝试从全局变量获取单条结果
+                        global_outputs = self._get_global_outputs(
+                            conversation["conversation_id"],
+                            node_name,
+                            "latest",
+                            1
+                        )
+
+                        if global_outputs:
+                            replacement = global_outputs[0]
+                            output = output.replace(f"{{{placeholder}}}", replacement)
+                        else:
+                            output = output.replace(f"{{{placeholder}}}", "")
+
+            return output
+
         if not results:
             return ""
 
@@ -352,19 +427,18 @@ class ConversationManager:
         for node in graph_config["nodes"]:
             if node.get("is_end", False) or "end" in node.get("output_nodes", []):
                 end_nodes.append(node["name"])
-        
+
         # 收集所有终止节点的输出
         end_outputs = []
         for result in results:
             if not result.get("is_start_input", False) and result.get("node_name") in end_nodes:
                 end_outputs.append(result["output"])
-        
+
         # 如果找到了终止节点输出，返回它们的组合
         if end_outputs:
             return "\n\n".join(end_outputs)
-        
-        # 如果没有找到终止节点输出，使用最后一个执行的节点
-        # 首先按照层级排序所有节点
+
+        # 首先按照层级排序所有节点，如果没有找到终止节点输出，使用最后一个执行的节点
         executed_nodes = []
         for result in results:
             if not result.get("is_start_input", False):
@@ -374,17 +448,17 @@ class ConversationManager:
                         level = node.get("level", 0)
                         executed_nodes.append((result, level))
                         break
-        
+
         # 找出最高层级的节点
         if executed_nodes:
             executed_nodes.sort(key=lambda x: x[1], reverse=True)
             return executed_nodes[0][0]["output"]
-        
+
         # 如果上述都失败，返回最后一个结果
         for result in reversed(results):
             if not result.get("is_start_input", False):
                 return result["output"]
-        
+
         # 如果没有任何非输入结果，返回空字符串
         return ""
 

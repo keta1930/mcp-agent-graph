@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Dict, List, Any, Optional, Set, Tuple
-
+import copy
 logger = logging.getLogger(__name__)
 
 
@@ -149,8 +149,10 @@ class GraphExecutor:
         return result
 
     def _record_user_input(self, conversation_id: str, input_text: str):
-        """记录用户输入"""
+        """记录用户输入，并将其添加到全局管理内容中"""
         conversation = self.conversation_manager.get_conversation(conversation_id)
+
+        # 添加到会话结果列表
         conversation["results"].append({
             "is_start_input": True,
             "node_name": "start",
@@ -159,6 +161,19 @@ class GraphExecutor:
             "tool_calls": [],
             "tool_results": []
         })
+
+        # 将用户输入添加到全局管理内容中，便于任何节点通过context或占位符引用
+        if "global_outputs" not in conversation:
+            conversation["global_outputs"] = {}
+
+        # 确保start作为特殊的全局管理节点
+        if "start" not in conversation["global_outputs"]:
+            conversation["global_outputs"]["start"] = []
+
+        # 添加用户输入到全局管理的start节点内容
+        conversation["global_outputs"]["start"].append(input_text)
+
+        logger.info(f"已将用户输入添加到全局管理内容中，可通过context=['start']或占位符start引用")
 
     def _get_max_level(self, graph_config: Dict[str, Any]) -> int:
         """获取图中的最大层级"""
@@ -194,7 +209,7 @@ class GraphExecutor:
         """简化版的节点输入获取方法"""
         input_nodes = node.get("input_nodes", [])
         inputs = []
-        
+
         # 处理输入节点
         for input_node_name in input_nodes:
             if input_node_name == "start":
@@ -209,13 +224,13 @@ class GraphExecutor:
                     if result.get("node_name") == input_node_name:
                         inputs.append(result["output"])
                         break
-        
+
         # 处理全局输出内容
         context_nodes = node.get("context", [])
         if context_nodes:
             context_mode = node.get("context_mode", "all")
             context_n = node.get("context_n", 1)
-            
+
             for context_node_name in context_nodes:
                 global_outputs = self.conversation_manager._get_global_outputs(
                     conversation["conversation_id"],
@@ -223,10 +238,10 @@ class GraphExecutor:
                     context_mode,
                     context_n
                 )
-                
+
                 if global_outputs:
                     inputs.append("\n\n".join(global_outputs))
-        
+
         # 合并所有输入
         return "\n\n".join(inputs)
 
@@ -534,12 +549,23 @@ class GraphExecutor:
                                node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
         """
         创建Agent的消息列表，支持在提示词中使用{node_name}格式的占位符
+        增强对{start}占位符的支持
         """
         messages = []
 
         # 如果没有提供节点输出映射，则使用空字典
         if node_outputs is None:
             node_outputs = {}
+
+        # 确保node_outputs中包含start（如果存在）
+        if "start" not in node_outputs:
+            # 尝试从conversation中获取start内容
+            conversation = self.conversation_manager.get_conversation(node.get("_conversation_id", ""))
+            if conversation:
+                for result in conversation.get("results", []):
+                    if result.get("is_start_input", False):
+                        node_outputs["start"] = result["input"]
+                        break
 
         # 跟踪已使用的输入节点
         used_input_nodes = set()
@@ -658,6 +684,9 @@ class GraphExecutor:
 
             # 准备节点输入 - 获取当前路径上已执行节点的输出
             node_outputs = self._get_node_outputs_for_inputs(node, conversation)
+
+            node_copy = copy.deepcopy(node)
+            node_copy["_conversation_id"] = conversation_id
 
             # 创建消息
             messages = self._create_agent_messages(node, input_text, node_outputs)
