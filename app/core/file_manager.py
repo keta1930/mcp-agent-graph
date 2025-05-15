@@ -234,15 +234,6 @@ class FileManager:
     def save_node_output_to_file(conversation_id: str, node_name: str, content: str, file_ext: str) -> Optional[str]:
         """
         将节点输出保存到文件
-
-        Args:
-            conversation_id: 会话ID
-            node_name: 节点名称
-            content: 要保存的内容
-            file_ext: 文件扩展名（不带点）
-
-        Returns:
-            保存文件的路径，如果保存失败则返回None
         """
         try:
             # 创建时间戳（小时分钟秒）
@@ -445,13 +436,6 @@ class FileManager:
     def copy_prompt_files(agent_name: str, node_prompts: Dict[str, str]) -> Dict[str, Dict[str, str]]:
         """
         复制提示词中引用的文件到Agent目录，并返回更新后的提示词和文件映射
-
-        Args:
-            agent_name: Agent名称
-            node_prompts: 节点提示词字典，格式为 {node_name: {prompt_type: prompt}}
-
-        Returns:
-            格式为 {node_name: {prompt_type: updated_prompt, 'files': {file_path: file_name}}} 的字典
         """
         # 确保Agent目录和提示词目录存在
         agent_dir = settings.get_agent_dir(agent_name)
@@ -509,13 +493,6 @@ class FileManager:
     def get_prompt_file_content(agent_name: str, file_name: str) -> Optional[str]:
         """
         获取Agent提示词目录中的文件内容
-
-        Args:
-            agent_name: Agent名称
-            file_name: 文件名
-
-        Returns:
-            文件内容，如果文件不存在则返回None
         """
         prompt_file_path = settings.get_agent_prompt_dir(agent_name) / file_name
 
@@ -534,13 +511,6 @@ class FileManager:
     def replace_prompt_file_placeholders(agent_name: str, prompt: str) -> str:
         """
         替换提示词中的文件占位符为文件内容
-
-        Args:
-            agent_name: Agent名称
-            prompt: 原始提示词
-
-        Returns:
-            替换后的提示词
         """
         if not prompt:
             return prompt

@@ -19,7 +19,7 @@ class Settings:
 
     # 应用版本和名称
     APP_NAME: str = "MAG - MCP Agent Graph"
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "1.5.0"
 
     # 根据操作系统确定配置目录
     @property

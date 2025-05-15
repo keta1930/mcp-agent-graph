@@ -250,9 +250,7 @@ async def create_graph(graph: GraphConfig):
     """创建新图或更新现有图"""
     try:
         # 验证图配置
-        print("")
         valid, error = graph_service.validate_graph(graph.dict())
-        print("valid, error",valid, error)
         if not valid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -260,7 +258,6 @@ async def create_graph(graph: GraphConfig):
             )
 
         # 保存图
-        print("保存图")
         success = graph_service.save_graph(graph.name, graph.dict())
         if not success:
             raise HTTPException(
