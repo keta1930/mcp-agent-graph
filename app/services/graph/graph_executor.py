@@ -37,6 +37,7 @@ class GraphExecutor:
         conversation = self.conversation_manager.get_conversation(conversation_id)
         conversation["original_config"] = original_config
         conversation["parallel"] = parallel
+        conversation["graph_name"] = graph_name  # 保存图名称，用于文件替换
 
         # 记录用户输入
         self._record_user_input(conversation_id, input_text)
@@ -555,8 +556,7 @@ class GraphExecutor:
                                input_text: str,
                                node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
         """
-        创建Agent的消息列表，支持在提示词中使用{node_name}格式的占位符
-        增强对{start}占位符的支持
+        创建Agent的消息列表
         """
         messages = []
 
@@ -564,10 +564,22 @@ class GraphExecutor:
         if node_outputs is None:
             node_outputs = {}
 
+        # 确保有conversation_id
+        conversation_id = node.get("_conversation_id", "")
+        if not conversation_id:
+            logger.warning("节点缺少会话ID，可能无法正确处理提示词文件")
+
+        # 获取会话以找出图名称
+        conversation = None
+        graph_name = ""
+        if conversation_id:
+            conversation = self.conversation_manager.get_conversation(conversation_id)
+            if conversation:
+                graph_name = conversation.get("graph_name", "")
+
         # 确保node_outputs中包含start（如果存在）
         if "start" not in node_outputs:
             # 尝试从conversation中获取start内容
-            conversation = self.conversation_manager.get_conversation(node.get("_conversation_id", ""))
             if conversation:
                 for result in conversation.get("results", []):
                     if result.get("is_start_input", False):
@@ -580,6 +592,10 @@ class GraphExecutor:
         # 处理系统提示词
         system_prompt = node.get("system_prompt", "")
         if system_prompt:
+            # 如果有图名称，尝试替换提示词中的文件占位符
+            if graph_name:
+                system_prompt = FileManager.replace_prompt_file_placeholders(graph_name, system_prompt)
+
             # 查找并替换占位符
             for node_name, output in node_outputs.items():
                 placeholder = "{" + node_name + "}"
@@ -592,6 +608,10 @@ class GraphExecutor:
         # 处理用户提示词
         user_prompt = node.get("user_prompt", "")
         if user_prompt:
+            # 如果有图名称，尝试替换提示词中的文件占位符
+            if graph_name:
+                user_prompt = FileManager.replace_prompt_file_placeholders(graph_name, user_prompt)
+
             # 查找并替换占位符
             for node_name, output in node_outputs.items():
                 placeholder = "{" + node_name + "}"
@@ -696,7 +716,7 @@ class GraphExecutor:
             node_copy["_conversation_id"] = conversation_id
 
             # 创建消息
-            messages = self._create_agent_messages(node, input_text, node_outputs)
+            messages = self._create_agent_messages(node_copy, input_text, node_outputs)
 
             # 从节点获取模型信息
             model_name = node["model_name"]

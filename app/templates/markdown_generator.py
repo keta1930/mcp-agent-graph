@@ -141,6 +141,9 @@ class MarkdownGenerator:
         # 生成头部
         template = MarkdownGenerator.generate_header(graph_name, conversation_id, input_text, start_time)
 
+        # 生成流程图
+        template += MarkdownGenerator.generate_flow_diagram_section(conversation)
+
         # 获取按执行顺序排列的节点结果
         node_sequence = get_node_execution_sequence(conversation)
         
@@ -152,9 +155,6 @@ class MarkdownGenerator:
         for node_result in node_sequence:
             template += MarkdownGenerator.generate_node_section(node_result)
 
-        # 生成流程图
-        template += MarkdownGenerator.generate_flow_diagram_section(conversation)
-        
         # 生成最终输出
         final_output = conversation.get("output", "")
         template += MarkdownGenerator.generate_final_output(final_output)

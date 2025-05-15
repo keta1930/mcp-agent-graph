@@ -4,9 +4,10 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import logging
-
+import re
+import shutil
 from app.core.config import settings
-
+import copy
 logger = logging.getLogger(__name__)
 
 
@@ -79,24 +80,100 @@ class FileManager:
     def list_agents() -> List[str]:
         """列出所有可用的Agent"""
         try:
-            return [f.stem for f in settings.AGENT_DIR.glob("*.json")]
-        except Exception as e:
-            logger.error(f"Error listing agents: {str(e)}")
-            return []
+            agents = set()
 
-    @staticmethod
-    def load_agent(agent_name: str) -> Optional[Dict[str, Any]]:
-        """加载特定Agent的配置"""
-        agent_path = settings.get_agent_path(agent_name)
-        if not agent_path.exists():
-            return None
-        return FileManager.load_json(agent_path)
+            # 处理旧格式（直接在agent目录下的JSON文件）
+            for f in settings.AGENT_DIR.glob("*.json"):
+                agents.add(f.stem)
+
+            # 处理新格式（agent子目录中的config.json文件）
+            for d in settings.AGENT_DIR.glob("*/"):
+                if d.is_dir() and (d / "config.json").exists():
+                    agents.add(d.name)
+
+            return sorted(list(agents))
+        except Exception as e:
+            logger.error(f"列出Agent时出错: {str(e)}")
+            return []
 
     @staticmethod
     def save_agent(agent_name: str, config: Dict[str, Any]) -> bool:
         """保存Agent配置"""
-        agent_path = settings.get_agent_path(agent_name)
-        return FileManager.save_json(agent_path, config)
+        try:
+            # 创建Agent目录
+            agent_dir = settings.get_agent_dir(agent_name)
+            agent_dir.mkdir(parents=True, exist_ok=True)
+
+            # 复制配置的深拷贝以避免修改原始数据
+            config_copy = copy.deepcopy(config)
+
+            # 处理提示词文件
+            if "nodes" in config_copy:
+                # 收集所有节点的提示词
+                node_prompts = {}
+                for i, node in enumerate(config_copy["nodes"]):
+                    node_name = node.get("name", f"node_{i}")
+
+                    # 收集节点的提示词
+                    prompts = {}
+                    if "system_prompt" in node:
+                        prompts["system_prompt"] = node["system_prompt"]
+                    if "user_prompt" in node:
+                        prompts["user_prompt"] = node["user_prompt"]
+
+                    if prompts:
+                        node_prompts[node_name] = prompts
+
+                # 处理提示词文件
+                if node_prompts:
+                    processed_prompts = FileManager.copy_prompt_files(agent_name, node_prompts)
+
+                    # 更新节点的提示词
+                    for i, node in enumerate(config_copy["nodes"]):
+                        node_name = node.get("name", f"node_{i}")
+                        if node_name in processed_prompts:
+                            node_result = processed_prompts[node_name]
+
+                            if "system_prompt" in node_result:
+                                node["system_prompt"] = node_result["system_prompt"]
+                            if "user_prompt" in node_result:
+                                node["user_prompt"] = node_result["user_prompt"]
+
+            # 保存配置到config.json
+            config_path = settings.get_agent_config_path(agent_name)
+            return FileManager.save_json(config_path, config_copy)
+        except Exception as e:
+            logger.error(f"保存Agent {agent_name} 时出错: {str(e)}")
+            return False
+
+    @staticmethod
+    def load_agent(agent_name: str) -> Optional[Dict[str, Any]]:
+        """
+        加载Agent配置
+
+        Args:
+            agent_name: Agent名称
+
+        Returns:
+            Agent配置，如果不存在则返回None
+        """
+        # 首先尝试从新的目录结构加载
+        config_path = settings.get_agent_config_path(agent_name)
+        if config_path.exists():
+            return FileManager.load_json(config_path)
+
+        # 如果新结构不存在，尝试从旧结构加载
+        legacy_path = settings.get_agent_path(agent_name)
+        if legacy_path.exists():
+            # 加载旧格式配置
+            config = FileManager.load_json(legacy_path)
+
+            # 自动迁移到新结构（可选）
+            # 这里可以添加自动迁移逻辑，也可以不添加
+
+            return config
+
+        return None
 
     @staticmethod
     def delete_agent(agent_name: str) -> bool:
@@ -336,3 +413,150 @@ class FileManager:
         except Exception as e:
             logger.error(f"列出会话时出错: {str(e)}")
             return []
+
+    @staticmethod
+    def extract_prompt_file_paths(prompt: str) -> List[str]:
+        """
+        从提示词中提取文件路径
+
+        Args:
+            prompt: 包含文件路径的提示词
+
+        Returns:
+            提取的文件路径列表
+        """
+        if not prompt:
+            return []
+
+        # 使用正则表达式匹配 {file_path} 格式
+        pattern = r'\{([^{}]+)\}'
+        matches = re.findall(pattern, prompt)
+
+        # 过滤掉不像是文件路径的匹配项（简单判断，可能需要更复杂的逻辑）
+        file_paths = []
+        for match in matches:
+            # 检查是否看起来像文件路径
+            if Path(match).exists() or '.' in match:
+                file_paths.append(match)
+
+        return file_paths
+
+    @staticmethod
+    def copy_prompt_files(agent_name: str, node_prompts: Dict[str, str]) -> Dict[str, Dict[str, str]]:
+        """
+        复制提示词中引用的文件到Agent目录，并返回更新后的提示词和文件映射
+
+        Args:
+            agent_name: Agent名称
+            node_prompts: 节点提示词字典，格式为 {node_name: {prompt_type: prompt}}
+
+        Returns:
+            格式为 {node_name: {prompt_type: updated_prompt, 'files': {file_path: file_name}}} 的字典
+        """
+        # 确保Agent目录和提示词目录存在
+        agent_dir = settings.get_agent_dir(agent_name)
+        agent_dir.mkdir(parents=True, exist_ok=True)
+
+        prompt_dir = settings.get_agent_prompt_dir(agent_name)
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+
+        result = {}
+
+        # 处理每个节点的提示词
+        for node_name, prompts in node_prompts.items():
+            node_result = {'files': {}}
+
+            for prompt_type, prompt in prompts.items():
+                if not prompt:
+                    node_result[prompt_type] = prompt
+                    continue
+
+                # 提取文件路径
+                file_paths = FileManager.extract_prompt_file_paths(prompt)
+                updated_prompt = prompt
+
+                # 处理每个文件
+                for file_path in file_paths:
+                    source_path = Path(file_path)
+                    if not source_path.exists():
+                        logger.warning(f"提示词引用的文件不存在: {file_path}")
+                        continue
+
+                    # 使用原始文件名
+                    file_name = source_path.name
+                    dest_path = prompt_dir / file_name
+
+                    # 复制文件
+                    try:
+                        shutil.copy2(source_path, dest_path)
+                        logger.info(f"已复制文件 {source_path} 到 {dest_path}")
+
+                        # 更新提示词，仅使用文件名
+                        updated_prompt = updated_prompt.replace(f"{{{file_path}}}", f"{{{file_name}}}")
+
+                        # 记录文件映射
+                        node_result['files'][file_path] = file_name
+                    except Exception as e:
+                        logger.error(f"复制文件时出错 {source_path}: {str(e)}")
+
+                node_result[prompt_type] = updated_prompt
+
+            result[node_name] = node_result
+
+        return result
+
+    @staticmethod
+    def get_prompt_file_content(agent_name: str, file_name: str) -> Optional[str]:
+        """
+        获取Agent提示词目录中的文件内容
+
+        Args:
+            agent_name: Agent名称
+            file_name: 文件名
+
+        Returns:
+            文件内容，如果文件不存在则返回None
+        """
+        prompt_file_path = settings.get_agent_prompt_dir(agent_name) / file_name
+
+        if not prompt_file_path.exists():
+            logger.warning(f"提示词文件不存在: {prompt_file_path}")
+            return None
+
+        try:
+            with open(prompt_file_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"读取提示词文件出错 {prompt_file_path}: {str(e)}")
+            return None
+
+    @staticmethod
+    def replace_prompt_file_placeholders(agent_name: str, prompt: str) -> str:
+        """
+        替换提示词中的文件占位符为文件内容
+
+        Args:
+            agent_name: Agent名称
+            prompt: 原始提示词
+
+        Returns:
+            替换后的提示词
+        """
+        if not prompt:
+            return prompt
+
+        # 查找所有占位符
+        pattern = r'\{([^{}]+)\}'
+        matches = re.findall(pattern, prompt)
+
+        updated_prompt = prompt
+
+        for file_name in matches:
+            # 只处理看起来像文件名的占位符
+            if '.' in file_name:
+                file_content = FileManager.get_prompt_file_content(agent_name, file_name)
+                if file_content is not None:
+                    # 替换占位符为文件内容
+                    updated_prompt = updated_prompt.replace(f"{{{file_name}}}", file_content)
+
+        return updated_prompt
