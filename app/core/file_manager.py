@@ -148,29 +148,16 @@ class FileManager:
 
     @staticmethod
     def load_agent(agent_name: str) -> Optional[Dict[str, Any]]:
-        """
-        加载Agent配置
-
-        Args:
-            agent_name: Agent名称
-
-        Returns:
-            Agent配置，如果不存在则返回None
-        """
-        # 首先尝试从新的目录结构加载
+        """加载Agent配置"""
         config_path = settings.get_agent_config_path(agent_name)
+
         if config_path.exists():
             return FileManager.load_json(config_path)
 
-        # 如果新结构不存在，尝试从旧结构加载
         legacy_path = settings.get_agent_path(agent_name)
+
         if legacy_path.exists():
-            # 加载旧格式配置
             config = FileManager.load_json(legacy_path)
-
-            # 自动迁移到新结构（可选）
-            # 这里可以添加自动迁移逻辑，也可以不添加
-
             return config
 
         return None
@@ -199,12 +186,12 @@ class FileManager:
                 return False
 
             if new_path.exists():
-                return False  # 目标名称已存在
+                return False
 
-            # 加载配置，修改后保存到新文件
+            # 加载配置
             config = FileManager.load_json(old_path)
             FileManager.save_json(new_path, config)
-            old_path.unlink()  # 删除旧文件
+            old_path.unlink()
 
             return True
         except Exception as e:
@@ -407,15 +394,7 @@ class FileManager:
 
     @staticmethod
     def extract_prompt_file_paths(prompt: str) -> List[str]:
-        """
-        从提示词中提取文件路径
-
-        Args:
-            prompt: 包含文件路径的提示词
-
-        Returns:
-            提取的文件路径列表
-        """
+        """从提示词中提取文件路径"""
         if not prompt:
             return []
 
@@ -423,10 +402,9 @@ class FileManager:
         pattern = r'\{([^{}]+)\}'
         matches = re.findall(pattern, prompt)
 
-        # 过滤掉不像是文件路径的匹配项（简单判断，可能需要更复杂的逻辑）
+        # 过滤
         file_paths = []
         for match in matches:
-            # 检查是否看起来像文件路径
             if Path(match).exists() or '.' in match:
                 file_paths.append(match)
 
@@ -434,9 +412,7 @@ class FileManager:
 
     @staticmethod
     def copy_prompt_files(agent_name: str, node_prompts: Dict[str, str]) -> Dict[str, Dict[str, str]]:
-        """
-        复制提示词中引用的文件到Agent目录，并返回更新后的提示词和文件映射
-        """
+        """复制提示词中引用的文件到Agent目录，并返回更新后的提示词和文件映射"""
         # 确保Agent目录和提示词目录存在
         agent_dir = settings.get_agent_dir(agent_name)
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -491,9 +467,7 @@ class FileManager:
 
     @staticmethod
     def get_prompt_file_content(agent_name: str, file_name: str) -> Optional[str]:
-        """
-        获取Agent提示词目录中的文件内容
-        """
+        """获取Agent提示词目录中的文件内容"""
         prompt_file_path = settings.get_agent_prompt_dir(agent_name) / file_name
 
         if not prompt_file_path.exists():
@@ -509,9 +483,7 @@ class FileManager:
 
     @staticmethod
     def replace_prompt_file_placeholders(agent_name: str, prompt: str) -> str:
-        """
-        替换提示词中的文件占位符为文件内容
-        """
+        """替换提示词中的文件占位符为文件内容"""
         if not prompt:
             return prompt
 

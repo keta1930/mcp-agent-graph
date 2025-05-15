@@ -52,7 +52,7 @@ class FlowDiagram:
                         connection_key = f"{input_node}-->to-->{node_name}"
                         if connection_key not in connection_set:
                             input_is_decision = any(n["name"] == input_node and (
-                                        len(n.get("output_nodes", [])) > 1 or n.get("handoffs") is not None) for n in
+                                    len(n.get("output_nodes", [])) > 1 or n.get("handoffs") is not None) for n in
                                                     nodes)
                             input_shape = "{" if input_is_decision else "["
                             input_end_shape = "}" if input_is_decision else "]"
@@ -73,7 +73,7 @@ class FlowDiagram:
                         connection_key = f"{node_name}-->to-->{output_node}"
                         if connection_key not in connection_set:
                             output_is_decision = any(n["name"] == output_node and (
-                                        len(n.get("output_nodes", [])) > 1 or n.get("handoffs") is not None) for n in
+                                    len(n.get("output_nodes", [])) > 1 or n.get("handoffs") is not None) for n in
                                                      nodes)
                             output_shape = "{" if output_is_decision else "["
                             output_end_shape = "}" if output_is_decision else "]"
@@ -100,3 +100,100 @@ class FlowDiagram:
         mermaid += "\n    " + ";\n    ".join(connections) + ";"
 
         return mermaid
+
+    @staticmethod
+    def generate_graph_readme(graph_config: Dict[str, Any], mcp_config: Dict[str, Any] = None,
+                              model_configs: List[Dict[str, Any]] = None) -> str:
+        """生成图的README文档"""
+        # 提取基本信息
+        graph_name = graph_config.get("name", "未命名图")
+        graph_description = graph_config.get("description", "无描述")
+        nodes = graph_config.get("nodes", [])
+
+        # 构建README内容
+        sections = []
+
+        # 添加标题和描述
+        sections.append(f"# {graph_name}")
+        sections.append(graph_description)
+        sections.append("")  # 空行
+
+        # 添加流程图
+        sections.append("## 流程图")
+        # 创建一个模拟的conversation对象，以便使用现有的generate_mermaid_diagram方法
+        mock_conversation = {"graph_config": graph_config}
+        mermaid_diagram = FlowDiagram.generate_mermaid_diagram(mock_conversation)
+        sections.append("```mermaid")
+        sections.append(mermaid_diagram)
+        sections.append("```")
+        sections.append("")  # 空行
+
+        # 添加节点信息
+        sections.append("## 节点列表")
+        for node in nodes:
+            node_name = node.get("name", "未命名节点")
+            node_description = node.get("description", "无描述")
+            model_name = node.get("model_name", "无模型")
+            sections.append(f"### {node_name}")
+            sections.append(f"- 描述: {node_description}")
+            sections.append(f"- 使用模型: {model_name}")
+
+            # 添加节点的MCP服务器信息
+            mcp_servers = node.get("mcp_servers", [])
+            if mcp_servers:
+                sections.append(f"- MCP服务器: {', '.join(mcp_servers)}")
+
+            # 添加其他重要信息
+            if node.get("is_start"):
+                sections.append("- 此节点为图的起始节点")
+            if node.get("is_end"):
+                sections.append("- 此节点为图的结束节点")
+            if node.get("handoffs") is not None:
+                sections.append(f"- 最大决策次数: {node.get('handoffs')}")
+
+            sections.append("")  # 节点之间添加空行
+
+        # 添加使用的MCP服务器信息
+        if mcp_config and mcp_config.get("mcpServers"):
+            mcp_servers = set()
+            for node in nodes:
+                for server in node.get("mcp_servers", []):
+                    mcp_servers.add(server)
+
+            if mcp_servers:
+                sections.append("## 使用的MCP服务器")
+                for server_name in sorted(mcp_servers):
+                    server_config = mcp_config.get("mcpServers", {}).get(server_name, {})
+                    disabled = server_config.get("disabled", False)
+                    timeout = server_config.get("timeout", 60)
+                    sections.append(f"### {server_name}")
+                    sections.append(f"- 状态: {'禁用' if disabled else '启用'}")
+                    sections.append(f"- 超时: {timeout}秒")
+
+                    # 显示自动批准的工具列表
+                    auto_approve = server_config.get("autoApprove", [])
+                    if auto_approve:
+                        sections.append(f"- 自动批准的工具: {', '.join(auto_approve)}")
+
+                    sections.append("")  # 服务器之间添加空行
+
+        # 添加使用的模型信息
+        if model_configs:
+            model_names = set()
+            for node in nodes:
+                if node.get("model_name"):
+                    model_names.add(node.get("model_name"))
+
+            if model_names:
+                sections.append("## 使用的模型")
+                for model_name in sorted(model_names):
+                    # 查找对应的模型配置
+                    model_config = next((m for m in model_configs if m.get("name") == model_name), None)
+                    if model_config:
+                        sections.append(f"### {model_name}")
+                        sections.append(f"- 基础URL: {model_config.get('base_url', '未指定')}")
+                        sections.append(f"- 模型标识符: {model_config.get('model', '未指定')}")
+                        sections.append("")  # 模型之间添加空行
+
+        # 组合所有段落
+        return "\n".join(sections)

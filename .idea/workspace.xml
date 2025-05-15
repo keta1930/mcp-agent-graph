@@ -5,10 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="612d43e6-dea4-40fd-9f46-1a3eec5d0069" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/app/templates/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/api/routes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/core/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/core/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/core/file_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/core/file_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/flow_diagram.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/flow_diagram.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -73,7 +75,7 @@
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "ShowUsagesActions.previewPropertyKey": "true",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "E:/AI-Instructions/AI-Instructions/RAGLAG/LingYu-AI-Platform",
+    "last_opened_file_path": "E:/AI-Instructions/AI-Instructions/MAG/mcp-agent-graph-v/app/templates",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -84,8 +86,8 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="E:\AI-Instructions\AI-Instructions\project\QuantFactor\openweb_openapi\model" />
       <recent name="E:\AI-Instructions\AI-Instructions\MAG\mcp-agent-graph-v\app\templates" />
+      <recent name="E:\AI-Instructions\AI-Instructions\project\QuantFactor\openweb_openapi\model" />
       <recent name="E:\AI-Instructions\AI-Instructions\MAG\mcp-agent-graph-v\app\services\graph" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -115,7 +117,7 @@
       <workItem from="1746883301537" duration="22207000" />
       <workItem from="1747027440611" duration="13989000" />
       <workItem from="1747193812549" duration="6376000" />
-      <workItem from="1747230087246" duration="16846000" />
+      <workItem from="1747230087246" duration="22993000" />
     </task>
     <servers />
   </component>
