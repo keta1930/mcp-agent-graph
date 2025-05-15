@@ -1,10 +1,6 @@
-import re
-from typing import List, Dict, Any, Optional, Match, Tuple
-
-
 def _parse_placeholder(placeholder: str) -> tuple:
     """
-    简化版的占位符解析函数，只支持三种基本模式
+    占位符解析函数，支持三种基本模式
 
     Args:
         placeholder: 占位符字符串，不含括号
@@ -35,9 +31,9 @@ def _parse_placeholder(placeholder: str) -> tuple:
             except (ValueError, IndexError):
                 # 如果格式不正确，使用默认值
                 n = 1
-    print("node_name:", node_name)
-    print("mode:", mode)
-    print("n:", n)
+    # print("node_name:", node_name)
+    # print("mode:", mode)
+    # print("n:", n)
     return node_name, mode, n
 
 
