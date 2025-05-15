@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import logging
@@ -141,6 +142,54 @@ class FileManager:
         return settings.CONVERSATION_DIR / conversation_id
 
     @staticmethod
+    def get_conversation_attachment_dir(conversation_id: str) -> Path:
+        """获取会话附件目录路径"""
+        return FileManager.get_conversation_dir(conversation_id) / "attachment"
+
+    @staticmethod
+    def ensure_attachment_dir(conversation_id: str) -> Path:
+        """确保附件目录存在并返回路径"""
+        attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
+        attachment_dir.mkdir(parents=True, exist_ok=True)
+        return attachment_dir
+
+    @staticmethod
+    def save_node_output_to_file(conversation_id: str, node_name: str, content: str, file_ext: str) -> Optional[str]:
+        """
+        将节点输出保存到文件
+
+        Args:
+            conversation_id: 会话ID
+            node_name: 节点名称
+            content: 要保存的内容
+            file_ext: 文件扩展名（不带点）
+
+        Returns:
+            保存文件的路径，如果保存失败则返回None
+        """
+        try:
+            # 创建时间戳（小时分钟秒）
+            timestamp = time.strftime("%H%M%S", time.localtime())
+
+            # 确保附件目录存在
+            attachment_dir = FileManager.ensure_attachment_dir(conversation_id)
+
+            # 构建文件名: 节点名+时间戳.扩展名
+            filename = f"{node_name}_{timestamp}.{file_ext}"
+            file_path = attachment_dir / filename
+
+            # 保存内容到文件
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            logger.info(f"节点 '{node_name}' 的输出已保存到: {file_path}")
+
+            return str(file_path)
+        except Exception as e:
+            logger.error(f"保存节点 '{node_name}' 输出到文件时出错: {str(e)}")
+            return None
+
+    @staticmethod
     def get_conversation_md_path(conversation_id: str) -> Path:
         """获取会话Markdown文件路径"""
         return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.md"
@@ -228,7 +277,13 @@ class FileManager:
             # 删除目录中的所有文件
             for file_path in conversation_dir.glob("*"):
                 try:
-                    file_path.unlink()
+                    if file_path.is_dir():
+                        # 递归删除子目录（如attachment）
+                        for sub_file in file_path.glob("*"):
+                            sub_file.unlink()
+                        file_path.rmdir()
+                    else:
+                        file_path.unlink()
                 except Exception as e:
                     logger.error(f"删除文件 {file_path} 时出错: {str(e)}")
                     success = False

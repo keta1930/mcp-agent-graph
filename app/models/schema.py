@@ -64,6 +64,7 @@ class AgentNode(BaseModel):
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
     position: Optional[Dict[str, float]] = Field(default=None, description="节点在画布中的位置")
     level: Optional[int] = Field(default=None, description="节点在图中的层级，用于确定执行顺序")
+    save: Optional[str] = Field(default=None, description="输出保存的文件扩展名，如md、html、py、txt等")
 
     @validator('name')
     def name_must_be_valid(cls, v):
@@ -92,6 +93,17 @@ class AgentNode(BaseModel):
             return int(v)  # 尝试将其转换为整数
         except (ValueError, TypeError):
             return None  # 如果转换失败，返回None
+
+    @validator('save')
+    def validate_save(cls, v):
+        if v is None:
+            return None
+        v = v.strip().lower()
+        # 可以添加扩展名验证逻辑
+        if v and not v.isalnum():
+            # 简单验证，确保只包含字母数字
+            v = ''.join(c for c in v if c.isalnum())
+        return v
 
 
 class GraphConfig(BaseModel):
