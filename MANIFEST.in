@@ -1,0 +1,17 @@
+include README.md
+include LICENSE
+
+# 包含所有Python文件和必要的包数据
+recursive-include mag_sdk *.py
+recursive-include mag_sdk/app *.py
+
+# 确保排除虚拟环境目录
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .git
+global-exclude .gitignore
+global-exclude .venv
+global-exclude venv
+global-exclude .env
+global-exclude *.egg-info

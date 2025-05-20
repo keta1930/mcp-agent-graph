@@ -501,3 +501,6 @@ npm run dev
 ```
 
 前端开发服务器将在端口 5173 上运行。
+
+### 微信群
+![alt text](fig/76caa615333b0faad3aeff5e647d906.png)

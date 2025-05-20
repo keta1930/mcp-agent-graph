@@ -501,3 +501,6 @@ npm run dev
 ```
 
 The frontend development server will run on port 5173.
+
+### Add wechat group
+![alt text](fig/76caa615333b0faad3aeff5e647d906.png)

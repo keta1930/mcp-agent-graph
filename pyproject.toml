@@ -1,9 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "mcp-agent-graph"
+name = "mag"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP Agent Graph - Python SDK for Agent Development Framework"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Yan Yixin", email = "yandeheng1@gmail.com"},
+]
+keywords = ["agent", "mcp", "graph", "framework", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
 dependencies = [
     "aiohttp>=3.11.18",
     "asyncio>=3.4.3",
@@ -20,4 +38,19 @@ dependencies = [
     "typing-extensions>=4.13.2",
     "uvicorn>=0.34.2",
     "websockets>=15.0.1",
+]
+
+[project.urls]
+Documentation = "https://github.com/keta1930/mcp-agent-graph#readme"
+Issues = "https://github.com/keta1930/mcp-agent-graph/issues"
+Source = "https://github.com/keta1930/mcp-agent-graph"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mag"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "mag",
+    "README.md",
+    "LICENSE",
 ]
