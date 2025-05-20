@@ -10,7 +10,7 @@ MCP Agent Graph (MAG) 是一个 agent 开发框架，用于快速构建agent系�
 
 ```bash
 # 直接从 PyPI 安装 mag 包
-pip install mag
+pip install mcp-agent-graph
 
 # 查看示例
 # 克隆仓库以获取示例代码
