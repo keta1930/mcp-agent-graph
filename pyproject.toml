@@ -3,12 +3,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mag"
-version = "0.1.0"
+name = "mcp-agent-graph"
+version = "1.3.1"
 description = "MCP Agent Graph - Python SDK for Agent Development Framework"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Yan Yixin", email = "yandeheng1@gmail.com"},
 ]
@@ -23,21 +23,25 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
 dependencies = [
-    "aiohttp>=3.11.18",
-    "asyncio>=3.4.3",
-    "bs4>=0.0.2",
-    "fastapi>=0.115.12",
-    "fastmcp>=2.2.2",
-    "langchain>=0.3.24",
-    "langgraph>=0.3.33",
-    "mcp>=1.6.0",
-    "openai>=1.76.0",
-    "pydantic>=2.11.3",
-    "pyzmq>=26.4.0",
-    "requests>=2.32.3",
-    "typing-extensions>=4.13.2",
-    "uvicorn>=0.34.2",
-    "websockets>=15.0.1",
+    "aiohttp",
+    "asyncio",
+    "bs4",
+    "fastapi",
+    "fastmcp",
+    "langchain",
+    "mcp",
+    "openai",
+    "pydantic",
+    "pyzmq",
+    "requests",
+    "typing-extensions",
+    "uvicorn",
+    "websockets",
+    "notebook",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "tqdm"
 ]
 
 [project.urls]
