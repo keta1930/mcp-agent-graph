@@ -4,6 +4,81 @@
 
 MCP Agent Graph (MAG) 是一个 agent 开发框架，用于快速构建agent系统。本项目基于图、节点、mcp来快速构建复杂Agent系统。
 
+## 🚀 部署指南
+
+### 方案一：使用 PyPI 安装（推荐）
+
+```bash
+# 直接从 PyPI 安装 mag 包
+pip install mag
+
+# 查看示例
+# 克隆仓库以获取示例代码
+git clone https://github.com/keta1930/mcp-agent-graph.git
+cd mcp-agent-graph/sdk_demo
+```
+
+> **更新**：从 v1.3.1 版本开始，我们正式发布了 Python SDK。现在可以直接通过 pip 安装并使用。
+
+> **提示**：我们在sdk_demo目录下提供了使用示例。
+
+### 方案二：使用 Conda
+
+```bash
+# 创建并激活 conda 环境
+conda create -n mag python=3.11
+conda activate mag
+
+# 克隆仓库
+git clone https://github.com/keta1930/mcp-agent-graph.git
+cd mcp-agent-graph
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行主应用
+cd mag
+python main.py
+```
+
+### 方案三：使用 uv
+
+```bash
+# 如果没有 uv，先安装
+安装指南: https://docs.astral.sh/uv/getting-started/installation/
+
+# 克隆仓库
+git clone https://github.com/keta1930/mcp-agent-graph.git
+cd mcp-agent-graph
+
+# 安装依赖
+uv sync
+.venv\Scripts\activate.ps1 (powershell)
+.venv\Scripts\activate.bat (cmd)
+
+# 直接使用 uv 运行
+cd mag
+uv run python main.py
+```
+
+后端服务器将在端口 9999 上运行，MCP 客户端在端口 8765 上运行。
+
+### 前端部署
+
+```bash
+# 导航到前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 运行开发服务器
+npm run dev
+```
+
+前端开发服务器将在端口 5173 上运行。
+
+
 ### ✨ 核心特性
 
 #### 1️⃣ 基于图的 Agent 开发框架
@@ -444,60 +519,4 @@ MAG 的一个最强大的功能是能够导入外部提示词文件，这使得�
 ![在Cline中调用](fig/img_8.png)
 ![在Cline中调用](fig/img_9.png)
 
-## 🚀 部署指南
 
-### 后端部署
-
-#### 方案一：使用 Conda
-
-```bash
-# 创建并激活 conda 环境
-conda create -n mag python=3.11
-conda activate mag
-
-# 克隆仓库
-git clone https://github.com/keta1930/mcp-agent-graph.git
-cd mcp-agent-graph
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 运行主应用
-python main.py
-```
-
-#### 方案二：使用 uv
-
-```bash
-# 如果没有 uv，先安装
-安装指南: https://docs.astral.sh/uv/getting-started/installation/
-
-# 克隆仓库
-git clone https://github.com/keta1930/mcp-agent-graph.git
-cd mcp-agent-graph
-
-# 安装依赖
-uv sync
-.venv\Scripts\activate.ps1 (powershell)
-.venv\Scripts\activate.bat (cmd)
-
-# 直接使用 uv 运行
-uv run python main.py
-```
-
-后端服务器将在端口 9999 上运行，MCP 客户端在端口 8765 上运行。
-
-### 前端部署
-
-```bash
-# 导航到前端目录
-cd frontend
-
-# 安装依赖
-npm install
-
-# 运行开发服务器
-npm run dev
-```
-
-前端开发服务器将在端口 5173 上运行。

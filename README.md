@@ -4,6 +4,81 @@ English | [中文](README_CN.md)
 
 MCP Agent Graph (MAG) is an agent development framework for quickly building agent systems. This project uses graphs, nodes, and MCP to rapidly construct complex Agent systems.
 
+## 🚀 Deployment Guide
+
+### Option 1: Using PyPI (Recommended)
+
+```bash
+# Install mag package directly from PyPI
+pip install mag
+
+# Check examples
+# Clone repository to get example code
+git clone https://github.com/keta1930/mcp-agent-graph.git
+cd mcp-agent-graph/sdk_demo
+```
+
+> **Update**: Starting with v1.3.1, we have officially released the Python SDK. It can now be installed and used directly via pip.
+
+> **Tip**: We provide usage examples in the sdk_demo directory.
+
+### Option 2: Using Conda
+
+```bash
+# Create and activate conda environment
+conda create -n mag python=3.11
+conda activate mag
+
+# Clone repository
+git clone https://github.com/keta1930/mcp-agent-graph.git
+cd mcp-agent-graph
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run main application
+cd mag
+python main.py
+```
+
+### Option 3: Using uv
+
+```bash
+# If you don't have uv, install it first
+Installation guide: https://docs.astral.sh/uv/getting-started/installation/
+
+# Clone repository
+git clone https://github.com/keta1930/mcp-agent-graph.git
+cd mcp-agent-graph
+
+# Install dependencies
+uv sync
+.venv\Scripts\activate.ps1 (powershell)
+.venv\Scripts\activate.bat (cmd)
+
+# Directly run with uv
+cd mag
+uv run python main.py
+```
+
+The backend server will run on port 9999, and the MCP client on port 8765.
+
+### Frontend Deployment
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+```
+
+The frontend development server will run on port 5173.
+
+
 ### ✨ Core Features
 
 #### 1️⃣ Graph-based Agent Development Framework
@@ -444,60 +519,4 @@ Export any graph as a standalone MCP server, making it available as a tool for o
 ![Calling in Cline](fig/img_8.png)
 ![Calling in Cline](fig/img_9.png)
 
-## 🚀 Deployment Guide
 
-### Backend Deployment
-
-#### Option 1: Using Conda
-
-```bash
-# Create and activate conda environment
-conda create -n mag python=3.11
-conda activate mag
-
-# Clone repository
-git clone https://github.com/keta1930/mcp-agent-graph.git
-cd mcp-agent-graph
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run main application
-python main.py
-```
-
-#### Option 2: Using uv
-
-```bash
-# If you don't have uv, install it first
-Installation guide: https://docs.astral.sh/uv/getting-started/installation/
-
-# Clone repository
-git clone https://github.com/keta1930/mcp-agent-graph.git
-cd mcp-agent-graph
-
-# Install dependencies
-uv sync
-.venv\Scripts\activate.ps1 (powershell)
-.venv\Scripts\activate.bat (cmd)
-
-# Directly run with uv
-uv run python main.py
-```
-
-The backend server will run on port 9999, and the MCP client on port 8765.
-
-### Frontend Deployment
-
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-```
-
-The frontend development server will run on port 5173.
