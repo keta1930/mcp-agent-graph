@@ -3,7 +3,7 @@ MAG SDK - MCP服务器管理客户端API
 """
 
 import requests
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 
 # 获取基础URL
 from .. import _BASE_URL, start, is_running
@@ -82,49 +82,82 @@ def get_tools() -> Dict[str, List[Dict[str, Any]]]:
     response.raise_for_status()
     return response.json()
 
-def add_server(name: str, config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+def add_server(servers: Dict[str, Any]) -> Dict[str, Any]:
     """
     添加新的MCP服务器配置
     
     参数:
-        name (str): 服务器名称
-        config (Dict[str, Any]): 服务器配置
+        servers (Dict[str, Any]): 包含mcpServers的完整配置
     
     返回:
-        Dict[str, Dict[str, Any]]: 更新结果
+        Dict[str, Any]: 添加结果
     """
     _ensure_server_running()
     
-    # 获取当前配置
-    current_config = get_config()
+    response = requests.post(f"{API_BASE}/mcp/add", json=servers)
     
-    # 添加新服务器
-    if "mcpServers" not in current_config:
-        current_config["mcpServers"] = {}
-    
-    current_config["mcpServers"][name] = config
-    
-    # 更新配置
-    return update_config(current_config)
+    # 不再抛出异常，直接返回响应内容
+    if response.status_code == 200:
+        return response.json()
+    else:
+        # 如果返回其他状态码，尝试解析错误信息
+        try:
+            error_data = response.json()
+            return {
+                "status": "error",
+                "message": f"HTTP {response.status_code}: {error_data.get('detail', '未知错误')}",
+                "added_servers": [],
+                "duplicate_servers": [],
+                "skipped_servers": []
+            }
+        except:
+            return {
+                "status": "error",
+                "message": f"HTTP {response.status_code}: {response.text}",
+                "added_servers": [],
+                "duplicate_servers": [],
+                "skipped_servers": []
+            }
 
-def remove_server(name: str) -> Dict[str, Dict[str, Any]]:
+def remove_server(names: Union[str, List[str]]) -> Dict[str, Any]:
     """
-    删除MCP服务器配置
+    删除MCP服务器配置（支持单个或批量删除）
     
     参数:
-        name (str): 服务器名称
+        names (Union[str, List[str]]): 服务器名称或服务器名称列表
     
     返回:
-        Dict[str, Dict[str, Any]]: 更新结果
+        Dict[str, Any]: 删除结果
     """
     _ensure_server_running()
     
-    # 获取当前配置
-    current_config = get_config()
+    # 统一处理为列表格式
+    if isinstance(names, str):
+        server_names = [names]
+    else:
+        server_names = names
     
-    # 删除服务器
-    if "mcpServers" in current_config and name in current_config["mcpServers"]:
-        del current_config["mcpServers"][name]
+    response = requests.post(f"{API_BASE}/mcp/remove", json=server_names)
     
-    # 更新配置
-    return update_config(current_config)
+    # 不再抛出异常，直接返回响应内容
+    if response.status_code == 200:
+        return response.json()
+    else:
+        # 如果返回其他状态码，尝试解析错误信息
+        try:
+            error_data = response.json()
+            return {
+                "status": "error",
+                "message": f"HTTP {response.status_code}: {error_data.get('detail', '未知错误')}",
+                "removed_servers": [],
+                "not_found_servers": [],
+                "total_requested": len(server_names)
+            }
+        except:
+            return {
+                "status": "error",
+                "message": f"HTTP {response.status_code}: {response.text}",
+                "removed_servers": [],
+                "not_found_servers": [],
+                "total_requested": len(server_names)
+            }

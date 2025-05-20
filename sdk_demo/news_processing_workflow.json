@@ -1,0 +1,147 @@
+{
+  "name": "news_processing_workflow",
+  "description": "新闻抓取与多格式总结处理流程",
+  "nodes": [
+    {
+      "name": "fetch_news_1",
+      "description": "抓取第一篇新闻",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [
+        "fetch"
+      ],
+      "system_prompt": "",
+      "user_prompt": "https://news.qq.com/rain/a/20250503A06K0600 总结这篇新闻",
+      "input_nodes": [
+        "start"
+      ],
+      "output_nodes": [
+        "news_broadcast_script",
+        "news_summary_html"
+      ],
+      "handoffs": null,
+      "global_output": true,
+      "context": [],
+      "context_mode": "all",
+      "context_n": 1,
+      "is_start": true,
+      "is_end": false,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "level": 0,
+      "save": null
+    },
+    {
+      "name": "fetch_news_2",
+      "description": "抓取第二篇新闻",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [
+        "fetch"
+      ],
+      "system_prompt": "",
+      "user_prompt": "https://news.qq.com/rain/a/20250504A02Y4D00 总结这篇新闻",
+      "input_nodes": [
+        "start"
+      ],
+      "output_nodes": [
+        "entities_extraction",
+        "news_broadcast_script",
+        "news_summary_html"
+      ],
+      "handoffs": null,
+      "global_output": true,
+      "context": [],
+      "context_mode": "all",
+      "context_n": 1,
+      "is_start": true,
+      "is_end": false,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "level": 0,
+      "save": null
+    },
+    {
+      "name": "entities_extraction",
+      "description": "从两篇新闻中提取实体和关系",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "你是一位擅长信息提取的助手，需要从以下两篇新闻内容中提取实体和关系：\n\n第一篇新闻:\n{fetch_news_1}\n\n",
+      "user_prompt": "第二篇新闻:\n{fetch_news_2}。请从上述两篇新闻中提取关键实体（人物、组织、地点等）以及它们之间的关系，并以表格形式呈现。如果两篇新闻中有相同的实体，请特别标注出来。",
+      "input_nodes": [
+        "fetch_news_1",
+        "fetch_news_2"
+      ],
+      "output_nodes": [
+        "end"
+      ],
+      "handoffs": null,
+      "global_output": true,
+      "context": [],
+      "context_mode": "all",
+      "context_n": 1,
+      "is_start": false,
+      "is_end": true,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "level": 1,
+      "save": "md"
+    },
+    {
+      "name": "news_broadcast_script",
+      "description": "生成新闻播报稿",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "你是一位电视新闻主播，需要为两篇新闻准备一段演讲稿：\n\n{fetch_news_1}",
+      "user_prompt": "请根据上述新闻内容和另一篇新闻写一段60秒的新闻播报稿，语言要简洁有力、专业正式。",
+      "input_nodes": [
+        "fetch_news_1",
+        "fetch_news_2"
+      ],
+      "output_nodes": [
+        "end"
+      ],
+      "handoffs": null,
+      "global_output": true,
+      "context": [],
+      "context_mode": "all",
+      "context_n": 1,
+      "is_start": false,
+      "is_end": true,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "level": 1,
+      "save": "docx"
+    },
+    {
+      "name": "news_summary_html",
+      "description": "生成HTML格式的新闻总结",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "{pro.md}",
+      "user_prompt": "",
+      "input_nodes": [
+        "fetch_news_1",
+        "fetch_news_2"
+      ],
+      "output_nodes": [
+        "end"
+      ],
+      "handoffs": null,
+      "global_output": false,
+      "context": [],
+      "context_mode": "all",
+      "context_n": 1,
+      "is_start": false,
+      "is_end": true,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "level": 1,
+      "save": "html"
+    }
+  ],
+  "end_template": "**News Processing Workflow Results**\n\n**Fetched News Content:**\n- **News Source 1:** {fetch_news_1}\n- **News Source 2:** {fetch_news_2}\n\n**News Draft:**\n{news_broadcast_script}\n\n**Extracted News Entities:**\n{entities_extraction}"
+}

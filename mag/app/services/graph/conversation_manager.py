@@ -468,6 +468,9 @@ class ConversationManager:
         if not conversation:
             return None
 
+        # 获取附件文件列表
+        attachments = FileManager.get_conversation_attachments(conversation_id)
+
         # 结构化会话信息
         result = {
             "conversation_id": conversation_id,
@@ -477,9 +480,9 @@ class ConversationManager:
             "completed": self.is_graph_execution_complete(conversation),
             "node_results": self._restructure_results(conversation),
             "start_time": conversation.get("start_time", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
-            # 添加以下两个字段以支持新的模板功能
             "graph_config": conversation.get("graph_config", {}),
-            "results": conversation.get("results", [])
+            "results": conversation.get("results", []),
+            "attachments": attachments
         }
 
         return result

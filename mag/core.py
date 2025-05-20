@@ -16,6 +16,7 @@ from .client.graph import (
     save as save_graph,
     delete as delete_graph,
     rename as rename_graph,
+    get_detail as get_graph_detail,
     run,
     continue_run,
     import_file,

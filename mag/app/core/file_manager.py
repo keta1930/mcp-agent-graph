@@ -260,6 +260,33 @@ class FileManager:
         return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.html"
 
     @staticmethod
+    def get_conversation_attachments(conversation_id: str) -> List[Dict[str, Any]]:
+        """获取会话附件目录中的所有文件信息"""
+        attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
+        
+        if not attachment_dir.exists():
+            return []
+        
+        attachments = []
+        for file_path in attachment_dir.glob("*"):
+            if file_path.is_file():
+                # 获取文件信息
+                file_info = {
+                    "name": file_path.name,
+                    "path": str(file_path),
+                    "size": file_path.stat().st_size,
+                    "type": file_path.suffix.lstrip('.').lower(),  # 文件类型（扩展名）
+                    "modified": time.ctime(file_path.stat().st_mtime),  # 修改时间
+                    "relative_path": f"attachment/{file_path.name}"
+                }
+                attachments.append(file_info)
+        
+        # 按修改时间排序，最新的在前
+        attachments.sort(key=lambda x: os.path.getmtime(x["path"]), reverse=True)
+        
+        return attachments
+
+    @staticmethod
     def save_conversation(conversation_id: str, graph_name: str,
                           start_time: str, md_content: str, json_content: Dict[str, Any],
                           html_content: str = None) -> bool:

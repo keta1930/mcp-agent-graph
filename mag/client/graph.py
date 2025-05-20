@@ -139,24 +139,63 @@ def continue_run(conversation_id: str, input_text: str = None,
     response.raise_for_status()
     return response.json()
 
-def import_file(file_path: str) -> Dict[str, Any]:
+def import_graph(file_path: str) -> Dict[str, Any]:
     """
-    从JSON文件导入图
+    导入图配置
+    
+    支持两种导入方式:
+    1. 从JSON文件导入单个图配置
+    2. 从ZIP包导入完整图包（含配置、提示词等）
     
     参数:
-        file_path (str): JSON文件路径
+        file_path (str): 文件路径 (.json 或 .zip)
     
     返回:
         Dict[str, Any]: 导入结果
     """
     _ensure_server_running()
+    
     # 验证文件存在
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"文件未找到: {file_path}")
     
-    response = requests.post(f"{API_BASE}/graphs/import", json={"file_path": file_path})
-    response.raise_for_status()
-    return response.json()
+    # 获取文件扩展名（小写）
+    file_ext = os.path.splitext(file_path)[1].lower()
+    
+    # 根据扩展名选择导入方法
+    if file_ext == '.zip':
+        # ZIP包导入 - 使用 import_package 接口
+        endpoint = f"{API_BASE}/graphs/import_package"
+    else:
+        # 默认使用JSON导入 - 使用 import 接口
+        endpoint = f"{API_BASE}/graphs/import"
+    
+    try:
+        # 发送请求
+        response = requests.post(endpoint, json={"file_path": file_path})
+        
+        # 处理响应
+        if response.status_code == 200:
+            result = response.json()
+            return result
+        else:
+            # 尝试解析错误信息
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('detail', f"HTTP错误 {response.status_code}")
+            except:
+                error_msg = f"HTTP错误 {response.status_code}: {response.text}"
+            
+            return {
+                "status": "error",
+                "message": error_msg
+            }
+    except Exception as e:
+        error_msg = f"导入请求出错: {str(e)}"
+        return {
+            "status": "error",
+            "message": error_msg
+        }
 
 def export(name: str) -> Dict[str, Any]:
     """
@@ -170,25 +209,6 @@ def export(name: str) -> Dict[str, Any]:
     """
     _ensure_server_running()
     response = requests.get(f"{API_BASE}/graphs/{name}/export")
-    response.raise_for_status()
-    return response.json()
-
-def import_package(file_path: str) -> Dict[str, Any]:
-    """
-    从ZIP包导入图
-    
-    参数:
-        file_path (str): ZIP文件路径
-    
-    返回:
-        Dict[str, Any]: 导入结果
-    """
-    _ensure_server_running()
-    # 验证文件存在
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"文件未找到: {file_path}")
-    
-    response = requests.post(f"{API_BASE}/graphs/import_package", json={"file_path": file_path})
     response.raise_for_status()
     return response.json()
 
@@ -219,6 +239,35 @@ def create_from_dict(graph_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     return save(graph_data)
 
+def get_detail(name: str) -> Dict[str, Any]:
+    """
+    获取图的详细信息（包括配置和README文件内容）
+    
+    参数:
+        name (str): 图名称
+    
+    返回:
+        Dict[str, Any]: 包含图配置和README内容的字典
+    """
+    _ensure_server_running()
+    response = requests.get(f"{API_BASE}/graphs/{name}/readme")
+    
+    # 处理响应
+    if response.status_code == 200:
+        return response.json()
+    elif response.status_code == 404:
+        print(f"警告: 找不到图 '{name}'")
+        return {"name": name, "config": None, "readme": None}
+    else:
+        try:
+            error_data = response.json()
+            error_msg = error_data.get('detail', f"HTTP错误 {response.status_code}")
+        except:
+            error_msg = f"HTTP错误 {response.status_code}: {response.text}"
+        
+        print(f"错误: {error_msg}")
+        return {"name": name, "config": None, "readme": None, "error": error_msg}
+        
 def create_from_file(file_path: str) -> Dict[str, Any]:
     """
     从JSON文件创建新图

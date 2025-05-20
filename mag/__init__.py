@@ -119,9 +119,6 @@ def start():
             print("错误: 服务器启动超时")
             shutdown()
             return False
-            
-        # 启动MCP客户端
-        _start_mcp_client()
         
         # 设置进程已启动标志
         _is_server_running = True
@@ -147,7 +144,7 @@ def shutdown():
         try:
             import requests
             requests.post(f"{_BASE_URL}/api/system/shutdown", timeout=5)
-            time.sleep(2)  # 给服务器一些时间关闭
+            time.sleep(3) 
         except:
             pass
             
@@ -191,11 +188,11 @@ from .client.graph import (
     save as save_graph,
     delete as delete_graph,
     rename as rename_graph,
+    get_detail as get_graph_detail,
     run,
     continue_run,
-    import_file,
+    import_graph,
     export,
-    import_package,
     generate_mcp_script
 )
 
@@ -214,7 +211,9 @@ from .client.mcp import (
     update_config as update_mcp_config,
     get_status as get_mcp_status,
     connect as connect_mcp,
-    get_tools as get_mcp_tools
+    get_tools as get_tools,
+    add_server as add_server,
+    remove_server as remove_server
 )
 
 # 会话管理
@@ -223,9 +222,10 @@ from .client.conversation import (
     get as get_conversation,
     delete as delete_conversation,
     get_hierarchy as get_conversation_hierarchy
+    
 )
 
 # 取别名，使API更直观
 run_graph = run
-import_graph = import_file
+import_graph = import_graph
 export_graph = export

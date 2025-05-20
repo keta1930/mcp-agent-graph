@@ -39,7 +39,7 @@ def get(conversation_id: str) -> Dict[str, Any]:
         Dict[str, Any]: 会话状态
     """
     _ensure_server_running()
-    response = requests.get(f"{API_BASE}/conversations/{conversation_id}")
+    response = requests.get(f"{API_BASE}/conversations/{conversation_id}/hierarchy")
     response.raise_for_status()
     return response.json()
 

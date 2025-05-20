@@ -268,6 +268,96 @@ class MCPService:
             logger.error(f"连接服务器时出错: {str(e)}")
             return {"status": "error", "error": str(e)}
 
+    async def connect_all_servers(self) -> Dict[str, Any]:
+        """连接所有已配置的MCP服务器"""
+        try:
+            if not self.client_started:
+                return {
+                    "status": "error", 
+                    "error": "MCP Client未启动",
+                    "servers": {},
+                    "tools": {}
+                }
+
+            # 获取当前MCP配置
+            current_config = FileManager.load_mcp_config()
+            all_servers = current_config.get("mcpServers", {})
+            
+            if not all_servers:
+                return {
+                    "status": "success",
+                    "message": "没有配置的服务器需要连接",
+                    "servers": {},
+                    "tools": {}
+                }
+
+            # 获取当前服务器状态
+            server_status = await self.get_server_status()
+            
+            # 分别处理每个服务器的连接
+            connection_results = {}
+            all_tools = {}
+            successful_connections = 0
+            failed_connections = 0
+            already_connected = 0
+
+            for server_name in all_servers.keys():
+                try:
+                    # 检查服务器是否已连接
+                    if (server_name in server_status and 
+                        server_status[server_name].get("connected", False)):
+                        connection_results[server_name] = {
+                            "status": "already_connected",
+                            "tools": server_status[server_name].get("tools", [])
+                        }
+                        all_tools[server_name] = server_status[server_name].get("tools", [])
+                        already_connected += 1
+                    else:
+                        # 尝试连接服务器
+                        result = await self.connect_server(server_name)
+                        if result.get("status") == "connected":
+                            connection_results[server_name] = {
+                                "status": "connected",
+                                "tools": result.get("tools", [])
+                            }
+                            all_tools[server_name] = result.get("tools", [])
+                            successful_connections += 1
+                        else:
+                            connection_results[server_name] = {
+                                "status": "failed",
+                                "error": result.get("error", "连接失败"),
+                                "tools": []
+                            }
+                            failed_connections += 1
+                except Exception as e:
+                    connection_results[server_name] = {
+                        "status": "error",
+                        "error": str(e),
+                        "tools": []
+                    }
+                    failed_connections += 1
+
+            return {
+                "status": "completed",
+                "summary": {
+                    "total_servers": len(all_servers),
+                    "successful_connections": successful_connections,
+                    "failed_connections": failed_connections,
+                    "already_connected": already_connected
+                },
+                "servers": connection_results,
+                "tools": all_tools
+            }
+
+        except Exception as e:
+            logger.error(f"批量连接服务器时出错: {str(e)}")
+            return {
+                "status": "error",
+                "error": f"批量连接失败: {str(e)}",
+                "servers": {},
+                "tools": {}
+            }
+
     async def get_all_tools(self) -> Dict[str, List[Dict[str, Any]]]:
         """获取所有可用工具的信息"""
         try:
