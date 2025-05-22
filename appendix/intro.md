@@ -71,7 +71,7 @@ To help you understand how to build effective agents, here's a complete example 
 
 ### Example: Research and Analysis System
 #### Flow Chart:
-![img.png](fig/img10.png)
+![img.png](img10.png)
 
 ```json
 {
