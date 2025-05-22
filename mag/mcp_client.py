@@ -72,7 +72,7 @@ class MCPServer:
                 return False
 
             # 设置超时
-            timeout = self.config.get('timeout', 60)  # 默认60秒超时
+            timeout = self.config.get('timeout', 10)  # 默认10秒超时
 
             # 使用asyncio.wait_for来添加超时机制
             try:
@@ -80,11 +80,20 @@ class MCPServer:
                     # 打印命令和参数，便于调试
                     logger.info(f"启动服务器 '{self.name}' 使用命令: {command} {' '.join(args)}")
 
+                    # 获取环境变量
+                    env = os.environ.copy()
+                    
+                    # 如果配置中有环境变量设置，则合并到环境变量中
+                    config_env = self.config.get('env', {})
+                    if config_env:
+                        logger.info(f"服务器 '{self.name}' 使用自定义环境变量: {list(config_env.keys())}")
+                        env.update(config_env)
+
                     # 创建服务器参数
                     server_params = StdioServerParameters(
                         command=command,
                         args=args,
-                        env=os.environ.copy()
+                        env=env
                     )
 
                     # 使用try-except捕获特定错误
@@ -150,12 +159,32 @@ class MCPServer:
     async def cleanup(self):
         """清理服务器连接"""
         try:
-            await self.exit_stack.aclose()
+            # 先清空工具列表，避免断开连接后仍能获取工具
+            self.tools = []
+            
+            # 使用更安全的方式关闭连接
+            if self.exit_stack:
+                try:
+                    await self.exit_stack.aclose()
+                except Exception as e:
+                    logger.error(f"关闭exit_stack时出错: {str(e)}")
+                finally:
+                    # 确保重置所有状态
+                    self.exit_stack = AsyncExitStack()
+            
+            # 清除会话和IO引用
             self.session = None
             self.stdio = None
             self.write = None
+            
+            logger.info(f"服务器 '{self.name}' 连接已成功清理")
         except Exception as e:
             logger.error(f"清理服务器 '{self.name}' 连接时出错: {str(e)}")
+            # 即使出错也要重置状态
+            self.session = None
+            self.stdio = None
+            self.write = None
+            self.tools = []
 
     def is_connected(self) -> bool:
         """检查服务器是否已连接"""
@@ -709,6 +738,48 @@ async def get_tools():
                 })
     return all_tools
 
+@app.post("/disconnect_server")
+async def disconnect_server(request: ServerConnectRequest):
+    """断开特定服务器的连接"""
+    server_name = request.server_name
+
+    if server_name not in SERVERS:
+        raise HTTPException(status_code=404, detail=f"找不到服务器: {server_name}")
+
+    # 如果服务器未连接，直接返回
+    if not SERVERS[server_name].is_connected():
+        return {
+            "status": "not_connected",
+            "server": server_name,
+            "message": "服务器未连接"
+        }
+
+    # 执行清理操作
+    logger.info(f"开始断开服务器连接: {server_name}")
+    try:
+        await SERVERS[server_name].cleanup()
+        
+        # 验证断开连接后的状态
+        if SERVERS[server_name].is_connected():
+            logger.warning(f"服务器 '{server_name}' 断开连接后仍显示为已连接状态")
+            # 强制重置状态
+            SERVERS[server_name].session = None
+            SERVERS[server_name].tools = []
+        
+        return {
+            "status": "disconnected",
+            "server": server_name,
+            "message": f"服务器 '{server_name}' 连接已断开"
+        }
+    except Exception as e:
+        logger.error(f"断开服务器 '{server_name}' 连接时出错: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {
+            "status": "error",
+            "server": server_name,
+            "error": str(e),
+            "message": f"断开服务器连接时出错: {str(e)}"
+        }
 
 async def process_config_update(config_path: str):
     """处理配置更新"""

@@ -358,6 +358,31 @@ class MCPService:
                 "tools": {}
             }
 
+    async def disconnect_server(self, server_name: str) -> Dict[str, Any]:
+        """断开指定服务器的连接"""
+        try:
+            if not self.client_started:
+                return {"status": "error", "error": "MCP Client未启动"}
+
+            session = await self._get_session()
+            async with session.post(
+                f"{self.client_url}/disconnect_server",
+                json={"server_name": server_name}
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info(f"服务器 '{server_name}' 断开连接: {result}")
+                    return result
+                else:
+                    error_text = await response.text()
+                    logger.error(f"断开服务器连接请求失败: {response.status} {error_text}")
+                    return {"status": "error", "error": error_text}
+
+        except Exception as e:
+            error_msg = f"断开服务器连接时出错: {str(e)}"
+            logger.error(error_msg)
+            return {"status": "error", "error": error_msg}
+
     async def get_all_tools(self) -> Dict[str, List[Dict[str, Any]]]:
         """获取所有可用工具的信息"""
         try:

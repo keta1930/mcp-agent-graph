@@ -296,7 +296,44 @@ async def connect_server(server_name: str):
             detail=f"连接服务器时出错: {str(e)}"
         )
 
-
+@router.post("/mcp/disconnect/{server_name}", response_model=Dict[str, Any])
+async def disconnect_server(server_name: str):
+    """断开指定的MCP服务器连接"""
+    try:
+        # 检查服务器状态
+        server_status = await mcp_service.get_server_status()
+        if server_name not in server_status:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到服务器 '{server_name}'"
+            )
+        
+        # 如果服务器未连接，直接返回
+        if not server_status[server_name].get("connected", False):
+            return {
+                "status": "not_connected",
+                "server": server_name,
+                "message": "服务器未连接"
+            }
+        
+        # 断开服务器连接
+        result = await mcp_service.disconnect_server(server_name)
+        if result.get("status") == "error":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get("error", "断开服务器连接失败")
+            )
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"断开服务器'{server_name}'连接时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"断开服务器连接时出错: {str(e)}"
+        )
+        
 @router.get("/mcp/tools", response_model=Dict[str, List[Dict[str, Any]]])
 async def get_mcp_tools():
     """获取所有MCP工具信息"""
@@ -861,6 +898,97 @@ async def generate_mcp_script(graph_name: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"生成MCP脚本时出错: {str(e)}"
+        )
+
+@router.get("/prompt-template", response_model=Dict[str, str])
+async def get_prompt_template():
+    """生成提示词模板，包含节点参数规范、可用工具信息和已有模型名称"""
+    try:
+        # 1. 连接所有服务器以确保所有工具可用
+        connect_result = await mcp_service.connect_all_servers()
+        logger.info(f"连接所有服务器结果: {connect_result}")
+        
+        # 2. 获取所有工具信息
+        all_tools_data = await mcp_service.get_all_tools()
+        
+        # 3. 过滤和转换工具信息为文本描述，添加清晰的标签
+        tools_description = ""
+
+        if not all_tools_data:
+            tools_description = "当前没有可用的MCP工具。\n\n"
+        else:
+            tools_description += "# 可用MCP工具\n\n"
+            
+            # 统计服务器和工具总数
+            server_count = len(all_tools_data)
+            total_tools = sum(len(tools) for tools in all_tools_data.values())
+            tools_description += f"系统中共有 {server_count} 个MCP服务，提供 {total_tools} 个工具。\n\n"
+            
+            # 遍历每个服务器
+            for server_name, tools in all_tools_data.items():
+                tools_description += f"## 服务：{server_name}\n\n"
+                
+                if not tools:
+                    tools_description += "此服务未提供工具。\n\n"
+                    continue
+                
+                # 显示此服务的工具数量
+                tools_description += f"此服务提供 {len(tools)} 个工具：\n\n"
+                
+                # 遍历服务提供的每个工具
+                for i, tool in enumerate(tools, 1):
+                    # 从工具数据中提取需要的字段
+                    tool_name = tool.get("name", "未知工具")
+                    tool_desc = tool.get("description", "无描述")
+                    
+                    # 添加工具标签和编号
+                    tools_description += f"### 工具 {i}：{tool_name}\n\n"
+                    tools_description += f"**工具说明**：{tool_desc}\n\n"
+                    
+                    # 添加分隔符，除非是最后一个工具
+                    if i < len(tools):
+                        tools_description += "---\n\n"
+
+                tools_description += "***\n\n"
+        
+        # 4. 获取所有可用模型
+        all_models = model_service.get_all_models()
+        models_description = ""
+        
+        if not all_models:
+            models_description = "当前没有配置的模型。\n\n"
+        else:
+            models_description = "### 可用模型列表：\n\n"
+            for model in all_models:
+                models_description += f"- `{model['name']}`\n"
+            models_description += "\n"
+        
+        # 5. 读取提示词模板文件
+        current_file_dir = Path(__file__).parent.parent  # 从 app/api 回到 app
+        template_path = current_file_dir / "templates" / "prompt_template.md"
+        if not template_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="找不到提示词模板文件"
+            )
+            
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+            
+        # 6. 将工具信息和模型信息嵌入到模板中
+        final_prompt = template_content.replace("{TOOLS_DESCRIPTION}", tools_description)
+        final_prompt = final_prompt.replace("{MODELS_DESCRIPTION}", models_description)
+        
+        return {
+            "prompt": final_prompt
+        }
+    except Exception as e:
+        logger.error(f"生成提示词模板时出错: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"生成提示词模板时出错: {str(e)}"
         )
 
 
