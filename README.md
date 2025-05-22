@@ -187,8 +187,8 @@ Export any graph as a standalone MCP server, making it usable as a tool for othe
 If you find MCP Agent Graph helpful for your research or work, please consider citing it:
 
 ```bibtex
-@misc{owl2025,
-  title        = {MCP-Agent-Graph},
+@misc{mcp_agent_graph_2025,
+  title        = {mcp-agent-graph},
   author       = {Yan Yixin},
   howpublished = {\url{https://github.com/keta1930/mcp-agent-graph}},
   note         = {Accessed: 2025-04-24},

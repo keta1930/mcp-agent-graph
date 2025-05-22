@@ -212,8 +212,8 @@ HOST  → CLIENT  → SERVER
 如果您发现 MCP Agent Graph 对您的研究或工作有帮助,请考虑引用它:
 
 ```bibtex
-@misc{owl2025,
-  title        = {MCP-Agent-Graph},
+@misc{mcp_agent_graph_2025,
+  title        = {mcp-agent-graph},
   author       = {Yan Yixin},
   howpublished = {\url{https://github.com/keta1930/mcp-agent-graph}},
   note         = {Accessed: 2025-04-24},
