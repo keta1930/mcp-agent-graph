@@ -17,47 +17,6 @@
       <change afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/components/graph-editor/ImportGraphModal.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.python-version" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README_CN.md" beforeDir="false" afterPath="$PROJECT_DIR$/README_CN.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/api/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/api/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/core/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/core/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/core/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/core/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/core/file_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/core/file_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/models/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/models/schema.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/server/arxiv_mcpserver.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/server/arxiv_mcpserver.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/server/bilibili.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/server/bilibili.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/server/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/server/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph/conversation_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph/conversation_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph/graph_executor.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph/graph_executor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph/graph_processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph/graph_processor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph/output_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph/output_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/graph_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/mcp_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/mcp_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/model_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/model_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/conversation_template.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/conversation_template.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/flow_diagram.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/flow_diagram.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/html_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/html_generator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/markdown_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/markdown_generator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/mcp_parallel_template.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/mcp_parallel_template.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/mcp_sequential_template.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/mcp_sequential_template.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/template_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/template_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/utils/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/utils/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/utils/logger.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp_client.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/mcp_client.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" afterDir="false" />
@@ -74,6 +33,7 @@
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/services/graphService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/services/graphService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/store/graphEditorStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/store/graphEditorStore.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/styles/graph-runner.css" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/styles/graph-runner.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../project/QuantFactor/QuantFactorMiner/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../project/QuantFactor/QuantFactorMiner/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -124,30 +84,30 @@
     <option name="sortByType" value="true" />
     <option name="sortKey" value="BY_TYPE" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.api_server.executor&quot;: &quot;Run&quot;,
-    &quot;Python.doc_load_app.executor&quot;: &quot;Run&quot;,
-    &quot;Python.hash.executor&quot;: &quot;Run&quot;,
-    &quot;Python.hash_sim.executor&quot;: &quot;Run&quot;,
-    &quot;Python.log_analyzer.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.pytes.executor&quot;: &quot;Run&quot;,
-    &quot;Python.user_manager.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;ShowUsagesActions.previewPropertyKey&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/AI-Instructions/AI-Instructions/MAG/mcp-agent-graph-p&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.api_server.executor": "Run",
+    "Python.doc_load_app.executor": "Run",
+    "Python.hash.executor": "Run",
+    "Python.hash_sim.executor": "Run",
+    "Python.log_analyzer.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.pytes.executor": "Run",
+    "Python.user_manager.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ShowUsagesActions.previewPropertyKey": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "E:/AI-Instructions/AI-Instructions/project/QuantFactor/QuantFactorMiner",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="E:\AI-Instructions\AI-Instructions\MAG\mcp-agent-graph-p" />
@@ -187,6 +147,7 @@
       <workItem from="1747300874814" duration="399000" />
       <workItem from="1747315727853" duration="2399000" />
       <workItem from="1747707787505" duration="20000" />
+      <workItem from="1747979746692" duration="60000" />
     </task>
     <servers />
   </component>

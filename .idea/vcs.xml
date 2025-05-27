@@ -5,7 +5,9 @@
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../mcp-agent-graph" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../mcp-agent-graph - 副本" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../mcp-agent-graph-p - 副本" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../mcp-agent-graph-v" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../project/QuantFactor/QuantFactorMiner" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../../tutorials/langgraph_pro/builder/langgraph-builder" vcs="Git" />
   </component>
 </project>

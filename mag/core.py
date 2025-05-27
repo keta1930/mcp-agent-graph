@@ -19,10 +19,10 @@ from .client.graph import (
     get_detail as get_graph_detail,
     run,
     continue_run,
-    import_file,
+    import_graph,
     export,
-    import_package,
-    generate_mcp_script
+    generate_mcp_script,
+    get_prompt_template
 )
 
 # 模型管理
@@ -52,5 +52,5 @@ from .client.conversation import (
 )
 
 run_graph = run
-import_graph = import_file
+import_graph = import_graph
 export_graph = export

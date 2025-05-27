@@ -193,7 +193,8 @@ from .client.graph import (
     continue_run,
     import_graph,
     export,
-    generate_mcp_script
+    generate_mcp_script,
+    get_prompt_template
 )
 
 # 模型管理

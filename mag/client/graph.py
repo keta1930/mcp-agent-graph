@@ -227,6 +227,22 @@ def generate_mcp_script(name: str) -> Dict[str, Any]:
     response.raise_for_status()
     return response.json()
 
+def get_prompt_template() -> str:
+    """
+    生成提示词模板
+    
+    该函数会获取当前系统中所有可用的MCP工具信息和模型列表，
+    并生成一个包含这些信息的提示词模板，用于帮助用户创建图配置。
+    
+    返回:
+        str: 包含工具信息和模型列表的提示词模板
+    """
+    _ensure_server_running()
+    response = requests.get(f"{API_BASE}/prompt-template")
+    response.raise_for_status()
+    result = response.json()
+    return result.get("prompt", "")
+
 def create_from_dict(graph_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     从字典创建新图
