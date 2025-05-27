@@ -4,6 +4,25 @@ English | [中文](README_CN.md)
 
 > MCP Agent Graph (MAG) is an agent development framework for rapidly building agent systems. This project is based on graphs, nodes, and MCP to quickly construct complex Agent systems.
 
+📚 [Documentation](https://keta1930.github.io/mcp-agent-graph/#) | 📦 [PyPI Package](https://pypi.org/project/mcp-agent-graph/)
+
+## Table of Contents
+
+- [🚀 Deployment Guide](#-deployment-guide)
+  - [Option 1: Install via PyPI](#option-1-install-via-pypi-recommended)
+  - [Option 2: Using Conda](#option-2-using-conda)
+  - [Option 3: Using uv](#option-3-using-uv)
+  - [Frontend Deployment](#frontend-deployment)
+- [✨ Core Features](#-core-features)
+- [Development Details](#development-details)
+- [🖼️ Frontend Feature Showcase](#️-frontend-feature-showcase)
+  - [Visual Agent Graph Editor](#visual-agent-graph-editor)
+  - [MCP Server Integration](#mcp-server-integration)
+  - [Nested Graphs](#nested-graphs-graphs-as-nodes)
+  - [Graph to MCP Server Export](#graph-to-mcp-server-export)
+- [Citation](#citation)
+- [Star History](#star-history)
+
 ![MAG 系统架构](appendix/image_en.png)
 
 
