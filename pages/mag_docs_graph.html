@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图管理 - MAG SDK 使用文档</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #fafafa;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid #e1e5e9;
+            padding: 20px 0;
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+        }
+
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #e1e5e9;
+            margin-bottom: 20px;
+        }
+
+        .logo h1 {
+            color: #2563eb;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .nav {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-right: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            background-color: #f3f4f6;
+            color: #2563eb;
+        }
+
+        .nav-link.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-right-color: #2563eb;
+        }
+
+        .nav-link i {
+            margin-right: 10px;
+            width: 16px;
+        }
+
+        /* 折叠菜单样式 */
+        .nav-group {
+            margin-bottom: 10px;
+        }
+
+        .nav-group-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            color: #374151;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-group-title:hover {
+            background-color: #f9fafb;
+            color: #2563eb;
+        }
+
+        .nav-group-title.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+
+        .nav-group-content {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .nav-group-content .nav-link {
+            padding-left: 50px;
+            font-size: 14px;
+        }
+
+        .chevron {
+            transition: transform 0.3s ease;
+            transform: rotate(90deg);
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 40px 60px;
+            background: #fff;
+            min-height: 100vh;
+        }
+
+        /* 页面头部 */
+        .page-header {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .page-header h1 {
+            color: #1f2937;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        /* 内容区块 */
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #1f2937;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3 {
+            color: #374151;
+            font-size: 1.3rem;
+            margin: 30px 0 15px;
+        }
+
+        .section p {
+            color: #6b7280;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        /* 代码块样式 */
+        .code-block {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            margin: 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4b5563;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #6b7280;
+        }
+
+        /* 功能卡片 */
+        .function-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+        }
+
+        .function-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .function-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .function-icon {
+            background: #2563eb;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5rem;
+        }
+
+        .function-title {
+            color: #1f2937;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        /* 参数表格 */
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .param-table th,
+        .param-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .param-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .param-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 返回值样式 */
+        .return-value {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .return-value h4 {
+            color: #065f46;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .return-value p {
+            color: #047857;
+            margin: 0;
+        }
+
+        /* 注意事项 */
+        .note {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .note h4 {
+            color: #92400e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .note p {
+            color: #b45309;
+            margin: 0;
+        }
+
+        /* 目录导航 */
+        .toc {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .toc h3 {
+            color: #374151;
+            margin-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .toc a {
+            color: #2563eb;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .toc a:hover {
+            background: #eff6ff;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-project-diagram"></i> MAG SDK</h1>
+                <p>MCP Agent Graph 开发框架</p>
+            </div>
+            
+            <ul class="nav">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-home"></i>
+                        概述
+                    </a>
+                </li>
+                
+                <li class="nav-group">
+                    <div class="nav-group-title">
+                        <span><i class="fas fa-cog"></i> 系统管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content" style="max-height: 0;">
+                        <a href="system.html#system-start" class="nav-link">
+                            <i class="fas fa-play"></i>
+                            启动服务
+                        </a>
+                        <a href="system.html#system-status" class="nav-link">
+                            <i class="fas fa-info-circle"></i>
+                            状态检查
+                        </a>
+                        <a href="system.html#system-shutdown" class="nav-link">
+                            <i class="fas fa-stop"></i>
+                            关闭服务
+                        </a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title active">
+                        <span><i class="fas fa-project-diagram"></i> 图管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content">
+                        <a href="#graph-import" class="nav-link">导入图</a>
+                        <a href="#graph-list" class="nav-link">列出图</a>
+                        <a href="#graph-view" class="nav-link">查看图</a>
+                        <a href="#graph-save" class="nav-link">保存图</a>
+                        <a href="#graph-delete" class="nav-link">删除图</a>
+                        <a href="#graph-run" class="nav-link">运行图</a>
+                        <a href="#graph-continue" class="nav-link">继续运行</a>
+                        <a href="#graph-export" class="nav-link">导出图</a>
+                        <a href="#graph-mcp" class="nav-link">生成MCP脚本</a>
+                        <a href="#graph-template" class="nav-link">提示词模板</a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title">
+                        <span><i class="fas fa-brain"></i> 模型管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content" style="max-height: 0;">
+                        <a href="model.html#model-list" class="nav-link">列出模型</a>
+                        <a href="model.html#model-add" class="nav-link">添加模型</a>
+                        <a href="model.html#model-update" class="nav-link">更新模型</a>
+                        <a href="model.html#model-delete" class="nav-link">删除模型</a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title">
+                        <span><i class="fas fa-server"></i> MCP管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content" style="max-height: 0;">
+                        <a href="mcp.html#mcp-config" class="nav-link">配置管理</a>
+                        <a href="mcp.html#mcp-status" class="nav-link">状态查看</a>
+                        <a href="mcp.html#mcp-connect" class="nav-link">连接服务器</a>
+                        <a href="mcp.html#mcp-tools" class="nav-link">工具管理</a>
+                        <a href="mcp.html#mcp-servers" class="nav-link">服务器管理</a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title">
+                        <span><i class="fas fa-comments"></i> 会话管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content" style="max-height: 0;">
+                        <a href="conversation.html#conversation-list" class="nav-link">列出会话</a>
+                        <a href="conversation.html#conversation-get" class="nav-link">获取会话</a>
+                        <a href="conversation.html#conversation-delete" class="nav-link">删除会话</a>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a href="examples.html" class="nav-link">
+                        <i class="fas fa-code"></i>
+                        示例教程
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1><i class="fas fa-project-diagram"></i> 图管理</h1>
+                <p>智能体图的创建、编辑、运行和管理</p>
+            </div>
+
+            <!-- 目录导航 -->
+            <div class="toc">
+                <h3><i class="fas fa-list"></i> 本页内容</h3>
+                <ul>
+                    <li><a href="#graph-import">导入图</a></li>
+                    <li><a href="#graph-list">列出图</a></li>
+                    <li><a href="#graph-view">查看图</a></li>
+                    <li><a href="#graph-save">保存图</a></li>
+                    <li><a href="#graph-delete">删除图</a></li>
+                    <li><a href="#graph-run">运行图</a></li>
+                    <li><a href="#graph-continue">继续运行</a></li>
+                    <li><a href="#graph-export">导出图</a></li>
+                    <li><a href="#graph-mcp">生成MCP脚本</a></li>
+                    <li><a href="#graph-template">提示词模板</a></li>
+                </ul>
+            </div>
+
+            <!-- 图导入 -->
+            <section class="section" id="graph-import">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-file-import"></i>
+                        </div>
+                        <div class="function-title">mag.import_graph()</div>
+                    </div>
+                    
+                    <p>从文件导入一个图到系统中，可以是ZIP包或JSON配置文件。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>file_path</code> - 图文件的路径，可以是ZIP包或JSON文件</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>导入的图的名称或ID</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 从ZIP包导入图
+graph = mag.import_graph("easy_search.zip")
+print(f"已导入图: {graph}")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 列出图 -->
+            <section class="section" id="graph-list">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <div class="function-title">mag.list_graphs()</div>
+                    </div>
+                    
+                    <p>获取当前系统中所有图的列表。</p>
+                    
+                    <h3>入参</h3>
+                    <p>无参数</p>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>包含图名称或ID的列表</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 获取所有图
+graphs = mag.list_graphs()
+print(f"找到 {len(graphs)} 个图: {graphs}")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 查看图 -->
+            <section class="section" id="graph-view">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="function-title">mag.get_graph()</div>
+                    </div>
+                    
+                    <p>查看指定图的详细信息和配置。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>graph_name</code> - 要查看的图的名称或ID</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>包含图配置信息的字典或对象</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 查看指定图的配置
+result = mag.get_graph("news_processing_workflow")
+print("图配置信息:")
+print(result)
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 保存图 -->
+            <section class="section" id="graph-save">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-save"></i>
+                        </div>
+                        <div class="function-title">mag.save_graph()</div>
+                    </div>
+                    
+                    <p>保存或更新图配置。如果图不存在则创建新图，如果已存在则更新配置。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>config</code> - 图的配置字典，必须包含name字段</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>操作结果字典</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 定义一个简单的图配置
+graph_config = {
+    "name": "simple_chat",
+    "description": "简单的聊天图",
+    "nodes": [
+        {
+            "id": "chat_node",
+            "name": "聊天节点",
+            "type": "agent",
+            "model_name": "gpt-4",
+            "system_prompt": "你是一个友好的助手",
+            "user_prompt": "请回复用户的问题",
+            "mcp_servers": [],
+            "position": {"x": 100, "y": 100}
+        }
+    ],
+    "edges": [],
+    "version": "1.0"
+}
+
+# 保存图
+result = mag.save_graph(graph_config)
+print(f"保存结果: {result}")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 删除图 -->
+            <section class="section" id="graph-delete">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-trash-alt"></i>
+                        </div>
+                        <div class="function-title">mag.delete_graph()</div>
+                    </div>
+                    
+                    <p>从系统中删除指定的图。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>graph_name</code> - 要删除的图的名称或ID</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>删除操作的结果或确认消息</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 删除指定的图
+result = mag.delete_graph("news_processing_workflow")
+print("删除结果:", result)
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 运行图 -->
+            <section class="section" id="graph-run">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="function-title">mag.run_graph()</div>
+                    </div>
+                    
+                    <p>运行指定的图并获取执行结果。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>graph_name</code> - 要运行的图的名称或ID</li>
+                        <li><code>input_text</code> - 图运行所需的输入文本</li>
+                        <li><code>parallel</code> - 是否并行执行，默认为False（可选）</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>图运行的结果或处理后的数据</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 运行图并获取结果
+result = mag.run_graph("news_processing_workflow", input_text="处理这个任务")
+print("图运行结果:", result)
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 继续运行 -->
+            <section class="section" id="graph-continue">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-forward"></i>
+                        </div>
+                        <div class="function-title">mag.continue_run()</div>
+                    </div>
+                    
+                    <p>继续执行现有的会话，可以从断点恢复或添加新的输入继续处理。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>conversation_id</code> - 会话ID</li>
+                        <li><code>input_text</code> - 新的输入文本（可选）</li>
+                        <li><code>parallel</code> - 是否并行执行，默认为False（可选）</li>
+                        <li><code>continue_from_checkpoint</code> - 是否从断点继续，默认为False（可选）</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>执行结果字典</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 首先运行一个图
+initial_result = mag.run_graph("interactive_workflow", "开始处理数据")
+conversation_id = initial_result['conversation_id']
+
+# 继续会话，添加新输入
+continue_result = mag.continue_run(conversation_id=conversation_id, input_text="现在进行深度分析")
+print(f"继续执行结果: {continue_result}")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 导出图 -->
+            <section class="section" id="graph-export">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-upload"></i>
+                        </div>
+                        <div class="function-title">mag.export_graph()</div>
+                    </div>
+                    
+                    <p>将图及其依赖项导出为ZIP包，包含配置、提示词、文档等所有相关文件。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>graph_name</code> - 要导出的图的名称或ID</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>导出结果，包含导出文件路径</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 导出图
+result = mag.export_graph("research_workflow")
+if result['status'] == 'success':
+    print(f"✅ 导出成功! 文件路径: {result['file_path']}")
+else:
+    print(f"❌ 导出失败: {result.get('message', 'Unknown error')}")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 生成MCP脚本 -->
+            <section class="section" id="graph-mcp">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div class="function-title">mag.generate_mcp_script()</div>
+                    </div>
+                    
+                    <p>为指定图生成MCP脚本，支持并行和顺序执行两种模式。</p>
+                    
+                    <h3>入参</h3>
+                    <ul>
+                        <li><code>graph_name</code> - 要生成脚本的图的名称或ID</li>
+                    </ul>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>包含并行和顺序执行脚本内容的字典</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 生成MCP脚本
+result = mag.generate_mcp_script("research_workflow")
+
+# 保存并行执行脚本
+with open("research_workflow_parallel.py", "w", encoding="utf-8") as f:
+    f.write(result["parallel_script"])
+
+# 保存顺序执行脚本
+with open("research_workflow_sequential.py", "w", encoding="utf-8") as f:
+    f.write(result["sequential_script"])
+
+print("✅ MCP脚本生成完成")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 提示词模板 -->
+            <section class="section" id="graph-template">
+                <div class="function-card">
+                    <div class="function-header">
+                        <div class="function-icon">
+                            <i class="fas fa-magic"></i>
+                        </div>
+                        <div class="function-title">mag.get_prompt_template()</div>
+                    </div>
+                    
+                    <p>生成包含当前系统中所有可用工具和模型信息的提示词模板，用于辅助LLM生成图配置。</p>
+                    
+                    <h3>入参</h3>
+                    <p>无参数</p>
+                    
+                    <h3>预期输出</h3>
+                    <div class="return-value">
+                        <h4><i class="fas fa-sign-out-alt"></i> 返回值</h4>
+                        <p>包含工具和模型信息的提示词模板字符串</p>
+                    </div>
+                    
+                    <h3>使用示例</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                        <pre><code class="language-python">import mag
+
+# 获取提示词模板
+template = mag.get_prompt_template()
+
+# 保存模板到文件
+with open("mag_prompt_template.md", "w", encoding="utf-8") as f:
+    f.write(template)
+
+print("✅ 提示词模板已生成: mag_prompt_template.md")
+</code></pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        // 复制代码功能
+        function copyCode(button) {
+            const code = button.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                button.style.background = '#10b981';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#4b5563';
+                }, 2000);
+            });
+        }
+
+        // 导航链接点击处理
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                // 移除其他活动状态
+                document.querySelectorAll('.nav-link.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+                // 添加活动状态到当前链接
+                e.target.classList.add('active');
+            });
+        });
+
+        // 页面内锚点滚动
+        document.querySelectorAll('a[href^="#"]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(link.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // 代码高亮
+        Prism.highlightAll();
+    </script>
+</body>
+</html>

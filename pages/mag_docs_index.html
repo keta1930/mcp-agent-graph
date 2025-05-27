@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAG SDK 使用文档</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #fafafa;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid #e1e5e9;
+            padding: 20px 0;
+            overflow-y: auto;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+        }
+
+        .logo {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #e1e5e9;
+            margin-bottom: 20px;
+        }
+
+        .logo h1 {
+            color: #2563eb;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .nav {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 5px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            color: #4b5563;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-right: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            background-color: #f3f4f6;
+            color: #2563eb;
+        }
+
+        .nav-link.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-right-color: #2563eb;
+        }
+
+        .nav-link i {
+            margin-right: 10px;
+            width: 16px;
+        }
+
+        /* 折叠菜单样式 */
+        .nav-group {
+            margin-bottom: 10px;
+        }
+
+        .nav-group-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            color: #374151;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-group-title:hover {
+            background-color: #f9fafb;
+            color: #2563eb;
+        }
+
+        .nav-group-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .nav-group-content.expanded {
+            max-height: 500px;
+        }
+
+        .nav-group-content .nav-link {
+            padding-left: 50px;
+            font-size: 14px;
+        }
+
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+
+        .chevron.rotated {
+            transform: rotate(90deg);
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 40px 60px;
+            background: #fff;
+            min-height: 100vh;
+        }
+
+        /* 内容样式 */
+        .hero {
+            text-align: center;
+            padding: 60px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: -40px -60px 40px;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #1f2937;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #374151;
+            font-size: 1.5rem;
+            margin: 30px 0 15px;
+        }
+
+        .section p {
+            color: #6b7280;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        /* 特性卡片 */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-card i {
+            font-size: 2.5rem;
+            color: #2563eb;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+
+        /* 代码块样式 */
+        .code-block {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            margin: 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4b5563;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #6b7280;
+        }
+
+        /* 安装步骤 */
+        .install-steps {
+            display: grid;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .install-step {
+            display: flex;
+            align-items: flex-start;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .step-number {
+            background: #2563eb;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .step-content p {
+            margin: 0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .hero {
+                margin: -20px -20px 20px;
+                padding: 40px 20px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h1><i class="fas fa-project-diagram"></i> MAG SDK</h1>
+                <p>MCP Agent Graph 开发框架</p>
+            </div>
+            
+            <ul class="nav">
+                <li class="nav-item">
+                    <a href="#overview" class="nav-link active">
+                        <i class="fas fa-home"></i>
+                        概述
+                    </a>
+                </li>
+                
+                <li class="nav-group">
+                    <div class="nav-group-title" onclick="toggleGroup(this)">
+                        <span><i class="fas fa-cog"></i> 系统管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content">
+                        <a href="#system-start" class="nav-link">
+                            <i class="fas fa-play"></i>
+                            启动服务
+                        </a>
+                        <a href="#system-status" class="nav-link">
+                            <i class="fas fa-info-circle"></i>
+                            状态检查
+                        </a>
+                        <a href="#system-shutdown" class="nav-link">
+                            <i class="fas fa-stop"></i>
+                            关闭服务
+                        </a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title" onclick="toggleGroup(this)">
+                        <span><i class="fas fa-project-diagram"></i> 图管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content">
+                        <a href="#graph-list" class="nav-link">列出图</a>
+                        <a href="#graph-get" class="nav-link">获取图</a>
+                        <a href="#graph-save" class="nav-link">保存图</a>
+                        <a href="#graph-delete" class="nav-link">删除图</a>
+                        <a href="#graph-run" class="nav-link">运行图</a>
+                        <a href="#graph-import" class="nav-link">导入图</a>
+                        <a href="#graph-export" class="nav-link">导出图</a>
+                        <a href="#graph-mcp" class="nav-link">生成MCP脚本</a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title" onclick="toggleGroup(this)">
+                        <span><i class="fas fa-brain"></i> 模型管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content">
+                        <a href="#model-list" class="nav-link">列出模型</a>
+                        <a href="#model-add" class="nav-link">添加模型</a>
+                        <a href="#model-update" class="nav-link">更新模型</a>
+                        <a href="#model-delete" class="nav-link">删除模型</a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title" onclick="toggleGroup(this)">
+                        <span><i class="fas fa-server"></i> MCP管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content">
+                        <a href="#mcp-config" class="nav-link">配置管理</a>
+                        <a href="#mcp-status" class="nav-link">状态查看</a>
+                        <a href="#mcp-connect" class="nav-link">连接服务器</a>
+                        <a href="#mcp-tools" class="nav-link">工具管理</a>
+                        <a href="#mcp-servers" class="nav-link">服务器管理</a>
+                    </div>
+                </li>
+
+                <li class="nav-group">
+                    <div class="nav-group-title" onclick="toggleGroup(this)">
+                        <span><i class="fas fa-comments"></i> 会话管理</span>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                    <div class="nav-group-content">
+                        <a href="#conversation-list" class="nav-link">列出会话</a>
+                        <a href="#conversation-get" class="nav-link">获取会话</a>
+                        <a href="#conversation-delete" class="nav-link">删除会话</a>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <a href="#examples" class="nav-link">
+                        <i class="fas fa-code"></i>
+                        示例教程
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="hero">
+                <h1>MAG SDK 使用文档</h1>
+                <p>MCP Agent Graph - 基于图的智能体开发框架 Python SDK</p>
+            </div>
+
+            <section class="section" id="overview">
+                <h2><i class="fas fa-info-circle"></i> 项目概述</h2>
+                <p>MAG (MCP Agent Graph) 是一个基于图的智能体开发框架，让您能够通过可视化的方式快速构建和部署复杂的AI智能体系统。</p>
+                
+                <div class="features">
+                    <div class="feature-card">
+                        <i class="fas fa-project-diagram"></i>
+                        <h3>图形化设计</h3>
+                        <p>通过直观的图形界面设计智能体工作流，每个节点代表一个具有特定功能的智能体。</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-puzzle-piece"></i>
+                        <h3>MCP集成</h3>
+                        <p>无缝集成MCP服务器，为智能体提供丰富的工具和能力扩展。</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-layer-group"></i>
+                        <h3>图嵌套</h3>
+                        <p>支持将整个图作为节点使用，实现层次化的智能体架构设计。</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-download"></i>
+                        <h3>导出为MCP</h3>
+                        <p>将图导出为标准MCP服务器脚本，实现智能体的独立部署。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2><i class="fas fa-rocket"></i> 快速开始</h2>
+                
+                <h3>安装</h3>
+                <div class="install-steps">
+                    <div class="install-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>安装MAG SDK</h4>
+                            <p>使用pip从PyPI安装最新版本的MAG SDK</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                    <pre><code class="language-bash">pip install mcp-agent-graph</code></pre>
+                </div>
+
+                <div class="install-steps">
+                    <div class="install-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>导入并启动服务</h4>
+                            <p>在Python代码中导入mag模块并启动后台服务</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                    <pre><code class="language-python">import mag
+
+# 启动MAG服务
+mag.start()
+
+# 检查服务状态
+if mag.is_running():
+    print("MAG服务已成功启动！")
+</code></pre>
+                </div>
+
+                <div class="install-steps">
+                    <div class="install-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>开始使用</h4>
+                            <p>现在您可以开始使用MAG SDK的各种功能了</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode(this)">复制</button>
+                    <pre><code class="language-python"># 查看可用的图
+graphs = mag.list_graphs()
+print(f"可用的图: {graphs}")
+
+# 查看可用的模型
+models = mag.list_models()
+print(f"可用的模型: {models}")
+</code></pre>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2><i class="fas fa-book"></i> 主要功能</h2>
+                <p>MAG SDK 提供了以下主要功能模块：</p>
+                
+                <ul style="list-style-type: none; padding: 0;">
+                    <li style="margin: 15px 0; padding: 15px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px;">
+                        <strong><i class="fas fa-cog"></i> 系统管理</strong> - 服务启动、状态检查、关闭服务
+                    </li>
+                    <li style="margin: 15px 0; padding: 15px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px;">
+                        <strong><i class="fas fa-project-diagram"></i> 图管理</strong> - 图的创建、编辑、运行、导入导出等完整生命周期管理
+                    </li>
+                    <li style="margin: 15px 0; padding: 15px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px;">
+                        <strong><i class="fas fa-brain"></i> 模型管理</strong> - AI模型的配置、更新、删除等管理功能
+                    </li>
+                    <li style="margin: 15px 0; padding: 15px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px;">
+                        <strong><i class="fas fa-server"></i> MCP管理</strong> - MCP服务器配置、连接、工具管理
+                    </li>
+                    <li style="margin: 15px 0; padding: 15px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 4px;">
+                        <strong><i class="fas fa-comments"></i> 会话管理</strong> - 智能体执行会话的查看、管理、删除
+                    </li>
+                </ul>
+            </section>
+
+            <section class="section">
+                <h2><i class="fas fa-link"></i> 相关链接</h2>
+                <p>
+                    <a href="https://github.com/keta1930/mcp-agent-graph" target="_blank" style="color: #2563eb; text-decoration: none;">
+                        <i class="fab fa-github"></i> GitHub 仓库
+                    </a> |
+                    <a href="https://pypi.org/project/mcp-agent-graph/" target="_blank" style="color: #2563eb; text-decoration: none;">
+                        <i class="fas fa-cube"></i> PyPI 包
+                    </a>
+                </p>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script>
+        // 折叠菜单功能
+        function toggleGroup(element) {
+            const content = element.nextElementSibling;
+            const chevron = element.querySelector('.chevron');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                chevron.classList.remove('rotated');
+            } else {
+                // 关闭其他展开的菜单
+                document.querySelectorAll('.nav-group-content.expanded').forEach(el => {
+                    el.classList.remove('expanded');
+                });
+                document.querySelectorAll('.chevron.rotated').forEach(el => {
+                    el.classList.remove('rotated');
+                });
+                
+                content.classList.add('expanded');
+                chevron.classList.add('rotated');
+            }
+        }
+
+        // 复制代码功能
+        function copyCode(button) {
+            const code = button.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                button.style.background = '#10b981';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#4b5563';
+                }, 2000);
+            });
+        }
+
+        // 导航链接点击处理
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                // 移除其他活动状态
+                document.querySelectorAll('.nav-link.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+                // 添加活动状态到当前链接
+                e.target.classList.add('active');
+            });
+        });
+
+        // 代码高亮
+        Prism.highlightAll();
+    </script>
+</body>
+</html>
