@@ -1,7 +1,10 @@
 // src/components/mcp-manager/MCPServerForm.tsx
 import React, { useEffect } from 'react';
-import { Form, Input, InputNumber, Switch, Select, Modal, Button } from 'antd';
+import { Form, Input, InputNumber, Switch, Select, Modal, Button, Typography } from 'antd';
 import { MCPServerConfig } from '../../types/mcp';
+
+const { TextArea } = Input;
+const { Text } = Typography;
 
 interface MCPServerFormProps {
   visible: boolean;
@@ -21,11 +24,19 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
   title,
 }) => {
   const [form] = Form.useForm();
+  const transportType = Form.useWatch('transportType', form);
 
   useEffect(() => {
     if (visible) {
       if (initialValues) {
-        form.setFieldsValue(initialValues);
+        const formValues = { ...initialValues };
+        if (formValues.env && Object.keys(formValues.env).length > 0) {
+          const envText = Object.entries(formValues.env)
+            .map(([key, value]) => `${key}=${value}`)
+            .join('\n');
+          formValues.envText = envText;
+        }
+        form.setFieldsValue(formValues);
       } else {
         form.resetFields();
         // Set default values
@@ -42,15 +53,46 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
-      const { serverName, ...serverConfig } = values;
+      const { serverName, envText, ...serverConfig } = values;
 
       // Convert string arrays
       if (typeof serverConfig.args === 'string') {
-        serverConfig.args = serverConfig.args.split(',').map(arg => arg.trim());
+        serverConfig.args = serverConfig.args.split(',').map((arg: string) => arg.trim()).filter((arg: string) => arg);
+      } else if (!Array.isArray(serverConfig.args)) {
+        serverConfig.args = [];
       }
 
       if (typeof serverConfig.autoApprove === 'string') {
-        serverConfig.autoApprove = serverConfig.autoApprove.split(',').map(tool => tool.trim());
+        serverConfig.autoApprove = serverConfig.autoApprove.split(',').map((tool: string) => tool.trim()).filter((tool: string) => tool);
+      } else if (!Array.isArray(serverConfig.autoApprove)) {
+        serverConfig.autoApprove = [];
+      }
+
+      if (envText && envText.trim()) {
+        const env: Record<string, string> = {};
+        const lines = envText.split('\n');
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine && trimmedLine.includes('=')) {
+            const [key, ...valueParts] = trimmedLine.split('=');
+            const value = valueParts.join('=');
+            if (key.trim() && value.trim()) {
+              env[key.trim()] = value.trim();
+            }
+          }
+        }
+        if (Object.keys(env).length > 0) {
+          serverConfig.env = env;
+        }
+      }
+
+      if (serverConfig.transportType === 'sse') {
+        delete serverConfig.command;
+        delete serverConfig.args;
+        delete serverConfig.base_url;
+      } else if (serverConfig.transportType === 'stdio') {
+        delete serverConfig.url;
+        delete serverConfig.base_url;
       }
 
       onSubmit(serverName, serverConfig as MCPServerConfig);
@@ -71,7 +113,7 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
           Submit
         </Button>,
       ]}
-      width={700}
+      width={800}
     >
       <Form
         form={form}
@@ -110,24 +152,40 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         >
           <Select>
             <Select.Option value="stdio">STDIO</Select.Option>
-            <Select.Option value="http">HTTP</Select.Option>
+            <Select.Option value="sse">SSE</Select.Option>
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="command"
-          label="Command"
-          rules={[{ required: true, message: 'Please input command!' }]}
-        >
-          <Input placeholder="python -m mcp_server" />
-        </Form.Item>
+        {/* STDIO specific fields */}
+        {transportType === 'stdio' && (
+          <>
+            <Form.Item
+              name="command"
+              label="Command"
+              rules={[{ required: true, message: 'Please input command!' }]}
+            >
+              <Input placeholder="python -m mcp_server" />
+            </Form.Item>
 
-        <Form.Item
-          name="args"
-          label="Arguments (comma separated)"
-        >
-          <Input placeholder="--arg1, --arg2" />
-        </Form.Item>
+            <Form.Item
+              name="args"
+              label="Arguments (comma separated)"
+            >
+              <Input placeholder="--arg1, --arg2" />
+            </Form.Item>
+          </>
+        )}
+
+        {/* SSE specific fields */}
+        {transportType === 'sse' && (
+          <Form.Item
+            name="url"
+            label="SSE URL"
+            rules={[{ required: true, message: 'Please input SSE URL!' }]}
+          >
+            <Input placeholder="https://mcp.api-inference.modelscope.cn/bd902138dc1a4d/sse" />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="autoApprove"
@@ -137,21 +195,23 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="base_url"
-          label="Base URL (for HTTP transport)"
-          dependencies={['transportType']}
-          rules={[
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (getFieldValue('transportType') === 'http' && !value) {
-                  return Promise.reject(new Error('Base URL is required for HTTP transport!'));
-                }
-                return Promise.resolve();
-              },
-            }),
-          ]}
+          name="envText"
+          label={
+            <div>
+              <Text>Environment Variables</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                Enter one per line in KEY=VALUE format (e.g., API_KEY=your-key-here)
+              </Text>
+            </div>
+          }
         >
-          <Input placeholder="http://localhost:8080" />
+          <TextArea
+            rows={4}
+            placeholder={`TAVILY_API_KEY=your-api-key-here
+OPENAI_API_KEY=your-openai-key
+DATABASE_URL=your-database-url`}
+          />
         </Form.Item>
       </Form>
     </Modal>

@@ -12,11 +12,11 @@ class MCPServerConfig(BaseModel):
     transportType: str = Field(default="stdio", description="传输类型")
     url: Optional[str] = Field(None, description="SSE服务器URL")
     type: Optional[str] = Field(None, description="服务器类型，会自动转换为transportType")
+    env: Optional[Dict[str, str]] = Field(None, description="环境变量")
 
     @root_validator(pre=False, skip_on_failure=True)
     def normalize_config(cls, values):
         """规范化配置，处理type字段转换和字段验证"""
-        # 处理type字段转换
         if 'type' in values and values['type']:
             type_value = values['type'].lower()
             if type_value == 'sse':
@@ -24,14 +24,12 @@ class MCPServerConfig(BaseModel):
             elif type_value == 'stdio':
                 values['transportType'] = 'stdio'
         
-        # 如果没有明确的transportType，根据配置推断
         if not values.get('transportType') or values.get('transportType') == 'stdio':
             if values.get('url'):
                 values['transportType'] = 'sse'
             elif values.get('command'):
                 values['transportType'] = 'stdio'
         
-        # 验证必需字段
         transport_type = values.get('transportType', 'stdio')
         if transport_type == 'sse' and not values.get('url'):
             raise ValueError('SSE传输类型必须提供url字段')
@@ -41,40 +39,55 @@ class MCPServerConfig(BaseModel):
         return values
 
     def dict(self, **kwargs):
-        """重写dict方法，根据传输类型过滤字段"""
-        data = super().dict(**kwargs)
+        """dict方法，根据传输类型过滤字段"""
+        data = super().dict(exclude_none=True, **kwargs)
         
         transport_type = data.get('transportType', 'stdio')
-        
-        # 移除type字段
-        if 'type' in data:
-            del data['type']
+
+        data.pop('type', None)
         
         # 根据传输类型过滤字段
         if transport_type == 'sse':
-            # SSE传输类型不需要command和args
-            if 'command' in data:
-                del data['command']
-            if 'args' in data:
+            data.pop('command', None)
+            data.pop('args', None)
+            if 'args' in data and not data['args']:
                 del data['args']
         elif transport_type == 'stdio':
-            # stdio传输类型不需要url
-            if 'url' in data:
-                del data['url']
-        
+            data.pop('url', None)       
+        if 'args' in data and (not data['args'] or data['args'] == []):
+            del data['args']
+        if 'autoApprove' in data and (not data['autoApprove'] or data['autoApprove'] == []):
+            data['autoApprove'] = []  
+        if 'env' in data and (not data['env']):
+            del data['env']
         return data
 
     class Config:
         extra = "allow"
 
 
-# 其余的类保持你原有的写法不变
 class MCPConfig(BaseModel):
     """MCP配置"""
     mcpServers: Dict[str, MCPServerConfig] = Field(
         default_factory=dict,
         description="MCP服务器配置，键为服务器名称"
     )
+    
+    def dict(self, **kwargs):
+        """dict方法确保服务器配置正确过滤"""
+        data = super().dict(**kwargs)
+        
+        if 'mcpServers' in data:
+            filtered_servers = {}
+            for server_name, server_config in data['mcpServers'].items():
+                if isinstance(server_config, MCPServerConfig):
+                    filtered_servers[server_name] = server_config.dict()
+                else:
+                    server_obj = MCPServerConfig(**server_config)
+                    filtered_servers[server_name] = server_obj.dict()
+            data['mcpServers'] = filtered_servers
+        
+        return data
 
 
 class ModelConfig(BaseModel):
@@ -142,20 +155,18 @@ class AgentNode(BaseModel):
     @validator('level')
     def validate_level(cls, v):
         if v is None:
-            return None  # 允许为None，由后端计算
+            return None  
         try:
-            return int(v)  # 尝试将其转换为整数
+            return int(v) 
         except (ValueError, TypeError):
-            return None  # 如果转换失败，返回None
+            return None  
 
     @validator('save')
     def validate_save(cls, v):
         if v is None:
             return None
         v = v.strip().lower()
-        # 可以添加扩展名验证逻辑
         if v and not v.isalnum():
-            # 简单验证，确保只包含字母数字
             v = ''.join(c for c in v if c.isalnum())
         return v
 

@@ -18,6 +18,50 @@ interface MCPJsonEditorProps {
   loading: boolean;
 }
 
+const cleanServerConfigForEditor = (config: any): any => {
+  const transportType = config.transportType || 'stdio';
+  
+  const cleanConfig: any = {
+    autoApprove: Array.isArray(config.autoApprove) ? config.autoApprove.filter((item: any) => item && typeof item === 'string') : [],
+    disabled: Boolean(config.disabled),
+    timeout: Number(config.timeout) || 60,
+    transportType: transportType,
+  };
+
+  if (transportType === 'stdio') {
+    if (config.command && typeof config.command === 'string') {
+      cleanConfig.command = config.command;
+    }
+    if (Array.isArray(config.args) && config.args.length > 0) {
+      cleanConfig.args = config.args.filter((arg: any) => arg && typeof arg === 'string');
+    }
+  } else if (transportType === 'sse') {
+    if (config.url && typeof config.url === 'string') {
+      cleanConfig.url = config.url;
+    }
+  }
+
+  if (config.env && typeof config.env === 'object' && !Array.isArray(config.env) && Object.keys(config.env).length > 0) {
+    cleanConfig.env = config.env;
+  }
+
+  return cleanConfig;
+};
+
+const cleanFullConfigForEditor = (config: any): MCPConfig => {
+  const cleanedServers: Record<string, any> = {};
+  
+  if (config && config.mcpServers && typeof config.mcpServers === 'object') {
+    Object.keys(config.mcpServers).forEach(serverName => {
+      cleanedServers[serverName] = cleanServerConfigForEditor(config.mcpServers[serverName]);
+    });
+  }
+
+  return {
+    mcpServers: cleanedServers
+  };
+};
+
 const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   config,
   onSave,
@@ -26,11 +70,12 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Format the config to pretty-printed JSON
   useEffect(() => {
     try {
-      const formatted = JSON.stringify(config, null, 2);
+      const cleanedConfig = cleanFullConfigForEditor(config);
+      const formatted = JSON.stringify(cleanedConfig, null, 2);
       setJsonText(formatted);
       setError(null);
     } catch {
@@ -47,16 +92,20 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   const formatJson = () => {
     try {
       const parsed = JSON.parse(jsonText);
-      const formatted = JSON.stringify(parsed, null, 2);
+      const cleaned = cleanFullConfigForEditor(parsed);
+      const formatted = JSON.stringify(cleaned, null, 2);
       setJsonText(formatted);
       setError(null);
-      message.success('JSON 格式化成功');
+      message.success('JSON 格式化并清理完成');
     } catch {
       setError('无法格式化 JSON: 格式无效');
     }
   };
 
   const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    
     try {
       const configToSave = JSON.parse(jsonText);
 
@@ -82,10 +131,18 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
         }
       }
 
-      await onSave(configToSave as MCPConfig);
-      message.success('Configuration saved successfully');
+      const cleanedConfig = cleanFullConfigForEditor(configToSave);
+      await Promise.all([
+        onSave(cleanedConfig as MCPConfig),
+        new Promise(resolve => setTimeout(resolve, 800))
+      ]);
+      
     } catch (err) {
-      setError(`Failed to save configuration: ${err instanceof Error ? err.message : String(err)}`);
+      const errorMsg = `Failed to save configuration: ${err instanceof Error ? err.message : String(err)}`;
+      setError(errorMsg);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -102,7 +159,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       <div className="json-editor-header">
         <div className="json-editor-title">
           <span>Edit MCP Configuration JSON</span>
-          <Tooltip title="Edit the JSON configuration directly. The configuration will be validated before saving.">
+          <Tooltip title="Edit the JSON configuration directly. The configuration will be validated and cleaned before saving.">
             <InfoCircleOutlined style={{ marginLeft: '8px', color: '#1890ff' }} />
           </Tooltip>
         </div>
@@ -152,7 +209,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           onClick={formatJson}
           className="json-editor-format-btn"
         >
-          Format JSON
+          Format & Clean JSON
         </Button>
 
         <Button
@@ -166,8 +223,8 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           type="primary"
           icon={<SaveOutlined />}
           onClick={handleSave}
-          disabled={!!error || loading}
-          loading={loading}
+          disabled={!!error || loading || saving}
+          loading={loading || saving}
           className="json-editor-save-btn"
         >
           Save Configuration
@@ -175,6 +232,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       </div>
 
       <div style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>
+        <p>Configuration will be automatically cleaned to remove unnecessary fields before saving.</p>
       </div>
     </div>
   );

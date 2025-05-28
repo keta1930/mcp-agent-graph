@@ -747,7 +747,6 @@ async def execute_graph(input_data: GraphInput):
                 input_data.input_text,
                 input_data.parallel
             )
-        print("\n\n========369result========\n", result)
 
         return result
     except HTTPException:

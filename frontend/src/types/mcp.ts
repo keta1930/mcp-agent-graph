@@ -6,7 +6,9 @@ export interface MCPServerConfig {
   command?: string;
   args: string[];
   transportType: string;
+  url?: string; // SSE URL
   base_url?: string;
+  env?: Record<string, string>; // 环境变量
   [key: string]: any;
 }
 
@@ -20,6 +22,7 @@ export interface MCPStatus {
     init_attempted: boolean;
     tools: string[];
     error?: string;
+    transport_type?: string;
   };
 }
 

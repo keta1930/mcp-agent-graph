@@ -14,6 +14,7 @@ interface MCPState {
   updateConfig: (config: MCPConfig) => Promise<void>;
   fetchStatus: () => Promise<void>;
   connectServer: (serverName: string) => Promise<void>;
+  disconnectServer: (serverName: string) => Promise<void>;
   fetchTools: () => Promise<void>;
   connectAllServers: () => Promise<{ success: string[], failed: string[] }>;
 
@@ -53,6 +54,7 @@ export const useMCPStore = create<MCPState>((set, get) => ({
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to update MCP config'
       });
+      throw error;
     }
   },
 
@@ -80,6 +82,21 @@ export const useMCPStore = create<MCPState>((set, get) => ({
         loading: false,
         error: error instanceof Error ? error.message : `Failed to connect server ${serverName}`
       });
+      throw error;
+    }
+  },
+
+  disconnectServer: async (serverName) => {
+    try {
+      set({ loading: true, error: undefined });
+      await mcpService.disconnectServer(serverName);
+      await get().fetchStatus();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : `Failed to disconnect server ${serverName}`
+      });
+      throw error;
     }
   },
 
@@ -89,20 +106,17 @@ export const useMCPStore = create<MCPState>((set, get) => ({
       const { config } = get();
       const serverNames = Object.keys(config.mcpServers);
 
-      // Filter out disabled servers and already connected servers
       const enabledServers = serverNames.filter(name => {
         const server = config.mcpServers[name];
         const serverStatus = get().status[name];
         return !server.disabled && (!serverStatus || !serverStatus.connected);
       });
 
-      // Track successes and failures
       const results = {
         success: [] as string[],
         failed: [] as string[]
       };
 
-      // Connect servers sequentially
       for (const serverName of enabledServers) {
         try {
           await mcpService.connectServer(serverName);
@@ -112,7 +126,6 @@ export const useMCPStore = create<MCPState>((set, get) => ({
         }
       }
 
-      // Update status after connecting
       await get().fetchStatus();
 
       set({ loading: false });
@@ -139,17 +152,9 @@ export const useMCPStore = create<MCPState>((set, get) => ({
     }
   },
 
-  // Helper methods
   addServer: async (serverName, serverConfig) => {
-    const { config, updateConfig } = get();
-    const newConfig = {
-      ...config,
-      mcpServers: {
-        ...config.mcpServers,
-        [serverName]: serverConfig
-      }
-    };
-    await updateConfig(newConfig);
+    await mcpService.addMCPServer(serverName, serverConfig);
+    await get().fetchConfig();
   },
 
   updateServer: async (serverName, serverConfig) => {
@@ -165,13 +170,7 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   },
 
   deleteServer: async (serverName) => {
-    const { config, updateConfig } = get();
-    const newMcpServers = { ...config.mcpServers };
-    delete newMcpServers[serverName];
-    const newConfig = {
-      ...config,
-      mcpServers: newMcpServers
-    };
-    await updateConfig(newConfig);
+    await mcpService.removeMCPServers([serverName]);
+    await get().fetchConfig();
   },
 }));

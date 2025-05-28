@@ -28,6 +28,7 @@ const MCPManager: React.FC = () => {
     updateServer,
     deleteServer,
     connectServer,
+    disconnectServer,
     connectAllServers
   } = useMCPStore();
 
@@ -109,12 +110,21 @@ const MCPManager: React.FC = () => {
     }
   };
 
+  const handleDisconnect = async (serverName: string) => {
+    try {
+      await disconnectServer(serverName);
+      message.success(`Disconnected from server "${serverName}"`);
+    } catch (err) {
+      message.error('Disconnect failed: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   // Handle batch connect operation for all servers
   const handleConnectAll = async () => {
     try {
       message.loading('Connecting to all servers...', 0);
       const results = await connectAllServers();
-      message.destroy(); // Clear the loading message
+      message.destroy();
 
       if (results.success.length > 0 && results.failed.length === 0) {
         message.success(`Successfully connected to all ${results.success.length} servers`);
@@ -126,7 +136,7 @@ const MCPManager: React.FC = () => {
         message.info('No servers to connect');
       }
     } catch (err) {
-      message.destroy(); // Clear the loading message
+      message.destroy();
       message.error('Batch connection failed: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
@@ -141,10 +151,10 @@ const MCPManager: React.FC = () => {
     try {
       await updateConfig(newConfig);
       message.success('Configuration saved successfully');
-      // Refresh status after update
       fetchStatus();
     } catch (err) {
       message.error('Failed to save configuration: ' + (err instanceof Error ? err.message : String(err)));
+      throw err;
     }
   };
 
@@ -177,7 +187,6 @@ const MCPManager: React.FC = () => {
               >
                 Refresh
               </Button>
-              {/* Batch Connect Button */}
               <Button
                 type="primary"
                 ghost
@@ -202,6 +211,7 @@ const MCPManager: React.FC = () => {
                     config={config.mcpServers[serverName]}
                     status={status[serverName]}
                     onConnect={handleConnect}
+                    onDisconnect={handleDisconnect}
                     onEdit={showEditModal}
                     onDelete={handleDeleteServer}
                     onViewTools={showToolsModal}
