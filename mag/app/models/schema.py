@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, root_validator
 
 
 class MCPServerConfig(BaseModel):
@@ -10,11 +10,65 @@ class MCPServerConfig(BaseModel):
     command: Optional[str] = None
     args: List[str] = Field(default_factory=list, description="服务器启动参数")
     transportType: str = Field(default="stdio", description="传输类型")
+    url: Optional[str] = Field(None, description="SSE服务器URL")
+    type: Optional[str] = Field(None, description="服务器类型，会自动转换为transportType")
+
+    @root_validator(pre=False, skip_on_failure=True)
+    def normalize_config(cls, values):
+        """规范化配置，处理type字段转换和字段验证"""
+        # 处理type字段转换
+        if 'type' in values and values['type']:
+            type_value = values['type'].lower()
+            if type_value == 'sse':
+                values['transportType'] = 'sse'
+            elif type_value == 'stdio':
+                values['transportType'] = 'stdio'
+        
+        # 如果没有明确的transportType，根据配置推断
+        if not values.get('transportType') or values.get('transportType') == 'stdio':
+            if values.get('url'):
+                values['transportType'] = 'sse'
+            elif values.get('command'):
+                values['transportType'] = 'stdio'
+        
+        # 验证必需字段
+        transport_type = values.get('transportType', 'stdio')
+        if transport_type == 'sse' and not values.get('url'):
+            raise ValueError('SSE传输类型必须提供url字段')
+        if transport_type == 'stdio' and not values.get('command'):
+            raise ValueError('stdio传输类型必须提供command字段')
+        
+        return values
+
+    def dict(self, **kwargs):
+        """重写dict方法，根据传输类型过滤字段"""
+        data = super().dict(**kwargs)
+        
+        transport_type = data.get('transportType', 'stdio')
+        
+        # 移除type字段
+        if 'type' in data:
+            del data['type']
+        
+        # 根据传输类型过滤字段
+        if transport_type == 'sse':
+            # SSE传输类型不需要command和args
+            if 'command' in data:
+                del data['command']
+            if 'args' in data:
+                del data['args']
+        elif transport_type == 'stdio':
+            # stdio传输类型不需要url
+            if 'url' in data:
+                del data['url']
+        
+        return data
 
     class Config:
         extra = "allow"
 
 
+# 其余的类保持你原有的写法不变
 class MCPConfig(BaseModel):
     """MCP配置"""
     mcpServers: Dict[str, MCPServerConfig] = Field(

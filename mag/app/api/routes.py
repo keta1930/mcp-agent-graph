@@ -19,7 +19,7 @@ from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.core.file_manager import FileManager
 from app.models.schema import (
-    MCPConfig, ModelConfig, GraphConfig, GraphInput,
+    MCPServerConfig, MCPConfig, ModelConfig, GraphConfig, GraphInput,
     GraphResult, NodeResult, ModelConfigList
 )
 from app.templates.flow_diagram import FlowDiagram
@@ -42,7 +42,13 @@ async def get_mcp_config():
 async def update_mcp_config(config: MCPConfig):
     """更新MCP配置并重新连接服务器"""
     try:
-        results = await mcp_service.update_config(config.dict())
+        config_dict = config.dict()
+            
+        if 'mcpServers' in config_dict:
+            for server_name, server_config in config_dict['mcpServers'].items():
+                logger.info(f"服务器 '{server_name}' 配置已规范化，传输类型: {server_config.get('transportType', 'stdio')}")
+        
+        results = await mcp_service.update_config(config_dict)
         return results
     except Exception as e:
         logger.error(f"更新MCP配置时出错: {str(e)}")
@@ -102,7 +108,22 @@ async def add_mcp_server(config: Dict[str, Any]):
             if server_name in current_servers:
                 duplicate_servers.append(server_name)
             else:
-                servers_to_actually_add[server_name] = server_config
+                try:
+                    logger.info(f"处理服务器 '{server_name}' 的原始配置: {server_config}")
+                    validated_config = MCPServerConfig(**server_config)
+                    normalized_config = validated_config.dict()
+
+                    logger.info(f"服务器 '{server_name}' 规范化后配置: {normalized_config}")
+                    servers_to_actually_add[server_name] = normalized_config
+                except ValueError as e:
+                    logger.error(f"服务器 '{server_name}' 配置验证失败: {str(e)}")
+                    return {
+                        "status": "error",
+                        "message": f"服务器 '{server_name}' 配置验证失败: {str(e)}",
+                        "added_servers": [],
+                        "duplicate_servers": [],
+                        "skipped_servers": []
+                    }
         
         # 如果有可以添加的服务器，执行添加操作
         added_servers = []
@@ -111,9 +132,6 @@ async def add_mcp_server(config: Dict[str, Any]):
         if servers_to_actually_add:
             # 合并配置
             for server_name, server_config in servers_to_actually_add.items():
-                # 确保新服务器有 disabled 字段，默认为 false
-                if "disabled" not in server_config:
-                    server_config["disabled"] = False
                 current_servers[server_name] = server_config
                 added_servers.append(server_name)
             
@@ -123,7 +141,6 @@ async def add_mcp_server(config: Dict[str, Any]):
         
         # 构建响应
         if added_servers and not duplicate_servers:
-            # 全部成功添加
             return {
                 "status": "success",
                 "message": f"成功添加 {len(added_servers)} 个服务器",
@@ -133,7 +150,6 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "update_result": update_result
             }
         elif added_servers and duplicate_servers:
-            # 部分成功
             return {
                 "status": "partial_success",
                 "message": f"成功添加 {len(added_servers)} 个服务器，跳过 {len(duplicate_servers)} 个已存在的服务器",
@@ -143,7 +159,6 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "update_result": update_result
             }
         elif duplicate_servers and not added_servers:
-            # 全部重复
             return {
                 "status": "no_changes",
                 "message": f"所有 {len(duplicate_servers)} 个服务器都已存在，未添加任何新服务器",
@@ -153,7 +168,6 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "update_result": None
             }
         else:
-            # 空请求
             return {
                 "status": "no_changes",
                 "message": "没有服务器需要添加",

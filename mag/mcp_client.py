@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.client.sse import sse_client
 
 # 配置日志
 logging.basicConfig(
@@ -54,95 +55,27 @@ class MCPServer:
             return False
 
         try:
-            command = self.config.get('command')
-            args = self.config.get('args', [])
-
-            if not command:
-                self.error = "未指定命令"
-                logger.error(f"错误: 服务器 '{self.name}' {self.error}")
-                self.init_attempted = True
-                return False
-
             # 获取传输类型
             transport_type = self.config.get('transportType', 'stdio')
-            if transport_type != 'stdio':
-                self.error = f"使用了不支持的传输类型: {transport_type}"
-                logger.error(f"错误: 服务器 '{self.name}' {self.error}")
-                self.init_attempted = True
-                return False
-
+            
             # 设置超时
             timeout = self.config.get('timeout', 10)  # 默认10秒超时
 
             # 使用asyncio.wait_for来添加超时机制
             try:
                 async with asyncio.timeout(timeout):
-                    # 打印命令和参数，便于调试
-                    logger.info(f"启动服务器 '{self.name}' 使用命令: {command} {' '.join(args)}")
-
-                    # 获取环境变量
-                    env = os.environ.copy()
-                    
-                    # 如果配置中有环境变量设置，则合并到环境变量中
-                    config_env = self.config.get('env', {})
-                    if config_env:
-                        logger.info(f"服务器 '{self.name}' 使用自定义环境变量: {list(config_env.keys())}")
-                        env.update(config_env)
-
-                    # 创建服务器参数
-                    server_params = StdioServerParameters(
-                        command=command,
-                        args=args,
-                        env=env
-                    )
-
-                    # 使用try-except捕获特定错误
-                    try:
-                        # 连接到服务器
-                        stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
-                        self.stdio, self.write = stdio_transport
-
-                        # 创建会话并初始化
-                        self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
-                        await self.session.initialize()
-
-                        # 获取工具列表
-                        response = await self.session.list_tools()
-                        self.tools = response.tools
-                        logger.info(f"已连接到服务器 '{self.name}' 提供的工具: {[tool.name for tool in self.tools]}")
-
-                        # 检查自动批准的工具
-                        auto_approve_tools = self.config.get('autoApprove', [])
-                        if auto_approve_tools:
-                            logger.info(f"为以下工具启用了自动批准: {auto_approve_tools}")
-
-                        self.init_attempted = True
-                        return True
-                    except NotImplementedError:
-                        # Windows特有问题
-                        self.error = "在Windows环境下创建子进程失败，可能需要使用HTTP传输类型"
+                    if transport_type == 'stdio':
+                        return await self._connect_stdio()
+                    elif transport_type == 'sse':
+                        return await self._connect_sse()
+                    else:
+                        self.error = f"使用了不支持的传输类型: {transport_type}"
                         logger.error(f"错误: 服务器 '{self.name}' {self.error}")
-                        self.init_attempted = True
-                        return False
-                    except FileNotFoundError as e:
-                        self.error = f"启动失败 - 找不到命令 '{command}'"
-                        logger.error(f"错误: 服务器 '{self.name}' {self.error}")
-                        self.init_attempted = True
-                        return False
-                    except PermissionError as e:
-                        self.error = f"启动失败 - 没有执行 '{command}' 的权限"
-                        logger.error(f"错误: 服务器 '{self.name}' {self.error}")
-                        self.init_attempted = True
-                        return False
-                    except Exception as e:
-                        self.error = f"连接过程中出错: {str(e)}"
-                        logger.error(f"错误: 服务器 '{self.name}' {self.error}")
-                        logger.error(traceback.format_exc())
                         self.init_attempted = True
                         return False
 
             except asyncio.TimeoutError:
-                self.error = f"连接超时（{timeout}秒）。可能是命令不正确或服务器未响应。"
+                self.error = f"连接超时（{timeout}秒）。可能是服务器未响应或配置不正确。"
                 logger.error(f"错误: 服务器 '{self.name}' {self.error}")
                 # 尝试关闭可能已部分建立的连接
                 await self.cleanup()
@@ -151,6 +84,122 @@ class MCPServer:
 
         except Exception as e:
             self.error = f"连接时出错: {str(e)}"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            logger.error(traceback.format_exc())
+            self.init_attempted = True
+            return False
+
+    async def _connect_stdio(self) -> bool:
+        """连接 stdio 类型的服务器"""
+        command = self.config.get('command')
+        args = self.config.get('args', [])
+
+        if not command:
+            self.error = "stdio传输类型未指定命令"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            self.init_attempted = True
+            return False
+
+        try:
+            # 打印命令和参数，便于调试
+            logger.info(f"启动 stdio 服务器 '{self.name}' 使用命令: {command} {' '.join(args)}")
+
+            # 获取环境变量
+            env = os.environ.copy()
+            
+            # 如果配置中有环境变量设置，则合并到环境变量中
+            config_env = self.config.get('env', {})
+            if config_env:
+                logger.info(f"服务器 '{self.name}' 使用自定义环境变量: {list(config_env.keys())}")
+                env.update(config_env)
+
+            # 创建服务器参数
+            server_params = StdioServerParameters(
+                command=command,
+                args=args,
+                env=env
+            )
+
+            # 连接到服务器
+            stdio_transport = await self.exit_stack.enter_async_context(stdio_client(server_params))
+            self.stdio, self.write = stdio_transport
+
+            # 创建会话并初始化
+            self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
+            await self.session.initialize()
+
+            # 获取工具列表
+            response = await self.session.list_tools()
+            self.tools = response.tools
+            logger.info(f"已连接到 stdio 服务器 '{self.name}' 提供的工具: {[tool.name for tool in self.tools]}")
+
+            # 检查自动批准的工具
+            auto_approve_tools = self.config.get('autoApprove', [])
+            if auto_approve_tools:
+                logger.info(f"为以下工具启用了自动批准: {auto_approve_tools}")
+
+            self.init_attempted = True
+            return True
+
+        except NotImplementedError:
+            # Windows特有问题
+            self.error = "在Windows环境下创建子进程失败，可能需要使用HTTP传输类型"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            self.init_attempted = True
+            return False
+        except FileNotFoundError as e:
+            self.error = f"启动失败 - 找不到命令 '{command}'"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            self.init_attempted = True
+            return False
+        except PermissionError as e:
+            self.error = f"启动失败 - 没有执行 '{command}' 的权限"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            self.init_attempted = True
+            return False
+        except Exception as e:
+            self.error = f"stdio 连接过程中出错: {str(e)}"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            logger.error(traceback.format_exc())
+            self.init_attempted = True
+            return False
+
+    async def _connect_sse(self) -> bool:
+        """连接 SSE 类型的服务器"""
+        url = self.config.get('url')
+
+        if not url:
+            self.error = "SSE传输类型未指定URL"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            self.init_attempted = True
+            return False
+
+        try:
+            # 打印URL，便于调试
+            logger.info(f"连接到 SSE 服务器 '{self.name}' URL: {url}")
+
+            # 使用 exit_stack 管理 SSE 客户端上下文，获取 streams
+            streams = await self.exit_stack.enter_async_context(sse_client(url=url))
+            
+            # 创建会话并使用 exit_stack 管理
+            self.session = await self.exit_stack.enter_async_context(ClientSession(*streams))
+            await self.session.initialize()
+
+            # 获取工具列表
+            response = await self.session.list_tools()
+            self.tools = response.tools
+            logger.info(f"已连接到 SSE 服务器 '{self.name}' 提供的工具: {[tool.name for tool in self.tools]}")
+
+            # 检查自动批准的工具
+            auto_approve_tools = self.config.get('autoApprove', [])
+            if auto_approve_tools:
+                logger.info(f"为以下工具启用了自动批准: {auto_approve_tools}")
+
+            self.init_attempted = True
+            return True
+
+        except Exception as e:
+            self.error = f"SSE 连接过程中出错: {str(e)}"
             logger.error(f"错误: 服务器 '{self.name}' {self.error}")
             logger.error(traceback.format_exc())
             self.init_attempted = True
@@ -294,7 +343,8 @@ async def get_servers():
             "connected": server.is_connected(),
             "init_attempted": server.init_attempted,
             "tools": [tool.name for tool in server.tools] if server.is_connected() else [],
-            "error": server.error
+            "error": server.error,
+            "transport_type": server.config.get('transportType', 'stdio')
         }
     return servers_status
 
@@ -857,8 +907,14 @@ async def connect_single_server(server_name: str) -> bool:
 
     # 显示服务器配置，便于调试
     server_config = CONFIG['mcpServers'][server_name]
-    logger.info(
-        f"服务器 '{server_name}' 配置: command={server_config.get('command')}, args={server_config.get('args', [])}")
+    transport_type = server_config.get('transportType', 'stdio')
+    
+    if transport_type == 'stdio':
+        logger.info(
+            f"服务器 '{server_name}' 配置: command={server_config.get('command')}, args={server_config.get('args', [])}")
+    elif transport_type == 'sse':
+        logger.info(
+            f"服务器 '{server_name}' 配置: url={server_config.get('url')}")
 
     # 如果服务器已存在但未连接，先清理它
     if server_name in SERVERS:
