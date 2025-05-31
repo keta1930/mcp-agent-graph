@@ -31,9 +31,6 @@ def _parse_placeholder(placeholder: str) -> tuple:
             except (ValueError, IndexError):
                 # 如果格式不正确，使用默认值
                 n = 1
-    # print("node_name:", node_name)
-    # print("mode:", mode)
-    # print("n:", n)
     return node_name, mode, n
 
 

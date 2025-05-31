@@ -133,9 +133,9 @@ class GraphProcessor:
         has_start = False
         has_end = False
         for node in flattened_nodes:
-            if node.get("is_start", False) or "start" in node.get("input_nodes", []):
+            if "start" in node.get("input_nodes", []):
                 has_start = True
-            if node.get("is_end", False) or "end" in node.get("output_nodes", []):
+            if "end" in node.get("output_nodes", []):
                 has_end = True
 
         if not has_start:
@@ -196,7 +196,7 @@ class GraphProcessor:
                 node_name = node["name"]
 
                 # 如果节点直接连接到start且没有其他实际依赖（排除start）
-                if (node.get("is_start", False) or "start" in node.get("input_nodes", [])):
+                if "start" in node.get("input_nodes", []):
                     # 检查是否只依赖"start"
                     if not depends_on[node_name]:
                         start_nodes.append(node_name)
@@ -216,7 +216,7 @@ class GraphProcessor:
                 else:
                     # 如果所有节点都有依赖关系（可能存在循环），使用所有直接连接到start的节点
                     for node in nodes:
-                        if node.get("is_start", False) or "start" in node.get("input_nodes", []):
+                        if "start" in node.get("input_nodes", []):
                             start_nodes.append(node["name"])
                             print(f"图可能存在循环依赖，使用连接到start的节点 {node['name']} 作为起始节点")
 
@@ -533,22 +533,22 @@ class GraphProcessor:
             # 检查是否至少有一个开始节点
             has_start = False
             for node in graph_config["nodes"]:
-                if node.get("is_start", False) or "start" in node.get("input_nodes", []):
+                if "start" in node.get("input_nodes", []):
                     has_start = True
                     break
 
             if not has_start:
-                return False, "图中没有指定开始节点"
+                return False, "图中没有指定开始节点（需要在某个节点的input_nodes中包含'start'）"
 
             # 检查是否至少有一个结束节点
             has_end = False
             for node in graph_config["nodes"]:
-                if node.get("is_end", False) or "end" in node.get("output_nodes", []):
+                if "end" in node.get("output_nodes", []):
                     has_end = True
                     break
 
             if not has_end:
-                return False, "图中没有指定结束节点"
+                return False, "图中没有指定结束节点（需要在某个节点的output_nodes中包含'end'）"
 
             return True, None
         except Exception as e:

@@ -16,6 +16,9 @@
     <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     
+    <!-- Highlight.js 语法高亮 -->
+    <link id="highlight-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
+    
     <style>
         :root {
             --bg-primary: #ffffff;
@@ -251,20 +254,20 @@
                             <i class="fas fa-chevron-down transition-transform" id="graph-management-icon"></i>
                         </button>
                         <div class="collapse-content pl-6" id="graph-management-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-import-export')">
-                                <i class="fas fa-exchange-alt mr-2"></i>导入导出
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-generate')">
+                                <i class="fas fa-magic mr-2"></i>图生成
                             </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-list')">
-                                <i class="fas fa-list mr-2"></i>查看管理
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-view')">
+                                <i class="fas fa-eye mr-2"></i>图查看
                             </a>
                             <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-run')">
-                                <i class="fas fa-play mr-2"></i>运行图
+                                <i class="fas fa-play mr-2"></i>图运行
                             </a>
                             <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-continue')">
                                 <i class="fas fa-forward mr-2"></i>断点续传
                             </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-mcp')">
-                                <i class="fas fa-code mr-2"></i>生成MCP脚本
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('graph-to-mcp')">
+                                <i class="fas fa-code mr-2"></i>图转MCP
                             </a>
                         </div>
                     </div>
@@ -309,7 +312,7 @@
                                     <i class="fas fa-copy mr-1"></i>复制
                                 </button>
                             </div>
-                            <pre><code>pip install mcp-agent-graph</code></pre>
+                            <pre><code class="language-bash">pip install mcp-agent-graph</code></pre>
                         </div>
                         
                         <h4 class="text-lg font-medium mb-2">获取示例代码</h4>
@@ -320,7 +323,7 @@
                                     <i class="fas fa-copy mr-1"></i>复制
                                 </button>
                             </div>
-                            <pre><code>git clone https://github.com/keta1930/mcp-agent-graph.git
+                            <pre><code class="language-bash">git clone https://github.com/keta1930/mcp-agent-graph.git
 cd mcp-agent-graph/sdk_demo</code></pre>
                         </div>
                     </div>
@@ -334,7 +337,7 @@ cd mcp-agent-graph/sdk_demo</code></pre>
                                     <i class="fas fa-copy mr-1"></i>复制
                                 </button>
                             </div>
-                            <pre><code>git clone https://github.com/keta1930/mcp-agent-graph.git
+                            <pre><code class="language-bash">git clone https://github.com/keta1930/mcp-agent-graph.git
 cd mcp-agent-graph
 uv sync
 .venv\Scripts\activate.ps1  # PowerShell
@@ -370,7 +373,7 @@ uv sync
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>import mag
+                                <pre><code class="language-python">import mag
 mag.start()</code></pre>
                             </div>
                         </div>
@@ -393,7 +396,7 @@ mag.start()</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>mag.shutdown()</code></pre>
+                                <pre><code class="language-python">mag.shutdown()</code></pre>
                             </div>
                         </div>
                     </div>
@@ -403,7 +406,7 @@ mag.start()</code></pre>
                         <div class="mb-4">
                             <h4 class="font-medium mb-2">方法签名</h4>
                             <div class="code-block p-4 mb-4">
-                                <pre><code>mag.is_running() -> bool</code></pre>
+                                <pre><code class="language-python">mag.is_running() -> bool</code></pre>
                             </div>
                         </div>
                         <div class="mb-4">
@@ -419,7 +422,7 @@ mag.start()</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>is_running = mag.is_running()
+                                <pre><code class="language-python">is_running = mag.is_running()
 print(f"服务运行状态: {is_running}")</code></pre>
                             </div>
                         </div>
@@ -437,7 +440,7 @@ print(f"服务运行状态: {is_running}")</code></pre>
                         <div class="mb-4">
                             <h4 class="font-medium mb-2">方法签名</h4>
                             <div class="code-block p-4 mb-4">
-                                <pre><code>mag.add_model(config: Dict[str, Any]) -> Dict[str, Any]</code></pre>
+                                <pre><code class="language-python">mag.add_model(config: Dict[str, Any]) -> Dict[str, Any]</code></pre>
                             </div>
                         </div>
                         <div class="mb-4">
@@ -459,7 +462,7 @@ print(f"服务运行状态: {is_running}")</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>new_model = {
+                                <pre><code class="language-python">new_model = {
     "name": "deepseek-chat",
     "base_url": "https://api.deepseek.com",
     "api_key": "",
@@ -482,7 +485,7 @@ mag.add_model(new_model)</code></pre>
                         <div class="mb-4">
                             <h4 class="font-medium mb-2">方法签名</h4>
                             <div class="code-block p-4 mb-4">
-                                <pre><code>mag.list_models() -> List[Dict[str, Any]]</code></pre>
+                                <pre><code class="language-python">mag.list_models() -> List[Dict[str, Any]]</code></pre>
                             </div>
                         </div>
                         <div class="mb-4">
@@ -498,7 +501,7 @@ mag.add_model(new_model)</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>models = mag.list_models()
+                                <pre><code class="language-python">models = mag.list_models()
 print(f"找到 {len(models)} 个模型")
 for model in models:
     print(f"\n模型名称：{model['name']} \nBase_url：{model['base_url']}\n")</code></pre>
@@ -866,11 +869,108 @@ print(json.dumps(mcp_tools, indent=2, ensure_ascii=False))</code></pre>
                     </div>
                 </div>
 
-                <!-- 图导入导出页面 -->
-                <div id="graph-import-export" class="page-content hidden">
+                <!-- 图生成页面 -->
+                <div id="graph-generate" class="page-content hidden">
                     <h2 class="text-3xl font-bold mb-6">
-                        <i class="fas fa-exchange-alt mr-3 text-blue-600"></i>图导入导出
+                        <i class="fas fa-magic mr-3 text-blue-600"></i>图生成
                     </h2>
+
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">自动生成图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.generate_graph(requirement: str, model_name: str) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>requirement</strong> (str): 用户的图生成需求描述</li>
+                                <li><strong>model_name</strong> (str): 要使用的AI模型名称</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 生成结果，包含图名称、分析内容等</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">result = mag.generate_graph(
+    requirement="创建一个能够搜索网络信息并生成报告的工作流",
+    model_name="gpt-4"
+)
+
+if result["status"] == "success":
+    print(f"成功生成图: {result['graph_name']}")
+    print(f"AI分析: {result['analysis']}")
+    
+    # 立即执行生成的图
+    execution_result = mag.run_graph(
+        result['graph_name'], 
+        "请帮我搜索人工智能的最新发展"
+    )
+else:
+    print(f"生成失败: {result['message']}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">保存图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.save_graph(config: Dict[str, Any]) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>config</strong> (Dict): 图配置，包含name、description、nodes等字段</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 操作结果</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">graph_config = {
+    "name": "simple_assistant",
+    "description": "简单的问答助手",
+    "nodes": [
+        {
+            "name": "assistant",
+            "description": "回答用户问题的助手",
+            "model_name": "gpt-4",
+            "system_prompt": "你是一个有用的助手，请回答用户的问题。",
+            "user_prompt": "用户问题：{start}",
+            "input_nodes": ["start"],
+            "output_nodes": ["end"]
+        }
+    ]
+}
+
+result = mag.save_graph(graph_config)
+print(f"保存结果: {result}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="method-card p-6 mb-6">
                         <h3 class="text-xl font-semibold mb-4">导入图</h3>
@@ -899,7 +999,7 @@ print(json.dumps(mcp_tools, indent=2, ensure_ascii=False))</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code># 从config导入
+                                <pre><code class="language-python"># 从config导入
 graph = mag.import_graph(r"deepsearch.json")
 print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
                             </div>
@@ -911,7 +1011,7 @@ print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
                         <div class="mb-4">
                             <h4 class="font-medium mb-2">方法签名</h4>
                             <div class="code-block p-4 mb-4">
-                                <pre><code>mag.export_graph(name: str) -> Dict[str, Any]</code></pre>
+                                <pre><code class="language-python">mag.export_graph(name: str) -> Dict[str, Any]</code></pre>
                             </div>
                         </div>
                         <div class="mb-4">
@@ -933,7 +1033,7 @@ print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>graph = mag.export_graph("news_processing_workflow")
+                                <pre><code class="language-python">graph = mag.export_graph("news_processing_workflow")
 print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
                             </div>
                         </div>
@@ -944,7 +1044,7 @@ print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
                         <div class="mb-4">
                             <h4 class="font-medium mb-2">方法签名</h4>
                             <div class="code-block p-4 mb-4">
-                                <pre><code>mag.get_prompt_template() -> str</code></pre>
+                                <pre><code class="language-python">mag.get_prompt_template() -> str</code></pre>
                             </div>
                         </div>
                         <div class="mb-4">
@@ -960,17 +1060,17 @@ print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>template = mag.get_prompt_template()
+                                <pre><code class="language-python">template = mag.get_prompt_template()
 print(template)</code></pre>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 图查看管理页面 -->
-                <div id="graph-list" class="page-content hidden">
+                <!-- 图查看页面 -->
+                <div id="graph-view" class="page-content hidden">
                     <h2 class="text-3xl font-bold mb-6">
-                        <i class="fas fa-list mr-3 text-blue-600"></i>图查看管理
+                        <i class="fas fa-eye mr-3 text-blue-600"></i>图查看
                     </h2>
 
                     <div class="method-card p-6 mb-6">
@@ -994,7 +1094,7 @@ print(template)</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>print("\n列出所有图:")
+                                <pre><code class="language-python">print("\n列出所有图:")
 graphs = mag.list_graphs()
 print(f"找到 {len(graphs)} 个图: {graphs}")</code></pre>
                             </div>
@@ -1006,7 +1106,7 @@ print(f"找到 {len(graphs)} 个图: {graphs}")</code></pre>
                         <div class="mb-4">
                             <h4 class="font-medium mb-2">方法签名</h4>
                             <div class="code-block p-4 mb-4">
-                                <pre><code>mag.get_graph(name: str) -> Dict[str, Any]</code></pre>
+                                <pre><code class="language-python">mag.get_graph(name: str) -> Dict[str, Any]</code></pre>
                             </div>
                         </div>
                         <div class="mb-4">
@@ -1024,7 +1124,7 @@ print(f"找到 {len(graphs)} 个图: {graphs}")</code></pre>
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>result = mag.get_graph('news_processing_workflow')
+                                <pre><code class="language-python">result = mag.get_graph('news_processing_workflow')
 print(json.dumps(result, indent=2, ensure_ascii=False))</code></pre>
                             </div>
                         </div>
@@ -1089,10 +1189,10 @@ else:
                     </div>
                 </div>
 
-                <!-- 运行图页面 -->
+                <!-- 图运行页面 -->
                 <div id="graph-run" class="page-content hidden">
                     <h2 class="text-3xl font-bold mb-6">
-                        <i class="fas fa-play mr-3 text-blue-600"></i>运行图
+                        <i class="fas fa-play mr-3 text-blue-600"></i>图运行
                     </h2>
 
                     <div class="method-card p-6">
@@ -1124,7 +1224,7 @@ else:
                                         <i class="fas fa-copy mr-1"></i>复制
                                     </button>
                                 </div>
-                                <pre><code>result = mag.run("deepresearch",input_text="深度探究谷歌开源Agent协议：A2A。以及探究微软2025build大会上，A2A的重要性。",parallel=False)
+                                <pre><code>result = mag.run("deepresearch",input_text="深度探究mcp-agent-graph项目",parallel=False)
 print(result)</code></pre>
                             </div>
                         </div>
@@ -1171,7 +1271,7 @@ print(result)</code></pre>
                                 <pre><code># 首先运行一个图
 initial_result = mag.run(
     "deepresearch", 
-    "深度探究谷歌开源Agent协议：A2A。以及探究微软2025build大会上，A2A的重要性。",
+    "深度探究mcp-agent-graph项目",
     parallel=True
 )
 conversation_id = initial_result['conversation_id']
@@ -1187,7 +1287,7 @@ print(f"断点继续结果: {checkpoint_result}")
 # 重新开启会话，使用新输入
 continue_result = mag.continue_run(
     conversation_id=conversation_id,
-    input_text="深度探究谷歌开源Agent协议：A2A。以及探究微软2025build大会上，A2A的重要性。",
+    input_text="深度探究mcp-agent-graph项目",
     parallel=False
 )
 
@@ -1197,10 +1297,10 @@ print(f"继续执行结果: {continue_result}")</code></pre>
                     </div>
                 </div>
 
-                <!-- 生成MCP脚本页面 -->
-                <div id="graph-mcp" class="page-content hidden">
+                <!-- 图转MCP页面 -->
+                <div id="graph-to-mcp" class="page-content hidden">
                     <h2 class="text-3xl font-bold mb-6">
-                        <i class="fas fa-code mr-3 text-blue-600"></i>生成MCP脚本
+                        <i class="fas fa-code mr-3 text-blue-600"></i>图转MCP
                     </h2>
 
                     <div class="method-card p-6">
@@ -1439,6 +1539,11 @@ display_attachments(attactments)</code></pre>
         </div>
     </div>
 
+    <!-- Highlight.js 语法高亮脚本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+
     <script>
         // 主题切换功能
         function initTheme() {
@@ -1448,6 +1553,7 @@ display_attachments(attactments)</code></pre>
             
             document.documentElement.setAttribute('data-theme', theme);
             updateThemeIcon(theme);
+            updateHighlightTheme(theme);
         }
 
         function toggleTheme() {
@@ -1457,11 +1563,21 @@ display_attachments(attactments)</code></pre>
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
+            updateHighlightTheme(newTheme);
         }
 
         function updateThemeIcon(theme) {
             const icon = document.querySelector('#themeToggle i');
             icon.className = theme === 'dark' ? 'fas fa-sun text-sm' : 'fas fa-moon text-sm';
+        }
+
+        function updateHighlightTheme(theme) {
+            const highlightTheme = document.getElementById('highlight-theme');
+            if (theme === 'dark') {
+                highlightTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+            } else {
+                highlightTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+            }
         }
 
         // 侧边栏折叠功能
@@ -1471,29 +1587,6 @@ display_attachments(attactments)</code></pre>
             
             content.classList.toggle('expanded');
             icon.style.transform = content.classList.contains('expanded') ? 'rotate(180deg)' : 'rotate(0deg)';
-        }
-
-        // 页面显示功能
-        function showPage(pageId) {
-            // 隐藏所有页面
-            document.querySelectorAll('.page-content').forEach(page => {
-                page.classList.add('hidden');
-                page.classList.remove('fade-in');
-            });
-            
-            // 显示目标页面
-            const targetPage = document.getElementById(pageId);
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-                targetPage.classList.add('fade-in');
-            }
-
-            // 更新导航状态
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            event.target.classList.add('active');
         }
 
         // 代码复制功能
@@ -1514,8 +1607,43 @@ display_attachments(attactments)</code></pre>
             });
         }
 
+        // 页面切换时重新应用语法高亮
+        function showPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+                page.classList.remove('fade-in');
+            });
+            
+            // 显示目标页面
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+                targetPage.classList.add('fade-in');
+                
+                // 重新应用语法高亮到新显示的页面
+                setTimeout(() => {
+                    targetPage.querySelectorAll('pre code').forEach((block) => {
+                        hljs.highlightElement(block);
+                    });
+                }, 100);
+            }
+
+            // 更新导航状态
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
         // 事件监听器
         document.addEventListener('DOMContentLoaded', function() {
+            // 初始化代码高亮
+            hljs.highlightAll();
+            
             initTheme();
             
             // 默认展开第一个部分
@@ -1530,6 +1658,7 @@ display_attachments(attactments)</code></pre>
                     const theme = e.matches ? 'dark' : 'light';
                     document.documentElement.setAttribute('data-theme', theme);
                     updateThemeIcon(theme);
+                    updateHighlightTheme(theme);
                 }
             });
 

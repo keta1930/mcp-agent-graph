@@ -124,8 +124,6 @@ class AgentNode(BaseModel):
     context: List[str] = Field(default_factory=list, description="需要引用的全局管理节点列表")
     context_mode: str = Field(default="all", description="全局内容获取模式，可选值：all, latest, latest_n")
     context_n: int = Field(default=1, description="获取最新的n次输出，当context_mode为latest_n时有效")
-    is_start: bool = Field(default=False, description="是否为起始节点")
-    is_end: bool = Field(default=False, description="是否为结束节点")
     output_enabled: bool = Field(default=True, description="是否输出回复")
     is_subgraph: bool = Field(default=False, description="是否为子图节点")
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
@@ -218,3 +216,8 @@ class GraphResult(BaseModel):
     node_results: List[NodeResult] = Field(default_factory=list, description="节点执行结果")
     completed: bool = Field(default=False, description="是否完成执行")
     error: Optional[str] = Field(default=None, description="错误信息（如果有）")
+
+class GraphGenerationRequest(BaseModel):
+    """图生成请求"""
+    requirement: str  # 用户的图生成需求
+    model_name: str   # 指定的模型名称

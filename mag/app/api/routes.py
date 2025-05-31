@@ -20,10 +20,10 @@ from app.services.graph_service import graph_service
 from app.core.file_manager import FileManager
 from app.models.schema import (
     MCPServerConfig, MCPConfig, ModelConfig, GraphConfig, GraphInput,
-    GraphResult, NodeResult, ModelConfigList
+    GraphResult, NodeResult, ModelConfigList, GraphGenerationRequest
 )
 from app.templates.flow_diagram import FlowDiagram
-
+from app.utils.text_parser import parse_graph_response
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -841,6 +841,107 @@ async def get_prompt_template():
             detail=f"生成提示词模板时出错: {str(e)}"
         )
 
+
+@router.post("/graphs/generate", response_model=Dict[str, Any])
+async def generate_graph(request: GraphGenerationRequest):
+    """根据用户需求自动生成图配置"""
+    try:
+        # 1. 验证模型是否存在
+        model_config = model_service.get_model(request.model_name)
+        if not model_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到模型 '{request.model_name}'"
+            )
+
+        # 2. 复用现有的 get_prompt_template 函数获取提示词模板
+        template_response = await get_prompt_template()
+        final_prompt = template_response["prompt"].replace("{CREATE_GRAPH}", request.requirement)
+        
+        # 3. 调用模型生成图配置
+        messages = [
+            {"role": "user", "content": final_prompt}
+        ]
+        
+        model_response = await model_service.call_model(
+            model_name=request.model_name,
+            messages=messages
+        )
+        
+        if model_response.get("status") != "success":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"模型调用失败: {model_response.get('error', '未知错误')}"
+            )
+        
+        # 4. 解析模型输出
+        model_output = model_response.get("content", "")
+        parsed_result = parse_graph_response(model_output)
+        
+        if not parsed_result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"解析模型输出失败: {parsed_result.get('error', '未知错误')}"
+            )
+        
+        graph_config = parsed_result["graph_config"]
+        analysis = parsed_result.get("analysis", "")
+        
+        # 5. 验证图配置基本格式
+        if not graph_config.get("name"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="生成的图配置缺少名称"
+            )
+        
+        # 6. 处理重名冲突
+        graph_name = graph_config.get("name")
+        existing_graph = graph_service.get_graph(graph_name)
+        if existing_graph:
+            base_name = graph_name
+            counter = 1
+            while existing_graph:
+                graph_name = f"{base_name}_{counter}"
+                existing_graph = graph_service.get_graph(graph_name)
+                counter += 1
+            graph_config["name"] = graph_name
+        
+        # 7. 复用现有的 create_graph 函数
+        from app.models.schema import GraphConfig
+        try:
+            validated_config = GraphConfig(**graph_config)
+            create_response = await create_graph(validated_config)
+            
+            if create_response.get("status") != "success":
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"创建图失败: {create_response.get('message', '未知错误')}"
+                )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"生成的图配置验证失败: {str(e)}"
+            )
+
+        return {
+            "status": "success", 
+            "message": f"图 '{graph_name}' 生成成功",
+            "graph_name": graph_name,
+            "analysis": analysis,
+            "model_output": model_output,
+            "create_result": create_response
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"生成图时出错: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"生成图时出错: {str(e)}"
+        )
 
 # ======= 图导入/导出功能 =======
 

@@ -6,7 +6,7 @@ import copy
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
 from app.templates.conversation_template import ConversationTemplate, HTMLConversationTemplate
-from app.services.graph.output_tools import _parse_placeholder,_format_content_with_default_style
+from app.utils.output_tools import _parse_placeholder,_format_content_with_default_style
 logger = logging.getLogger(__name__)
 
 

@@ -29,12 +29,10 @@ MAG 是一个强大的智能体开发框架，可以快速构建复杂的多智�
 | `model_name` | string | 要使用的模型名称，使用系统中已配置的模型名称之一。普通节点必须设置此参数，但子图节点不需要。例如：`"model_name": "gpt-4-turbo"` | 是* | - |
 | `mcp_servers` | string[] | 要使用的MCP服务名称列表。这些服务为节点提供特殊工具能力。可以指定多个服务，让节点同时访问多种服务的工具。例如：`"mcp_servers": ["search_server", "code_execution"]` | 否 | `[]` |
 | `system_prompt` | string | 发送给模型的系统提示词，定义智能体的角色、能力和指导方针。支持占位符（如`{node_name}`）引用其他节点的输出，也支持外部文件引用（如`{instructions.txt}`）。例如：`"system_prompt": "你是一位专精于{topic}的研究助手。"` | 否 | `""` |
-| `user_prompt` | string | 发送给模型的用户提示词，包含具体任务指令。通常包含`{input}`占位符来接收输入内容，也可以引用其他节点输出或外部文件。例如：`"user_prompt": "基于以下内容进行研究：{input}"` | 否 | `""` |
+| `user_prompt` | string | 发送给模型的用户提示词，包含具体任务指令。可以包含`{start}`占位符来接收用户的初始输入内容，也可以引用其他节点输出或外部文件。例如：`"user_prompt": "基于以下内容进行研究：{start}"` | 否 | `""` |
 | `save` | string | 指定节点输出自动保存的文件格式扩展名。支持md、html、py、txt等多种格式。节点的输出将会被保存为该格式的文件。例如：`"save": "md"` 将输出保存为Markdown文件 | 否 | `null` |
 | `input_nodes` | string[] | 提供输入的节点名称列表。特殊值`"start"`表示接收用户的原始输入。可以指定多个输入节点，系统会自动合并它们的输出。例如：`"input_nodes": ["start", "research_node"]` | 否 | `[]` |
 | `output_nodes` | string[] | 接收本节点输出的节点名称列表。特殊值`"end"`表示输出将包含在最终结果中。使用handoffs时，会将输出定向到此列表中的一个节点。例如：`"output_nodes": ["analysis_node", "end"]` | 否 | `[]` |
-| `is_start` | boolean | 指定此节点是否为起始节点（接收用户初始输入）。如果设为true，等同于将`"start"`添加到`input_nodes`。一个图中可以有多个起始节点。例如：`"is_start": true` | 否 | `false` |
-| `is_end` | boolean | 指定此节点是否为结束节点（输出包含在最终结果中）。如果设为true，等同于将`"end"`添加到`output_nodes`。一个图中可以有多个结束节点。例如：`"is_end": true` | 否 | `false` |
 | `handoffs` | number | 节点可以重定向流程的最大次数，启用条件分支和循环功能。设置后，节点将选择输出流向哪个目标节点，创建动态路径。用于实现迭代改进、决策树等复杂逻辑。例如：`"handoffs": 3` 允许节点最多决策3次 | 否 | `null` |
 | `global_output` | boolean | 是否将节点输出添加到全局上下文中，使其他节点可以通过context参数访问。对于产生重要中间结果的节点非常有用。例如：`"global_output": true` | 否 | `false` |
 | `context` | string[] | 要引用的全局节点名称列表。允许节点访问不直接连接的其他节点的输出（前提是那些节点设置了`global_output: true`）。例如：`"context": ["research_results", "user_preferences"]` | 否 | `[]` |
@@ -61,15 +59,12 @@ MAG 是一个强大的智能体开发框架，可以快速构建复杂的多智�
 
 ### 1. 提示词功能
 
-MAG 提供两种强大的方式来增强你的提示词：
+MAG 使用占位符来增强你的提示词：
 
-#### 节点输出占位符
-- 基本引用：`{node_name}` - 获取指定节点的最新输出
-- 全部历史：`{node_name:all}` - 获取节点的所有历史输出
-- 最新N条：`{node_name:latest_5}` - 获取5条最新输出
-
-#### 外部提示词模板
-通过`{filename.txt}`格式引用外部文件，可以更好地组织和重用复杂提示词
+### 占位符使用规范
+- **接收用户输入**：使用 `{start}` 占位符接收用户的原始输入
+- **引用节点输出**：使用 `{node_name}` 引用其他节点的输出
+- **引用外部文件**：使用 `{filename.txt}` 引用外部文件内容
 
 ### 2. 循环和条件流程
 
@@ -105,10 +100,41 @@ MAG 提供两种强大的方式来增强你的提示词：
 6. 指定任何特殊的流程控制（如循环或条件路径）
 7. 设计最终输出模板
 
+## 输出格式要求
+
+请按照以下格式提供你的设计：
+
+1. **分析部分**：将你的思考过程和设计思路包裹在 `<analysis></analysis>` 标签中
+2. **图配置**：将完整的JSON配置包裹在 `<graph></graph>` 标签中
+
+## 示例
+
+以下是一个最简单的单节点图示例：
+
+<analysis>
+这是一个最基础的问答助手图，只包含一个节点。用户的输入直接传递给这个节点，节点处理后输出结果。这个例子展示了MAG图的最基本结构：接收输入、处理、输出结果。
+</analysis>
+
+<graph>
+{
+  "name": "simple_assistant",
+  "description": "简单的问答助手",
+  "nodes": [
+    {
+    "name": "assistant",
+    "description": "回答用户问题的助手",
+    "model_name": "gpt-4",
+    "system_prompt": "你是一个有用的助手，请回答用户的问题。",
+    "user_prompt": "用户问题：{start}",
+    "input_nodes": ["start"],
+    "output_nodes": ["end"]
+    }
+  ]
+}
+</graph>
+
 ## 用户想要创建的图：
 
-```
-[在这里输入你的图设计需求]
-```
+{CREATE_GRAPH}
 
 我会先分析用户需求，确保理解用户对图的创作要求，然后生成一个完整的、符合MAG规范的图配置，确保每个节点都有明确的任务、适当的提示词以及正确的连接关系。

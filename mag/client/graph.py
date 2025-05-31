@@ -303,3 +303,61 @@ def create_from_file(file_path: str) -> Dict[str, Any]:
         graph_data = json.load(f)
     
     return save(graph_data)
+
+def generate(requirement: str, model_name: str) -> Dict[str, Any]:
+    """
+    根据需求自动生成图配置
+    
+    该函数使用指定的AI模型根据用户的自然语言需求自动生成完整的图配置，
+    并将其保存到系统中。生成的图会包含适当的节点、连接关系和提示词。
+    
+    参数:
+        requirement (str): 用户的图生成需求描述
+        model_name (str): 要使用的AI模型名称
+    
+    返回:
+        Dict[str, Any]: 生成结果，包含以下字段：
+            - status: 操作状态 ("success" 或 "error")
+            - message: 操作消息
+            - graph_name: 生成的图名称
+            - analysis: AI模型的分析内容
+            - model_output: 模型的完整输出
+    
+    示例:
+        >>> import mag
+        >>> mag.start()
+        >>> result = mag.generate_graph(
+        ...     requirement="创建一个能够搜索网络并生成报告的工作流",
+        ...     model_name="gpt-4"
+        ... )
+        >>> print(f"生成的图名称: {result['graph_name']}")
+    """
+    _ensure_server_running()
+    
+    payload = {
+        "requirement": requirement,
+        "model_name": model_name
+    }
+    
+    try:
+        response = requests.post(f"{API_BASE}/graphs/generate", json=payload)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            # 处理错误响应
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('detail', f"HTTP错误 {response.status_code}")
+            except:
+                error_msg = f"HTTP错误 {response.status_code}: {response.text}"
+            
+            return {
+                "status": "error",
+                "message": error_msg
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"生成图时出错: {str(e)}"
+        }

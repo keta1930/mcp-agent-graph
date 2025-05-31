@@ -194,7 +194,8 @@ from .client.graph import (
     import_graph,
     export,
     generate_mcp_script,
-    get_prompt_template
+    get_prompt_template,
+    generate as generate_graph
 )
 
 # 模型管理
@@ -230,3 +231,4 @@ from .client.conversation import (
 run_graph = run
 import_graph = import_graph
 export_graph = export
+generate_graph = generate_graph
