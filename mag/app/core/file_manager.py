@@ -80,18 +80,12 @@ class FileManager:
     def list_agents() -> List[str]:
         """列出所有可用的Agent"""
         try:
-            agents = set()
-
-            # 处理旧格式（直接在agent目录下的JSON文件）
-            for f in settings.AGENT_DIR.glob("*.json"):
-                agents.add(f.stem)
-
-            # 处理新格式（agent子目录中的config.json文件）
+            agents = []
+            # 只处理新格式（agent子目录中的config.json文件）
             for d in settings.AGENT_DIR.glob("*/"):
                 if d.is_dir() and (d / "config.json").exists():
-                    agents.add(d.name)
-
-            return sorted(list(agents))
+                    agents.append(d.name)
+            return sorted(agents)
         except Exception as e:
             logger.error(f"列出Agent时出错: {str(e)}")
             return []
@@ -149,28 +143,25 @@ class FileManager:
     @staticmethod
     def load_agent(agent_name: str) -> Optional[Dict[str, Any]]:
         """加载Agent配置"""
+        # 只从新格式目录加载
         config_path = settings.get_agent_config_path(agent_name)
-
         if config_path.exists():
             return FileManager.load_json(config_path)
-
-        legacy_path = settings.get_agent_path(agent_name)
-
-        if legacy_path.exists():
-            config = FileManager.load_json(legacy_path)
-            return config
-
         return None
 
     @staticmethod
     def delete_agent(agent_name: str) -> bool:
         """删除Agent配置"""
         try:
-            agent_path = settings.get_agent_path(agent_name)
-            if agent_path.exists():
-                agent_path.unlink()
+            # 删除图目录（新格式）
+            agent_dir = settings.get_agent_dir(agent_name)
+            if agent_dir.exists():
+                shutil.rmtree(agent_dir)
+                logger.info(f"已删除图目录: {agent_dir}")
                 return True
-            return False
+            else:
+                logger.warning(f"图目录不存在: {agent_dir}")
+                return False
         except Exception as e:
             logger.error(f"Error deleting agent {agent_name}: {str(e)}")
             return False
@@ -179,20 +170,31 @@ class FileManager:
     def rename_agent(old_name: str, new_name: str) -> bool:
         """重命名Agent"""
         try:
-            old_path = settings.get_agent_path(old_name)
-            new_path = settings.get_agent_path(new_name)
+            old_dir = settings.get_agent_dir(old_name)
+            new_dir = settings.get_agent_dir(new_name)
 
-            if not old_path.exists():
+            # 检查原目录是否存在
+            if not old_dir.exists():
+                logger.warning(f"原图目录不存在: {old_dir}")
                 return False
 
-            if new_path.exists():
+            # 检查新目录是否已存在
+            if new_dir.exists():
+                logger.warning(f"目标图目录已存在: {new_dir}")
                 return False
 
-            # 加载配置
-            config = FileManager.load_json(old_path)
-            FileManager.save_json(new_path, config)
-            old_path.unlink()
+            # 重命名目录
+            old_dir.rename(new_dir)
+            
+            # 更新配置文件中的名称
+            config_path = settings.get_agent_config_path(new_name)
+            if config_path.exists():
+                config = FileManager.load_json(config_path)
+                if config and "name" in config:
+                    config["name"] = new_name
+                    FileManager.save_json(config_path, config)
 
+            logger.info(f"已重命名图目录: {old_dir} -> {new_dir}")
             return True
         except Exception as e:
             logger.error(f"Error renaming agent {old_name} to {new_name}: {str(e)}")

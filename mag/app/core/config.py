@@ -71,10 +71,6 @@ class Settings:
         self.CONVERSATION_DIR.mkdir(exist_ok=True)
         self.EXPORTS_DIR.mkdir(exist_ok=True)
 
-    def get_agent_path(self, agent_name: str) -> Path:
-        """获取指定Agent的配置文件路径"""
-        return self.AGENT_DIR / f"{agent_name}.json"
-
     def get_agent_dir(self, agent_name: str) -> Path:
         """获取指定Agent的配置目录路径"""
         return self.AGENT_DIR / agent_name

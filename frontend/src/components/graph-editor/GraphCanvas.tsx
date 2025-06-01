@@ -109,35 +109,51 @@ const GraphCanvas: React.FC = () => {
 
     // Transform nodes
     const flowNodes = currentGraph.nodes.map(node => ({
-      id: node.id,
+      id: node.id!,
       type: 'agent',
-      position: node.position,
+      position: node.position || { x: 100, y: 100 },
       data: {
-        ...node,
+        id: node.id!,
+        name: node.name,
+        description: node.description || "",
+        is_subgraph: node.is_subgraph,
+        input_nodes: node.input_nodes || [],
+        output_nodes: node.output_nodes || [],
+        model_name: node.model_name,
+        subgraph_name: node.subgraph_name,
+        mcp_servers: node.mcp_servers || [],
+        global_output: node.global_output || false,
+        context: node.context || [],
+        context_mode: node.context_mode || 'all',
+        context_n: node.context_n || 1,
+        handoffs: node.handoffs,
+        level: node.level,
+        save: node.save,
         selected: selectedNode === node.id,
-        onClick: () => selectNode(node.id)
+        onClick: () => selectNode(node.id!)
       },
     }));
 
     setNodes(flowNodes);
 
-    // Generate edges - based on nodes' input_nodes and output_nodes
+    // Generate edges based on input_nodes and output_nodes
     const newEdges: Edge[] = [];
+    const nodeMap = new Map(currentGraph.nodes.map(n => [n.name, n]));
 
-    // Create edges for each node
-    currentGraph.nodes.forEach(sourceNode => {
-      // Create an edge for each output node
-      sourceNode.output_nodes.forEach(targetNodeName => {
-        if (targetNodeName === "end") return; // Skip special marker
+    currentGraph.nodes.forEach(targetNode => {
+      // 为每个input_node创建到当前节点的边
+      targetNode.input_nodes?.forEach(inputNodeName => {
+        if (inputNodeName === "start") return; // Skip start connections
 
-        // Find target node ID
-        const targetNode = currentGraph.nodes.find(n => n.name === targetNodeName);
-        if (targetNode) {
+        const sourceNode = nodeMap.get(inputNodeName);
+        if (sourceNode && sourceNode.id && targetNode.id) {
           newEdges.push({
             id: `e-${sourceNode.id}-${targetNode.id}`,
             type: 'button',
             source: sourceNode.id,
             target: targetNode.id,
+            style: getEdgeStyle(sourceNode, targetNode),
+            animated: shouldAnimateEdge(sourceNode, targetNode),
           });
         }
       });
@@ -145,6 +161,42 @@ const GraphCanvas: React.FC = () => {
 
     setEdges(newEdges);
   }, [currentGraph, selectedNode, selectNode]);
+
+  // 根据节点属性确定边的样式
+  const getEdgeStyle = (sourceNode: any, targetNode: any) => {
+    let style: any = { 
+      stroke: '#555', 
+      strokeWidth: 2 
+    };
+
+    // 如果源节点有执行层级，使用不同颜色
+    if (sourceNode.level !== undefined && sourceNode.level !== null) {
+      const levelColors = ['#ff4d4f', '#fa8c16', '#fadb14', '#a0d911', '#52c41a'];
+      const colorIndex = Math.min(sourceNode.level, levelColors.length - 1);
+      style.stroke = levelColors[colorIndex];
+    }
+
+    // 如果目标节点是全局输出节点，使用紫色
+    if (targetNode.global_output) {
+      style.stroke = '#722ed1';
+      style.strokeWidth = 3;
+    }
+
+    // 如果源节点有循环，使用虚线
+    if (sourceNode.handoffs && sourceNode.handoffs > 1) {
+      style.strokeDasharray = '5,5';
+    }
+
+    return style;
+  };
+
+  // 确定是否需要动画
+  const shouldAnimateEdge = (sourceNode: any, targetNode: any) => {
+    // 如果有执行层级或循环，显示动画
+    return (sourceNode.level !== undefined && sourceNode.level !== null) || 
+           (sourceNode.handoffs && sourceNode.handoffs > 1) ||
+           targetNode.global_output;
+  };
 
   // Handle node changes
   const onNodesChange: OnNodesChange = useCallback(
@@ -208,7 +260,8 @@ const GraphCanvas: React.FC = () => {
           source: connection.source,
           target: connection.target,
           sourceHandle: connection.sourceHandle,
-          targetHandle: connection.targetHandle
+          targetHandle: connection.targetHandle,
+          style: { stroke: '#555', strokeWidth: 2 }
         };
 
         setEdges(eds => [...eds, newEdge]);
@@ -221,6 +274,19 @@ const GraphCanvas: React.FC = () => {
   const onPaneClick = useCallback(() => {
     selectNode(null);
   }, [selectNode]);
+
+  // 自定义MiniMap节点颜色
+  const nodeColor = (node: Node) => {
+    const nodeData = node.data;
+    
+    if (nodeData.selected) return '#1677ff';
+    if (nodeData.is_subgraph) return '#1677ff';
+    if (nodeData.global_output) return '#722ed1';
+    if (nodeData.input_nodes?.includes('start')) return '#52c41a';
+    if (nodeData.output_nodes?.includes('end')) return '#f5222d';
+    
+    return '#d9d9d9';
+  };
 
   return (
     <div style={{ width: '100%', height: '70vh' }}>
@@ -236,14 +302,78 @@ const GraphCanvas: React.FC = () => {
         fitView
         connectionLineType={ConnectionLineType.Straight}
         defaultEdgeOptions={{
-          type: 'default',
+          type: 'button',
           style: { stroke: '#555', strokeWidth: 2 }
         }}
+        // 启用选择模式
+        selectNodesOnDrag={false}
+        // 自定义连接线样式
+        connectionLineStyle={{ stroke: '#1677ff', strokeWidth: 2 }}
       >
         <Controls />
-        <MiniMap />
-        <Background gap={12} size={1} />
+        <MiniMap 
+          nodeColor={nodeColor}
+          nodeStrokeWidth={3}
+          pannable
+          zoomable
+          style={{
+            backgroundColor: '#f5f5f5',
+          }}
+        />
+        <Background 
+          gap={16} 
+          size={1} 
+          color="#e1e1e1"
+          variant="dots" as any
+        />
       </ReactFlow>
+
+      {/* 添加自定义样式 */}
+      <style jsx>{`
+        .edge-button {
+          width: 20px;
+          height: 20px;
+          background: #ff4d4f;
+          border: none;
+          color: white;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 14px;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0.8;
+          transition: opacity 0.2s;
+        }
+        
+        .edge-button:hover {
+          opacity: 1;
+          background: #ff7875;
+        }
+        
+        .react-flow__node-agent {
+          background: transparent;
+          border: none;
+        }
+        
+        .react-flow__handle {
+          border: 2px solid #fff;
+          box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+        
+        .react-flow__handle-top,
+        .react-flow__handle-bottom {
+          left: 50%;
+          transform: translateX(-50%);
+        }
+        
+        .react-flow__handle-left,
+        .react-flow__handle-right {
+          top: 50%;
+          transform: translateY(-50%);
+        }
+      `}</style>
     </div>
   );
 };

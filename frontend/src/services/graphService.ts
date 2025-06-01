@@ -1,9 +1,19 @@
 // src/services/graphService.ts
 import api from './api';
-import { BackendGraphConfig, GraphCardResponse, MCPScriptResponse } from '../types/graph';
+import { 
+  BackendGraphConfig, 
+  GraphCardResponse, 
+  MCPScriptResponse,
+  GraphGenerationRequest,
+  GraphFilePath,
+  ImportResult,
+  ExportResult,
+  GraphReadmeResponse,
+  PromptTemplateResponse
+} from '../types/graph';
 
 // Clean special characters, comments, etc. from JSON
-function sanitizeForJson(obj) {
+function sanitizeForJson(obj: any): any {
   if (obj === null || obj === undefined) {
     return null;
   }
@@ -24,7 +34,7 @@ function sanitizeForJson(obj) {
     return obj.map(item => sanitizeForJson(item));
   }
 
-  const result = {};
+  const result: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       result[key] = sanitizeForJson(obj[key]);
@@ -51,39 +61,50 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
   const cleanedGraph = sanitizeForJson(graph);
 
   // 确保没有空引用
-  cleanedGraph.nodes.forEach(node => {
+  cleanedGraph.nodes.forEach((node: any) => {
     // 确保所有数组属性有效
     if (!Array.isArray(node.input_nodes)) node.input_nodes = [];
     if (!Array.isArray(node.output_nodes)) node.output_nodes = [];
     if (!Array.isArray(node.mcp_servers)) node.mcp_servers = [];
+    if (!Array.isArray(node.context)) node.context = [];
 
     // 过滤掉引用不存在的节点
-    const allNodeNames = cleanedGraph.nodes.map(n => n.name);
+    const allNodeNames = cleanedGraph.nodes.map((n: any) => n.name);
     node.input_nodes = node.input_nodes.filter(
-      input => input === "start" || allNodeNames.includes(input)
+      (input: string) => input === "start" || allNodeNames.includes(input)
     );
     node.output_nodes = node.output_nodes.filter(
-      output => output === "end" || allNodeNames.includes(output)
+      (output: string) => output === "end" || allNodeNames.includes(output)
+    );
+    node.context = node.context.filter(
+      (contextNode: string) => allNodeNames.includes(contextNode)
     );
   });
 
   const requestBody = {
     name: cleanedGraph.name,
     description: cleanedGraph.description || "",
-    nodes: cleanedGraph.nodes.map(node => {
-      // Create a new object according to backend expectations, rather than modifying existing object
-      const result = {
+    end_template: cleanedGraph.end_template || "",
+    nodes: cleanedGraph.nodes.map((node: any) => {
+      // Create a new object according to backend expectations
+      const result: any = {
         name: node.name,
+        description: node.description || "",
         is_subgraph: Boolean(node.is_subgraph),
         mcp_servers: Array.isArray(node.mcp_servers) ? node.mcp_servers : [],
         system_prompt: typeof node.system_prompt === 'string' ? node.system_prompt : "",
         user_prompt: typeof node.user_prompt === 'string' ? node.user_prompt : "",
         input_nodes: Array.isArray(node.input_nodes) ? node.input_nodes : [],
         output_nodes: Array.isArray(node.output_nodes) ? node.output_nodes : [],
+        handoffs: node.handoffs || null,
+        global_output: Boolean(node.global_output),
+        context: Array.isArray(node.context) ? node.context : [],
+        context_mode: node.context_mode || 'all',
+        context_n: typeof node.context_n === 'number' ? node.context_n : 1,
         output_enabled: node.output_enabled !== undefined ? Boolean(node.output_enabled) : true,
-        is_start: Boolean(node.is_start),
-        is_end: Boolean(node.is_end),
-        position: node.position || { x: 0, y: 0 }
+        position: node.position || { x: 0, y: 0 },
+        level: node.level || null,
+        save: node.save || null
       };
 
       // Add specific fields based on node type
@@ -138,7 +159,6 @@ export const executeGraph = async (input: {
   return response.data;
 };
 
-
 // Get a conversation
 export const getConversation = async (conversationId: string): Promise<any> => {
   const response = await api.get(`/conversations/${conversationId}`);
@@ -166,5 +186,76 @@ export const getGraphCard = async (graphName: string): Promise<GraphCardResponse
 // Generate MCP script
 export const generateMCPScript = async (graphName: string): Promise<MCPScriptResponse> => {
   const response = await api.get(`/graphs/${graphName}/generate_mcp`);
+  return response.data;
+};
+
+// ======= 新增：导入导出功能 =======
+
+// Import graph from JSON file (by file path)
+export const importGraph = async (filePath: string): Promise<ImportResult> => {
+  const response = await api.post('/graphs/import', { file_path: filePath });
+  return response.data;
+};
+
+// Import graph from uploaded JSON file
+export const importGraphFromFile = async (file: File): Promise<ImportResult> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post('/graphs/import_from_file', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// Export graph to ZIP package
+export const exportGraph = async (graphName: string): Promise<ExportResult> => {
+  const response = await api.get(`/graphs/${graphName}/export`);
+  return response.data;
+};
+
+// Import graph package from ZIP (by file path)
+export const importGraphPackage = async (filePath: string): Promise<ImportResult> => {
+  const response = await api.post('/graphs/import_package', { file_path: filePath });
+  return response.data;
+};
+
+// Import graph package from uploaded ZIP file
+export const importGraphPackageFromFile = async (file: File): Promise<ImportResult> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post('/graphs/import_package_from_file', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// ======= 新增：AI图生成功能 =======
+
+// Get prompt template for graph generation
+export const getPromptTemplate = async (): Promise<PromptTemplateResponse> => {
+  const response = await api.get('/prompt-template');
+  return response.data;
+};
+
+// Generate graph using AI
+export const generateGraph = async (requirement: string, modelName: string): Promise<any> => {
+  const response = await api.post('/graphs/generate', {
+    requirement,
+    model_name: modelName
+  });
+  return response.data;
+};
+
+// ======= 新增：README功能 =======
+
+// Get graph README
+export const getGraphReadme = async (graphName: string): Promise<GraphReadmeResponse> => {
+  const response = await api.get(`/graphs/${graphName}/readme`);
   return response.data;
 };

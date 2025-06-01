@@ -221,3 +221,6 @@ class GraphGenerationRequest(BaseModel):
     """图生成请求"""
     requirement: str  # 用户的图生成需求
     model_name: str   # 指定的模型名称
+
+class GraphFilePath(BaseModel):
+    file_path: str
