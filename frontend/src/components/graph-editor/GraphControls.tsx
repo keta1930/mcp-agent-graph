@@ -1,20 +1,23 @@
-// src/components/graph-editor/GraphControls.tsx
-import React, { useState } from 'react';
+// src/components/graph-editor/GraphControls.tsx  
+import React, { useState, useEffect } from 'react';
 import { 
   Button, Modal, Form, Input, Select, Tooltip, message, Space, Radio, 
-  Upload, Divider, Row, Col, Dropdown, Menu
+  Upload, Divider, Row, Col, Dropdown, Menu, Card
 } from 'antd';
 import {
   PlusOutlined, SaveOutlined, CodeOutlined, CopyOutlined, CheckOutlined,
   DeleteOutlined, InfoCircleOutlined, ImportOutlined, ExportOutlined,
   RobotOutlined, DownOutlined, FileTextOutlined, UploadOutlined, QuestionCircleOutlined,
-  InboxOutlined
+  InboxOutlined, SettingOutlined, ThunderboltOutlined, FolderOpenOutlined,
+  BranchesOutlined, ToolOutlined, PartitionOutlined
 } from '@ant-design/icons';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { useModelStore } from '../../store/modelStore';
 import ServerStatusIndicator from './ServerStatusIndicator';
-
+import SmartPromptEditor from '../common/SmartPromptEditor';
+import * as graphService from '../../services/graphService';
+import MarkdownRenderer from '../common/MarkdownRenderer';
 const { TextArea } = Input;
 const { Option } = Select;
 const { Dragger } = Upload;
@@ -44,11 +47,12 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
     importGraphPackageFromFile,
     generateGraph,
     getGraphReadme,
-    updateGraphProperties
+    updateGraphProperties,
+    autoLayout
   } = useGraphEditorStore();
 
-  const { config, status } = useMCPStore();
-  const { models } = useModelStore();
+  const { config, status, fetchConfig, fetchStatus } = useMCPStore();
+  const { models, fetchModels } = useModelStore();
 
   const [loading, setLoading] = useState(false);
   const [newGraphModalVisible, setNewGraphModalVisible] = useState(false);
@@ -58,6 +62,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [readmeModalVisible, setReadmeModalVisible] = useState(false);
   const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
+  const [promptTemplateModalVisible, setPromptTemplateModalVisible] = useState(false);
 
   const [mcpScript, setMcpScript] = useState("");
   const [parallelScript, setParallelScript] = useState("");
@@ -65,6 +70,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   const [scriptType, setScriptType] = useState<'sequential' | 'parallel'>('sequential');
   const [copied, setCopied] = useState(false);
   const [readmeContent, setReadmeContent] = useState("");
+  const [promptTemplate, setPromptTemplate] = useState("");
   const [importType, setImportType] = useState<'json' | 'zip'>('json');
   const [importMethod, setImportMethod] = useState<'path' | 'file'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -73,6 +79,47 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   const [aiForm] = Form.useForm();
   const [importForm] = Form.useForm();
   const [settingsForm] = Form.useForm();
+
+  // 获取当前图的所有节点名称用于终止输出模板引用
+  const getAvailableNodesForTemplate = () => {
+    if (!currentGraph) return [];
+    
+    // 获取所有节点名称，包括特殊节点
+    const nodeNames = currentGraph.nodes.map(n => n.name);
+    const specialNodes = ['start'];
+    
+    // 合并并去重
+    const allNodes = [...new Set([...specialNodes, ...nodeNames])];
+    
+    return allNodes.sort();
+  };
+
+  // 添加初始化数据获取
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        await Promise.all([
+          fetchConfig(),
+          fetchStatus(),
+          fetchModels()
+        ]);
+      } catch (error) {
+        console.error('初始化数据获取失败:', error);
+        messageApi.error('初始化数据获取失败');
+      }
+    };
+
+    initializeData();
+
+    // Set up a timer to periodically refresh status
+    const statusInterval = setInterval(() => {
+      fetchStatus();
+    }, 30000); // Refresh status every 30 seconds
+
+    return () => {
+      clearInterval(statusInterval);
+    };
+  }, [fetchConfig, fetchStatus, fetchModels]);
 
   // Check if all MCP servers used in the current graph are connected
   const checkServerConnections = () => {
@@ -310,6 +357,20 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
     }
   };
 
+  // 获取提示词模板
+  const handleGetPromptTemplate = async () => {
+    try {
+      setLoading(true);
+      const result = await graphService.getPromptTemplate();
+      setPromptTemplate(result.prompt);
+      setPromptTemplateModalVisible(true);
+    } catch (error) {
+      messageApi.error(`获取提示词模板失败: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 图设置
   const handleGraphSettings = () => {
     if (currentGraph) {
@@ -333,8 +394,38 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
     }
   };
 
+  // 自动布局功能
+  const handleAutoLayout = () => {
+    if (!currentGraph || currentGraph.nodes.length === 0) {
+      messageApi.warning('当前图中没有节点');
+      return;
+    }
+
+    try {
+      autoLayout();
+      messageApi.success('节点自动布局完成');
+    } catch (error) {
+      messageApi.error(`自动布局失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   // Server status check
   const allServersConnected = checkServerConnections();
+
+  // 快速操作菜单
+  const quickActionsMenu = (
+    <Menu>
+      <Menu.Item key="new" icon={<PlusOutlined />} onClick={handleCreateNewGraph}>
+        新建图
+      </Menu.Item>
+      <Menu.Item key="ai-generate" icon={<ThunderboltOutlined />} onClick={() => setAiGenerateModalVisible(true)}>
+        AI生成图
+      </Menu.Item>
+      <Menu.Item key="prompt-template" icon={<FileTextOutlined />} onClick={handleGetPromptTemplate}>
+        获取提示词
+      </Menu.Item>
+    </Menu>
+  );
 
   // 导入导出菜单
   const importExportMenu = (
@@ -353,7 +444,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         setSelectedFile(null);
         setImportModalVisible(true);
       }}>
-        导入图包
+        导入压缩包
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item 
@@ -362,7 +453,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         onClick={handleExport}
         disabled={!currentGraph?.name}
       >
-        导出图包
+        导出压缩包
       </Menu.Item>
     </Menu>
   );
@@ -370,6 +461,15 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   // 更多操作菜单
   const moreMenu = (
     <Menu>
+      <Menu.Item 
+        key="auto-layout" 
+        icon={<PartitionOutlined />} 
+        onClick={handleAutoLayout}
+        disabled={!currentGraph?.name || currentGraph.nodes.length === 0}
+      >
+        自动布局
+      </Menu.Item>
+      <Menu.Divider />
       <Menu.Item 
         key="readme" 
         icon={<FileTextOutlined />} 
@@ -380,11 +480,19 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
       </Menu.Item>
       <Menu.Item 
         key="settings" 
-        icon={<InfoCircleOutlined />} 
+        icon={<SettingOutlined />} 
         onClick={handleGraphSettings}
         disabled={!currentGraph?.name}
       >
         图设置
+      </Menu.Item>
+      <Menu.Item 
+        key="export-mcp" 
+        icon={<CodeOutlined />} 
+        onClick={handleExportMCP}
+        disabled={!currentGraph?.name}
+      >
+        导出MCP
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item 
@@ -400,78 +508,103 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   );
 
   return (
-    <div className="flex justify-between items-center p-4 bg-white border-b">
+    <div style={{ 
+      padding: '1px 1px 1px 1px', 
+      background: '#fafafa',
+      borderBottom: '1px solid #e8e8e8',
+      marginBottom: '16px'
+    }}>
       {contextHolder}
-      <div className="flex items-center gap-2">
-        <Select
-          placeholder="选择图"
-          style={{ width: 200 }}
-          onChange={handleGraphChange}
-          value={currentGraph?.name}
-        >
-          {graphs.map(name => (
-            <Option key={name} value={name}>{name}</Option>
-          ))}
-        </Select>
+      
+      {/* 主工具栏 */}
+      <div style={{
+        background: 'white',
+        padding: '12px 12px',
+        borderRadius: '6px'
+      }}>
+        <Row justify="space-between" align="middle" gutter={16}>
+          {/* 左侧：图选择和快速操作 */}
+          <Col flex="auto">
+            <Space size="middle">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FolderOpenOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
+                <Select
+                  placeholder="选择图"
+                  style={{ width: 200 }}
+                  onChange={handleGraphChange}
+                  value={currentGraph?.name}
+                  size="middle"
+                >
+                  {graphs.map(name => (
+                    <Option key={name} value={name}>{name}</Option>
+                  ))}
+                </Select>
+                
+                <Dropdown overlay={quickActionsMenu} trigger={['click']} placement="bottomLeft">
+                  <Button size="middle" type="text">
+                    <PlusOutlined /> <DownOutlined />
+                  </Button>
+                </Dropdown>
+              </div>
 
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreateNewGraph}
-        >
-          新建图
-        </Button>
+              <Divider type="vertical" />
 
-        <Button
-          icon={<RobotOutlined />}
-          onClick={() => setAiGenerateModalVisible(true)}
-        >
-          AI生成
-        </Button>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={onAddNode}
+                disabled={!currentGraph}
+                size="middle"
+              >
+                添加节点
+              </Button>
 
-        <Dropdown overlay={importExportMenu} trigger={['click']}>
-          <Button>
-            导入/导出 <DownOutlined />
-          </Button>
-        </Dropdown>
+              <Tooltip title="根据节点层级关系自动排列节点位置">
+                <Button
+                  icon={<PartitionOutlined />}
+                  onClick={handleAutoLayout}
+                  disabled={!currentGraph?.name || currentGraph.nodes.length === 0}
+                  size="middle"
+                >
+                  自动布局
+                </Button>
+              </Tooltip>
 
-        <ServerStatusIndicator />
-      </div>
+              <Dropdown overlay={importExportMenu} trigger={['click']}>
+                <Button size="middle">
+                  <ImportOutlined /> 导入/导出 <DownOutlined />
+                </Button>
+              </Dropdown>
 
-      <div className="flex items-center gap-2">
-        <Button
-          onClick={onAddNode}
-          icon={<PlusOutlined />}
-          disabled={!currentGraph}
-        >
-          添加节点
-        </Button>
+              <ServerStatusIndicator />
+            </Space>
+          </Col>
 
-        <Tooltip title={!allServersConnected ? "图包含使用断开连接服务器的节点" : ""}>
-          <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            onClick={handleSave}
-            loading={loading}
-            disabled={!currentGraph || !dirty}
-            danger={!allServersConnected}
-          >
-            保存
-          </Button>
-        </Tooltip>
+          {/* 右侧：保存和操作 */}
+          <Col>
+            <Space size="middle">
+              <Tooltip title={!allServersConnected ? "图包含使用断开连接服务器的节点" : ""}>
+                <Button
+                  type={dirty ? "primary" : "default"}
+                  icon={<SaveOutlined />}
+                  onClick={handleSave}
+                  loading={loading}
+                  disabled={!currentGraph || !dirty}
+                  danger={!allServersConnected}
+                  size="middle"
+                >
+                  {dirty ? '保存' : '已保存'}
+                </Button>
+              </Tooltip>
 
-        <Button
-          icon={<CodeOutlined />}
-          onClick={handleExportMCP}
-          loading={loading}
-          disabled={!currentGraph?.name}
-        >
-          导出MCP
-        </Button>
-
-        <Dropdown overlay={moreMenu} trigger={['click']}>
-          <Button icon={<DownOutlined />} />
-        </Dropdown>
+              <Dropdown overlay={moreMenu} trigger={['click']} placement="bottomRight">
+                <Button icon={<SettingOutlined />} size="middle">
+                  <DownOutlined />
+                </Button>
+              </Dropdown>
+            </Space>
+          </Col>
+        </Row>
       </div>
 
       {/* Create new graph modal */}
@@ -530,18 +663,33 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
             label="生成模型"
             rules={[{ required: true, message: '请选择生成用的模型' }]}
           >
-            <Select placeholder="选择模型">
+            <Select placeholder="选择模型" loading={!models || models.length === 0}>
               {models.map(model => (
                 <Option key={model.name} value={model.name}>{model.name}</Option>
               ))}
             </Select>
           </Form.Item>
+          
+          {/* 添加模型状态提示 */}
+          {(!models || models.length === 0) && (
+            <div style={{ 
+              padding: '8px 12px', 
+              backgroundColor: '#fff7e6', 
+              border: '1px solid #ffd591',
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#ad6800'
+            }}>
+              <InfoCircleOutlined style={{ marginRight: '4px' }} />
+              暂无可用模型，请先在"模型管理"页面添加模型配置
+            </div>
+          )}
         </Form>
       </Modal>
 
       {/* Import modal */}
       <Modal
-        title={importType === 'json' ? "导入JSON图" : "导入图包"}
+        title={importType === 'json' ? "导入JSON图" : "导入压缩包"}
         open={importModalVisible}
         onOk={handleImport}
         onCancel={() => {
@@ -563,7 +711,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
               buttonStyle="solid"
             >
               <Radio.Button value="json">JSON图配置</Radio.Button>
-              <Radio.Button value="zip">图包(ZIP)</Radio.Button>
+              <Radio.Button value="zip">压缩包(ZIP)</Radio.Button>
             </Radio.Group>
           </div>
 
@@ -663,12 +811,17 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
       </Modal>
 
       {/* Graph Settings modal */}
+      {/* Graph Settings modal */}
       <Modal
         title="图设置"
         open={graphSettingsModalVisible}
         onOk={handleUpdateGraphSettings}
         onCancel={() => setGraphSettingsModalVisible(false)}
-        width={600}
+        width={900}
+        bodyStyle={{ 
+          minHeight: '720px',  // 增加卡片的最小高度
+          paddingBottom: '60px'  // 增加底部内边距
+        }}
       >
         <Form form={settingsForm} layout="vertical">
           <Form.Item
@@ -694,15 +847,18 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
             label={
               <span>
                 终止输出模板{' '}
-                <Tooltip title="支持{node_name}格式引用其他节点的输出">
+                <Tooltip title="支持{node_name}格式引用其他节点的输出，输入 { 可以快速选择节点">
                   <QuestionCircleOutlined />
                 </Tooltip>
               </span>
             }
+            style={{ marginBottom: '80px' }}  // 增加这个Form.Item到底部的距离
           >
-            <TextArea 
-              rows={4} 
+            <SmartPromptEditor
               placeholder="例如：{node1}的输出是：{node1_output}，{node2}的输出是：{node2_output}"
+              rows={8}
+              availableNodes={getAvailableNodesForTemplate()}
+              size="large"
             />
           </Form.Item>
         </Form>
@@ -735,17 +891,38 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
             关闭
           </Button>
         ]}
-        width={800}
+        width={1000}
+        bodyStyle={{ padding: 0 }}
       >
-        <div style={{ 
-          maxHeight: '60vh', 
-          overflow: 'auto',
-          padding: '16px',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '4px'
-        }}>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>{readmeContent}</pre>
-        </div>
+        <MarkdownRenderer
+          content={readmeContent}
+          title={`README - ${currentGraph?.name}`}
+          showCopyButton={true}
+          showPreview={true}
+          style={{ border: 'none', boxShadow: 'none' }}
+        />
+      </Modal>
+
+      {/* Prompt Template modal */}
+      <Modal
+        title="提示词模板"
+        open={promptTemplateModalVisible}
+        onCancel={() => setPromptTemplateModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setPromptTemplateModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={1000}
+        bodyStyle={{ padding: 0 }}
+      >
+        <MarkdownRenderer
+          content={promptTemplate}
+          title="AI图生成提示词模板"
+          showCopyButton={true}
+          showPreview={true}
+          style={{ border: 'none', boxShadow: 'none' }}
+        />
       </Modal>
 
       {/* MCP script modal with script type selector */}

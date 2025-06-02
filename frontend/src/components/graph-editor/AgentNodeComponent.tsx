@@ -66,6 +66,9 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
     return status[server] && !status[server].connected;
   });
 
+  // 判断是否有handoffs功能
+  const hasHandoffs = Boolean(handoffs);
+
   // 构建节点标题区域
   const renderNodeTitle = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '24px' }}>
@@ -103,7 +106,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         )}
 
         {/* 循环次数 */}
-        {handoffs && handoffs > 1 && (
+        {hasHandoffs && (
           <Tooltip title={`循环执行: ${handoffs}次`}>
             <ReloadOutlined style={{ color: '#fa8c16', fontSize: '12px' }} />
           </Tooltip>
@@ -254,6 +257,11 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
       borderColor = '#722ed1';
       boxShadow = '0 0 6px rgba(114,46,209,0.2)';
       background = 'linear-gradient(to bottom, #f9f0ff, #ffffff)';
+    } else if (hasHandoffs) {
+      // 为有handoffs的节点添加特殊样式
+      borderColor = '#fa8c16';
+      boxShadow = '0 0 8px rgba(250,140,22,0.3)';
+      background = 'linear-gradient(to bottom, #fff7e6, #ffffff)';
     } else if (hasDisconnectedServers) {
       boxShadow = '0 0 0 1px #faad14';
     }
@@ -270,11 +278,42 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
 
   return (
     <div onClick={onClick}>
+      {/* 常规左侧输入Handle */}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
         style={{ background: '#555', width: '8px', height: '8px' }}
+      />
+
+      {/* 为有handoffs的节点添加顶部Handle */}
+      {hasHandoffs && (
+        <Handle
+          type="source"
+          position={Position.Top}
+          id="handoff-source"
+          style={{ 
+            background: '#fa8c16', 
+            width: '10px', 
+            height: '10px',
+            border: '2px solid white',
+            boxShadow: '0 0 8px rgba(250,140,22,0.4)'
+          }}
+        />
+      )}
+
+      {/* 为所有节点添加顶部接收Handle（用于接收handoffs连接） */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="handoff-target"
+        style={{ 
+          background: '#52c41a', 
+          width: '8px', 
+          height: '8px',
+          border: '2px solid white',
+          opacity: hasHandoffs ? 1 : 0.3 // 没有handoffs的节点Handle透明度较低
+        }}
       />
 
       <Card
@@ -294,6 +333,28 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         {renderNodeContent()}
         {renderNodeTags()}
 
+        {/* Handoffs特殊标识 */}
+        {hasHandoffs && (
+          <div style={{
+            position: 'absolute',
+            top: '-4px',
+            left: '-4px',
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            backgroundColor: '#fa8c16',
+            border: '2px solid white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '8px',
+            color: 'white',
+            fontWeight: 'bold'
+          }}>
+            ↻
+          </div>
+        )}
+
         {/* 特殊标识 - 如果是关键节点类型 */}
         {(level !== undefined && level !== null && level < 3) && (
           <div style={{
@@ -309,6 +370,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         )}
       </Card>
 
+      {/* 常规右侧输出Handle */}
       <Handle
         type="source"
         position={Position.Right}

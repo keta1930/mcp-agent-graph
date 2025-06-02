@@ -1,8 +1,8 @@
 // src/components/graph-editor/NodePropertiesPanel.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Form, Input, Switch, Select, Button, Card, Typography, Tabs, Tag, 
-  Tooltip, InputNumber, Divider, Space 
+  Tooltip, InputNumber, Divider, Space
 } from 'antd';
 import { 
   DeleteOutlined, WarningOutlined, RobotOutlined, BranchesOutlined,
@@ -12,6 +12,7 @@ import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { SAVE_FORMAT_OPTIONS, CONTEXT_MODE_OPTIONS } from '../../types/graph';
+import SmartPromptEditor from '../common/SmartPromptEditor';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -20,7 +21,7 @@ const { TabPane } = Tabs;
 
 const NodePropertiesPanel: React.FC = () => {
   const [form] = Form.useForm();
-  const { currentGraph, selectedNode, updateNode, removeNode, graphs } = useGraphEditorStore();
+  const { currentGraph, selectedNode, updateNode, removeNode, graphs, selectNode } = useGraphEditorStore();
   const { models, fetchModels } = useModelStore();
   const { config, status, fetchConfig } = useMCPStore();
 
@@ -50,6 +51,24 @@ const NodePropertiesPanel: React.FC = () => {
     return currentGraph.nodes
       .filter(n => n.id !== selectedNode)
       .map(n => n.name);
+  };
+
+  // Get all available nodes for prompt references (including special nodes)
+  const getAvailableNodesForPrompt = () => {
+    const nodeNames = getAvailableNodes();
+    
+    // 添加特殊节点
+    const specialNodes = ['start'];
+    
+    // 添加有全局输出的节点
+    const globalOutputNodes = currentGraph?.nodes
+      .filter(n => n.global_output && n.id !== selectedNode)
+      .map(n => n.name) || [];
+    
+    // 合并并去重
+    const allNodes = [...new Set([...specialNodes, ...nodeNames, ...globalOutputNodes])];
+    
+    return allNodes.sort();
   };
 
   // Check connection status of selected MCP servers
@@ -120,6 +139,8 @@ const NodePropertiesPanel: React.FC = () => {
     if (selectedNode && node) {
       console.log(`删除节点: ${node.name}`);
       removeNode(selectedNode);
+      // 删除后关闭模态框
+      selectNode(null);
     }
   };
 
@@ -129,47 +150,61 @@ const NodePropertiesPanel: React.FC = () => {
     }
   };
 
-  // If no node is selected, show a prompt
+  // 如果没有选中节点，返回空（在模态框模式下不应该出现这种情况）
   if (!node) {
-    return (
-      <Card className="h-full" style={{ height: '75vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text type="secondary">请选择一个节点来编辑属性</Text>
-        </div>
-      </Card>
-    );
+    return null;
   }
 
+  const availableNodesForPrompt = getAvailableNodesForPrompt();
+
   return (
-    <Card
-      className="h-full"
-      style={{ height: '75vh', overflow: 'auto' }}
-      title={
-        <div className="flex items-center">
+    <div style={{ padding: '24px' }}>
+      {/* 节点标题区域 */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        marginBottom: '24px',
+        paddingBottom: '16px',
+        borderBottom: '1px solid #f0f0f0'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           {node.is_subgraph ?
             <BranchesOutlined style={{
               color: '#1677ff',
-              marginRight: '8px',
-              fontSize: '18px'
+              marginRight: '12px',
+              fontSize: '24px'
             }} /> :
-            <RobotOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
+            <RobotOutlined style={{ color: '#52c41a', marginRight: '12px', fontSize: '20px' }} />
           }
-          <span>{node.name}</span>
-          {node.input_nodes?.includes('start') && <Tag color="green" style={{ marginLeft: '8px' }}>Start</Tag>}
-          {node.output_nodes?.includes('end') && <Tag color="blue" style={{ marginLeft: '4px' }}>End</Tag>}
-          {node.global_output && <Tag color="purple" style={{ marginLeft: '4px' }}>Global</Tag>}
-
-          {/* Only show tooltip when there are disconnected servers */}
-          {disconnectedServers.length > 0 && (
-            <Tooltip title={`断开的服务器: ${disconnectedServers.join(', ')}`}>
-              <WarningOutlined style={{ color: '#faad14', marginLeft: '8px' }} />
-            </Tooltip>
-          )}
+          <div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+              {node.name}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {node.input_nodes?.includes('start') && <Tag color="green">起始节点</Tag>}
+              {node.output_nodes?.includes('end') && <Tag color="blue">结束节点</Tag>}
+              {node.global_output && <Tag color="purple">全局输出</Tag>}
+              {node.level !== undefined && node.level !== null && (
+                <Tag color="orange">执行层级: {node.level}</Tag>
+              )}
+              {node.handoffs && node.handoffs > 1 && (
+                <Tag color="cyan">循环执行: {node.handoffs}次</Tag>
+              )}
+              {node.save && <Tag color="green">保存格式: {node.save}</Tag>}
+            </div>
+          </div>
         </div>
-      }
-      bodyStyle={{ overflow: 'auto', height: 'calc(75vh - 57px)' }}
-    >
-      <Tabs defaultActiveKey="basic">
+
+        {/* 断开连接警告 */}
+        {disconnectedServers.length > 0 && (
+          <Tooltip title={`断开的服务器: ${disconnectedServers.join(', ')}`}>
+            <WarningOutlined style={{ color: '#faad14', fontSize: '20px' }} />
+          </Tooltip>
+        )}
+      </div>
+
+      {/* 标签页内容 */}
+      <Tabs defaultActiveKey="basic" size="large">
         <TabPane tab="基础信息" key="basic">
           <Form
             form={form}
@@ -191,7 +226,7 @@ const NodePropertiesPanel: React.FC = () => {
                 }
               ]}
             >
-              <Input placeholder="输入节点名称" />
+              <Input placeholder="输入节点名称" size="large" />
             </Form.Item>
 
             <Form.Item
@@ -210,6 +245,7 @@ const NodePropertiesPanel: React.FC = () => {
                 rows={3}
                 showCount
                 maxLength={200}
+                size="large"
               />
             </Form.Item>
 
@@ -221,6 +257,7 @@ const NodePropertiesPanel: React.FC = () => {
               <Switch
                 checkedChildren="子图"
                 unCheckedChildren="智能体"
+                size="default"
               />
             </Form.Item>
 
@@ -230,7 +267,7 @@ const NodePropertiesPanel: React.FC = () => {
                 label="模型"
                 rules={[{ required: true, message: '请选择一个模型' }]}
               >
-                <Select placeholder="选择模型">
+                <Select placeholder="选择模型" size="large">
                   {models.map(model => (
                     <Option key={model.name} value={model.name}>{model.name}</Option>
                   ))}
@@ -242,7 +279,7 @@ const NodePropertiesPanel: React.FC = () => {
                 label="子图"
                 rules={[{ required: true, message: '请选择一个子图' }]}
               >
-                <Select placeholder="选择子图">
+                <Select placeholder="选择子图" size="large">
                   {availableSubgraphs.map(graph => (
                     <Option key={graph} value={graph}>{graph}</Option>
                   ))}
@@ -257,6 +294,7 @@ const NodePropertiesPanel: React.FC = () => {
               <Select
                 mode="multiple"
                 placeholder="选择MCP服务器"
+                size="large"
               >
                 {mcpServers.map(server => (
                   <Option
@@ -276,8 +314,8 @@ const NodePropertiesPanel: React.FC = () => {
 
             <Divider />
 
-            <div className="mt-4 space-y-2">
-              <h4>节点连接</h4>
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ marginBottom: '16px' }}>节点连接</h3>
               
               <Form.Item
                 name="input_nodes"
@@ -293,6 +331,7 @@ const NodePropertiesPanel: React.FC = () => {
                 <Select 
                   mode="multiple" 
                   placeholder="选择输入节点"
+                  size="large"
                   showSearch
                   filterOption={(input, option) =>
                     option?.children?.toString().toLowerCase().includes(input.toLowerCase()) ?? false
@@ -321,6 +360,7 @@ const NodePropertiesPanel: React.FC = () => {
                 <Select 
                   mode="multiple" 
                   placeholder="选择输出节点"
+                  size="large"
                   showSearch
                   filterOption={(input, option) =>
                     option?.children?.toString().toLowerCase().includes(input.toLowerCase()) ?? false
@@ -338,12 +378,13 @@ const NodePropertiesPanel: React.FC = () => {
 
             <Divider />
 
-            <div className="mt-4 space-y-2">
-              <Space direction="vertical" style={{ width: '100%' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ marginBottom: '16px' }}>输出设置</h3>
+              <Space direction="vertical" style={{ width: '100%' }} size="large">
                 <Form.Item
                   name="output_enabled"
                   valuePropName="checked"
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 0 }}
                 >
                   <Switch
                     checkedChildren="启用输出"
@@ -374,25 +415,59 @@ const NodePropertiesPanel: React.FC = () => {
           >
             <Form.Item
               name="system_prompt"
-              label="系统提示词"
+              label={
+                <span>
+                  系统提示词{' '}
+                  <Tooltip title="输入 { 可以快速插入节点引用，如 {node_name}">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              }
             >
-              <TextArea
-                rows={6}
-                placeholder="输入系统提示词"
-                showCount
+              <SmartPromptEditor
+                placeholder="输入系统提示词，可以用 {node_name} 引用其他节点的输出"
+                rows={8}
+                availableNodes={availableNodesForPrompt}
+                size="large"
               />
             </Form.Item>
 
             <Form.Item
               name="user_prompt"
-              label="用户提示词"
+              label={
+                <span>
+                  用户提示词{' '}
+                  <Tooltip title="输入 { 可以快速插入节点引用，如 {node_name}">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              }
             >
-              <TextArea
-                rows={6}
-                placeholder="输入用户提示词"
-                showCount
+              <SmartPromptEditor
+                placeholder="输入用户提示词，可以用 {node_name} 引用其他节点的输出"
+                rows={8}
+                availableNodes={availableNodesForPrompt}
+                size="large"
               />
             </Form.Item>
+
+            {/* 添加提示信息 */}
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#f6f8fa', 
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#666',
+              marginTop: '16px'
+            }}>
+              <strong>💡 节点引用说明：</strong>
+              <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
+                <li>输入 <code>{`{`}</code> 可以快速选择要引用的节点</li>
+                <li>使用 <code>{`{start}`}</code> 引用用户输入</li>
+                <li>使用 <code>{`{node_name}`}</code> 引用其他节点的输出</li>
+                <li>支持引用设置了全局输出的节点</li>
+              </ul>
+            </div>
           </Form>
         </TabPane>
 
@@ -416,6 +491,7 @@ const NodePropertiesPanel: React.FC = () => {
               <InputNumber 
                 placeholder="执行优先级（可选）" 
                 style={{ width: '100%' }}
+                size="large"
                 min={0}
               />
             </Form.Item>
@@ -434,6 +510,7 @@ const NodePropertiesPanel: React.FC = () => {
               <InputNumber 
                 placeholder="循环执行次数（可选）" 
                 style={{ width: '100%' }}
+                size="large"
                 min={1}
               />
             </Form.Item>
@@ -449,7 +526,7 @@ const NodePropertiesPanel: React.FC = () => {
                 </span>
               }
             >
-              <Select placeholder="选择文件格式（可选）" allowClear>
+              <Select placeholder="选择文件格式（可选）" allowClear size="large">
                 {SAVE_FORMAT_OPTIONS.map(option => (
                   <Option key={option.value} value={option.value}>
                     {option.label}
@@ -480,6 +557,7 @@ const NodePropertiesPanel: React.FC = () => {
               <Select 
                 mode="multiple" 
                 placeholder="选择要引用的节点"
+                size="large"
                 disabled={availableContextNodes.length === 0}
               >
                 {availableContextNodes.map(nodeName => (
@@ -502,7 +580,7 @@ const NodePropertiesPanel: React.FC = () => {
                       name="context_mode"
                       label="获取模式"
                     >
-                      <Select onChange={handleContextModeChange}>
+                      <Select onChange={handleContextModeChange} size="large">
                         {CONTEXT_MODE_OPTIONS.map(option => (
                           <Option key={option.value} value={option.value}>
                             {option.label}
@@ -527,6 +605,7 @@ const NodePropertiesPanel: React.FC = () => {
                               min={1} 
                               max={10}
                               style={{ width: '100%' }}
+                              size="large"
                             />
                           </Form.Item>
                         ) : null
@@ -535,12 +614,12 @@ const NodePropertiesPanel: React.FC = () => {
                   </>
                 ) : (
                   <div style={{ 
-                    padding: '12px', 
+                    padding: '20px', 
                     backgroundColor: '#f5f5f5', 
-                    borderRadius: '4px', 
+                    borderRadius: '8px', 
                     textAlign: 'center' 
                   }}>
-                    <Text type="secondary">
+                    <Text type="secondary" style={{ fontSize: '14px' }}>
                       {availableContextNodes.length === 0 
                         ? '当前图中没有全局输出节点' 
                         : '请选择要引用的节点'}
@@ -553,37 +632,37 @@ const NodePropertiesPanel: React.FC = () => {
         </TabPane>
 
         <TabPane tab="连接信息" key="connections">
-          <div className="p-2">
-            <div className="mb-4">
-              <Text strong>输入节点:</Text>
-              <div className="mt-1">
+          <div style={{ padding: '8px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <Text strong style={{ fontSize: '16px' }}>输入节点:</Text>
+              <div style={{ marginTop: '12px' }}>
                 {node.input_nodes && node.input_nodes.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {node.input_nodes.map(input => (
-                      <Tag key={input} color={input === 'start' ? 'green' : 'blue'}>
+                      <Tag key={input} color={input === 'start' ? 'green' : 'blue'} style={{ fontSize: '14px', padding: '4px 8px' }}>
                         {input}
                       </Tag>
                     ))}
                   </div>
                 ) : (
-                  <Text type="secondary">无输入节点</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>无输入节点</Text>
                 )}
               </div>
             </div>
 
             <div>
-              <Text strong>输出节点:</Text>
-              <div className="mt-1">
+              <Text strong style={{ fontSize: '16px' }}>输出节点:</Text>
+              <div style={{ marginTop: '12px' }}>
                 {node.output_nodes && node.output_nodes.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {node.output_nodes.map(output => (
-                      <Tag key={output} color={output === 'end' ? 'red' : 'orange'}>
+                      <Tag key={output} color={output === 'end' ? 'red' : 'orange'} style={{ fontSize: '14px', padding: '4px 8px' }}>
                         {output}
                       </Tag>
                     ))}
                   </div>
                 ) : (
-                  <Text type="secondary">无输出节点</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>无输出节点</Text>
                 )}
               </div>
             </div>
@@ -591,16 +670,24 @@ const NodePropertiesPanel: React.FC = () => {
         </TabPane>
       </Tabs>
 
-      <div className="mt-4 flex justify-center border-t pt-4">
+      {/* 底部操作按钮 */}
+      <div style={{ 
+        marginTop: '32px', 
+        paddingTop: '24px', 
+        borderTop: '1px solid #f0f0f0',
+        display: 'flex', 
+        justifyContent: 'center' 
+      }}>
         <Button
           danger
           icon={<DeleteOutlined />}
           onClick={handleDelete}
+          size="large"
         >
           删除节点
         </Button>
       </div>
-    </Card>
+    </div>
   );
 };
 
