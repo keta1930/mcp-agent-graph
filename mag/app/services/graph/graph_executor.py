@@ -577,15 +577,6 @@ class GraphExecutor:
             if conversation:
                 graph_name = conversation.get("graph_name", "")
 
-        # 确保node_outputs中包含start（如果存在）
-        if "start" not in node_outputs:
-            # 尝试从conversation中获取start内容
-            if conversation:
-                for result in conversation.get("results", []):
-                    if result.get("is_start_input", False):
-                        node_outputs["start"] = result["input"]
-                        break
-
         # 跟踪已使用的输入节点
         used_input_nodes = set()
 
