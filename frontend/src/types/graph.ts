@@ -6,7 +6,7 @@ export interface NodePosition {
 
 export interface AgentNode {
   name: string;
-  description?: string; // 新增：节点描述
+  description?: string;
   is_subgraph: boolean;
   model_name?: string;
   subgraph_name?: string;
@@ -15,25 +15,23 @@ export interface AgentNode {
   user_prompt: string;
   input_nodes: string[];
   output_nodes: string[];
-  handoffs?: number; // 新增：循环执行次数
-  global_output: boolean; // 新增：是否全局管理输出
-  context: string[]; // 新增：需要引用的全局管理节点列表
-  context_mode: 'all' | 'latest' | 'latest_n'; // 新增：全局内容获取模式
-  context_n: number; // 新增：获取最新的n次输出
+  handoffs?: number;
+  global_output: boolean;
+  context: string[];
+  context_mode: 'all' | 'latest' | 'latest_n';
+  context_n: number;
   output_enabled: boolean;
   position?: NodePosition;
-  level?: number; // 新增：节点层级
-  save?: string; // 新增：输出保存文件扩展名
-  
-  // 前端专用字段
-  id?: string; // 前端节点ID
+  level?: number;
+  save?: string;
+  id?: string;
 }
 
 export interface BackendGraphConfig {
   name: string;
   description: string;
   nodes: AgentNode[];
-  end_template?: string; // 新增：终止节点输出模板
+  end_template?: string;
 }
 
 export interface GraphInput {
@@ -81,17 +79,15 @@ export interface MCPScriptResponse {
   graph_name: string;
   sequential_script?: string;
   parallel_script?: string;
-  script?: string; // 向后兼容
-  default_script?: string; // 向后兼容
+  script?: string;
+  default_script?: string;
 }
 
-// 新增：图生成请求
 export interface GraphGenerationRequest {
   requirement: string;
   model_name: string;
 }
 
-// 新增：图导入导出相关
 export interface GraphFilePath {
   file_path: string;
 }
@@ -110,19 +106,16 @@ export interface ExportResult {
   file_path: string;
 }
 
-// 新增：README相关
 export interface GraphReadmeResponse {
   name: string;
   config: BackendGraphConfig;
   readme: string;
 }
 
-// 新增：提示词模板响应
 export interface PromptTemplateResponse {
   prompt: string;
 }
 
-// 文件保存格式选项
 export const SAVE_FORMAT_OPTIONS = [
   { label: 'Markdown (.md)', value: 'md' },
   { label: 'HTML (.html)', value: 'html' },
@@ -134,7 +127,6 @@ export const SAVE_FORMAT_OPTIONS = [
   { label: 'XML (.xml)', value: 'xml' },
 ] as const;
 
-// 上下文模式选项
 export const CONTEXT_MODE_OPTIONS = [
   { label: '所有输出', value: 'all' },
   { label: '最新输出', value: 'latest' },

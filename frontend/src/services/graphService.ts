@@ -19,11 +19,10 @@ function sanitizeForJson(obj: any): any {
   }
 
   if (typeof obj === 'string') {
-    // Remove comment-like content and control characters
     return obj
-      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* ... */ comments
-      .replace(/\/\/.*/g, '')           // Remove // ... comments
-      .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control characters, but keep \n (\x0A) and \r (\x0D)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*/g, '')           
+      .replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '');
   }
 
   if (typeof obj !== 'object') {
@@ -57,18 +56,14 @@ export const getGraph = async (graphName: string): Promise<any> => {
 
 // Create or update a graph
 export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
-  // Ensure request body format is correct and clean special characters
   const cleanedGraph = sanitizeForJson(graph);
 
-  // 确保没有空引用
   cleanedGraph.nodes.forEach((node: any) => {
-    // 确保所有数组属性有效
     if (!Array.isArray(node.input_nodes)) node.input_nodes = [];
     if (!Array.isArray(node.output_nodes)) node.output_nodes = [];
     if (!Array.isArray(node.mcp_servers)) node.mcp_servers = [];
     if (!Array.isArray(node.context)) node.context = [];
 
-    // 过滤掉引用不存在的节点
     const allNodeNames = cleanedGraph.nodes.map((n: any) => n.name);
     node.input_nodes = node.input_nodes.filter(
       (input: string) => input === "start" || allNodeNames.includes(input)
@@ -86,7 +81,6 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
     description: cleanedGraph.description || "",
     end_template: cleanedGraph.end_template || "",
     nodes: cleanedGraph.nodes.map((node: any) => {
-      // Create a new object according to backend expectations
       const result: any = {
         name: node.name,
         description: node.description || "",
@@ -107,13 +101,12 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
         save: node.save || null
       };
 
-      // Add specific fields based on node type
       if (node.is_subgraph) {
         result.subgraph_name = node.subgraph_name || "";
-        result.model_name = ""; // Empty string instead of undefined
+        result.model_name = "";
       } else {
         result.model_name = node.model_name || "";
-        result.subgraph_name = null; // null instead of undefined
+        result.subgraph_name = null;
       }
 
       return result;
@@ -121,7 +114,6 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
   };
 
   try {
-    // Ensure no undefined or special characters exist in the output
     const cleanJson = JSON.stringify(requestBody);
     const finalBody = JSON.parse(cleanJson);
 
@@ -159,7 +151,25 @@ export const executeGraph = async (input: {
   return response.data;
 };
 
-// Get a conversation
+// Continue conversation
+export const continueConversation = async (input: {
+  graph_name: string;
+  input_text: string;
+  conversation_id: string;
+  parallel?: boolean;
+  continue_from_checkpoint?: boolean;
+}): Promise<any> => {
+  const response = await api.post('/graphs/continue', input);
+  return response.data;
+};
+
+// Get conversation list
+export const getConversationList = async (): Promise<string[]> => {
+  const response = await api.get('/conversations');
+  return response.data;
+};
+
+// Get a conversation (basic info)
 export const getConversation = async (conversationId: string): Promise<any> => {
   const response = await api.get(`/conversations/${conversationId}`);
   return response.data;
@@ -171,7 +181,7 @@ export const deleteConversation = async (conversationId: string): Promise<any> =
   return response.data;
 };
 
-// Get conversation hierarchy
+// Get conversation hierarchy (detailed info)
 export const getConversationHierarchy = async (conversationId: string): Promise<any> => {
   const response = await api.get(`/conversations/${conversationId}/hierarchy`);
   return response.data;
@@ -189,7 +199,7 @@ export const generateMCPScript = async (graphName: string): Promise<MCPScriptRes
   return response.data;
 };
 
-// ======= 新增：导入导出功能 =======
+// ======= 导入导出功能 =======
 
 // Import graph from JSON file (by file path)
 export const importGraph = async (filePath: string): Promise<ImportResult> => {
@@ -235,7 +245,7 @@ export const importGraphPackageFromFile = async (file: File): Promise<ImportResu
   return response.data;
 };
 
-// ======= 新增：AI图生成功能 =======
+// ======= AI图生成功能 =======
 
 // Get prompt template for graph generation
 export const getPromptTemplate = async (): Promise<PromptTemplateResponse> => {
@@ -252,7 +262,7 @@ export const generateGraph = async (requirement: string, modelName: string): Pro
   return response.data;
 };
 
-// ======= 新增：README功能 =======
+// ======= README功能 =======
 
 // Get graph README
 export const getGraphReadme = async (graphName: string): Promise<GraphReadmeResponse> => {
