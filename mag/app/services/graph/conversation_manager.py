@@ -482,7 +482,11 @@ class ConversationManager:
             "start_time": conversation.get("start_time", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
             "graph_config": conversation.get("graph_config", {}),
             "results": conversation.get("results", []),
-            "attachments": attachments
+            "attachments": attachments,
+            "node_states": conversation.get("node_states", {}),  
+            "handoffs_counters": conversation.get("handoffs_counters", {}), 
+            "global_outputs": conversation.get("global_outputs", {}), 
+            "parallel": conversation.get("parallel", False) 
         }
 
         return result
