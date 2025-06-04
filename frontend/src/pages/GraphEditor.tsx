@@ -1,7 +1,7 @@
 // src/pages/GraphEditor.tsx
 import React, { useEffect, useState } from 'react';
 import { ReactFlowProvider } from 'reactflow';
-import { Card, Alert, Spin, Typography, Empty, Button, Tooltip, Space, Modal } from 'antd';
+import { Card, Alert, Spin, Typography, Empty, Button, Tooltip, Space, Modal, Form, Input } from 'antd';
 import { 
   PlusOutlined, InfoCircleOutlined, WarningOutlined
 } from '@ant-design/icons';
@@ -13,6 +13,7 @@ import { useGraphEditorStore } from '../store/graphEditorStore';
 import { useMCPStore } from '../store/mcpStore';
 
 const { Text } = Typography;
+const { TextArea } = Input;
 
 const GraphEditor: React.FC = () => {
   const { 
@@ -22,10 +23,14 @@ const GraphEditor: React.FC = () => {
     error, 
     currentGraph,
     selectedNode,
-    selectNode
+    selectNode,
+    createNewGraph
   } = useGraphEditorStore();
   const { fetchConfig, fetchStatus, config, status } = useMCPStore();
   const [addNodeModalVisible, setAddNodeModalVisible] = useState(false);
+  const [newGraphModalVisible, setNewGraphModalVisible] = useState(false);
+  
+  const [form] = Form.useForm();
 
   // 检查是否有连接的MCP服务器
   const hasConnectedServers = Object.values(status || {}).some(serverStatus => 
@@ -60,6 +65,22 @@ const GraphEditor: React.FC = () => {
     
     addNode({ ...nodeData, position });
     setAddNodeModalVisible(false);
+  };
+
+  // 处理创建新图
+  const handleCreateNewGraph = () => {
+    form.resetFields();
+    setNewGraphModalVisible(true);
+  };
+
+  const handleNewGraphSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      createNewGraph(values.name, values.description);
+      setNewGraphModalVisible(false);
+    } catch (error) {
+      // Form validation error
+    }
   };
 
   // 关闭节点属性模态框
@@ -115,7 +136,7 @@ const GraphEditor: React.FC = () => {
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
-                  onClick={() => setAddNodeModalVisible(true)}
+                  onClick={handleCreateNewGraph}
                 >
                   创建新图
                 </Button>
@@ -164,6 +185,34 @@ const GraphEditor: React.FC = () => {
         destroyOnClose={true}
       >
         <NodePropertiesPanel />
+      </Modal>
+
+      {/* 创建新图模态框 */}
+      <Modal
+        title="创建新图"
+        open={newGraphModalVisible}
+        onOk={handleNewGraphSubmit}
+        onCancel={() => setNewGraphModalVisible(false)}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label="图名称"
+            rules={[
+              { required: true, message: '请输入图名称' },
+              { pattern: /^[^./\\]+$/, message: '名称不能包含特殊字符 (/, \\, .)' }
+            ]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="描述"
+          >
+            <TextArea rows={4} />
+          </Form.Item>
+        </Form>
       </Modal>
 
       <AddNodeModal
