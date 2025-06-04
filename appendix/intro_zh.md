@@ -50,8 +50,6 @@ MAG中的每个智能体节点都由包含以下参数的配置对象定义：
 | `save` | string | 指定节点输出自动保存的文件格式扩展名。支持md、html、py、txt等多种格式。保存的文件会存储在会话目录中，方便后续引用或导出。例如：`"save": "md"` 将输出保存为Markdown文件 | 否 | `null` |
 | `input_nodes` | string[] | 提供输入的节点名称列表。特殊值`"start"`表示接收用户的原始输入。可以指定多个输入节点，系统会自动合并它们的输出。例如：`"input_nodes": ["start", "research_node"]` | 否 | `[]` |
 | `output_nodes` | string[] | 接收本节点输出的节点名称列表。特殊值`"end"`表示输出将包含在最终结果中。使用handoffs时，会将输出定向到此列表中的一个节点。例如：`"output_nodes": ["analysis_node", "end"]` | 否 | `[]` |
-| `is_start` | boolean | 指定此节点是否为起始节点（接收用户初始输入）。如果设为true，等同于将`"start"`添加到`input_nodes`。一个图中可以有多个起始节点。例如：`"is_start": true` | 否 | `false` |
-| `is_end` | boolean | 指定此节点是否为结束节点（输出包含在最终结果中）。如果设为true，等同于将`"end"`添加到`output_nodes`。一个图中可以有多个结束节点。例如：`"is_end": true` | 否 | `false` |
 | `handoffs` | number | 节点可以重定向流程的最大次数，启用条件分支和循环功能。设置后，节点将选择输出流向哪个目标节点，创建动态路径。用于实现迭代改进、决策树等复杂逻辑。例如：`"handoffs": 3` 允许节点最多转向3次 | 否 | `null` |
 | `global_output` | boolean | 是否将节点输出添加到全局上下文中，使其他节点可以通过context参数访问。对于产生重要中间结果的节点非常有用。例如：`"global_output": true` | 否 | `false` |
 | `context` | string[] | 要引用的全局节点名称列表。允许节点访问不直接连接的其他节点的输出（前提是那些节点设置了`global_output: true`）。例如：`"context": ["research_results", "user_preferences"]` | 否 | `[]` |
@@ -199,7 +197,6 @@ MAG中的每个智能体节点都由包含以下参数的配置对象定义：
         "end"
       ],
       "output_enabled": true,
-      "is_end": true,
       "level": 5,
       "handoffs": null,
       "global_output": false,

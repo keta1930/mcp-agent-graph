@@ -49,8 +49,6 @@ The following table provides all available configuration parameters for agent no
 | `save` | string | Specifies the file format extension for automatic saving of node output. Supports various formats like md, html, py, txt, etc. Saved files are stored in the session directory for easy reference or export. Example: `"save": "md"` saves output as Markdown file | No | `null` |
 | `input_nodes` | string[] | List of node names that provide input. Special value `"start"` indicates receiving user's original input. Multiple input nodes can be specified, and the system will automatically merge their outputs. Example: `"input_nodes": ["start", "research_node"]` | No | `[]` |
 | `output_nodes` | string[] | List of node names that receive this node's output. Special value `"end"` indicates output will be included in final results. When using handoffs, output will be directed to one node in this list. Example: `"output_nodes": ["analysis_node", "end"]` | No | `[]` |
-| `is_start` | boolean | Specifies whether this node is a start node (receives user's initial input). If set to true, equivalent to adding `"start"` to `input_nodes`. A graph can have multiple start nodes. Example: `"is_start": true` | No | `false` |
-| `is_end` | boolean | Specifies whether this node is an end node (output included in final results). If set to true, equivalent to adding `"end"` to `output_nodes`. A graph can have multiple end nodes. Example: `"is_end": true` | No | `false` |
 | `handoffs` | number | Maximum number of times the node can redirect flow, enabling conditional branching and loop functionality. When set, the node will choose which target node to send output to, creating dynamic paths. Used for implementing iterative improvements, decision trees, and other complex logic. Example: `"handoffs": 3` allows the node to redirect up to 3 times | No | `null` |
 | `global_output` | boolean | Whether to add node output to global context, making it accessible to other nodes via context parameter. Very useful for nodes that produce important intermediate results. Example: `"global_output": true` | No | `false` |
 | `context` | string[] | List of global node names to reference. Allows node to access outputs from other nodes not directly connected (provided those nodes have `global_output: true` set). Example: `"context": ["research_results", "user_preferences"]` | No | `[]` |
@@ -198,7 +196,6 @@ To help you understand how to build effective agents, here's a complete example 
         "end"
       ],
       "output_enabled": true,
-      "is_end": true,
       "level": 5,
       "handoffs": null,
       "global_output": false,
