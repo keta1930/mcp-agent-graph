@@ -43,6 +43,7 @@ dependencies = [
     "matplotlib",
     "tqdm",
     "python-multipart>=0.0.20",
+    "starlette>=0.46.2",
 ]
 
 [project.urls]

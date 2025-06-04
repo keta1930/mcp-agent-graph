@@ -1,6 +1,6 @@
 # MCP Agent Graph (MAG)
 
-English | [中文](README_zh.md)
+English | [中文](README_CN.md)
 
 > MCP Agent Graph (MAG) is an agent development framework for rapidly building agent systems. This project is based on graphs, nodes, and MCP to quickly build complex Agent systems.
 
