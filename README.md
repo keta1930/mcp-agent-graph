@@ -139,7 +139,7 @@ HOST  → CLIENT  → SERVER
 
 For detailed development information, including a complete feature list, Agent configuration reference, intelligent agent node parameters, configuration examples, and advanced usage guides, please see the [Development Details Documentation](appendix/intro.md).
 
-## 🖼️ Frontend Feature Showcase (Frontend is V1.1.0 version, hasn't caught up with backend updates yet.)
+## 🖼️ Frontend Feature Showcase
 
 ### Visual Agent Graph Editor
 
