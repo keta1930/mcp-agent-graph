@@ -4,7 +4,7 @@
 
 > MCP Agent Graph (MAG) 是一个 agent 开发框架,用于快速构建agent系统。本项目基于图、节点、mcp来快速构建复杂Agent系统。
 
-📚 [文档](https://keta1930.github.io/mcp-agent-graph/#) | 📦 [PyPI 包](https://pypi.org/project/mcp-agent-graph/)
+📚 [文档](https://keta1930.github.io/mcp-agent-graph/#) | 📦 [PyPI 包](https://pypi.org/project/mcp-agent-graph/) | 📄 [设计理念、功能特点、未来规划](docs/一文说清%20mcp-agent-graph%20设计理念、功能特点、未来规划.pdf)
 
 
 <div align="center">
