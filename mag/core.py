@@ -22,7 +22,9 @@ from .client.graph import (
     import_graph,
     export,
     generate_mcp_script,
-    get_prompt_template,
+    get_generate_prompt,
+    get_optimize_prompt,
+    optimize,
     generate as generate_graph
 )
 
@@ -41,7 +43,9 @@ from .client.mcp import (
     update_config as update_mcp_config,
     get_status as get_mcp_status,
     connect as connect_mcp,
-    get_tools as get_mcp_tools
+    get_tools as get_tools,
+    add_server as add_server,
+    remove_server as remove_server
 )
 
 # 会话管理
@@ -50,9 +54,12 @@ from .client.conversation import (
     get as get_conversation,
     delete as delete_conversation,
     get_hierarchy as get_conversation_hierarchy
+    
 )
 
 run_graph = run
 import_graph = import_graph
 export_graph = export
 generate_graph = generate_graph
+optimize_graph = optimize
+get_optimize_prompt = get_optimize_prompt

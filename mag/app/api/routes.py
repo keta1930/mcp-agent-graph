@@ -20,7 +20,8 @@ from app.services.graph_service import graph_service
 from app.core.file_manager import FileManager
 from app.models.schema import (
     MCPServerConfig, MCPConfig, ModelConfig, GraphConfig, GraphInput,
-    GraphResult, NodeResult, ModelConfigList, GraphGenerationRequest, GraphFilePath
+    GraphResult, NodeResult, ModelConfigList, GraphGenerationRequest, 
+    GraphOptimizationRequest, GraphFilePath
 )
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.text_parser import parse_graph_response
@@ -283,7 +284,6 @@ async def remove_mcp_servers(server_names: List[str]):
         }
 
 
-# 修改现有的连接服务器函数
 @router.post("/mcp/connect/{server_name}", response_model=Dict[str, Any])
 async def connect_server(server_name: str):
     """连接指定的MCP服务器，或者连接所有服务器（当server_name为'all'时）"""
@@ -807,7 +807,7 @@ async def get_prompt_template():
             models_description += "\n"
         
         # 5. 读取提示词模板文件
-        current_file_dir = Path(__file__).parent.parent  # 从 app/api 回到 app
+        current_file_dir = Path(__file__).parent.parent
         template_path = current_file_dir / "templates" / "prompt_template.md"
         if not template_path.exists():
             raise HTTPException(
@@ -834,6 +834,124 @@ async def get_prompt_template():
             detail=f"生成提示词模板时出错: {str(e)}"
         )
 
+@router.get("/optimize-prompt-template", response_model=Dict[str, str])
+async def get_optimize_prompt_template(graph_name: Optional[str] = None):
+    """生成优化图的提示词模板，可选择包含具体图配置"""
+    try:
+        # 1. 连接所有服务器以确保所有工具可用
+        connect_result = await mcp_service.connect_all_servers()
+        logger.info(f"连接所有服务器结果: {connect_result}")
+        
+        # 2. 获取所有工具信息
+        all_tools_data = await mcp_service.get_all_tools()
+        
+        # 3. 过滤和转换工具信息为文本描述，添加清晰的标签
+        tools_description = ""
+
+        if not all_tools_data:
+            tools_description = "当前没有可用的MCP工具。\n\n"
+        else:
+            tools_description += "# 可用MCP工具\n\n"
+            
+            # 统计服务器和工具总数
+            server_count = len(all_tools_data)
+            total_tools = sum(len(tools) for tools in all_tools_data.values())
+            tools_description += f"系统中共有 {server_count} 个MCP服务，提供 {total_tools} 个工具。\n\n"
+            
+            # 遍历每个服务器
+            for server_name, tools in all_tools_data.items():
+                tools_description += f"## 服务：{server_name}\n\n"
+                
+                if not tools:
+                    tools_description += "此服务未提供工具。\n\n"
+                    continue
+                
+                # 显示此服务的工具数量
+                tools_description += f"此服务提供 {len(tools)} 个工具：\n\n"
+                
+                # 遍历服务提供的每个工具
+                for i, tool in enumerate(tools, 1):
+                    # 从工具数据中提取需要的字段
+                    tool_name = tool.get("name", "未知工具")
+                    tool_desc = tool.get("description", "无描述")
+                    
+                    # 添加工具标签和编号
+                    tools_description += f"### 工具 {i}：{tool_name}\n\n"
+                    tools_description += f"**工具说明**：{tool_desc}\n\n"
+                    
+                    # 添加分隔符，除非是最后一个工具
+                    if i < len(tools):
+                        tools_description += "---\n\n"
+
+                tools_description += "***\n\n"
+        
+        # 4. 获取所有可用模型
+        all_models = model_service.get_all_models()
+        models_description = ""
+        
+        if not all_models:
+            models_description = "当前没有配置的模型。\n\n"
+        else:
+            models_description = "### 可用模型列表：\n\n"
+            for model in all_models:
+                models_description += f"- `{model['name']}`\n"
+            models_description += "\n"
+        
+        # 5. 读取优化图提示词模板文件
+        current_file_dir = Path(__file__).parent.parent  # 从 app/api 回到 app
+        template_path = current_file_dir / "templates" / "optimize_prompt_template.md"
+        if not template_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="找不到优化图提示词模板文件"
+            )
+            
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+            
+        # 6. 将工具信息和模型信息嵌入到模板中
+        final_prompt = template_content.replace("{TOOLS_DESCRIPTION}", tools_description)
+        final_prompt = final_prompt.replace("{MODELS_DESCRIPTION}", models_description)
+        
+        # 7. 如果提供了图名称，则获取图配置并嵌入到模板中
+        if graph_name:
+            existing_graph = graph_service.get_graph(graph_name)
+            if not existing_graph:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"找不到图 '{graph_name}'"
+                )
+            
+            # 将图配置转换为JSON格式并嵌入到模板中
+            graph_config_json = json.dumps(existing_graph, ensure_ascii=False, indent=2)
+            final_prompt = final_prompt.replace("{GRAPH_CONFIG}", graph_config_json)
+            
+            # 添加占位符提示，用户仍需要指定优化要求
+            final_prompt = final_prompt.replace("{OPTIMIZATION_REQUIREMENT}", "[请在此处指定优化要求]")
+            
+            return {
+                "prompt": final_prompt,
+                "graph_name": graph_name,
+                "has_graph_config": "True"
+            }
+        else:
+            # 如果没有提供图名称，返回原始模板
+            return {
+                "prompt": final_prompt,
+                "has_graph_config": "False",
+                "note": "要获取包含具体图配置的优化提示词，请提供graph_name参数"
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"生成优化图提示词模板时出错: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"生成优化图提示词模板时出错: {str(e)}"
+        )
 
 @router.post("/graphs/generate", response_model=Dict[str, Any])
 async def generate_graph(request: GraphGenerationRequest):
@@ -898,9 +1016,6 @@ async def generate_graph(request: GraphGenerationRequest):
                 existing_graph = graph_service.get_graph(graph_name)
                 counter += 1
             graph_config["name"] = graph_name
-        
-        # 7. 复用现有的 create_graph 函数
-        from app.models.schema import GraphConfig
         try:
             validated_config = GraphConfig(**graph_config)
             create_response = await create_graph(validated_config)
@@ -934,6 +1049,105 @@ async def generate_graph(request: GraphGenerationRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"生成图时出错: {str(e)}"
+        )
+
+@router.post("/graphs/optimize", response_model=Dict[str, Any])
+async def optimize_graph(request: GraphOptimizationRequest):
+    """根据用户需求优化现有图配置"""
+    try:
+        # 1. 验证模型是否存在
+        model_config = model_service.get_model(request.model_name)
+        if not model_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到模型 '{request.model_name}'"
+            )
+
+        # 2. 获取现有图配置
+        existing_graph = graph_service.get_graph(request.graph_name)
+        if not existing_graph:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到图 '{request.graph_name}'"
+            )
+
+        # 3. 获取优化图提示词模板
+        template_response = await get_optimize_prompt_template()
+        
+        # 4. 将现有图配置和优化需求嵌入到模板中
+        graph_config_json = json.dumps(existing_graph, ensure_ascii=False, indent=2)
+        final_prompt = template_response["prompt"].replace("{GRAPH_CONFIG}", graph_config_json)
+        final_prompt = final_prompt.replace("{OPTIMIZATION_REQUIREMENT}", request.optimization_requirement)
+        
+        # 5. 调用模型进行优化
+        messages = [
+            {"role": "user", "content": final_prompt}
+        ]
+        
+        model_response = await model_service.call_model(
+            model_name=request.model_name,
+            messages=messages
+        )
+        
+        if model_response.get("status") != "success":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"模型调用失败: {model_response.get('error', '未知错误')}"
+            )
+        
+        # 6. 解析模型输出
+        model_output = model_response.get("content", "")
+        parsed_result = parse_graph_response(model_output)
+        
+        if not parsed_result["success"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"解析模型输出失败: {parsed_result.get('error', '未知错误')}"
+            )
+        
+        optimized_graph_config = parsed_result["graph_config"]
+        analysis = parsed_result.get("analysis", "")
+        
+        # 7. 验证优化后的图配置基本格式
+        optimized_graph_name = optimized_graph_config.get("name")
+        if not optimized_graph_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="优化后的图配置缺少名称"
+            )
+        try:
+            validated_config = GraphConfig(**optimized_graph_config)
+            create_response = await create_graph(validated_config)
+            if create_response.get("status") != "success":
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"创建优化后的图失败: {create_response.get('message', '未知错误')}"
+                )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"优化后的图配置验证失败: {str(e)}"
+            )
+
+        return {
+            "status": "success", 
+            "message": f"图 '{request.graph_name}' 优化成功，新图名称为 '{optimized_graph_name}'",
+            "original_graph_name": request.graph_name,
+            "optimized_graph_name": optimized_graph_name,
+            "analysis": analysis,
+            "model_output": model_output,
+            "create_result": create_response
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"优化图时出错: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"优化图时出错: {str(e)}"
         )
 
 # ======= 图导入/导出功能 =======

@@ -222,5 +222,11 @@ class GraphGenerationRequest(BaseModel):
     requirement: str  # 用户的图生成需求
     model_name: str   # 指定的模型名称
 
+class GraphOptimizationRequest(BaseModel):
+    """图优化请求"""
+    graph_name: str   # 要优化的图名称
+    optimization_requirement: str  # 优化需求描述
+    model_name: str   # 指定的模型名称
+
 class GraphFilePath(BaseModel):
     file_path: str

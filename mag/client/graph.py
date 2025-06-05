@@ -227,7 +227,7 @@ def generate_mcp_script(name: str) -> Dict[str, Any]:
     response.raise_for_status()
     return response.json()
 
-def get_prompt_template() -> str:
+def get_generate_prompt() -> str:
     """
     生成提示词模板
     
@@ -242,6 +242,133 @@ def get_prompt_template() -> str:
     response.raise_for_status()
     result = response.json()
     return result.get("prompt", "")
+
+def get_optimize_prompt(graph_name: str = None) -> Dict[str, Any]:
+    """
+    生成优化图的提示词模板
+    
+    该函数会获取当前系统中所有可用的MCP工具信息和模型列表，
+    并生成一个包含这些信息的优化图提示词模板。如果提供图名称，
+    还会包含该图的具体配置信息。
+    
+    参数:
+        graph_name (str, optional): 要优化的图名称，如果提供则模板中包含该图的配置
+    
+    返回:
+        Dict[str, Any]: 包含提示词模板和相关信息的字典
+            - prompt: 提示词模板内容
+            - graph_name: 图名称（如果提供了的话）
+            - has_graph_config: 是否包含图配置信息
+            - note: 使用说明（当未提供图名称时）
+    
+    示例:
+        >>> # 获取基础优化模板
+        >>> template = mag.get_optimize_prompt()
+        >>> print(template['prompt'])
+        
+        >>> # 获取包含特定图配置的优化模板
+        >>> template = mag.get_optimize_prompt("my_graph")
+        >>> print(f"图名称: {template['graph_name']}")
+        >>> print(template['prompt'])
+    """
+    _ensure_server_running()
+    
+    params = {}
+    if graph_name is not None:
+        params['graph_name'] = graph_name
+    
+    try:
+        response = requests.get(f"{API_BASE}/optimize-prompt-template", params=params)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get("prompt", "")
+        else:
+            # 处理错误响应
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('detail', f"HTTP错误 {response.status_code}")
+            except:
+                error_msg = f"HTTP错误 {response.status_code}: {response.text}"
+            
+            return {
+                "status": "error",
+                "message": error_msg,
+                "prompt": ""
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"获取优化提示词模板时出错: {str(e)}",
+            "prompt": ""
+        }
+
+def optimize(graph_name: str, optimization_requirement: str, model_name: str) -> Dict[str, Any]:
+    """
+    根据需求优化现有图配置
+    
+    该函数使用指定的AI模型根据用户的优化需求对现有图进行优化，
+    并将优化后的图保存到系统中。优化后的图会包含改进的节点配置、
+    连接关系和提示词等。
+    
+    参数:
+        graph_name (str): 要优化的图名称
+        optimization_requirement (str): 优化需求描述
+        model_name (str): 要使用的AI模型名称
+    
+    返回:
+        Dict[str, Any]: 优化结果，包含以下字段：
+            - status: 操作状态 ("success" 或 "error")
+            - message: 操作消息
+            - original_graph_name: 原始图名称
+            - optimized_graph_name: 优化后的图名称
+            - analysis: AI模型的分析内容
+            - model_output: 模型的完整输出
+    
+    示例:
+        >>> import mag
+        >>> mag.start()
+        >>> result = mag.optimize_graph(
+        ...     graph_name="my_research_graph",
+        ...     optimization_requirement="优化这个图的性能，减少不必要的节点，改进提示词质量",
+        ...     model_name="gpt-4"
+        ... )
+        >>> if result['status'] == 'success':
+        ...     print(f"优化成功！新图名称: {result['optimized_graph_name']}")
+        ...     print(f"分析: {result['analysis']}")
+        ... else:
+        ...     print(f"优化失败: {result['message']}")
+    """
+    _ensure_server_running()
+    
+    payload = {
+        "graph_name": graph_name,
+        "optimization_requirement": optimization_requirement,
+        "model_name": model_name
+    }
+    
+    try:
+        response = requests.post(f"{API_BASE}/graphs/optimize", json=payload)
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            # 处理错误响应
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('detail', f"HTTP错误 {response.status_code}")
+            except:
+                error_msg = f"HTTP错误 {response.status_code}: {response.text}"
+            
+            return {
+                "status": "error",
+                "message": error_msg
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"优化图时出错: {str(e)}"
+        }
 
 def create_from_dict(graph_data: Dict[str, Any]) -> Dict[str, Any]:
     """

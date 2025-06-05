@@ -194,7 +194,9 @@ from .client.graph import (
     import_graph,
     export,
     generate_mcp_script,
-    get_prompt_template,
+    get_generate_prompt,
+    get_optimize_prompt,
+    optimize,
     generate as generate_graph
 )
 
@@ -227,8 +229,10 @@ from .client.conversation import (
     
 )
 
-# 取别名，使API更直观
+
 run_graph = run
 import_graph = import_graph
 export_graph = export
 generate_graph = generate_graph
+optimize_graph = optimize
+get_optimize_prompt = get_optimize_prompt
