@@ -88,6 +88,16 @@ export interface GraphGenerationRequest {
   model_name: string;
 }
 
+export interface GraphOptimizationRequest {
+  graph_name: string;
+  optimization_requirement: string;
+  model_name: string;
+}
+
+export interface OptimizePromptTemplateRequest {
+  graph_name?: string;
+}
+
 export interface GraphFilePath {
   file_path: string;
 }
@@ -114,6 +124,25 @@ export interface GraphReadmeResponse {
 
 export interface PromptTemplateResponse {
   prompt: string;
+}
+
+export interface OptimizePromptTemplateResponse {
+  prompt: string;
+  graph_name?: string;
+  has_graph_config?: boolean;
+  note?: string;
+  status?: string;
+  message?: string;
+}
+
+export interface OptimizeGraphResponse {
+  status: string;
+  message: string;
+  original_graph_name?: string;
+  optimized_graph_name?: string;
+  analysis?: string;
+  model_output?: string;
+  create_result?: any;
 }
 
 export const SAVE_FORMAT_OPTIONS = [

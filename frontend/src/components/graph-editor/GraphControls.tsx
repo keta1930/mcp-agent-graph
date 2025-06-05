@@ -9,7 +9,7 @@ import {
   DeleteOutlined, InfoCircleOutlined, ImportOutlined, ExportOutlined,
   RobotOutlined, DownOutlined, FileTextOutlined, UploadOutlined, QuestionCircleOutlined,
   InboxOutlined, SettingOutlined, ThunderboltOutlined, FolderOpenOutlined,
-  BranchesOutlined, ToolOutlined, PartitionOutlined
+  BranchesOutlined, ToolOutlined, PartitionOutlined, BulbOutlined, RocketOutlined
 } from '@ant-design/icons';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
@@ -59,10 +59,12 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   const [mcpScriptModalVisible, setMcpScriptModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [aiGenerateModalVisible, setAiGenerateModalVisible] = useState(false);
+  const [aiOptimizeModalVisible, setAiOptimizeModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [readmeModalVisible, setReadmeModalVisible] = useState(false);
   const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
   const [promptTemplateModalVisible, setPromptTemplateModalVisible] = useState(false);
+  const [optimizePromptTemplateModalVisible, setOptimizePromptTemplateModalVisible] = useState(false);
 
   const [mcpScript, setMcpScript] = useState("");
   const [parallelScript, setParallelScript] = useState("");
@@ -71,12 +73,14 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
   const [copied, setCopied] = useState(false);
   const [readmeContent, setReadmeContent] = useState("");
   const [promptTemplate, setPromptTemplate] = useState("");
+  const [optimizePromptTemplate, setOptimizePromptTemplate] = useState("");
   const [importType, setImportType] = useState<'json' | 'zip'>('json');
   const [importMethod, setImportMethod] = useState<'path' | 'file'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [form] = Form.useForm();
   const [aiForm] = Form.useForm();
+  const [aiOptimizeForm] = Form.useForm();
   const [importForm] = Form.useForm();
   const [settingsForm] = Form.useForm();
 
@@ -255,6 +259,38 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
     }
   };
 
+  // AI优化图功能
+  const handleAiOptimize = async () => {
+    try {
+      const values = await aiOptimizeForm.validateFields();
+      setLoading(true);
+      
+      const result = await graphService.optimizeGraph({
+        graph_name: currentGraph!.name,
+        optimization_requirement: values.optimization_requirement,
+        model_name: values.model_name
+      });
+      
+      setAiOptimizeModalVisible(false);
+      aiOptimizeForm.resetFields();
+      
+      if (result.status === 'success') {
+        messageApi.success(`图优化成功！新图名称: "${result.optimized_graph_name}"`);
+        
+        // 加载优化后的图
+        if (result.optimized_graph_name) {
+          loadGraph(result.optimized_graph_name);
+        }
+      } else {
+        messageApi.error(`优化失败: ${result.message}`);
+      }
+    } catch (error) {
+      messageApi.error(`优化失败: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 导入功能
   const handleImport = async () => {
     try {
@@ -357,7 +393,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
     }
   };
 
-  // 获取提示词模板
+  // 获取AI生成提示词模板
   const handleGetPromptTemplate = async () => {
     try {
       setLoading(true);
@@ -366,6 +402,27 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
       setPromptTemplateModalVisible(true);
     } catch (error) {
       messageApi.error(`获取提示词模板失败: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取AI优化提示词模板
+  const handleGetOptimizePromptTemplate = async () => {
+    try {
+      setLoading(true);
+      const request = currentGraph?.name ? { graph_name: currentGraph.name } : undefined;
+      const result = await graphService.getOptimizePromptTemplate(request);
+      
+      if (result.status === 'error') {
+        messageApi.error(`获取优化提示词模板失败: ${result.message}`);
+        return;
+      }
+      
+      setOptimizePromptTemplate(result.prompt);
+      setOptimizePromptTemplateModalVisible(true);
+    } catch (error) {
+      messageApi.error(`获取优化提示词模板失败: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -421,8 +478,16 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
       <Menu.Item key="ai-generate" icon={<ThunderboltOutlined />} onClick={() => setAiGenerateModalVisible(true)}>
         AI生成图
       </Menu.Item>
-      <Menu.Item key="prompt-template" icon={<FileTextOutlined />} onClick={handleGetPromptTemplate}>
-        获取提示词
+      <Menu.Item key="ai-generate-prompt" icon={<BulbOutlined />} onClick={handleGetPromptTemplate}>
+        AI生成提示词
+      </Menu.Item>
+      <Menu.Item 
+        key="ai-optimize-prompt" 
+        icon={<FileTextOutlined />} 
+        onClick={handleGetOptimizePromptTemplate}
+        disabled={!currentGraph?.name}
+      >
+        AI优化提示词
       </Menu.Item>
     </Menu>
   );
@@ -468,6 +533,14 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         disabled={!currentGraph?.name || currentGraph.nodes.length === 0}
       >
         自动布局
+      </Menu.Item>
+      <Menu.Item 
+        key="ai-optimize" 
+        icon={<RocketOutlined />} 
+        onClick={() => setAiOptimizeModalVisible(true)}
+        disabled={!currentGraph?.name}
+      >
+        AI优化图
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item 
@@ -687,6 +760,64 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         </Form>
       </Modal>
 
+      {/* AI Optimize modal */}
+      <Modal
+        title="AI优化图"
+        open={aiOptimizeModalVisible}
+        onOk={handleAiOptimize}
+        onCancel={() => setAiOptimizeModalVisible(false)}
+        width={600}
+        confirmLoading={loading}
+      >
+        <Form form={aiOptimizeForm} layout="vertical">
+          <Form.Item
+            label="当前图"
+          >
+            <Input value={currentGraph?.name} disabled />
+          </Form.Item>
+
+          <Form.Item
+            name="optimization_requirement"
+            label="优化需求"
+            rules={[{ required: true, message: '请描述您的优化需求' }]}
+          >
+            <TextArea 
+              rows={6} 
+              placeholder="描述您希望如何优化这个图，例如：提高性能、改进可读性、优化流程等..."
+              showCount
+              maxLength={1000}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="model_name"
+            label="优化模型"
+            rules={[{ required: true, message: '请选择优化用的模型' }]}
+          >
+            <Select placeholder="选择模型" loading={!models || models.length === 0}>
+              {models.map(model => (
+                <Option key={model.name} value={model.name}>{model.name}</Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
+          {/* 添加模型状态提示 */}
+          {(!models || models.length === 0) && (
+            <div style={{ 
+              padding: '8px 12px', 
+              backgroundColor: '#fff7e6', 
+              border: '1px solid #ffd591',
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#ad6800'
+            }}>
+              <InfoCircleOutlined style={{ marginRight: '4px' }} />
+              暂无可用模型，请先在"模型管理"页面添加模型配置
+            </div>
+          )}
+        </Form>
+      </Modal>
+
       {/* Import modal */}
       <Modal
         title={importType === 'json' ? "导入JSON图" : "导入压缩包"}
@@ -811,7 +942,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
       </Modal>
 
       {/* Graph Settings modal */}
-      {/* Graph Settings modal */}
       <Modal
         title="图设置"
         open={graphSettingsModalVisible}
@@ -819,8 +949,8 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         onCancel={() => setGraphSettingsModalVisible(false)}
         width={900}
         bodyStyle={{ 
-          minHeight: '720px',  // 增加卡片的最小高度
-          paddingBottom: '60px'  // 增加底部内边距
+          minHeight: '720px',
+          paddingBottom: '60px'
         }}
       >
         <Form form={settingsForm} layout="vertical">
@@ -852,7 +982,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
                 </Tooltip>
               </span>
             }
-            style={{ marginBottom: '80px' }}  // 增加这个Form.Item到底部的距离
+            style={{ marginBottom: '80px' }}
           >
             <SmartPromptEditor
               placeholder="例如：{node1}的输出是：{node1_output}，{node2}的输出是：{node2_output}"
@@ -903,9 +1033,9 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         />
       </Modal>
 
-      {/* Prompt Template modal */}
+      {/* AI生成提示词模板 modal */}
       <Modal
-        title="提示词模板"
+        title="AI生成提示词模板"
         open={promptTemplateModalVisible}
         onCancel={() => setPromptTemplateModalVisible(false)}
         footer={[
@@ -919,6 +1049,28 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
         <MarkdownRenderer
           content={promptTemplate}
           title="AI图生成提示词模板"
+          showCopyButton={true}
+          showPreview={true}
+          style={{ border: 'none', boxShadow: 'none' }}
+        />
+      </Modal>
+
+      {/* AI优化提示词模板 modal */}
+      <Modal
+        title="AI优化提示词模板"
+        open={optimizePromptTemplateModalVisible}
+        onCancel={() => setOptimizePromptTemplateModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setOptimizePromptTemplateModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={1000}
+        bodyStyle={{ padding: 0 }}
+      >
+        <MarkdownRenderer
+          content={optimizePromptTemplate}
+          title={`AI优化提示词模板${currentGraph ? ` - ${currentGraph.name}` : ''}`}
           showCopyButton={true}
           showPreview={true}
           style={{ border: 'none', boxShadow: 'none' }}

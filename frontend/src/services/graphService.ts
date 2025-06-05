@@ -5,11 +5,15 @@ import {
   GraphCardResponse, 
   MCPScriptResponse,
   GraphGenerationRequest,
+  GraphOptimizationRequest,
+  OptimizePromptTemplateRequest,
   GraphFilePath,
   ImportResult,
   ExportResult,
   GraphReadmeResponse,
-  PromptTemplateResponse
+  PromptTemplateResponse,
+  OptimizePromptTemplateResponse,
+  OptimizeGraphResponse
 } from '../types/graph';
 
 // Clean special characters, comments, etc. from JSON
@@ -253,12 +257,25 @@ export const getPromptTemplate = async (): Promise<PromptTemplateResponse> => {
   return response.data;
 };
 
+// Get optimize prompt template
+export const getOptimizePromptTemplate = async (request?: OptimizePromptTemplateRequest): Promise<OptimizePromptTemplateResponse> => {
+  const params = request?.graph_name ? { graph_name: request.graph_name } : {};
+  const response = await api.get('/optimize-prompt-template', { params });
+  return response.data;
+};
+
 // Generate graph using AI
 export const generateGraph = async (requirement: string, modelName: string): Promise<any> => {
   const response = await api.post('/graphs/generate', {
     requirement,
     model_name: modelName
   });
+  return response.data;
+};
+
+// Optimize graph using AI
+export const optimizeGraph = async (request: GraphOptimizationRequest): Promise<OptimizeGraphResponse> => {
+  const response = await api.post('/graphs/optimize', request);
   return response.data;
 };
 
