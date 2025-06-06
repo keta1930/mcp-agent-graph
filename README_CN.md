@@ -151,6 +151,9 @@ uv run python main.py
 }
 ```
 
+## 微信群
+![alt text](./appendix/52f8a163d1098cf2e9870eab56d9ac9.jpg)
+
 ## ⭐ 星标历史
 
 [![星标历史图表](https://api.star-history.com/svg?repos=keta1930/mcp-agent-graph&type=Date)](https://www.star-history.com/#keta1930/mcp-agent-graph&Date)

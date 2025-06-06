@@ -148,6 +148,9 @@ If you find MCP Agent Graph helpful for your research or work, please consider c
 }
 ```
 
+## wechat group
+![alt text](./appendix/52f8a163d1098cf2e9870eab56d9ac9.jpg)
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=keta1930/mcp-agent-graph&type=Date)](https://www.star-history.com/#keta1930/mcp-agent-graph&Date)
