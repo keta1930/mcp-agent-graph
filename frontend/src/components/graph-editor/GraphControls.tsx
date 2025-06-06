@@ -24,9 +24,10 @@ const { Dragger } = Upload;
 
 interface GraphControlsProps {
   onAddNode: () => void;
+  addNodeBtnRef?: React.RefObject<HTMLButtonElement>; // 添加这个可选参数
 }
 
-const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
+const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef }) => {
   // Configure message component for better visibility
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -623,6 +624,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode }) => {
               <Divider type="vertical" />
 
               <Button
+                ref={addNodeBtnRef} // 使用传入的 ref
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={onAddNode}
