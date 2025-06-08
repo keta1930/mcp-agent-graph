@@ -943,38 +943,37 @@ print(template)</code></pre>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- AI 生成图 -->
-                <div class="method-card p-6 mb-6">
-                    <h3 class="text-xl font-semibold mb-4">AI 生成图</h3>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">方法签名</h4>
-                        <div class="code-block p-4 mb-4">
-                            <pre><code class="language-python">mag.generate_graph(requirement: str, model_name: str) -> Dict[str, Any]</code></pre>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">参数</h4>
-                        <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
-                            <li><strong>requirement</strong> (str): 用户的图生成需求描述</li>
-                            <li><strong>model_name</strong> (str): 要使用的AI模型名称</li>
-                        </ul>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">返回值</h4>
-                        <p style="color: var(--text-secondary)">Dict[str, Any]: 生成结果，包含图名称、分析内容等</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">使用示例</h4>
-                        <div class="code-block p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
-                                <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
-                                    <i class="fas fa-copy mr-1"></i>复制
-                                </button>
+                    <!-- AI 生成图 -->
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">AI 生成图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code class="language-python">mag.generate_graph(requirement: str, model_name: str) -> Dict[str, Any]</code></pre>
                             </div>
-                            <pre><code class="language-python">result = mag.generate_graph(
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>requirement</strong> (str): 用户的图生成需求描述</li>
+                                <li><strong>model_name</strong> (str): 要使用的AI模型名称</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 生成结果，包含图名称、分析内容等</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">result = mag.generate_graph(
     requirement="创建一个能够搜索网络信息并生成报告的工作流",
     model_name="deepseek-chat"
 )
@@ -984,41 +983,41 @@ if result["status"] == "success":
     print(f"AI分析: {result['analysis']}")
 else:
     print(f"生成失败: {result['message']}")</code></pre>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI 优化图 -->
-                <div class="method-card p-6 mb-6">
-                    <h3 class="text-xl font-semibold mb-4">AI 优化图</h3>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">方法签名</h4>
-                        <div class="code-block p-4 mb-4">
-                            <pre><code class="language-python">mag.optimize(graph_name: str, optimization_requirement: str, model_name: str) -> Dict[str, Any]</code></pre>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">参数</h4>
-                        <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
-                            <li><strong>graph_name</strong> (str): 要优化的图名称</li>
-                            <li><strong>optimization_requirement</strong> (str): 优化需求描述</li>
-                            <li><strong>model_name</strong> (str): 要使用的AI模型名称</li>
-                        </ul>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">返回值</h4>
-                        <p style="color: var(--text-secondary)">Dict[str, Any]: 优化结果，包含原图名称、模型输出等</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">使用示例</h4>
-                        <div class="code-block p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
-                                <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
-                                    <i class="fas fa-copy mr-1"></i>复制
-                                </button>
                             </div>
-                            <pre><code class="language-python">result = mag.optimize(
+                        </div>
+                    </div>
+
+                    <!-- AI 优化图 -->
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">AI 优化图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code class="language-python">mag.optimize(graph_name: str, optimization_requirement: str, model_name: str) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>graph_name</strong> (str): 要优化的图名称</li>
+                                <li><strong>optimization_requirement</strong> (str): 优化需求描述</li>
+                                <li><strong>model_name</strong> (str): 要使用的AI模型名称</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 优化结果，包含原图名称、模型输出等</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">result = mag.optimize(
     graph_name="web_research_report_v2",
     optimization_requirement="优化这个图的性能，将图变得更加丰富（但不要增加不必要的节点），改进提示词质量（不要让提示词过长）",
     model_name="deepseek-chat"
@@ -1029,39 +1028,39 @@ if result["status"] == "success":
     print(f"AI输出: {result['model_output']}")
 else:
     print(f"生成失败: {result['message']}")</code></pre>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 保存图 -->
-                <div class="method-card p-6 mb-6">
-                    <h3 class="text-xl font-semibold mb-4">保存图</h3>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">方法签名</h4>
-                        <div class="code-block p-4 mb-4">
-                            <pre><code class="language-python">mag.save_graph(config: Dict[str, Any]) -> Dict[str, Any]</code></pre>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">参数</h4>
-                        <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
-                            <li><strong>config</strong> (Dict): 图配置，包含name、description、nodes等字段</li>
-                        </ul>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">返回值</h4>
-                        <p style="color: var(--text-secondary)">Dict[str, Any]: 操作结果</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">使用示例</h4>
-                        <div class="code-block p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
-                                <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
-                                    <i class="fas fa-copy mr-1"></i>复制
-                                </button>
                             </div>
-                            <pre><code class="language-python">graph_config = {
+                        </div>
+                    </div>
+
+                    <!-- 保存图 -->
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">保存图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code class="language-python">mag.save_graph(config: Dict[str, Any]) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>config</strong> (Dict): 图配置，包含name、description、nodes等字段</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 操作结果</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">graph_config = {
     "name": "simple_assistant",
     "description": "简单的问答助手",
     "nodes": [
@@ -1079,79 +1078,79 @@ else:
 
 result = mag.save_graph(graph_config)
 print(f"保存结果: {result}")</code></pre>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 导入图 -->
-                <div class="method-card p-6 mb-6">
-                    <h3 class="text-xl font-semibold mb-4">导入图</h3>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">方法签名</h4>
-                        <div class="code-block p-4 mb-4">
-                            <pre><code class="language-python">mag.import_graph(file_path: str) -> Dict[str, Any]</code></pre>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">参数</h4>
-                        <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
-                            <li><strong>file_path</strong> (str): 文件路径 (.json 或 .zip)</li>
-                        </ul>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">返回值</h4>
-                        <p style="color: var(--text-secondary)">Dict[str, Any]: 导入结果</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">使用示例</h4>
-                        <div class="code-block p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
-                                <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
-                                    <i class="fas fa-copy mr-1"></i>复制
-                                </button>
                             </div>
-                            <pre><code class="language-python"># 从config导入
+                        </div>
+                    </div>
+
+                    <!-- 导入图 -->
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">导入图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code class="language-python">mag.import_graph(file_path: str) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>file_path</strong> (str): 文件路径 (.json 或 .zip)</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 导入结果</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python"># 从config导入
 graph = mag.import_graph(r"deepsearch.json")
 print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 导出图 -->
-                <div class="method-card p-6">
-                    <h3 class="text-xl font-semibold mb-4">导出图</h3>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">方法签名</h4>
-                        <div class="code-block p-4 mb-4">
-                            <pre><code class="language-python">mag.export_graph(name: str) -> Dict[str, Any]</code></pre>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">参数</h4>
-                        <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
-                            <li><strong>name</strong> (str): 图名称</li>
-                        </ul>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">返回值</h4>
-                        <p style="color: var(--text-secondary)">Dict[str, Any]: 导出结果，包含导出文件路径</p>
-                    </div>
-                    <div class="mb-4">
-                        <h4 class="font-medium mb-2">使用示例</h4>
-                        <div class="code-block p-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
-                                <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
-                                    <i class="fas fa-copy mr-1"></i>复制
-                                </button>
                             </div>
-                            <pre><code class="language-python">graph = mag.export_graph("news_processing_workflow")
+                        </div>
+                    </div>
+
+                    <!-- 导出图 -->
+                    <div class="method-card p-6">
+                        <h3 class="text-xl font-semibold mb-4">导出图</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code class="language-python">mag.export_graph(name: str) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>name</strong> (str): 图名称</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 导出结果，包含导出文件路径</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code class="language-python">graph = mag.export_graph("news_processing_workflow")
 print(json.dumps(graph, indent=2, ensure_ascii=False))</code></pre>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
                 <!-- 图查看页面 -->
                 <div id="graph-view" class="page-content hidden">
