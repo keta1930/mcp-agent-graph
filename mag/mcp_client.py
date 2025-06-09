@@ -44,7 +44,7 @@ class MCPServer:
         self.tools = []
         self.error = None
         self.init_attempted = False
-        self._call_lock = asyncio.Lock()  # 添加锁以防止并发问题
+        self._call_lock = asyncio.Lock() 
 
     async def connect(self) -> bool:
         """连接到服务器，返回是否成功"""
@@ -59,9 +59,9 @@ class MCPServer:
             transport_type = self.config.get('transportType', 'stdio')
             
             # 设置超时
-            timeout = self.config.get('timeout', 10)  # 默认10秒超时
+            timeout = self.config.get('timeout', 10) 
 
-            # 使用asyncio.wait_for来添加超时机制
+            # 添加超时机制
             try:
                 async with asyncio.timeout(timeout):
                     if transport_type == 'stdio':

@@ -113,21 +113,21 @@ This is an **amazing feature**! AI-generated agents. Previously, you might need 
 
 From need to graph, it might take only **3 minutes**, or even less! Once the graph is generated, it will appear on your canvas (agent). You can view each node in the graph, the overall process, and the readme file! Click on each node to see which tools (mcp server) it selected, prompts, models, context passing between nodes... If it doesn't meet your requirements, you can use the AI graph optimization feature to tell the AI your updated requirements, and it will adjust the process, add or remove nodes, modify prompts or tool calls for you.
 
-#### 2️⃣ Visual Graph Editor
-**Canvas as Code**! You can build complex agent workflows simply by dragging nodes and connecting lines on the visual canvas. What you see is what you get, design is development! Each node has rich configuration options, allowing you to set prompts, select models, configure tool calls, and define input-output relationships directly in the interface. The connections between nodes clearly show data flow and execution order, making complex logic clear at a glance. Real-time preview functionality lets you view the execution effects of your current design at any time.
-
-#### 3️⃣ Node as Agent
-**Every node is an independent agent**. Each node in the graph has complete Agent capabilities! Every node can call tools and handle complex tasks. Microservice-oriented agent architecture, each node is an expert! You can configure specialized role prompts for each node, making it an expert in specific domains. One node can be a data analyst, another can be a content creator, and a third can be a decision maker. They gain powerful tool capabilities through MCP servers, such as accessing file systems, web searching, performing calculations, etc. Nodes collaborate through context passing, forming a powerful agent team.
-
-#### 4️⃣ Nested Graphs (Hierarchical World)
+#### 2️⃣ Nested Graphs (Hierarchical World)
 This is an **architectural innovation**! Building "Agent within Agent" hierarchical intelligent systems. Traditional workflows are often flat, and when systems become complex, they become difficult to manage and maintain. mcp-agent-graph introduces the concept of nested graphs: any complete graph can be used as a single node in another graph! This creates infinite possibilities.
 
 Hierarchical design, unlimited scalability! You can first build a "document analysis" graph containing document parsing, content extraction, format conversion nodes. Then encapsulate this entire graph as a single node for use in a larger "knowledge management" graph. This hierarchical design allows you to: build reusable agent modules, manage complex large-scale systems, achieve true modular development. Each layer has clear responsibility boundaries, maintaining system integrity while having extremely strong maintainability.
 
-#### 5️⃣ Graph to MCP Server
+#### 3️⃣ Graph to MCP Server
 This is a **standardization feature**! Export agent graphs as standard MCP services. In the AI tool ecosystem, interoperability between different platforms and frameworks has always been a challenge. mcp-agent-graph provides graph-to-mcp functionality: one-click export of any graph as a standard MCP server Python script!
 
 Build once, run everywhere! The exported MCP server fully complies with MCP protocol standards and can be directly called by Claude Desktop, Cline, cursor, and other AI applications or any MCP-supporting systems. Your agent instantly becomes a widely integrable tool. The exported script includes complete dependency management, configuration files, and installation instructions, allowing recipients to deploy immediately. This lays the foundation for agent standardization and ecosystem development.
+
+#### 4️⃣ Visual Graph Editor
+**Canvas as Code**! You can build complex agent workflows simply by dragging nodes and connecting lines on the visual canvas. What you see is what you get, design is development! Each node has rich configuration options, allowing you to set prompts, select models, configure tool calls, and define input-output relationships directly in the interface. The connections between nodes clearly show data flow and execution order, making complex logic clear at a glance. Real-time preview functionality lets you view the execution effects of your current design at any time.
+
+#### 5️⃣ Node as Agent
+**Every node is an independent agent**. Each node in the graph has complete Agent capabilities! Every node can call tools and handle complex tasks. Microservice-oriented agent architecture, each node is an expert! You can configure specialized role prompts for each node, making it an expert in specific domains. One node can be a data analyst, another can be a content creator, and a third can be a decision maker. They gain powerful tool capabilities through MCP servers, such as accessing file systems, web searching, performing calculations, etc. Nodes collaborate through context passing, forming a powerful agent team.
 
 #### 6️⃣ Agent Trading and Transfer
 This is an **ecosystem feature**! Complete agent packaging, sharing, and deployment solution. In the current AI development environment, sharing a complete agent system often requires complex environment configuration, dependency installation, and documentation, greatly limiting agent propagation and reuse. mcp-agent-graph provides complete agent lifecycle management: packaging agent systems and all their dependencies into self-contained, portable units.
