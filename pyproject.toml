@@ -29,7 +29,7 @@ dependencies = [
     "fastapi",
     "fastmcp",
     "langchain",
-    "mcp",
+    "mcp[cli]",
     "openai",
     "pydantic",
     "pyzmq",
