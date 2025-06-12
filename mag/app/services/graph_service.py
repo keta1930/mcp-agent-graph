@@ -94,14 +94,20 @@ class GraphService:
         )
 
     def create_conversation(self, graph_name: str) -> str:
-        """创建新的会话"""
+        """创建新的会话 - 确保唯一性"""
         # 加载图配置
         graph_config = self.get_graph(graph_name)
         if not graph_config:
             raise ValueError(f"找不到图 '{graph_name}'")
 
-        # 使用会话管理器创建会话
-        return self.conversation_manager.create_conversation(graph_name, graph_config)
+        # 使用会话管理器创建会话（内置唯一性保证）
+        try:
+            conversation_id = self.conversation_manager.create_conversation(graph_name, graph_config)
+            logger.info(f"成功创建会话: {conversation_id}")
+            return conversation_id
+        except Exception as e:
+            logger.error(f"创建会话失败: {str(e)}")
+            raise ValueError(f"创建会话失败: {str(e)}")
 
     def _load_existing_conversations(self) -> None:
         """加载已有的会话文件"""
@@ -126,9 +132,14 @@ class GraphService:
             logger.error(traceback.format_exc())
 
     def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
-        """使用指定配置创建新的会话"""
-        # 使用会话管理器创建会话
-        return self.conversation_manager.create_conversation_with_config(graph_name, graph_config)
+        """使用指定配置创建新的会话 - 确保唯一性"""
+        try:
+            conversation_id = self.conversation_manager.create_conversation(graph_name, graph_config)
+            logger.info(f"成功创建会话（指定配置）: {conversation_id}")
+            return conversation_id
+        except Exception as e:
+            logger.error(f"创建会话失败（指定配置）: {str(e)}")
+            raise ValueError(f"创建会话失败: {str(e)}")
 
     def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取会话状态"""

@@ -1,14 +1,43 @@
+import uuid
 import time
+import threading
+import os
 import re
 from typing import Dict, List, Any, Optional
 
+# 添加线程本地存储和计数器
+_thread_local = threading.local()
+_counter_lock = threading.Lock()
+_global_counter = 0
+
 def generate_conversation_filename(graph_name: str) -> str:
-    """生成会话文件名 - 图名称+执行时间"""
-    # 使用年月日小时分钟格式
-    time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-    # 替换图名称中可能的特殊字符
-    safe_graph_name = graph_name.replace(' ', '_').replace('/', '_').replace('\\', '_')
-    return f"{safe_graph_name}_{time_str}"
+    """生成唯一的会话文件名 - 图名称+高精度时间戳+随机组件"""
+    global _global_counter
+    
+    # 获取高精度时间戳
+    now = time.time()
+    timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(now))
+    microseconds = int((now % 1) * 1000000)  # 微秒部分
+    
+    # 获取进程ID和线程ID
+    process_id = os.getpid()
+    thread_id = threading.get_ident()
+    
+    # 获取全局计数器（线程安全）
+    with _counter_lock:
+        _global_counter += 1
+        counter = _global_counter
+    
+    # 生成短UUID（取前8位）
+    short_uuid = str(uuid.uuid4()).split('-')[0]
+    
+    # 清理图名称（移除特殊字符）
+    clean_graph_name = "".join(c for c in graph_name if c.isalnum() or c in ('_', '-'))[:20]
+    
+    # 组合唯一文件名
+    filename = f"{clean_graph_name}_{timestamp}_{microseconds:06d}_{process_id}_{thread_id % 10000}_{counter}_{short_uuid}"
+    
+    return filename
 
 def format_timestamp(timestamp: str = None) -> str:
     """格式化时间戳"""

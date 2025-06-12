@@ -3,10 +3,12 @@ import logging
 import uuid
 import time
 import copy
+import threading
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
 from app.templates.conversation_template import ConversationTemplate, HTMLConversationTemplate
 from app.utils.output_tools import _parse_placeholder,_format_content_with_default_style
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,50 +17,113 @@ class ConversationManager:
 
     def __init__(self):
         self.active_conversations: Dict[str, Dict[str, Any]] = {}
+        self._conversation_lock = threading.Lock()  # 添加线程锁
+        self._active_conversation_ids = set()  # 跟踪活跃的会话ID
+
+    def _generate_unique_conversation_id(self, graph_name: str, max_retries: int = 10) -> str:
+        """生成唯一的会话ID，确保不冲突"""
+        for attempt in range(max_retries):
+            # 生成候选ID
+            candidate_id = ConversationTemplate.generate_conversation_filename(graph_name)
+            
+            # 检查是否冲突
+            with self._conversation_lock:
+                # 检查内存中的活跃会话
+                if candidate_id not in self._active_conversation_ids:
+                    # 检查文件系统中是否存在
+                    conversation_dir = FileManager.get_conversation_dir(candidate_id)
+                    if not conversation_dir.exists():
+                        # 预先占用这个ID
+                        self._active_conversation_ids.add(candidate_id)
+                        logger.info(f"生成唯一会话ID: {candidate_id} (尝试 {attempt + 1})")
+                        return candidate_id
+            
+            # 如果冲突，等待很短时间后重试（避免时间戳完全相同）
+            time.sleep(0.001 * (attempt + 1))
+            logger.warning(f"会话ID冲突，重试生成: {candidate_id} (尝试 {attempt + 1})")
+        
+        # 如果多次重试失败，使用UUID后备方案
+        fallback_id = f"{graph_name}_{int(time.time() * 1000000)}_{str(uuid.uuid4())}"
+        logger.error(f"会话ID生成重试失败，使用后备方案: {fallback_id}")
+        
+        with self._conversation_lock:
+            self._active_conversation_ids.add(fallback_id)
+        
+        return fallback_id
 
     def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """创建新的会话"""
-        # 生成有意义的会话ID
-        file_id = ConversationTemplate.generate_conversation_filename(graph_name)
-        conversation_id = file_id
+        # 生成唯一的会话ID
+        conversation_id = self._generate_unique_conversation_id(graph_name)
 
         # 记录开始时间
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-        # 初始化会话状态 - 不再使用pending_nodes和current_path
-        self.active_conversations[conversation_id] = {
-            "graph_name": graph_name,
-            "graph_config": graph_config,
-            "node_states": {},
-            "results": [],
-            "parallel": False,
-            "start_time": start_time,
-            "conversation_id": conversation_id,
-            "handoffs_counters": {},  # handoffs计数器
-            "global_outputs": {}  # 全局输出存储
-        }
+        try:
+            # 初始化会话状态 - 不再使用pending_nodes和current_path
+            self.active_conversations[conversation_id] = {
+                "graph_name": graph_name,
+                "graph_config": graph_config,
+                "node_states": {},
+                "results": [],
+                "parallel": False,
+                "start_time": start_time,
+                "conversation_id": conversation_id,
+                "handoffs_counters": {},  # handoffs计数器
+                "global_outputs": {}  # 全局输出存储
+            }
 
-        # 创建初始模板和JSON
-        initial_md = ConversationTemplate.generate_header(graph_name, conversation_id, "", start_time)
-        initial_md += ConversationTemplate.generate_final_output("")
+            # 创建初始模板和JSON
+            initial_md = ConversationTemplate.generate_header(graph_name, conversation_id, "", start_time)
+            initial_md += ConversationTemplate.generate_final_output("")
 
-        # 创建初始HTML
-        initial_html = HTMLConversationTemplate.generate_html_template({
-            "conversation_id": conversation_id,
-            "graph_name": graph_name,
-            "start_time": start_time,
-            "input": "",
-            "output": "",
-            "node_results": []
-        })
+            # 创建初始HTML
+            initial_html = HTMLConversationTemplate.generate_html_template({
+                "conversation_id": conversation_id,
+                "graph_name": graph_name,
+                "start_time": start_time,
+                "input": "",
+                "output": "",
+                "node_results": []
+            })
 
-        # 准备JSON内容
-        json_content = self._prepare_json_content(self.active_conversations[conversation_id])
+            # 准备JSON内容
+            json_content = self._prepare_json_content(self.active_conversations[conversation_id])
 
-        # 保存到文件
-        FileManager.save_conversation(conversation_id, graph_name, start_time, initial_md, json_content, initial_html)
+            # 原子性保存到文件
+            success = FileManager.save_conversation_atomic(
+                conversation_id, graph_name, start_time, initial_md, json_content, initial_html
+            )
 
-        return conversation_id
+            if not success:
+                # 如果保存失败，清理并重试
+                self._cleanup_failed_conversation(conversation_id)
+                raise RuntimeError(f"无法创建会话文件: {conversation_id}")
+
+            logger.info(f"成功创建会话: {conversation_id}")
+            return conversation_id
+
+        except Exception as e:
+            # 出错时清理
+            self._cleanup_failed_conversation(conversation_id)
+            raise
+
+    def _cleanup_failed_conversation(self, conversation_id: str):
+        """清理失败的会话创建"""
+        try:
+            # 从内存中移除
+            if conversation_id in self.active_conversations:
+                del self.active_conversations[conversation_id]
+            
+            # 从活跃ID集合中移除
+            with self._conversation_lock:
+                self._active_conversation_ids.discard(conversation_id)
+            
+            # 清理可能已创建的文件
+            FileManager.cleanup_conversation_files(conversation_id)
+            
+        except Exception as e:
+            logger.error(f"清理失败会话时出错: {str(e)}")
 
     def _add_global_output(self, conversation_id: str, node_name: str, output: str) -> None:
         """添加全局输出内容"""
@@ -190,12 +255,21 @@ class ConversationManager:
 
     def delete_conversation(self, conversation_id: str) -> bool:
         """删除会话"""
-        # 从内存中移除会话
-        if conversation_id in self.active_conversations:
-            del self.active_conversations[conversation_id]
+        try:
+            # 从内存中移除会话
+            if conversation_id in self.active_conversations:
+                del self.active_conversations[conversation_id]
 
-        # 删除会话文件
-        return FileManager.delete_conversation(conversation_id)
+            # 从活跃ID集合中移除
+            with self._conversation_lock:
+                self._active_conversation_ids.discard(conversation_id)
+
+            # 删除会话文件
+            return FileManager.delete_conversation(conversation_id)
+            
+        except Exception as e:
+            logger.error(f"删除会话时出错: {str(e)}")
+            return False
 
     def _restructure_results(self, conversation: Dict[str, Any]) -> List[Dict[str, Any]]:
         """将扁平化的执行结果重组为层次化结构，便于展示"""

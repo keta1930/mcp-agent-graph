@@ -389,8 +389,6 @@ class GraphProcessor:
 
         # 重新计算展开后的图的层级
         processed_config = self._calculate_node_levels(processed_config)
-
-        print("\nprocessed_config:\n", processed_config)
         return processed_config
 
     def _expand_subgraph_node(self, subgraph_node: Dict[str, Any], prefix_path: str) -> List[Dict[str, Any]]:

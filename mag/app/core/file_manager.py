@@ -1,13 +1,17 @@
 import json
 import os
 import time
+import tempfile
+import shutil
+import threading
+import platform
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import logging
 import re
-import shutil
-from app.core.config import settings
 import copy
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -213,38 +217,171 @@ class FileManager:
         return FileManager.get_conversation_dir(conversation_id) / "attachment"
 
     @staticmethod
-    def ensure_attachment_dir(conversation_id: str) -> Path:
-        """确保附件目录存在并返回路径"""
+    def ensure_attachment_dir_atomic(conversation_id: str) -> Path:
+        """原子性确保附件目录存在"""
         attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
-        attachment_dir.mkdir(parents=True, exist_ok=True)
-        return attachment_dir
+        
+        # 使用 exist_ok=True 来处理并发创建
+        try:
+            attachment_dir.mkdir(parents=True, exist_ok=True)
+            return attachment_dir
+        except FileExistsError:
+            # 目录已存在，这是正常情况
+            return attachment_dir
+        except Exception as e:
+            logger.error(f"创建附件目录时出错: {str(e)}")
+            raise
 
     @staticmethod
-    def save_node_output_to_file(conversation_id: str, node_name: str, content: str, file_ext: str) -> Optional[str]:
-        """
-        将节点输出保存到文件
-        """
+    def ensure_attachment_dir(conversation_id: str) -> Path:
+        """确保附件目录存在并返回路径 - 使用原子性版本"""
+        return FileManager.ensure_attachment_dir_atomic(conversation_id)
+
+    @staticmethod
+    def save_conversation_atomic(conversation_id: str, graph_name: str,
+                               start_time: str, md_content: str, json_content: Dict[str, Any],
+                               html_content: str = None) -> bool:
+        """原子性保存会话内容，避免并发冲突"""
         try:
-            # 创建时间戳（小时分钟秒）
-            timestamp = time.strftime("%H%M%S", time.localtime())
+            # 获取目标路径
+            conversation_dir = FileManager.get_conversation_dir(conversation_id)
+            
+            # 确保父目录存在
+            conversation_dir.parent.mkdir(parents=True, exist_ok=True)
+            
+            # 检查目录是否已存在（防止冲突）
+            if conversation_dir.exists():
+                logger.error(f"会话目录已存在，可能存在ID冲突: {conversation_dir}")
+                return False
+            
+            # 创建临时目录
+            temp_dir = None
+            try:
+                # 在同一父目录下创建临时目录
+                temp_dir = tempfile.mkdtemp(
+                    prefix=f"temp_{conversation_id}_",
+                    dir=conversation_dir.parent
+                )
+                temp_path = Path(temp_dir)
+                
+                # 在临时目录中创建文件
+                md_path = temp_path / f"{conversation_id}.md"
+                json_path = temp_path / f"{conversation_id}.json"
+                html_path = temp_path / f"{conversation_id}.html"
+                
+                # 写入Markdown文件
+                with open(md_path, 'w', encoding='utf-8') as f:
+                    f.write(md_content)
+                
+                # 写入JSON文件
+                with open(json_path, 'w', encoding='utf-8') as f:
+                    json.dump(json_content, f, ensure_ascii=False, indent=2)
+                
+                # 写入HTML文件（如果提供）
+                if html_content:
+                    with open(html_path, 'w', encoding='utf-8') as f:
+                        f.write(html_content)
+                
+                # 创建attachment子目录
+                attachment_dir = temp_path / "attachment"
+                attachment_dir.mkdir(exist_ok=True)
+                
+                # 原子性重命名（移动整个目录）
+                try:
+                    shutil.move(str(temp_path), str(conversation_dir))
+                    logger.info(f"原子性创建会话目录: {conversation_dir}")
+                    return True
+                except OSError as e:
+                    if "already exists" in str(e).lower():
+                        logger.error(f"目标目录已存在，存在并发冲突: {conversation_dir}")
+                        return False
+                    else:
+                        raise
+                        
+            finally:
+                # 清理临时目录（如果还存在）
+                if temp_dir and Path(temp_dir).exists():
+                    try:
+                        shutil.rmtree(temp_dir)
+                    except:
+                        pass
+                        
+        except Exception as e:
+            logger.error(f"原子性保存会话时出错: {str(e)}")
+            return False
+
+    @staticmethod
+    def cleanup_conversation_files(conversation_id: str):
+        """清理会话文件（用于错误恢复）"""
+        try:
+            conversation_dir = FileManager.get_conversation_dir(conversation_id)
+            if conversation_dir.exists():
+                shutil.rmtree(conversation_dir)
+                logger.info(f"已清理会话文件: {conversation_dir}")
+        except Exception as e:
+            logger.error(f"清理会话文件时出错: {str(e)}")
+
+    @staticmethod
+    def save_node_output_to_file_atomic(conversation_id: str, node_name: str, 
+                                      content: str, file_ext: str) -> Optional[str]:
+        """原子性保存节点输出到文件"""
+        try:
+            # 创建时间戳（包含微秒）
+            now = time.time()
+            timestamp = time.strftime("%H%M%S", time.localtime(now))
+            microseconds = int((now % 1) * 1000000)
+            full_timestamp = f"{timestamp}_{microseconds:06d}"
 
             # 确保附件目录存在
             attachment_dir = FileManager.ensure_attachment_dir(conversation_id)
 
-            # 构建文件名: 节点名+时间戳.扩展名
-            filename = f"{node_name}_{timestamp}.{file_ext}"
+            # 生成唯一文件名
+            base_filename = f"{node_name}_{full_timestamp}"
+            filename = f"{base_filename}.{file_ext}"
             file_path = attachment_dir / filename
+            
+            # 如果文件已存在，添加计数器
+            counter = 1
+            while file_path.exists():
+                filename = f"{base_filename}_{counter}.{file_ext}"
+                file_path = attachment_dir / filename
+                counter += 1
+                if counter > 100:  # 防止无限循环
+                    logger.error(f"无法生成唯一文件名: {base_filename}")
+                    return None
 
-            # 保存内容到文件
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
+            # 使用临时文件+原子重命名
+            with tempfile.NamedTemporaryFile(
+                mode='w', 
+                encoding='utf-8', 
+                dir=str(attachment_dir),
+                prefix=f"temp_{node_name}_",
+                suffix=f".{file_ext}",
+                delete=False
+            ) as temp_file:
+                temp_file.write(content)
+                temp_path = temp_file.name
 
-            logger.info(f"节点 '{node_name}' 的输出已保存到: {file_path}")
-
+            # 原子性重命名
+            shutil.move(temp_path, str(file_path))
+            
+            logger.info(f"原子性保存节点输出: {file_path}")
             return str(file_path)
+
         except Exception as e:
-            logger.error(f"保存节点 '{node_name}' 输出到文件时出错: {str(e)}")
+            logger.error(f"原子性保存节点输出时出错: {str(e)}")
+            # 清理临时文件
+            try:
+                if 'temp_path' in locals() and Path(temp_path).exists():
+                    Path(temp_path).unlink()
+            except:
+                pass
             return None
+
+    @staticmethod
+    def save_node_output_to_file(conversation_id: str, node_name: str, content: str, file_ext: str) -> Optional[str]:
+        """将节点输出保存到文件 - 使用原子性版本"""
+        return FileManager.save_node_output_to_file_atomic(conversation_id, node_name, content, file_ext)
 
     @staticmethod
     def get_conversation_md_path(conversation_id: str) -> Path:
@@ -468,7 +605,6 @@ class FileManager:
                 for file_path in file_paths:
                     source_path = Path(file_path)
                     if not source_path.exists():
-                        logger.warning(f"提示词引用的文件不存在: {file_path}")
                         continue
 
                     # 使用原始文件名
@@ -500,7 +636,6 @@ class FileManager:
         prompt_file_path = settings.get_agent_prompt_dir(agent_name) / file_name
 
         if not prompt_file_path.exists():
-            logger.warning(f"提示词文件不存在: {prompt_file_path}")
             return None
 
         try:

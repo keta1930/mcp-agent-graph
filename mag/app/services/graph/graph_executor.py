@@ -287,6 +287,7 @@ class GraphExecutor:
         current_level = 0
 
         while current_level <= max_level:
+            
             logger.info(f"开始执行层级 {current_level}")
 
             # 如果有重启点，则只处理该节点和后续节点
@@ -298,7 +299,7 @@ class GraphExecutor:
                 nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
 
             # 顺序执行当前层级的节点
-            for node in nodes_to_execute:
+            for i, node in enumerate(nodes_to_execute):
                 # 获取节点输入
                 node_input = self._get_node_input_simple(node, conversation)
 

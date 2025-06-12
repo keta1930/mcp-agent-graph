@@ -190,7 +190,7 @@ class GraphInput(BaseModel):
     conversation_id: Optional[str] = Field(None, description="会话ID，用于继续现有会话")
     parallel: bool = Field(default=False, description="是否启用并行执行")
     continue_from_checkpoint: bool = Field(default=False, description="是否从断点继续执行")
-
+    async_mode: bool = False  # 新增：是否异步执行
 
 class NodeResult(BaseModel):
     """节点执行结果"""

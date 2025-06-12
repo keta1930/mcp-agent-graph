@@ -2,7 +2,7 @@ import logging
 import json
 import re
 from typing import Dict, List, Any, Optional, Union
-from openai import OpenAI
+from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
 from app.core.file_manager import FileManager
@@ -16,7 +16,7 @@ class ModelService:
 
     def __init__(self):
         self.models: List[Dict[str, Any]] = []
-        self.clients: Dict[str, OpenAI] = {}
+        self.clients: Dict[str, AsyncOpenAI] = {}
 
     def initialize(self) -> None:
         """初始化模型配置"""
@@ -24,10 +24,10 @@ class ModelService:
         self._initialize_clients()
 
     def _initialize_clients(self) -> None:
-        """初始化所有模型的客户端"""
+        """初始化所有模型的异步客户端"""
         for model_config in self.models:
             try:
-                client = OpenAI(
+                client = AsyncOpenAI(
                     api_key=model_config["api_key"],
                     base_url=model_config["base_url"]
                 )
@@ -57,8 +57,8 @@ class ModelService:
             return False
 
         try:
-            # 创建客户端实例以验证配置是否有效
-            client = OpenAI(
+            # 创建异步客户端实例以验证配置是否有效
+            client = AsyncOpenAI(
                 api_key=model_config["api_key"],
                 base_url=model_config["base_url"]
             )
@@ -87,8 +87,8 @@ class ModelService:
             return False
 
         try:
-            # 创建客户端实例以验证配置是否有效
-            client = OpenAI(
+            # 创建异步客户端实例以验证配置是否有效
+            client = AsyncOpenAI(
                 api_key=model_config["api_key"],
                 base_url=model_config["base_url"]
             )
@@ -193,9 +193,9 @@ class ModelService:
         return system_prompt
 
     async def call_model(self,
-                         model_name: str,
-                         messages: List[Dict[str, Any]],
-                         tools: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+                        model_name: str,
+                        messages: List[Dict[str, Any]],
+                        tools: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """调用模型API，支持handoffs工具调用"""
         client = self.clients.get(model_name)
         if not client:
@@ -216,8 +216,15 @@ class ModelService:
             if tools:
                 params["tools"] = tools
 
-            # 调用模型API
-            response = client.chat.completions.create(**params)
+            # 异步调用模型API
+            response = await client.chat.completions.create(**params)
+            
+            # 提取消息内容
+            message_content = response.choices[0].message.content or ""
+
+            # 清理</think>之前的文本
+            think_pattern = r".*?</think>"
+            cleaned_content = re.sub(think_pattern, "", message_content, flags=re.DOTALL)
 
             # 处理工具调用
             tool_calls = []
@@ -242,7 +249,7 @@ class ModelService:
 
             return {
                 "status": "success",
-                "content": response.choices[0].message.content or "",
+                "content": cleaned_content,
                 "tool_calls": tool_calls
             }
 
