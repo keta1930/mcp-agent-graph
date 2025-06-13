@@ -218,7 +218,7 @@ class FileManager:
 
     @staticmethod
     def ensure_attachment_dir_atomic(conversation_id: str) -> Path:
-        """原子性确保附件目录存在"""
+        """确保附件目录存在"""
         attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
         
         # 使用 exist_ok=True 来处理并发创建
@@ -234,14 +234,14 @@ class FileManager:
 
     @staticmethod
     def ensure_attachment_dir(conversation_id: str) -> Path:
-        """确保附件目录存在并返回路径 - 使用原子性版本"""
+        """确保附件目录存在并返回路径 - 使用版本"""
         return FileManager.ensure_attachment_dir_atomic(conversation_id)
 
     @staticmethod
     def save_conversation_atomic(conversation_id: str, graph_name: str,
                                start_time: str, md_content: str, json_content: Dict[str, Any],
                                html_content: str = None) -> bool:
-        """原子性保存会话内容，避免并发冲突"""
+        """保存会话内容，避免并发冲突"""
         try:
             # 获取目标路径
             conversation_dir = FileManager.get_conversation_dir(conversation_id)
@@ -286,10 +286,10 @@ class FileManager:
                 attachment_dir = temp_path / "attachment"
                 attachment_dir.mkdir(exist_ok=True)
                 
-                # 原子性重命名（移动整个目录）
+                # 重命名（移动整个目录）
                 try:
                     shutil.move(str(temp_path), str(conversation_dir))
-                    logger.info(f"原子性创建会话目录: {conversation_dir}")
+                    logger.info(f"创建会话目录: {conversation_dir}")
                     return True
                 except OSError as e:
                     if "already exists" in str(e).lower():
@@ -307,7 +307,7 @@ class FileManager:
                         pass
                         
         except Exception as e:
-            logger.error(f"原子性保存会话时出错: {str(e)}")
+            logger.error(f"保存会话时出错: {str(e)}")
             return False
 
     @staticmethod
@@ -324,7 +324,7 @@ class FileManager:
     @staticmethod
     def save_node_output_to_file_atomic(conversation_id: str, node_name: str, 
                                       content: str, file_ext: str) -> Optional[str]:
-        """原子性保存节点输出到文件"""
+        """保存节点输出到文件"""
         try:
             # 创建时间戳（包含微秒）
             now = time.time()
@@ -362,14 +362,14 @@ class FileManager:
                 temp_file.write(content)
                 temp_path = temp_file.name
 
-            # 原子性重命名
+            # 重命名
             shutil.move(temp_path, str(file_path))
             
-            logger.info(f"原子性保存节点输出: {file_path}")
+            logger.info(f"保存节点输出: {file_path}")
             return str(file_path)
 
         except Exception as e:
-            logger.error(f"原子性保存节点输出时出错: {str(e)}")
+            logger.error(f"保存节点输出时出错: {str(e)}")
             # 清理临时文件
             try:
                 if 'temp_path' in locals() and Path(temp_path).exists():
@@ -380,7 +380,7 @@ class FileManager:
 
     @staticmethod
     def save_node_output_to_file(conversation_id: str, node_name: str, content: str, file_ext: str) -> Optional[str]:
-        """将节点输出保存到文件 - 使用原子性版本"""
+        """将节点输出保存到文件 - 使用版本"""
         return FileManager.save_node_output_to_file_atomic(conversation_id, node_name, content, file_ext)
 
     @staticmethod

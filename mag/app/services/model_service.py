@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelService:
-    """模型服务管理"""
+    """模型服务管理 - 专注于模型调用和参数处理"""
 
     def __init__(self):
         self.models: List[Dict[str, Any]] = []
@@ -42,6 +42,18 @@ class ModelService:
             "base_url": model["base_url"],
             "model": model.get("model", "")
         } for model in self.models]
+    
+    def get_model_for_edit(self, model_name: str) -> Optional[Dict[str, Any]]:
+        """获取特定模型的完整配置（用于编辑，不包含API密钥）"""
+        model = self.get_model(model_name)
+        if not model:
+            return None
+        
+        # 创建配置副本，移除API密钥
+        edit_config = model.copy()
+        edit_config.pop('api_key', None)
+        
+        return edit_config
 
     def get_model(self, model_name: str) -> Optional[Dict[str, Any]]:
         """获取特定模型的配置"""
@@ -87,6 +99,10 @@ class ModelService:
             return False
 
         try:
+            # 如果新配置中没有API密钥，保持原有的API密钥
+            if 'api_key' not in model_config or not model_config['api_key']:
+                model_config['api_key'] = self.models[index]['api_key']
+            
             # 创建异步客户端实例以验证配置是否有效
             client = AsyncOpenAI(
                 api_key=model_config["api_key"],
@@ -94,7 +110,12 @@ class ModelService:
             )
 
             # 更新模型
+            old_name = self.models[index]["name"]
             self.models[index] = model_config
+            
+            # 更新客户端映射
+            if old_name != model_config["name"] and old_name in self.clients:
+                del self.clients[old_name]
             self.clients[model_config["name"]] = client
 
             # 保存到文件
@@ -127,76 +148,11 @@ class ModelService:
 
         return True
 
-    def extract_tool_calls(self, content: str) -> List[Dict[str, Any]]:
-        """从模型输出中提取工具调用"""
-        pattern = r'<tool>\s*<n>(.*?)</n>\s*<server>(.*?)</server>\s*<params>\s*([\s\S]*?)\s*</params>\s*</tool>'
-        matches = re.findall(pattern, content)
-
-        tool_calls = []
-        for match in matches:
-            tool_name, server_name, params_str = match
-            try:
-                # 尝试解析参数JSON
-                params = json.loads(params_str.strip())
-                tool_calls.append({
-                    "tool_name": tool_name.strip(),
-                    "server_name": server_name.strip(),
-                    "params": params
-                })
-            except json.JSONDecodeError as e:
-                logger.error(f"无法解析工具参数JSON: {params_str}")
-                logger.error(f"错误: {str(e)}")
-
-        return tool_calls
-
-    def format_tool_result(self, tool_name: str, server_name: str, result: Dict[str, Any]) -> str:
-        """格式化工具调用结果为XML"""
-        if "error" in result:
-            return f"""<tool_result>
-                    <n>{tool_name}</n>
-                    <server>{server_name}</server>
-                    <e>{result["error"]}</e>
-                    </tool_result>"""
-        else:
-            return f"""<tool_result>
-                    <n>{tool_name}</n>
-                    <server>{server_name}</server>
-                    <r>
-                    {result["content"]}
-                    </r>
-                    </tool_result>"""
-
-    def create_system_prompt(self, mcp_servers: List[str], mcp_tools: Dict[str, List[Dict[str, Any]]]) -> str:
-        """创建系统提示词"""
-        # 基础系统提示词
-        system_prompt = "你是一个有用的助手，你可以使用以下工具来帮助回答问题。使用工具时，请使用以下格式：\n\n"
-        system_prompt += "<tool>\n<n>工具名称</n>\n<server>服务器名称</server>\n<params>\n参数JSON对象\n</params>\n</tool>\n\n"
-        system_prompt += "例如：\n\n<tool>\n<n>search</n>\n<server>search_server</server>\n<params>\n{\"query\": \"人工智能\"}\n</params>\n</tool>\n\n"
-
-        # 添加可用的工具
-        if mcp_servers and mcp_tools:
-            system_prompt += "可用的工具有：\n\n"
-
-            for server_name in mcp_servers:
-                if server_name in mcp_tools and mcp_tools[server_name]:
-                    system_prompt += f"## 服务器: {server_name}\n\n"
-
-                    for tool in mcp_tools[server_name]:
-                        system_prompt += f"### 工具: {tool['name']}\n"
-                        system_prompt += f"描述: {tool['description']}\n"
-                        system_prompt += "参数格式:\n"
-                        system_prompt += f"```\n{json.dumps(tool['input_schema'], ensure_ascii=False, indent=2)}\n```\n\n"
-
-        system_prompt += "记住，如果你需要使用工具，请使用正确的XML格式进行调用，确保<params>中的JSON格式正确。工具的响应将在下一条消息中提供给你。\n"
-        system_prompt += "如果你不需要使用工具，可以直接回答问题。"
-
-        return system_prompt
-
     async def call_model(self,
                         model_name: str,
                         messages: List[Dict[str, Any]],
                         tools: List[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """调用模型API，支持handoffs工具调用"""
+        """调用模型API，支持所有配置参数和流式返回"""
         client = self.clients.get(model_name)
         if not client:
             return {"status": "error", "error": f"模型 '{model_name}' 未配置或初始化失败"}
@@ -206,25 +162,153 @@ class ModelService:
             return {"status": "error", "error": f"找不到模型 '{model_name}' 的配置"}
 
         try:
-            # 准备调用参数
+            # 准备基本调用参数
             params = {
                 "model": model_config["model"],
                 "messages": messages
             }
 
+            # 添加可选参数（从模型配置中自动获取）
+            optional_params = [
+                'temperature', 'max_tokens', 'max_completion_tokens',
+                'top_p', 'frequency_penalty', 'presence_penalty', 'n',
+                'stop', 'seed', 'logprobs', 'top_logprobs'
+            ]
+            
+            for param in optional_params:
+                if param in model_config and model_config[param] is not None:
+                    # 确保数值类型参数的正确类型
+                    if param in ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty']:
+                        params[param] = float(model_config[param])
+                    elif param in ['max_tokens', 'max_completion_tokens', 'n', 'seed', 'top_logprobs']:
+                        params[param] = int(model_config[param])
+                    else:
+                        params[param] = model_config[param]
+
             # 如果提供了工具，添加到参数中
             if tools:
                 params["tools"] = tools
 
-            # 异步调用模型API
-            response = await client.chat.completions.create(**params)
+            # 处理额外的请求参数
+            extra_kwargs = {}
+            if model_config.get('extra_headers'):
+                extra_kwargs['extra_headers'] = model_config['extra_headers']
+            if model_config.get('timeout'):
+                extra_kwargs['timeout'] = model_config['timeout']
+            if model_config.get('extra_body'):
+                extra_kwargs['extra_body'] = model_config['extra_body']
+
+            # 检查是否启用流式返回
+            is_stream = model_config.get('stream', False)
             
+            if is_stream:
+                # 处理流式返回
+                return await self._handle_stream_response(client, params, **extra_kwargs)
+            else:
+                # 处理普通返回
+                response = await client.chat.completions.create(**params, **extra_kwargs)
+                return await self._handle_normal_response(response)
+
+        except Exception as e:
+            logger.error(f"调用模型 '{model_name}' 时出错: {str(e)}")
+            return {"status": "error", "error": str(e)}
+
+    async def _handle_stream_response(self, client, params, **extra_kwargs):
+        """处理流式响应"""
+        try:
+            # 为流式响应设置stream参数
+            stream_params = params.copy()
+            stream_params["stream"] = True
+            
+            stream = await client.chat.completions.create(**stream_params, **extra_kwargs)
+            
+            content_parts = []
+            tool_calls = []
+            current_tool_calls = {}  # 用于跟踪正在构建的工具调用
+            
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta:
+                    delta = chunk.choices[0].delta
+                    
+                    # 收集内容
+                    if delta.content:
+                        content_parts.append(delta.content)
+                    
+                    # 收集工具调用
+                    if delta.tool_calls:
+                        for tool_call_delta in delta.tool_calls:
+                            index = tool_call_delta.index
+                            
+                            if index not in current_tool_calls:
+                                current_tool_calls[index] = {
+                                    "id": tool_call_delta.id or "",
+                                    "type": tool_call_delta.type or "function",
+                                    "function": {
+                                        "name": "",
+                                        "arguments": ""
+                                    }
+                                }
+                            
+                            # 更新工具调用信息
+                            if tool_call_delta.id:
+                                current_tool_calls[index]["id"] = tool_call_delta.id
+                            if tool_call_delta.type:
+                                current_tool_calls[index]["type"] = tool_call_delta.type
+                            
+                            if tool_call_delta.function:
+                                if tool_call_delta.function.name:
+                                    current_tool_calls[index]["function"]["name"] += tool_call_delta.function.name
+                                if tool_call_delta.function.arguments:
+                                    current_tool_calls[index]["function"]["arguments"] += tool_call_delta.function.arguments
+
+            # 处理完整的工具调用
+            for tool_call_data in current_tool_calls.values():
+                tool_name = tool_call_data["function"]["name"]
+                
+                if tool_name:
+                    try:
+                        tool_args = json.loads(tool_call_data["function"]["arguments"] or "{}")
+                    except json.JSONDecodeError:
+                        logger.error(f"工具参数JSON无效: {tool_call_data['function']['arguments']}")
+                        tool_args = {}
+
+                    # 处理handoffs工具
+                    if tool_name.startswith("transfer_to_"):
+                        selected_node = tool_name[len("transfer_to_"):]
+                        tool_calls.append({
+                            "tool_name": tool_name,
+                            "content": f"选择了节点: {selected_node}",
+                            "selected_node": selected_node
+                        })
+                    else:
+                        # 普通工具调用
+                        tool_calls.append({
+                            "tool_name": tool_name,
+                            "params": tool_args
+                        })
+            
+            # 清理内容
+            full_content = "".join(content_parts)
+            cleaned_content = self._clean_content(full_content)
+            
+            return {
+                "status": "success",
+                "content": cleaned_content,
+                "tool_calls": tool_calls
+            }
+            
+        except Exception as e:
+            logger.error(f"处理流式响应时出错: {str(e)}")
+            return {"status": "error", "error": str(e)}
+
+    async def _handle_normal_response(self, response):
+        """处理普通响应"""
+        try:
             # 提取消息内容
             message_content = response.choices[0].message.content or ""
 
-            # 清理</think>之前的文本
-            think_pattern = r".*?</think>"
-            cleaned_content = re.sub(think_pattern, "", message_content, flags=re.DOTALL)
+            # 清理内容
+            cleaned_content = self._clean_content(message_content)
 
             # 处理工具调用
             tool_calls = []
@@ -246,16 +330,34 @@ class ModelService:
                             "content": f"选择了节点: {selected_node}",
                             "selected_node": selected_node
                         })
+                    else:
+                        # 普通工具调用
+                        tool_calls.append({
+                            "tool_name": tool_name,
+                            "params": tool_args
+                        })
 
             return {
                 "status": "success",
                 "content": cleaned_content,
                 "tool_calls": tool_calls
             }
-
+            
         except Exception as e:
-            logger.error(f"调用模型 '{model_name}' 时出错: {str(e)}")
+            logger.error(f"处理普通响应时出错: {str(e)}")
             return {"status": "error", "error": str(e)}
+
+    def _clean_content(self, content: str) -> str:
+        """清理模型输出内容"""
+        if not content:
+            return ""
+        
+        # 清理</think>之前的文本
+        think_pattern = r".*?</think>"
+        cleaned_content = re.sub(think_pattern, "", content, flags=re.DOTALL)
+        
+        return cleaned_content.strip()
+
 
 # 创建全局模型服务实例
 model_service = ModelService()

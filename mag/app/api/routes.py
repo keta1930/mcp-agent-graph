@@ -376,6 +376,29 @@ async def get_models():
             detail=f"获取模型列表时出错: {str(e)}"
         )
 
+@router.get("/models/{model_name:path}", response_model=Dict[str, Any])
+async def get_model_for_edit(model_name: str):
+    """获取特定模型的配置（用于编辑）"""
+    try:
+        model_name = unquote(model_name)
+        logger.info(f"获取模型配置用于编辑: '{model_name}'")
+        
+        model_config = model_service.get_model_for_edit(model_name)
+        if not model_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到模型 '{model_name}'"
+            )
+        
+        return {"status": "success", "data": model_config}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取模型配置时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取模型配置时出错: {str(e)}"
+        )
 
 @router.post("/models", response_model=Dict[str, Any])
 async def add_model(model: ModelConfig):

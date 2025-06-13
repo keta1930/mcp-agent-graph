@@ -712,10 +712,6 @@ class GraphExecutor:
 
             # 从节点获取模型信息
             model_name = node["model_name"]
-            model_config = model_service.get_model(model_name)
-            if not model_config:
-                raise ValueError(f"找不到模型 '{model_name}'")
-
             # 提取MCP服务器列表
             mcp_servers = node.get("mcp_servers", [])
             output_enabled = node.get("output_enabled", True)
@@ -727,11 +723,8 @@ class GraphExecutor:
 
             # 执行节点 - 根据是否有mcp_servers决定调用方式
             if mcp_servers:
-                # 如果有MCP服务器，使用mcp_service执行
                 response = await self.mcp_service.execute_node(
-                    model_name=model_config["model"],
-                    api_key=model_config["api_key"],
-                    base_url=model_config["base_url"],
+                    model_name=model_name,
                     messages=messages,
                     mcp_servers=mcp_servers,
                     output_enabled=output_enabled

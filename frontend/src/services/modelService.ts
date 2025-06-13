@@ -7,6 +7,12 @@ export const getModels = async () => {
   return response.data;
 };
 
+export const getModelForEdit = async (modelName: string) => {
+  const encodedModelName = encodeURIComponent(modelName);
+  const response = await api.get(`/models/${encodedModelName}`);
+  return response.data;
+};
+
 export const addModel = async (model: ModelConfig) => {
   const response = await api.post('/models', model);
   return response.data;

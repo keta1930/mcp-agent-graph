@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class MCPService:
-    """MCP服务管理 - 作为MCP Host，与独立的MCP Client进程通信"""
+    """MCP服务管理 - 作为MCP Host，与独立的MCP Client进程通信，并提供节点执行功能"""
 
     def __init__(self):
         self.client_process = None
@@ -451,51 +451,311 @@ class MCPService:
             }
 
     async def execute_node(self,
-                           model_name: str,
-                           api_key: str,
-                           base_url: str,
-                           messages: List[Dict[str, Any]],
-                           mcp_servers: List[str] = [],
-                           output_enabled: bool = True) -> Dict[str, Any]:
-        """执行Agent节点"""
+                       model_name: str,
+                       messages: List[Dict[str, Any]],
+                       mcp_servers: List[str] = [],
+                       output_enabled: bool = True) -> Dict[str, Any]:
+        """执行Agent节点 - 协调模型调用和工具调用"""
         try:
-            if not self.client_started:
-                return {"status": "error", "error": "MCP Client未启动"}
+            # 导入 model_service（避免循环导入）
+            from app.services.model_service import model_service
+            
+            # 收集所有指定服务器的工具
+            all_tools = []
+            tool_to_server = {}  # 工具名到服务器的映射
 
-            session = await self._get_session()
-            print("\n\nsession\n\n",{
-                    "model": model_name,
-                    "api_key": api_key,
-                    "base_url": base_url,
-                    "messages": messages,
-                    "mcp_servers": mcp_servers,
-                    "output_enabled": output_enabled
-                })
-            async with session.post(
-                f"{self.client_url}/execute_node",
-                json={
-                    "model": model_name,
-                    "api_key": api_key,
-                    "base_url": base_url,
-                    "messages": messages,
-                    "mcp_servers": mcp_servers,
-                    "output_enabled": output_enabled
-                }
-            ) as response:
-                if response.status == 200:
-                    print("\nsessino.response:\n", response)
-                    return await response.json()
-                else:
-                    error_text = await response.text()
-                    error_msg = f"执行节点失败: {response.status} {error_text}"
-                    logger.error(error_msg)
-                    return {"status": "error", "error": error_msg}
+            # 首先确保所有需要的服务器都已连接
+            for server_name in mcp_servers:
+                # 检查服务器状态
+                server_status = await self.get_server_status()
+                if server_name not in server_status or not server_status[server_name].get("connected", False):
+                    logger.info(f"服务器 '{server_name}' 未连接，尝试连接...")
+                    connect_result = await self.connect_server(server_name)
+                    if connect_result.get("status") != "connected":
+                        logger.error(f"无法连接服务器 '{server_name}': {connect_result.get('error', '未知错误')}")
+                        return {
+                            "status": "error",
+                            "error": f"无法连接服务器 '{server_name}': {connect_result.get('error', '未知错误')}"
+                        }
+
+            # 获取所有工具
+            tools_by_server = await self.get_all_tools()
+            
+            # 收集指定服务器的工具
+            for server_name in mcp_servers:
+                if server_name in tools_by_server:
+                    for tool in tools_by_server[server_name]:
+                        all_tools.append({
+                            "type": "function",
+                            "function": {
+                                "name": tool["name"],
+                                "description": f"[Tool from:{server_name}] {tool['description']}",
+                                "parameters": tool["input_schema"]
+                            }
+                        })
+                        tool_to_server[tool["name"]] = server_name
+
+            # 确保消息格式正确
+            processed_messages = []
+            for msg in messages:
+                if "role" not in msg or "content" not in msg:
+                    logger.error(f"消息格式错误，缺少必要字段: {msg}")
+                    return {
+                        "status": "error",
+                        "error": f"消息格式错误，缺少必要字段: {msg}"
+                    }
+
+                if msg["content"] is not None and not isinstance(msg["content"], str):
+                    msg["content"] = str(msg["content"])
+
+                processed_messages.append(msg)
+
+            # 记录将要使用的工具
+            logger.info(f"可用工具: {[tool['function']['name'] for tool in all_tools]}")
+
+            # 如果没有MCP服务器或只做单阶段执行，直接调用模型
+            if not mcp_servers or not output_enabled:
+                logger.info("使用单阶段执行模式" if not output_enabled else "无MCP服务器，直接调用模型")
+
+                # 调用模型服务
+                result = await model_service.call_model(
+                    model_name=model_name,
+                    messages=processed_messages,
+                    tools=all_tools if all_tools else None
+                )
+
+                if result["status"] != "success":
+                    return result
+
+                # 如果有工具调用且不需要二阶段输出，处理工具调用
+                model_tool_calls = result.get("tool_calls", [])
+                if model_tool_calls and not output_enabled:
+                    # 并行处理工具调用
+                    tool_call_tasks = []
+                    final_tool_calls = []
+
+                    for tool_call in model_tool_calls:
+                        # 处理handoff工具调用
+                        if "selected_node" in tool_call:
+                            final_tool_calls.append(tool_call)
+                            continue
+                        
+                        # 处理普通工具调用
+                        tool_name = tool_call.get("tool_name")
+                        if tool_name and tool_name in tool_to_server:
+                            server_name = tool_to_server[tool_name]
+                            params = tool_call.get("params", {})
+                            task = asyncio.create_task(self.call_tool(server_name, tool_name, params))
+                            tool_call_tasks.append(task)
+
+                    if tool_call_tasks:
+                        tool_results = await asyncio.gather(*tool_call_tasks)
+                        final_tool_calls.extend(tool_results)
+                        
+                        # 更新内容
+                        tool_content_parts = []
+                        for tool_result in tool_results:
+                            if "content" in tool_result and tool_result["content"]:
+                                tool_name = tool_result.get("tool_name", "unknown")
+                                tool_content_parts.append(f"【{tool_name} result】: {tool_result['content']}")
+                        
+                        if tool_content_parts:
+                            result["content"] = "\n\n".join(tool_content_parts)
+                    
+                    result["tool_calls"] = final_tool_calls
+
+                return result
+
+            # 两阶段执行流程
+            logger.info("开始两阶段执行流程")
+            
+            current_messages = processed_messages.copy()
+            total_tool_calls_results = []
+            max_iterations = 10
+
+            for iteration in range(max_iterations):
+                logger.info(f"开始第 {iteration + 1} 轮对话")
+
+                # 1. 调用模型服务
+                result = await model_service.call_model(
+                    model_name=model_name,
+                    messages=current_messages,
+                    tools=all_tools
+                )
+
+                if result["status"] != "success":
+                    return result
+
+                # 获取响应内容和工具调用
+                initial_message_content = result.get("content", "")
+                model_tool_calls = result.get("tool_calls", [])
+
+                # 如果没有工具调用，这是最终结果
+                if not model_tool_calls:
+                    logger.info("模型未使用任何工具，这是最终结果")
+                    return {
+                        "status": "success",
+                        "content": initial_message_content,
+                        "tool_calls": total_tool_calls_results
+                    }
+
+                # 2. 处理工具调用
+                tool_calls_results = []
+                tool_messages = []
+
+                # 确保assistant消息内容是字符串
+                if not isinstance(initial_message_content, str):
+                    initial_message_content = str(initial_message_content)
+
+                # 构造工具调用对象（兼容OpenAI格式）
+                tool_call_objects = []
+                tool_call_tasks = []
+                tool_calls_mapping = {}
+
+                for i, tool_call in enumerate(model_tool_calls):
+                    tool_call_id = f"call_{i}_{iteration}"
+                    tool_name = tool_call.get("tool_name", "")
+                    
+                    # 如果是handoff工具调用，跳过实际执行
+                    if "selected_node" in tool_call:
+                        continue
+                    
+                    # 构造工具调用对象
+                    tool_call_obj = {
+                        "id": tool_call_id,
+                        "type": "function",
+                        "function": {
+                            "name": tool_name,
+                            "arguments": json.dumps(tool_call.get("params", {}))
+                        }
+                    }
+                    tool_call_objects.append(tool_call_obj)
+
+                # 记录当前的assistant消息，包括工具调用
+                if tool_call_objects:
+                    current_messages.append({
+                        "role": "assistant",
+                        "content": initial_message_content,
+                        "tool_calls": tool_call_objects
+                    })
+
+                    # 并行执行每个工具调用
+                    for tool_call_obj in tool_call_objects:
+                        tool_name = tool_call_obj["function"]["name"]
+                        tool_call_id = tool_call_obj["id"]
+                        
+                        logger.info(f"处理工具调用: {tool_name}")
+
+                        try:
+                            tool_args = json.loads(tool_call_obj["function"]["arguments"])
+                        except json.JSONDecodeError:
+                            logger.error(f"工具参数JSON无效: {tool_call_obj['function']['arguments']}")
+                            tool_args = {}
+
+                        # 确定工具所属服务器
+                        if tool_name not in tool_to_server:
+                            logger.error(f"未找到工具 '{tool_name}' 所属的服务器")
+                            error_content = f"错误: 未找到工具 '{tool_name}' 所属的服务器"
+                            tool_result = {
+                                "tool_name": tool_name,
+                                "error": "未找到工具所属的服务器"
+                            }
+                            tool_calls_results.append(tool_result)
+                            total_tool_calls_results.append(tool_result)
+
+                            tool_messages.append({
+                                "role": "tool",
+                                "tool_call_id": tool_call_id,
+                                "content": error_content
+                            })
+                            continue
+
+                        server_name = tool_to_server[tool_name]
+
+                        # 调用工具 - 创建异步任务
+                        logger.info(f"通过服务器 {server_name} 调用工具 {tool_name}")
+                        task = asyncio.create_task(self.call_tool(server_name, tool_name, tool_args))
+                        tool_call_tasks.append(task)
+                        tool_calls_mapping[tool_call_id] = (task, tool_name, server_name)
+
+                    # 并行等待所有工具调用完成
+                    if tool_call_tasks:
+                        await asyncio.gather(*tool_call_tasks)
+
+                        # 处理结果
+                        for tool_call_obj in tool_call_objects:
+                            tool_call_id = tool_call_obj["id"]
+
+                            if tool_call_id in tool_calls_mapping:
+                                task, tool_name, server_name = tool_calls_mapping[tool_call_id]
+
+                                try:
+                                    tool_result = task.result()
+                                    tool_content = tool_result.get("content", "")
+
+                                    # 确保tool_content是字符串
+                                    if tool_content is None:
+                                        tool_content = ""
+                                    elif not isinstance(tool_content, str):
+                                        tool_content = str(tool_content)
+
+                                    tool_calls_results.append(tool_result)
+                                    total_tool_calls_results.append(tool_result)
+
+                                    # 添加工具响应消息
+                                    tool_messages.append({
+                                        "role": "tool",
+                                        "tool_call_id": tool_call_id,
+                                        "content": tool_content
+                                    })
+
+                                    logger.info(f"工具 {tool_name} 调用成功")
+                                except Exception as e:
+                                    logger.error(f"获取工具 '{tool_name}' 调用结果时出错: {str(e)}")
+                                    error_content = f"错误: {str(e)}"
+                                    tool_result = {
+                                        "tool_name": tool_name,
+                                        "server_name": server_name,
+                                        "error": str(e)
+                                    }
+                                    tool_calls_results.append(tool_result)
+                                    total_tool_calls_results.append(tool_result)
+
+                                    tool_messages.append({
+                                        "role": "tool",
+                                        "tool_call_id": tool_call_id,
+                                        "content": error_content
+                                    })
+
+                    # 添加所有工具响应消息
+                    current_messages.extend(tool_messages)
+
+                # 如果没有工具调用需要处理，退出循环
+                if not tool_call_objects:
+                    logger.info("没有工具调用需要处理，结束执行")
+                    return {
+                        "status": "success",
+                        "content": initial_message_content,
+                        "tool_calls": total_tool_calls_results
+                    }
+
+            # 达到最大迭代次数
+            logger.warning("达到最大工具调用迭代次数")
+            return {
+                "status": "error",
+                "error": "达到最大工具调用迭代次数",
+                "tool_calls": total_tool_calls_results
+            }
 
         except Exception as e:
-            error_msg = f"执行节点时出错: {str(e)}"
-            logger.error(error_msg)
-            return {"status": "error", "error": error_msg}
-
+            logger.error(f"执行节点时出错: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+            
     async def cleanup(self, force=True):
         """清理资源
 

@@ -6,12 +6,14 @@ import { useModelStore } from '../store/modelStore';
 import { ModelConfig } from '../types/model';
 import ModelForm from '../components/model-manager/ModelForm';
 import ErrorMessage from '../components/common/ErrorMessage';
+import * as modelService from '../services/modelService';
 
 const ModelManager: React.FC = () => {
   const { models, loading, error, fetchModels, addModel, updateModel, deleteModel } = useModelStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [currentModel, setCurrentModel] = useState<ModelConfig | undefined>(undefined);
   const [modalTitle, setModalTitle] = useState('Add Model');
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     fetchModels();
@@ -23,10 +25,28 @@ const ModelManager: React.FC = () => {
     setModalVisible(true);
   };
 
-  const showEditModal = (model: ModelConfig) => {
-    setCurrentModel(model);
-    setModalTitle('Edit Model');
-    setModalVisible(true);
+  const showEditModal = async (model: ModelConfig) => {
+    setEditLoading(true);
+    try {
+      // 获取完整的模型配置用于编辑
+      const response = await modelService.getModelForEdit(model.name);
+      if (response.status === 'success') {
+        setCurrentModel(response.data);
+      } else {
+        // 如果获取失败，使用基本信息
+        console.warn('Failed to get full model config, using basic info');
+        setCurrentModel(model);
+      }
+    } catch (error) {
+      // 如果获取完整配置失败，使用基本信息
+      console.warn('Failed to get full model config, using basic info:', error);
+      setCurrentModel(model);
+      message.warning('Could not load full model configuration, showing basic info only');
+    } finally {
+      setEditLoading(false);
+      setModalTitle('Edit Model');
+      setModalVisible(true);
+    }
   };
 
   const handleFormSubmit = async (formData: ModelConfig) => {
@@ -78,6 +98,7 @@ const ModelManager: React.FC = () => {
             className="action-btn-edit"
             icon={<EditOutlined />}
             onClick={() => showEditModal(record)}
+            loading={editLoading}
           >
             Edit
           </Button>
