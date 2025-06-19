@@ -64,12 +64,22 @@ class Settings:
         """获取导出文件存储目录"""
         return self.MAG_DIR / "exports"
 
+    @property
+    def MCP_TOOLS_DIR(self) -> Path:
+        """获取AI生成的MCP工具存储目录"""
+        return self.MAG_DIR / "mcp"
+
     def ensure_directories(self) -> None:
         """确保所有必要的目录存在"""
         self.MAG_DIR.mkdir(exist_ok=True)
         self.AGENT_DIR.mkdir(exist_ok=True)
         self.CONVERSATION_DIR.mkdir(exist_ok=True)
         self.EXPORTS_DIR.mkdir(exist_ok=True)
+        self.MCP_TOOLS_DIR.mkdir(exist_ok=True)
+
+    def get_mcp_tool_dir(self, tool_name: str) -> Path:
+        """获取指定MCP工具的目录路径"""
+        return self.MCP_TOOLS_DIR / tool_name
 
     def get_agent_dir(self, agent_name: str) -> Path:
         """获取指定Agent的配置目录路径"""

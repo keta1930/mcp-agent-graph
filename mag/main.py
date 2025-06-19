@@ -14,6 +14,11 @@ from app.services.graph_service import graph_service
 from app.core.file_manager import FileManager
 from app.core.config import settings
 
+
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
+os.environ['NO_PROXY'] = '127.0.0.1,localhost'
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,

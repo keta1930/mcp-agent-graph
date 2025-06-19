@@ -23,16 +23,24 @@ class MCPServerConfig(BaseModel):
                 values['transportType'] = 'sse'
             elif type_value == 'stdio':
                 values['transportType'] = 'stdio'
+            elif type_value in ['streamable_http', 'streamable-http']:
+                values['transportType'] = 'streamable_http'
+        
+        # 规范化 transportType 字段
+        transport_type = values.get('transportType', '').lower().replace('-', '_')
+        if transport_type in ['streamable_http', 'streamablehttp']:
+            values['transportType'] = 'streamable_http'
         
         if not values.get('transportType') or values.get('transportType') == 'stdio':
             if values.get('url'):
-                values['transportType'] = 'sse'
+                # 如果有URL但没有明确指定类型，默认为streamable_http
+                values['transportType'] = 'streamable_http'
             elif values.get('command'):
                 values['transportType'] = 'stdio'
         
         transport_type = values.get('transportType', 'stdio')
-        if transport_type == 'sse' and not values.get('url'):
-            raise ValueError('SSE传输类型必须提供url字段')
+        if transport_type in ['sse', 'streamable_http'] and not values.get('url'):
+            raise ValueError(f'{transport_type}传输类型必须提供url字段')
         if transport_type == 'stdio' and not values.get('command'):
             raise ValueError('stdio传输类型必须提供command字段')
         
@@ -47,7 +55,7 @@ class MCPServerConfig(BaseModel):
         data.pop('type', None)
         
         # 根据传输类型过滤字段
-        if transport_type == 'sse':
+        if transport_type in ['sse', 'streamable_http']:
             data.pop('command', None)
             data.pop('args', None)
             if 'args' in data and not data['args']:
@@ -298,3 +306,43 @@ class GraphOptimizationRequest(BaseModel):
 
 class GraphFilePath(BaseModel):
     file_path: str
+
+
+class MCPGenerationRequest(BaseModel):
+    """MCP生成请求"""
+    requirement: str  # 用户的MCP生成需求
+    model_name: str   # 指定的模型名称
+
+class MCPToolRegistration(BaseModel):
+    """MCP工具注册请求"""
+    folder_name: str
+    script_files: Dict[str, str]  # 文件名: 文件内容
+    readme: str
+    dependencies: str
+    port: Optional[int] = None
+
+class MCPGenerationResponse(BaseModel):
+    """MCP生成响应"""
+    status: str
+    message: Optional[str] = None
+    tool_name: Optional[str] = None
+    folder_name: Optional[str] = None
+    port: Optional[int] = None
+    model_output: Optional[str] = None
+    error: Optional[str] = None
+
+class MCPToolTestRequest(BaseModel):
+    """MCP工具测试请求"""
+    server_name: str = Field(..., description="服务器名称")
+    tool_name: str = Field(..., description="工具名称") 
+    params: Dict[str, Any] = Field(default_factory=dict, description="工具参数")
+
+class MCPToolTestResponse(BaseModel):
+    """MCP工具测试响应"""
+    status: str = Field(..., description="调用状态：success 或 error")
+    server_name: str = Field(..., description="服务器名称")
+    tool_name: str = Field(..., description="工具名称")
+    params: Dict[str, Any] = Field(..., description="调用参数")
+    result: Optional[Any] = Field(None, description="工具返回结果")
+    error: Optional[str] = Field(None, description="错误信息")
+    execution_time: Optional[float] = Field(None, description="执行时间（秒）")

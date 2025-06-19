@@ -2,6 +2,7 @@ import asyncio
 import requests
 import zipfile
 import tempfile
+import time
 import shutil
 import os
 import json
@@ -21,7 +22,9 @@ from app.core.file_manager import FileManager
 from app.models.schema import (
     MCPServerConfig, MCPConfig, ModelConfig, GraphConfig, GraphInput,
     GraphResult, NodeResult, ModelConfigList, GraphGenerationRequest, 
-    GraphOptimizationRequest, GraphFilePath
+    GraphOptimizationRequest, GraphFilePath, MCPGenerationRequest,
+    MCPToolRegistration, MCPGenerationResponse, MCPToolTestRequest,
+    MCPToolTestResponse 
 )
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.text_parser import parse_graph_response
@@ -71,7 +74,6 @@ async def get_mcp_status():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"获取MCP状态时出错: {str(e)}"
         )
-
 
 @router.post("/mcp/add", response_model=Dict[str, Any])
 async def add_mcp_server(config: Dict[str, Any]):
@@ -192,7 +194,7 @@ async def add_mcp_server(config: Dict[str, Any]):
 
 @router.post("/mcp/remove", response_model=Dict[str, Any])
 async def remove_mcp_servers(server_names: List[str]):
-    """批量删除指定的MCP服务器"""
+    """批量删除指定的MCP服务器（支持传统MCP和AI生成的MCP）"""
     try:
         # 验证输入
         if not server_names:
@@ -211,45 +213,92 @@ async def remove_mcp_servers(server_names: List[str]):
         # 分类处理服务器
         servers_to_remove = []
         not_found_servers = []
+        ai_generated_servers = []
+        traditional_servers = []
         
         for server_name in server_names:
             if server_name in current_servers:
                 servers_to_remove.append(server_name)
+                
+                # 检查是否为AI生成的MCP工具
+                server_config = current_servers[server_name]
+                if server_config.get("ai_generated", False) or FileManager.mcp_tool_exists(server_name):
+                    ai_generated_servers.append(server_name)
+                else:
+                    traditional_servers.append(server_name)
             else:
                 not_found_servers.append(server_name)
         
         # 执行删除操作
         removed_servers = []
+        failed_removals = []
         update_result = None
         
         if servers_to_remove:
-            # 删除服务器
-            for server_name in servers_to_remove:
-                del current_servers[server_name]
-                removed_servers.append(server_name)
+            # 删除AI生成的MCP工具
+            for server_name in ai_generated_servers:
+                try:
+                    # 从配置中注销
+                    await mcp_service.unregister_ai_mcp_tool(server_name)
+                    
+                    # 删除工具文件
+                    if FileManager.mcp_tool_exists(server_name):
+                        success = FileManager.delete_mcp_tool(server_name)
+                        if not success:
+                            logger.error(f"删除AI生成的MCP工具文件失败: {server_name}")
+                            failed_removals.append(server_name)
+                            continue
+                    
+                    # 从配置中删除
+                    if server_name in current_servers:
+                        del current_servers[server_name]
+                    
+                    removed_servers.append(server_name)
+                    logger.info(f"成功删除AI生成的MCP工具: {server_name}")
+                    
+                except Exception as e:
+                    logger.error(f"删除AI生成的MCP工具 {server_name} 时出错: {str(e)}")
+                    failed_removals.append(server_name)
             
-            # 更新配置
-            updated_config = {"mcpServers": current_servers}
-            update_result = await mcp_service.update_config(updated_config)
+            # 删除传统MCP服务器
+            for server_name in traditional_servers:
+                try:
+                    del current_servers[server_name]
+                    removed_servers.append(server_name)
+                    logger.info(f"成功删除传统MCP服务器: {server_name}")
+                except Exception as e:
+                    logger.error(f"删除传统MCP服务器 {server_name} 时出错: {str(e)}")
+                    failed_removals.append(server_name)
+            
+            # 如果有成功删除的服务器，更新配置
+            if removed_servers:
+                updated_config = {"mcpServers": current_servers}
+                update_result = await mcp_service.update_config(updated_config)
         
         # 构建响应
-        if removed_servers and not not_found_servers:
+        if removed_servers and not not_found_servers and not failed_removals:
             # 全部成功删除
             return {
                 "status": "success",
                 "message": f"成功删除 {len(removed_servers)} 个服务器",
                 "removed_servers": removed_servers,
                 "not_found_servers": [],
+                "failed_removals": [],
+                "ai_generated_count": len(ai_generated_servers),
+                "traditional_count": len(traditional_servers),
                 "total_requested": len(server_names),
                 "update_result": update_result
             }
-        elif removed_servers and not_found_servers:
+        elif removed_servers and (not_found_servers or failed_removals):
             # 部分成功
             return {
                 "status": "partial_success",
-                "message": f"成功删除 {len(removed_servers)} 个服务器，{len(not_found_servers)} 个服务器不存在",
+                "message": f"成功删除 {len(removed_servers)} 个服务器，{len(not_found_servers)} 个服务器不存在，{len(failed_removals)} 个删除失败",
                 "removed_servers": removed_servers,
                 "not_found_servers": not_found_servers,
+                "failed_removals": failed_removals,
+                "ai_generated_count": len([s for s in ai_generated_servers if s in removed_servers]),
+                "traditional_count": len([s for s in traditional_servers if s in removed_servers]),
                 "total_requested": len(server_names),
                 "update_result": update_result
             }
@@ -260,18 +309,24 @@ async def remove_mcp_servers(server_names: List[str]):
                 "message": f"所有 {len(not_found_servers)} 个服务器都不存在，未删除任何服务器",
                 "removed_servers": [],
                 "not_found_servers": not_found_servers,
+                "failed_removals": [],
+                "ai_generated_count": 0,
+                "traditional_count": 0,
                 "total_requested": len(server_names),
                 "update_result": None
             }
         else:
-            # 空请求
+            # 其他情况
             return {
-                "status": "no_changes",
-                "message": "没有服务器需要删除",
-                "removed_servers": [],
-                "not_found_servers": [],
-                "total_requested": 0,
-                "update_result": None
+                "status": "error" if failed_removals else "no_changes",
+                "message": "删除操作完成，但存在问题",
+                "removed_servers": removed_servers,
+                "not_found_servers": not_found_servers,
+                "failed_removals": failed_removals,
+                "ai_generated_count": len([s for s in ai_generated_servers if s in removed_servers]),
+                "traditional_count": len([s for s in traditional_servers if s in removed_servers]),
+                "total_requested": len(server_names),
+                "update_result": update_result
             }
         
     except Exception as e:
@@ -281,6 +336,7 @@ async def remove_mcp_servers(server_names: List[str]):
             "message": f"删除MCP服务器时出错: {str(e)}",
             "removed_servers": [],
             "not_found_servers": [],
+            "failed_removals": [],
             "total_requested": len(server_names) if server_names else 0
         }
 
@@ -311,6 +367,77 @@ async def connect_server(server_name: str):
             detail=f"连接服务器时出错: {str(e)}"
         )
 
+@router.post("/mcp/test-tool", response_model=MCPToolTestResponse)
+async def test_mcp_tool(request: MCPToolTestRequest):
+    """测试MCP工具调用"""
+    try:
+        # 验证服务器是否存在且已连接
+        server_status = await mcp_service.get_server_status()
+        if request.server_name not in server_status:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到服务器 '{request.server_name}'"
+            )
+        
+        if not server_status[request.server_name].get("connected", False):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"服务器 '{request.server_name}' 未连接"
+            )
+        
+        # 验证工具是否存在
+        server_tools = server_status[request.server_name].get("tools", [])
+        if request.tool_name not in server_tools:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"服务器 '{request.server_name}' 中找不到工具 '{request.tool_name}'"
+            )
+        
+        # 记录开始时间
+        start_time = time.time()
+        
+        # 调用工具
+        result = await mcp_service.call_tool(
+            request.server_name,
+            request.tool_name, 
+            request.params
+        )
+        
+        # 计算执行时间
+        execution_time = time.time() - start_time
+        
+        # 检查调用结果
+        if "error" in result:
+            return MCPToolTestResponse(
+                status="error",
+                server_name=request.server_name,
+                tool_name=request.tool_name,
+                params=request.params,
+                error=result.get("error"),
+                execution_time=execution_time
+            )
+        else:
+            return MCPToolTestResponse(
+                status="success",
+                server_name=request.server_name,
+                tool_name=request.tool_name,
+                params=request.params,
+                result=result.get("content"),
+                execution_time=execution_time
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"测试工具调用时出错: {str(e)}")
+        return MCPToolTestResponse(
+            status="error",
+            server_name=request.server_name,
+            tool_name=request.tool_name,
+            params=request.params,
+            error=f"测试工具调用时出错: {str(e)}"
+        )
+        
 @router.post("/mcp/disconnect/{server_name}", response_model=Dict[str, Any])
 async def disconnect_server(server_name: str):
     """断开指定的MCP服务器连接"""
@@ -361,7 +488,152 @@ async def get_mcp_tools():
             detail=f"获取MCP工具信息时出错: {str(e)}"
         )
 
+@router.get("/mcp/ai-generator-template", response_model=Dict[str, str])
+async def get_mcp_generator_template():
+    """获取AI生成MCP的提示词模板"""
+    try:
+        connect_result = await mcp_service.connect_all_servers()
+        logger.info(f"连接所有服务器结果: {connect_result}")
+        sample_requirement = "[在此处输入您的MCP工具需求描述]"
+        template = await mcp_service.get_mcp_generator_template(sample_requirement)
+        
+        return {
+            "template": template,
+            "note": "将模板中的需求描述替换为您的具体需求后使用"
+        }
+    except Exception as e:
+        logger.error(f"获取MCP生成器模板时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP生成器模板时出错: {str(e)}"
+        )
 
+@router.post("/mcp/generate", response_model=MCPGenerationResponse)
+async def generate_mcp_tool(request: MCPGenerationRequest):
+    """AI生成MCP工具"""
+    try:
+        connect_result = await mcp_service.connect_all_servers()
+        logger.info(f"连接所有服务器结果: {connect_result}")
+        result = await mcp_service.generate_mcp_tool(request.requirement, request.model_name)
+        
+        if result.get("status") == "success":
+            return MCPGenerationResponse(
+                status="success",
+                message=result.get("message"),
+                tool_name=result.get("tool_name"),
+                folder_name=result.get("folder_name"),
+                model_output=result.get("model_output")
+            )
+        else:
+            return MCPGenerationResponse(
+                status="error",
+                error=result.get("error"),
+                model_output=result.get("model_output")
+            )
+            
+    except Exception as e:
+        logger.error(f"AI生成MCP工具时出错: {str(e)}")
+        return MCPGenerationResponse(
+            status="error",
+            error=f"AI生成MCP工具时出错: {str(e)}"
+        )
+
+@router.post("/mcp/register-tool", response_model=Dict[str, Any])
+async def register_mcp_tool(request: MCPToolRegistration):
+    """注册MCP工具到系统"""
+    try:
+        # 检查工具是否已存在
+        if FileManager.mcp_tool_exists(request.folder_name):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"MCP工具 '{request.folder_name}' 已存在"
+            )
+        
+        # 创建MCP工具
+        success = FileManager.create_mcp_tool(
+            request.folder_name,
+            request.script_files,
+            request.readme,
+            request.dependencies
+        )
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="创建MCP工具文件失败"
+            )
+        
+        # 注册到MCP配置
+        success = await mcp_service.register_ai_mcp_tool(request.folder_name, request.port)
+        if not success:
+            # 注册失败，清理文件
+            FileManager.delete_mcp_tool(request.folder_name)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="注册MCP工具到配置失败"
+            )
+        
+        return {
+            "status": "success",
+            "message": f"MCP工具 '{request.folder_name}' 注册成功"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"注册MCP工具时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"注册MCP工具时出错: {str(e)}"
+        )
+
+@router.get("/mcp/ai-tools", response_model=List[str])
+async def list_ai_mcp_tools():
+    """列出所有AI生成的MCP工具"""
+    try:
+        return FileManager.list_mcp_tools()
+    except Exception as e:
+        logger.error(f"列出AI生成的MCP工具时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"列出AI生成的MCP工具时出错: {str(e)}"
+        )
+
+# @router.delete("/mcp/ai-tools/{tool_name}", response_model=Dict[str, Any])
+# async def delete_ai_mcp_tool(tool_name: str):
+#     """删除AI生成的MCP工具"""
+#     try:
+#         # 检查工具是否存在
+#         if not FileManager.mcp_tool_exists(tool_name):
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=f"找不到MCP工具 '{tool_name}'"
+#             )
+        
+#         # 从配置中注销
+#         await mcp_service.unregister_ai_mcp_tool(tool_name)
+        
+#         # 删除工具文件
+#         success = FileManager.delete_mcp_tool(tool_name)
+#         if not success:
+#             raise HTTPException(
+#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#                 detail="删除MCP工具文件失败"
+#             )
+        
+#         return {
+#             "status": "success",
+#             "message": f"MCP工具 '{tool_name}' 删除成功"
+#         }
+        
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         logger.error(f"删除AI生成的MCP工具时出错: {str(e)}")
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=f"删除AI生成的MCP工具时出错: {str(e)}"
+#         )
 # ======= 模型管理 =======
 
 @router.get("/models", response_model=List[Dict[str, Any]])
@@ -1437,12 +1709,47 @@ async def import_graph_package(data: GraphFilePath):
                 except Exception as e:
                     logger.error(f"复制README文件时出错: {str(e)}")
 
+            # 6.5. 导入AI生成的MCP工具（如果存在）
+            mcp_tools_dir = temp_path / "mcp"
+            imported_mcp_tools = []
+            skipped_mcp_tools = []
+            
+            if mcp_tools_dir.exists():
+                logger.info("发现MCP工具目录，开始导入AI生成的MCP工具")
+                
+                for tool_dir in mcp_tools_dir.iterdir():
+                    if tool_dir.is_dir():
+                        tool_name = tool_dir.name
+                        
+                        # 检查是否已存在同名工具
+                        if FileManager.mcp_tool_exists(tool_name):
+                            logger.info(f"跳过导入已存在的MCP工具: '{tool_name}'")
+                            skipped_mcp_tools.append(tool_name)
+                            continue
+                        
+                        try:
+                            # 直接复制整个工具目录（包括虚拟环境）
+                            target_tool_dir = settings.get_mcp_tool_dir(tool_name)
+                            shutil.copytree(tool_dir, target_tool_dir)
+                            logger.info(f"已复制完整的MCP工具环境: {tool_name}")
+
+                        except Exception as e:
+                            logger.error(f"导入MCP工具 {tool_name} 时出错: {str(e)}")
+                            # 清理部分创建的文件
+                            try:
+                                if settings.get_mcp_tool_dir(tool_name).exists():
+                                    FileManager.delete_mcp_tool(tool_name)
+                            except:
+                                pass
+
             return {
                 "status": "success",
                 "message": f"图包 '{graph_name}' 导入成功",
                 "needs_api_key": models_need_api_key,
                 "skipped_models": skipped_models,
-                "skipped_servers": skipped_servers
+                "skipped_servers": skipped_servers,
+                "imported_mcp_tools": imported_mcp_tools,
+                "skipped_mcp_tools": skipped_mcp_tools
             }
     except HTTPException:
         raise
@@ -1625,6 +1932,26 @@ async def export_graph(graph_name: str):
             with open(model_path, 'w', encoding='utf-8') as f:
                 json.dump({"models": model_configs}, f, ensure_ascii=False, indent=2)
 
+            # 6.5. 检查并打包AI生成的MCP工具
+            ai_mcp_tools = set()
+            for server_name in used_servers:
+                if FileManager.mcp_tool_exists(server_name):
+                    ai_mcp_tools.add(server_name)
+            
+            if ai_mcp_tools:
+                logger.info(f"发现AI生成的MCP工具: {ai_mcp_tools}")
+                mcp_tools_dir = temp_path / "mcp"
+                mcp_tools_dir.mkdir()
+                
+                for tool_name in ai_mcp_tools:
+                    tool_source_dir = settings.get_mcp_tool_dir(tool_name)
+                    tool_target_dir = mcp_tools_dir / tool_name
+                    
+                    if tool_source_dir.exists():
+                        # 完整复制工具目录，包括虚拟环境，确保环境一致性
+                        shutil.copytree(tool_source_dir, tool_target_dir)
+                        logger.info(f"已完整打包AI生成的MCP工具（含虚拟环境）: {tool_name}")
+
             # 7. 如果没有找到README，则生成一个
             if not readme_found:
                 readme_content = FlowDiagram.generate_graph_readme(graph_config, filtered_mcp_config, model_configs)
@@ -1658,12 +1985,25 @@ async def export_graph(graph_name: str):
                         if file.is_file():
                             zipf.write(file, arcname=f"attachment/{file.name}")
 
+                # 添加mcp目录（如果存在AI生成的工具）
+                mcp_dir = temp_path / "mcp"
+                if mcp_dir.exists():
+                    for tool_dir in mcp_dir.glob("*"):
+                        if tool_dir.is_dir():
+                            # 递归添加工具目录中的所有文件
+                            for file_path in tool_dir.rglob("*"):
+                                if file_path.is_file():
+                                    # 计算相对路径
+                                    relative_path = file_path.relative_to(temp_path)
+                                    zipf.write(file_path, arcname=str(relative_path))
+
             logger.info(f"图 '{graph_name}' 已成功导出到 {final_zip_path}")
 
             return {
                 "status": "success",
                 "message": f"图 '{graph_name}' 导出成功",
-                "file_path": str(final_zip_path)
+                "file_path": str(final_zip_path),
+                "ai_mcp_tools": list(ai_mcp_tools) if ai_mcp_tools else []
             }
     except HTTPException:
         raise

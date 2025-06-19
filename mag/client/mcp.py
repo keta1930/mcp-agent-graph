@@ -161,3 +161,125 @@ def remove_server(names: Union[str, List[str]]) -> Dict[str, Any]:
                 "not_found_servers": [],
                 "total_requested": len(server_names)
             }
+
+def disconnect(server_name: str) -> Dict[str, Any]:
+    """
+    断开指定的MCP服务器连接
+    
+    参数:
+        server_name (str): 服务器名称
+    
+    返回:
+        Dict[str, Any]: 断开连接结果
+    """
+    _ensure_server_running()
+    response = requests.post(f"{API_BASE}/mcp/disconnect/{server_name}")
+    response.raise_for_status()
+    return response.json()
+
+def test_tool(server_name: str, tool_name: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+    """
+    测试MCP工具调用
+    
+    参数:
+        server_name (str): 服务器名称
+        tool_name (str): 工具名称
+        params (Dict[str, Any], optional): 工具参数. 默认为None
+    
+    返回:
+        Dict[str, Any]: 测试结果
+    """
+    _ensure_server_running()
+    
+    if params is None:
+        params = {}
+    
+    payload = {
+        "server_name": server_name,
+        "tool_name": tool_name,
+        "params": params
+    }
+    
+    response = requests.post(f"{API_BASE}/mcp/test-tool", json=payload)
+    response.raise_for_status()
+    return response.json()
+
+def get_ai_generator_template() -> Dict[str, str]:
+    """
+    获取AI生成MCP的提示词模板
+    
+    返回:
+        Dict[str, str]: 包含模板内容和使用说明
+    """
+    _ensure_server_running()
+    response = requests.get(f"{API_BASE}/mcp/ai-generator-template")
+    response.raise_for_status()
+    return response.json()
+
+def generate_mcp_tool(requirement: str, model_name: str) -> Dict[str, Any]:
+    """
+    AI生成MCP工具
+    
+    参数:
+        requirement (str): MCP工具需求描述
+        model_name (str): 使用的模型名称
+    
+    返回:
+        Dict[str, Any]: 生成结果
+    """
+    _ensure_server_running()
+    
+    payload = {
+        "requirement": requirement,
+        "model_name": model_name
+    }
+    
+    response = requests.post(f"{API_BASE}/mcp/generate", json=payload)
+    response.raise_for_status()
+    return response.json()
+
+def register_mcp_tool(
+    folder_name: str,
+    script_files: Dict[str, str],
+    readme: str,
+    dependencies: str,
+    port: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    手动注册MCP工具到系统
+    
+    参数:
+        folder_name (str): 工具文件夹名称
+        script_files (Dict[str, str]): 脚本文件字典，键为文件名，值为文件内容
+        readme (str): README文件内容
+        dependencies (str): 依赖项列表
+        port (Optional[int], optional): 端口号. 默认为None
+    
+    返回:
+        Dict[str, Any]: 注册结果
+    """
+    _ensure_server_running()
+    
+    payload = {
+        "folder_name": folder_name,
+        "script_files": script_files,
+        "readme": readme,
+        "dependencies": dependencies,
+        "port": port
+    }
+    
+    response = requests.post(f"{API_BASE}/mcp/register-tool", json=payload)
+    response.raise_for_status()
+    return response.json()
+
+def list_ai_mcp_tools() -> List[str]:
+    """
+    列出所有AI生成的MCP工具
+    
+    返回:
+        List[str]: AI生成的MCP工具名称列表
+    """
+    _ensure_server_running()
+    response = requests.get(f"{API_BASE}/mcp/ai-tools")
+    response.raise_for_status()
+    return response.json()

@@ -5,10 +5,10 @@ export interface MCPServerConfig {
   timeout: number;
   command?: string;
   args: string[];
-  transportType: string;
-  url?: string; // SSE URL
+  transportType: 'stdio' | 'sse' | 'streamable_http'; // 明确支持的类型
+  url?: string; // SSE URL or HTTP URL
   base_url?: string;
-  env?: Record<string, string>; // 环境变量
+  env?: Record<string, string>;
   [key: string]: any;
 }
 

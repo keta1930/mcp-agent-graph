@@ -35,10 +35,16 @@ const cleanServerConfigForEditor = (config: any): any => {
     if (Array.isArray(config.args) && config.args.length > 0) {
       cleanConfig.args = config.args.filter((arg: any) => arg && typeof arg === 'string');
     }
-  } else if (transportType === 'sse') {
+  } else if (transportType === 'sse' || transportType === 'streamable_http') {
+    // 修复：为 sse 和 streamable_http 都保留 url 字段
     if (config.url && typeof config.url === 'string') {
       cleanConfig.url = config.url;
     }
+  }
+
+  // 添加：保留 ai_generated 字段
+  if (config.ai_generated === true) {
+    cleanConfig.ai_generated = true;
   }
 
   if (config.env && typeof config.env === 'object' && !Array.isArray(config.env) && Object.keys(config.env).length > 0) {

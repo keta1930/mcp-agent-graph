@@ -245,6 +245,15 @@
                             <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('mcp-tools')">
                                 <i class="fas fa-tools mr-2"></i>工具管理
                             </a>
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('mcp-ai-generate')">
+                                <i class="fas fa-magic mr-2"></i>AI生成MCP
+                            </a>
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('mcp-test')">
+                                <i class="fas fa-vial mr-2"></i>测试工具
+                            </a>
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showPage('mcp-ai-tools')">
+                                <i class="fas fa-robot mr-2"></i>AI工具管理
+                            </a>
                         </div>
                     </div>
 
@@ -598,6 +607,7 @@ print(result)</code></pre>
                     </div>
                 </div>
 
+
                 <!-- MCP服务器管理页面 -->
                 <div id="mcp-server" class="page-content hidden">
                     <h2 class="text-3xl font-bold mb-6">
@@ -806,6 +816,41 @@ print(json.dumps(result, indent=2, ensure_ascii=False))</code></pre>
                         </div>
                     </div>
 
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">断开连接</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.disconnect_mcp(server_name: str) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>server_name</strong> (str): 服务器名称</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code># 断开特定服务器
+result = mag.disconnect_mcp("tavily-mcp")
+print(f"断开结果: {result['status']}")
+
+if result['status'] == 'disconnected':
+    print(f"服务器 {result['server']} 已成功断开连接")
+else:
+    print(f"断开失败: {result.get('error', '未知错误')}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="method-card p-6">
                         <h3 class="text-xl font-semibold mb-4">获取状态</h3>
                         <div class="mb-4">
@@ -866,6 +911,309 @@ print(json.dumps(mcp_status, indent=4, ensure_ascii=False))</code></pre>
                                 </div>
                                 <pre><code>mcp_tools = mag.get_tools()
 print(json.dumps(mcp_tools, indent=2, ensure_ascii=False))</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI生成MCP页面 -->
+                <div id="mcp-ai-generate" class="page-content hidden">
+                    <h2 class="text-3xl font-bold mb-6">
+                        <i class="fas fa-magic mr-3 text-blue-600"></i>AI生成MCP
+                    </h2>
+
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">获取AI生成模板</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.get_mcp_prompt() -> Dict[str, str]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, str]: 包含模板内容和使用说明</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code>template_info = mag.get_mcp_prompt()
+print("模板内容:")
+print(template_info["template"])
+print("\n使用说明:")
+print(template_info["note"])</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">AI生成MCP工具</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.generate_mcp(requirement: str, model_name: str) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>requirement</strong> (str): MCP工具需求描述</li>
+                                <li><strong>model_name</strong> (str): 使用的模型名称</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 生成结果，包含工具名称、端口等信息</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code>result = mag.generate_mcp(
+    requirement="创建一个文件管理工具，能够列出目录内容、创建文件夹、删除文件等操作",
+    model_name="deepseek-chat"
+)
+
+if result["status"] == "success":
+    print(f"成功生成MCP工具: {result['tool_name']}")
+    print(f"使用端口: {result['port']}")
+    print(f"工具文件夹: {result['folder_name']}")
+else:
+    print(f"生成失败: {result['error']}")
+    print(f"模型输出: {result.get('model_output', 'N/A')}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-card p-6">
+                        <h3 class="text-xl font-semibold mb-4">手动注册MCP工具</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.register_mcp(folder_name: str, script_files: Dict[str, str], 
+                readme: str, dependencies: str, port: Optional[int] = None) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>folder_name</strong> (str): 工具文件夹名称</li>
+                                <li><strong>script_files</strong> (Dict[str, str]): 脚本文件字典，键为文件名，值为文件内容</li>
+                                <li><strong>readme</strong> (str): README文件内容</li>
+                                <li><strong>dependencies</strong> (str): 依赖项列表</li>
+                                <li><strong>port</strong> (Optional[int]): 端口号，默认为None</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code>script_files = {
+    "main.py": """#!/usr/bin/env python3
+import asyncio
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("My Custom Tool")
+
+@mcp.tool()
+def hello_world(name: str) -> str:
+    \"\"\"Say hello to someone\"\"\"
+    return f"Hello, {name}!"
+
+if __name__ == "__main__":
+    mcp.run()
+""",
+    "requirements.txt": "fastmcp>=0.1.0"
+}
+
+result = mag.register_mcp(
+    folder_name="my_custom_tool",
+    script_files=script_files,
+    readme="# My Custom Tool\n\nA simple hello world MCP tool.",
+    dependencies="fastmcp>=0.1.0",
+    port=9001
+)
+
+print(f"注册结果: {result}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MCP测试页面 -->
+                <div id="mcp-test" class="page-content hidden">
+                    <h2 class="text-3xl font-bold mb-6">
+                        <i class="fas fa-vial mr-3 text-blue-600"></i>测试MCP工具
+                    </h2>
+
+                    <div class="method-card p-6">
+                        <h3 class="text-xl font-semibold mb-4">测试工具调用</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.test_mcp(server_name: str, tool_name: str, params: Dict[str, Any] = None) -> Dict[str, Any]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">参数</h4>
+                            <ul class="list-disc list-inside space-y-1" style="color: var(--text-secondary)">
+                                <li><strong>server_name</strong> (str): 服务器名称</li>
+                                <li><strong>tool_name</strong> (str): 工具名称</li>
+                                <li><strong>params</strong> (Dict[str, Any], optional): 工具参数，默认为None</li>
+                            </ul>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">Dict[str, Any]: 测试结果，包含状态、结果、执行时间等信息</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code># 测试fetch工具
+result = mag.test_mcp(
+    server_name="fetch",
+    tool_name="fetch",
+    params={"url": "https://httpbin.org/json"}
+)
+
+print(f"测试状态: {result['status']}")
+print(f"执行时间: {result.get('execution_time', 'N/A')}秒")
+
+if result['status'] == 'success':
+    print(f"工具结果: {result['result']}")
+else:
+    print(f"错误信息: {result['error']}")
+
+# 测试不带参数的工具
+simple_result = mag.test_mcp("memory", "list_memories")
+print(f"简单测试结果: {simple_result}")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI工具管理页面 -->
+                <div id="mcp-ai-tools" class="page-content hidden">
+                    <h2 class="text-3xl font-bold mb-6">
+                        <i class="fas fa-robot mr-3 text-blue-600"></i>AI工具管理
+                    </h2>
+
+                    <div class="method-card p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">列出AI生成的工具</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">方法签名</h4>
+                            <div class="code-block p-4 mb-4">
+                                <pre><code>mag.list_ai_mcp() -> List[str]</code></pre>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">返回值</h4>
+                            <p style="color: var(--text-secondary)">List[str]: AI生成的MCP工具名称列表</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code>ai_tools = mag.list_ai_mcp()
+print(f"找到 {len(ai_tools)} 个AI生成的MCP工具:")
+for tool in ai_tools:
+    print(f"- {tool}")
+
+# 检查特定工具是否存在
+if "file_manager_tool" in ai_tools:
+    print("文件管理工具已安装")
+else:
+    print("文件管理工具未安装")</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="method-card p-6">
+                        <h3 class="text-xl font-semibold mb-4">综合管理示例</h3>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">完整工作流程</h4>
+                            <p style="color: var(--text-secondary)">展示从生成到测试的完整AI MCP工具管理流程</p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="font-medium mb-2">使用示例</h4>
+                            <div class="code-block p-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium" style="color: var(--text-muted)">Python</span>
+                                    <button class="copy-btn px-3 py-1 rounded text-sm" onclick="copyCode(this)">
+                                        <i class="fas fa-copy mr-1"></i>复制
+                                    </button>
+                                </div>
+                                <pre><code># 1. 生成AI MCP工具
+print("=== 生成AI MCP工具 ===")
+result = mag.generate_mcp(
+    requirement="创建一个时间管理工具，提供获取当前时间、时区转换、倒计时等功能",
+    model_name="deepseek-chat"
+)
+
+if result["status"] == "success":
+    tool_name = result["tool_name"]
+    print(f"成功生成工具: {tool_name}")
+    
+    # 2. 连接新生成的工具
+    print(f"\n=== 连接工具 {tool_name} ===")
+    connect_result = mag.connect_mcp(tool_name)
+    print(f"连接结果: {connect_result['status']}")
+    
+    # 3. 获取工具列表并测试
+    if connect_result['status'] == 'connected':
+        tools = connect_result.get('tools', [])
+        print(f"可用工具: {tools}")
+        
+        # 4. 测试第一个工具（如果存在）
+        if tools:
+            first_tool = tools[0]
+            print(f"\n=== 测试工具 {first_tool} ===")
+            test_result = mag.test_mcp(tool_name, first_tool, {})
+            print(f"测试结果: {test_result}")
+    
+    # 5. 列出所有AI工具
+    print(f"\n=== 当前AI工具列表 ===")
+    ai_tools = mag.list_ai_mcp()
+    for tool in ai_tools:
+        print(f"- {tool}")
+        
+else:
+    print(f"生成失败: {result['error']}")
+
+# 6. 获取当前MCP状态
+print(f"\n=== MCP服务器状态 ===")
+status = mag.get_mcp_status()
+for server, info in status.items():
+    connected = "✓" if info.get("connected") else "✗"
+    tools_count = len(info.get("tools", []))
+    print(f"{connected} {server}: {tools_count} 个工具")</code></pre>
                             </div>
                         </div>
                     </div>

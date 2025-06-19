@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import traceback
+import subprocess
 from contextlib import AsyncExitStack
 from typing import Dict, List, Any, Optional
 import uvicorn
@@ -13,6 +14,11 @@ from pydantic import BaseModel
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
+from app.core.config import settings
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
+os.environ['NO_PROXY'] = '127.0.0.1,localhost'
 
 # 配置日志
 logging.basicConfig(
@@ -43,7 +49,9 @@ class MCPServer:
         self.tools = []
         self.error = None
         self.init_attempted = False
-        self._call_lock = asyncio.Lock() 
+        self._call_lock = asyncio.Lock()
+        self.ai_process = None  # AI生成工具的进程
+        self.is_ai_generated = config.get("ai_generated", False)
 
     async def connect(self) -> bool:
         """连接到服务器，返回是否成功"""
@@ -54,6 +62,14 @@ class MCPServer:
             return False
 
         try:
+            # 如果是AI生成的工具，先启动进程
+            if self.is_ai_generated:
+                if not await self._start_ai_process():
+                    return False
+                
+                # 等待AI进程启动
+                await asyncio.sleep(3)
+
             # 获取传输类型
             transport_type = self.config.get('transportType', 'stdio')
             
@@ -67,9 +83,12 @@ class MCPServer:
                         return await self._connect_stdio()
                     elif transport_type == 'sse':
                         return await self._connect_sse()
+                    elif transport_type == 'streamable_http':
+                        return await self._connect_streamable_http()
                     else:
                         self.error = f"使用了不支持的传输类型: {transport_type}"
                         logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+                        await self._cleanup_ai_process()
                         self.init_attempted = True
                         return False
 
@@ -85,8 +104,66 @@ class MCPServer:
             self.error = f"连接时出错: {str(e)}"
             logger.error(f"错误: 服务器 '{self.name}' {self.error}")
             logger.error(traceback.format_exc())
+            await self._cleanup_ai_process()
             self.init_attempted = True
             return False
+
+    async def _start_ai_process(self) -> bool:
+        """启动AI生成的MCP工具进程"""
+        try:
+            from app.core.file_manager import FileManager
+            
+            # 获取脚本路径和虚拟环境Python路径
+            script_path = FileManager.get_mcp_tool_main_script(self.name)
+            python_path = FileManager.get_mcp_tool_venv_python(self.name)
+            
+            if not script_path or not python_path:
+                self.error = f"找不到AI生成工具 '{self.name}' 的脚本或虚拟环境"
+                logger.error(self.error)
+                return False
+            
+            # 启动进程
+            logger.info(f"启动AI生成的MCP工具: {python_path} {script_path}")
+            
+            # 创建日志文件
+            log_dir = settings.get_mcp_tool_dir(self.name)
+            stdout_file = log_dir / "mcp_stdout.log"
+            stderr_file = log_dir / "mcp_stderr.log"
+            
+            with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+                self.ai_process = subprocess.Popen(
+                    [str(python_path), str(script_path)],
+                    stdout=stdout,
+                    stderr=stderr,
+                    cwd=str(script_path.parent)
+                )
+            
+            logger.info(f"AI工具进程已启动，PID: {self.ai_process.pid}")
+            return True
+            
+        except Exception as e:
+            self.error = f"启动AI工具进程时出错: {str(e)}"
+            logger.error(self.error)
+            return False
+
+    async def _cleanup_ai_process(self):
+        """清理AI生成的MCP工具进程"""
+        if self.ai_process:
+            try:
+                # 优雅关闭
+                self.ai_process.terminate()
+                try:
+                    self.ai_process.wait(timeout=5)
+                    logger.info(f"AI工具进程 {self.ai_process.pid} 已正常关闭")
+                except subprocess.TimeoutExpired:
+                    # 强制关闭
+                    self.ai_process.kill()
+                    self.ai_process.wait()
+                    logger.info(f"AI工具进程 {self.ai_process.pid} 已强制关闭")
+            except Exception as e:
+                logger.error(f"关闭AI工具进程时出错: {str(e)}")
+            finally:
+                self.ai_process = None
 
     async def _connect_stdio(self) -> bool:
         """连接 stdio 类型的服务器"""
@@ -203,12 +280,70 @@ class MCPServer:
             logger.error(traceback.format_exc())
             self.init_attempted = True
             return False
+    
+    async def _connect_streamable_http(self) -> bool:
+        """连接 streamable_http 类型的服务器"""
+        url = self.config.get('url')
+
+        if not url:
+            self.error = "streamable_http传输类型未指定URL"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            self.init_attempted = True
+            return False
+
+        try:
+            logger.info(f"连接到 streamable_http 服务器 '{self.name}' URL: {url}")
+            transport_context = await self.exit_stack.enter_async_context(streamablehttp_client(url=url))
+            if isinstance(transport_context, tuple) and len(transport_context) == 3:
+                read, write, get_session_id = transport_context
+                logger.info(f"streamablehttp_client 连接成功，获得读写流和会话ID函数")
+            else:
+                logger.warning(f"streamablehttp_client 返回格式异常: {type(transport_context)}")
+                read, write = transport_context, None
+                get_session_id = None
+            
+            self.session = await self.exit_stack.enter_async_context(ClientSession(read, write))
+            
+            logger.info(f"ClientSession 创建成功，开始初始化...")
+            
+            await self.session.initialize()
+            logger.info(f"会话初始化成功")
+            
+            if get_session_id and callable(get_session_id):
+                try:
+                    session_id = get_session_id()
+                    logger.info(f"获取到会话 ID: {session_id}")
+                except Exception as session_id_error:
+                    logger.warning(f"无法获取会话ID: {session_id_error}")
+
+            # 获取工具列表
+            response = await self.session.list_tools()
+            self.tools = response.tools
+            logger.info(f"已连接到 streamable_http 服务器 '{self.name}' 提供的工具: {[tool.name for tool in self.tools]}")
+
+            auto_approve_tools = self.config.get('autoApprove', [])
+            if auto_approve_tools:
+                logger.info(f"为以下工具启用了自动批准: {auto_approve_tools}")
+
+            self.init_attempted = True
+            return True
+
+        except Exception as e:
+            self.error = f"streamable_http 连接过程中出错: {str(e)}"
+            logger.error(f"错误: 服务器 '{self.name}' {self.error}")
+            logger.error(traceback.format_exc())
+            self.init_attempted = True
+            return False
 
     async def cleanup(self):
         """清理服务器连接"""
         try:
             # 先清空工具列表，避免断开连接后仍能获取工具
             self.tools = []
+            
+            # 清理AI进程
+            if self.is_ai_generated:
+                await self._cleanup_ai_process()
             
             # 使用更安全的方式关闭连接
             if self.exit_stack:

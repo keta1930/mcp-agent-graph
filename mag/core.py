@@ -45,7 +45,13 @@ from .client.mcp import (
     connect as connect_mcp,
     get_tools as get_tools,
     add_server as add_server,
-    remove_server as remove_server
+    remove_server as remove_server,
+    disconnect as disconnect_mcp,
+    test_tool as test_mcp,
+    get_ai_generator_template as get_mcp_prompt,
+    generate_mcp_tool as generate_mcp,
+    register_mcp_tool as register_mcp,
+    list_ai_mcp_tools as list_ai_mcp
 )
 
 # 会话管理

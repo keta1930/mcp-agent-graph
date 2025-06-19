@@ -10,7 +10,8 @@ import {
   PlayCircleOutlined,
   StopOutlined,
   ToolOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { MCPServerConfig } from '../../types/mcp';
 
@@ -52,6 +53,10 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   const tools = status?.tools || [];
   const error = status?.error || '';
 
+  // Check if this is an AI-generated tool
+  const isAIGenerated = config.ai_generated || 
+    (config.transportType === 'streamable_http' && config.url?.includes('localhost'));
+
   // Format server arguments for display
   const formattedArgs = Array.isArray(config.args)
     ? config.args.join(' ')
@@ -62,6 +67,12 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
       return (
         <div>
           <Text strong>SSE URL:</Text> {config.url}
+        </div>
+      );
+    } else if (config.transportType === 'streamable_http') {
+      return (
+        <div>
+          <Text strong>HTTP URL:</Text> {config.url}
         </div>
       );
     } else {
@@ -111,7 +122,21 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
     <Card
       title={
         <div className="flex items-center justify-between">
-          <span>{serverName}</span>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span>{serverName}</span>
+            {/* AI生成工具标识 */}
+            {isAIGenerated && (
+              <Tooltip title="AI生成的MCP工具">
+                <RobotOutlined 
+                  style={{ 
+                    marginLeft: '8px', 
+                    color: '#722ed1',
+                    fontSize: '16px'
+                  }} 
+                />
+              </Tooltip>
+            )}
+          </div>
           {config.disabled ? (
             <Tag color="gray">Disabled</Tag>
           ) : connected ? (
@@ -173,6 +198,11 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
       <div className="space-y-2">
         <div>
           <Text strong>Transport Type:</Text> {config.transportType}
+          {isAIGenerated && (
+            <Tag color="purple" size="small" style={{ marginLeft: '8px' }}>
+              AI Generated
+            </Tag>
+          )}
         </div>
         {renderTransportInfo()}
         <div>

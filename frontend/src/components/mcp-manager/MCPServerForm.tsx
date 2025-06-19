@@ -153,6 +153,7 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
           <Select>
             <Select.Option value="stdio">STDIO</Select.Option>
             <Select.Option value="sse">SSE</Select.Option>
+            <Select.Option value="streamable_http">Streamable HTTP</Select.Option>
           </Select>
         </Form.Item>
 
@@ -177,13 +178,17 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         )}
 
         {/* SSE specific fields */}
-        {transportType === 'sse' && (
+        {(transportType === 'sse' || transportType === 'streamable_http') && (
           <Form.Item
             name="url"
-            label="SSE URL"
-            rules={[{ required: true, message: 'Please input SSE URL!' }]}
+            label={transportType === 'sse' ? 'SSE URL' : 'HTTP URL'}
+            rules={[{ required: true, message: 'Please input URL!' }]}
           >
-            <Input placeholder="https://mcp.api-inference.modelscope.cn/bd902138dc1a4d/sse" />
+            <Input placeholder={
+              transportType === 'sse' 
+                ? "https://mcp.api-inference.modelscope.cn/bd902138dc1a4d/sse" 
+                : "https://fastmcp.cloud/mcp"
+            } />
           </Form.Item>
         )}
 
