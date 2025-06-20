@@ -21,6 +21,7 @@ English | [中文](README_CN.md)
     - [deepresearch - Deep Research System](#deepresearch)
     - [corporate_ethics_dilemma_v2 - Corporate Ethics Decision](#corporate_ethics_dilemma_v2)
     - [corporate_ethics_dilemma_v3 - Auto-Generated README](#corporate_ethics_dilemma_v3)
+    - [AI-Generated MCP Tools](#ai-generated-mcp-tools)
     - [mcp_manager - MCP Manager](#mcp_manager)
     - [graph_runner - Graph Runner Example](#graph_runner)
 - [📖 Citation](#-citation)
@@ -113,28 +114,35 @@ This is an **amazing feature**! AI-generated agents. Previously, you might need 
 
 From need to graph, it might take only **3 minutes**, or even less! Once the graph is generated, it will appear on your canvas (agent). You can view each node in the graph, the overall process, and the readme file! Click on each node to see which tools (mcp server) it selected, prompts, models, context passing between nodes... If it doesn't meet your requirements, you can use the AI graph optimization feature to tell the AI your updated requirements, and it will adjust the process, add or remove nodes, modify prompts or tool calls for you.
 
-#### 2️⃣ Nested Graphs (Hierarchical World)
+#### 2️⃣ AI-Generated MCP Tools (From need to MCP)
+This is a **future-oriented** feature! Create custom MCP tools through natural language descriptions.
+
+Traditional MCP tool development requires extensive programming knowledge and understanding of the MCP protocol. mcp-agent-graph breaks this barrier: simply describe what you want the tool to do, and AI will generate a complete, production-ready MCP tool for you!
+
+From description to deployment in minutes! Just provide requirements, and the system will: automatically generate Python code following MCP standards, create proper virtual environments with all dependencies, handle port management and conflict detection, automatically register the tool to your system configuration, provide comprehensive documentation and usage examples. The generated tools are immediately ready for use in your agents or can be shared with the community. This democratizes MCP tool development, making it accessible to everyone regardless of technical background.
+
+#### 3️⃣ Nested Graphs (Hierarchical World)
 This is an **architectural innovation**! Building "Agent within Agent" hierarchical intelligent systems. Traditional workflows are often flat, and when systems become complex, they become difficult to manage and maintain. mcp-agent-graph introduces the concept of nested graphs: any complete graph can be used as a single node in another graph! This creates infinite possibilities.
 
 Hierarchical design, unlimited scalability! You can first build a "document analysis" graph containing document parsing, content extraction, format conversion nodes. Then encapsulate this entire graph as a single node for use in a larger "knowledge management" graph. This hierarchical design allows you to: build reusable agent modules, manage complex large-scale systems, achieve true modular development. Each layer has clear responsibility boundaries, maintaining system integrity while having extremely strong maintainability.
 
-#### 3️⃣ Graph to MCP Server
+#### 4️⃣ Graph to MCP Server
 This is a **standardization feature**! Export agent graphs as standard MCP services. In the AI tool ecosystem, interoperability between different platforms and frameworks has always been a challenge. mcp-agent-graph provides graph-to-mcp functionality: one-click export of any graph as a standard MCP server Python script!
 
 Build once, run everywhere! The exported MCP server fully complies with MCP protocol standards and can be directly called by Claude Desktop, Cline, cursor, and other AI applications or any MCP-supporting systems. Your agent instantly becomes a widely integrable tool. The exported script includes complete dependency management, configuration files, and installation instructions, allowing recipients to deploy immediately. This lays the foundation for agent standardization and ecosystem development.
 
-#### 4️⃣ Visual Graph Editor
+#### 5️⃣ Visual Graph Editor
 **Canvas as Code**! You can build complex agent workflows simply by dragging nodes and connecting lines on the visual canvas. What you see is what you get, design is development! Each node has rich configuration options, allowing you to set prompts, select models, configure tool calls, and define input-output relationships directly in the interface. The connections between nodes clearly show data flow and execution order, making complex logic clear at a glance. Real-time preview functionality lets you view the execution effects of your current design at any time.
 
-#### 5️⃣ Node as Agent
+#### 6️⃣ Node as Agent
 **Every node is an independent agent**. Each node in the graph has complete Agent capabilities! Every node can call tools and handle complex tasks. Microservice-oriented agent architecture, each node is an expert! You can configure specialized role prompts for each node, making it an expert in specific domains. One node can be a data analyst, another can be a content creator, and a third can be a decision maker. They gain powerful tool capabilities through MCP servers, such as accessing file systems, web searching, performing calculations, etc. Nodes collaborate through context passing, forming a powerful agent team.
 
-#### 6️⃣ Agent Trading and Transfer
+#### 7️⃣ Agent Trading and Transfer
 This is an **ecosystem feature**! Complete agent packaging, sharing, and deployment solution. In the current AI development environment, sharing a complete agent system often requires complex environment configuration, dependency installation, and documentation, greatly limiting agent propagation and reuse. mcp-agent-graph provides complete agent lifecycle management: packaging agent systems and all their dependencies into self-contained, portable units.
 
 One-click packaging, one-click deployment, agent ecosystem! The system automatically generates comprehensive README documentation, detailing agent functionality, requirements, and usage methods. Recipients don't need to understand complex technical details to quickly understand and deploy your agents. This feature provides a complete solution for agent marketplace trading, team collaboration, and open-source sharing. You can easily: share professional tools with colleagues, deliver custom solutions to clients, contribute your creations to the open-source community.
 
-#### 7️⃣ Python SDK Deep Integration
+#### 8️⃣ Python SDK Deep Integration
 This is a **dual-wheel development mode**! Perfect combination of frontend visual design and backend code execution. mcp-agent-graph provides through Python SDK: frontend drag-and-drop design, backend code execution! Perfect fusion of design and development, both visual and code-controllable!
 
 You can quickly design and debug agent graphs in the frontend visual interface, then install the SDK with one command `pip install mcp-agent-graph` and directly load and run these graphs in Python. This means: developers can integrate into existing systems with code; teams can collaboratively design through visual interfaces and finally deploy to production environments through code; your agent graphs can seamlessly embed into existing Python projects with free combination. The SDK provides complete graph loading, execution, and monitoring capabilities, making agent graphs powerful weapons in your code toolbox.
@@ -149,21 +157,34 @@ Finally, whether or not you use this framework, we wish you all the best in your
 
 ## 🖼️ Frontend Feature Showcase
 
-### deepresearch
+### deepresearch (AI Generated)
 #### Deep analysis of user questions, multi-round intelligent retrieval, and comprehensive research system that generates visualized HTML web pages
 ![alt text](appendix/deepresearch.png)
 
 ---
 
-### corporate_ethics_dilemma_v2
+### corporate_ethics_dilemma_v2 (AI Generated)
 #### AI CFO Alex faces complex corporate ethical choices, exploring AI decision-making mechanisms in conflicts of interest
 ![alt text](appendix/corporate_ethics_dilemma_v2.png)
 
 ---
 
-### corporate_ethics_dilemma_v3
+### corporate_ethics_dilemma_v3 (AI Generated)
 #### Auto-generated README for graphs
 ![alt text](appendix/corporate_ethics_dilemma_v3_readme.png)
+
+---
+
+### AI-Generated MCP Tools
+#### AI-generated MCP tools, the tools in the image are: Factorial Calculator; URL Content Scraper Tool
+
+![alt text](appendix/mcp.png)
+---
+
+![alt text](appendix/factorialserver.png)
+---
+
+![alt text](appendix/urlserver.png)
 
 ---
 
@@ -176,6 +197,8 @@ Finally, whether or not you use this framework, we wish you all the best in your
 ### graph_runner
 #### Graph runner for executing graphs
 ![alt text](appendix/graph_runner.png)
+
+---
 
 ## 🏗️ Development Details
 
