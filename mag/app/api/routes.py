@@ -2020,7 +2020,7 @@ async def export_graph(graph_name: str):
 
 @router.post("/graphs/execute", response_model=GraphResult)
 async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTasks):
-    """执行图并返回结果 - 支持同步和异步模式"""
+    """执行图并返回结果"""
     try:
         # 检查图是否存在
         graph_config = graph_service.get_graph(input_data.graph_name)
@@ -2030,60 +2030,23 @@ async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTask
                 detail=f"找不到图 '{input_data.graph_name}'"
             )
 
-        # 检查是否为异步模式
-        async_mode = getattr(input_data, 'async_mode', False)
-
-        if async_mode:
-            # 异步模式：立即返回会话ID，后台执行
-            if input_data.conversation_id:
-                # 继续现有会话
-                conversation_id = input_data.conversation_id
-                # 在后台任务中继续执行
-                background_tasks.add_task(
-                    graph_service.continue_conversation_async,
-                    conversation_id,
-                    input_data.input_text,
-                    input_data.parallel
-                )
-            else:
-                # 创建新会话并在后台执行
-                conversation_id = graph_service.create_conversation(input_data.graph_name)
-                background_tasks.add_task(
-                    graph_service.execute_graph_async,
-                    input_data.graph_name,
-                    input_data.input_text,
-                    input_data.parallel,
-                    conversation_id
-                )
-
-            return {
-                "conversation_id": conversation_id,
-                "graph_name": input_data.graph_name,
-                "input": input_data.input_text,
-                "output": "",
-                "node_results": [],
-                "completed": False,
-                "async_mode": True,
-                "status": "running"
-            }
+        # 同步模式：等待执行完成
+        if input_data.conversation_id:
+            # 继续现有会话
+            result = await graph_service.continue_conversation(
+                input_data.conversation_id,
+                input_data.input_text,
+                input_data.parallel
+            )
         else:
-            # 同步模式：等待执行完成
-            if input_data.conversation_id:
-                # 继续现有会话
-                result = await graph_service.continue_conversation(
-                    input_data.conversation_id,
-                    input_data.input_text,
-                    input_data.parallel
-                )
-            else:
-                # 创建新会话
-                result = await graph_service.execute_graph(
-                    input_data.graph_name,
-                    input_data.input_text,
-                    input_data.parallel
-                )
+            # 创建新会话
+            result = await graph_service.execute_graph(
+                input_data.graph_name,
+                input_data.input_text,
+                input_data.parallel
+            )
 
-            return result
+        return result
 
     except HTTPException:
         raise
