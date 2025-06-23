@@ -289,6 +289,7 @@ class GraphResult(BaseModel):
     input: str = Field(..., description="输入内容")
     output: str = Field(..., description="最终输出内容")
     node_results: List[NodeResult] = Field(default_factory=list, description="节点执行结果")
+    execution_chain: Optional[Any] = Field(default=None, description="执行链条")
     completed: bool = Field(default=False, description="是否完成执行")
     error: Optional[str] = Field(default=None, description="错误信息（如果有）")
 

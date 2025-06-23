@@ -394,13 +394,6 @@ const MCPManager: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">MCP Manager</h1>
-        <p className="text-gray-500">
-          Manage MCP server configuration and connections
-        </p>
-      </div>
-
       {error && (
         <Alert
           message="Error"
@@ -410,7 +403,7 @@ const MCPManager: React.FC = () => {
           className="mb-4"
         />
       )}
-
+  
       <Card>
         <Tabs
           defaultActiveKey="visual"

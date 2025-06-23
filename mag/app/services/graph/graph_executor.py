@@ -51,6 +51,7 @@ class GraphExecutor:
         # 获取最终输出
         conversation = self.conversation_manager.get_conversation(conversation_id)
         final_output = self.conversation_manager._get_final_output(conversation)
+        execution_chain = self._construct_execution_chain(conversation)
 
         # 创建结果对象
         result = {
@@ -59,6 +60,7 @@ class GraphExecutor:
             "input": input_text,
             "output": final_output,
             "node_results": self.conversation_manager._restructure_results(conversation),
+            "execution_chain": execution_chain,
             "completed": True
         }
 
@@ -143,6 +145,7 @@ class GraphExecutor:
         # 获取最终输出
         conversation = self.conversation_manager.get_conversation(conversation_id)
         final_output = self.conversation_manager._get_final_output(conversation)
+        execution_chain = self._construct_execution_chain(conversation)
 
         # 创建结果对象
         result = {
@@ -151,10 +154,94 @@ class GraphExecutor:
             "input": input_text or "",
             "output": final_output,
             "node_results": self.conversation_manager._restructure_results(conversation),
+            "execution_chain": execution_chain,
             "completed": True
         }
 
         return result
+
+    def _construct_execution_chain(self, conversation: Dict[str, Any]) -> List[Any]:
+        """
+        构造执行链条
+        
+        Args:
+            conversation: 会话对象
+            
+        Returns:
+            并行模式: List[List[str]] - 二维列表，每个子列表代表一个层级的节点
+            顺序模式: List[str] - 一维列表，按执行顺序排列的节点名称
+        """
+        results = conversation.get("results", [])
+        graph_config = conversation.get("graph_config", {})
+        is_parallel = conversation.get("parallel", False)
+        
+        # 获取所有执行的节点（排除start输入节点）
+        executed_nodes = []
+        start_inputs = []
+        
+        for result in results:
+            if result.get("is_start_input", False):
+                start_inputs.append("start")
+            else:
+                node_name = result.get("node_name")
+                if node_name:
+                    executed_nodes.append({
+                        "name": node_name,
+                        "result": result
+                    })
+        print("executed_nodes",executed_nodes)
+        
+        if is_parallel:
+            # 并行执行：按执行顺序构造，但保持level结构
+            execution_chain = []
+            
+            # 添加start节点（如果有）
+            if start_inputs:
+                execution_chain.append(["start"])
+            
+            # 为每个执行的节点找到对应的level，按执行顺序处理
+            current_level_group = []
+            current_level = None
+            
+            for executed_node in executed_nodes:
+                node_name = executed_node["name"]
+                # 在graph_config中找到对应节点的level
+                node_level = 0  # 默认level
+                for config_node in graph_config.get("nodes", []):
+                    if config_node["name"] == node_name:
+                        node_level = config_node.get("level", 0)
+                        break
+                
+                # 如果是新的level，保存上一个level的组并开始新组
+                if current_level is not None and node_level != current_level:
+                    if current_level_group:
+                        execution_chain.append(current_level_group)
+                    current_level_group = []
+                
+                # 将当前节点添加到当前level组
+                current_level_group.append(node_name)
+                current_level = node_level
+            
+            # 添加最后一个level组
+            if current_level_group:
+                execution_chain.append(current_level_group)
+            
+            print("execution_chain",execution_chain)
+            return execution_chain
+        
+        else:
+            # 顺序执行：按执行顺序排列
+            execution_chain = []
+            
+            # 添加start节点（如果有）
+            if start_inputs:
+                execution_chain.append("start")
+            
+            # 按执行顺序添加节点
+            for executed_node in executed_nodes:
+                execution_chain.append(executed_node["name"])
+            print("execution_chain",execution_chain)
+            return execution_chain
 
     def _record_user_input(self, conversation_id: str, input_text: str):
         """记录用户输入，并将其添加到全局管理内容中"""
