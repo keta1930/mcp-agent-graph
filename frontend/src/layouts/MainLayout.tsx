@@ -26,22 +26,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     {
       key: '/graph-editor',
       icon: <EditOutlined />,
-      label: <Link to="/graph-editor">Graph Editor</Link>,
+      label: <Link to="/graph-editor">图形编辑器</Link>,
     },
     {
       key: '/model-manager',
       icon: <ApiOutlined />,
-      label: <Link to="/model-manager">Model Manager</Link>,
+      label: <Link to="/model-manager">模型管理</Link>,
     },
     {
       key: '/mcp-manager',
       icon: <SettingOutlined />,
-      label: <Link to="/mcp-manager">MCP Manager</Link>,
+      label: <Link to="/mcp-manager">MCP管理</Link>,
     },
     {
       key: '/graph-runner',
       icon: <PlayCircleOutlined />,
-      label: <Link to="/graph-runner">Graph Runner</Link>,
+      label: <Link to="/graph-runner">图形运行器</Link>,
     },
   ];
 
@@ -49,21 +49,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     setIsShuttingDown(true);
     try {
       const response = await shutdownSystem();
-      message.success('Service shutdown initiated successfully');
+      message.success('服务关闭请求已成功发起');
 
       // Show information about active sessions if available
       if (response && response.active_sessions) {
-        message.info(`${response.active_sessions} active sessions will be terminated`);
+        message.info(`${response.active_sessions} 个活动会话将被终止`);
       }
 
       // Close the modal
       setConfirmModalVisible(false);
 
       // Show countdown message
-      message.loading('System will shut down in a few moments...', 10);
+      message.loading('系统将在几秒钟内关闭...', 10);
     } catch (error) {
-      console.error('Failed to shut down service:', error);
-      message.error('Failed to shut down service');
+      console.error('关闭服务失败:', error);
+      message.error('关闭服务失败');
       setIsShuttingDown(false);
     }
   };
@@ -92,7 +92,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           onClick={showConfirmModal}
           className="shutdown-button"
         >
-          Shutdown
+          关闭系统
         </Button>
       </div>
 
@@ -103,16 +103,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </Content>
 
       <Modal
-        title="Confirm Shutdown"
+        title="确认关闭系统"
         open={confirmModalVisible}
         onOk={handleShutdown}
         onCancel={handleCancel}
-        okText="Yes, Shutdown"
-        cancelText="Cancel"
+        okText="确认关闭"
+        cancelText="取消"
         okButtonProps={{ danger: true, loading: isShuttingDown }}
       >
-        <p>Are you sure you want to shut down the service?</p>
-        <p>This will terminate all running processes and the server will stop responding.</p>
+        <p>您确定要关闭服务吗？</p>
+        <p>这将终止所有正在运行的进程，服务器将停止响应。</p>
       </Modal>
     </Layout>
   );

@@ -48,7 +48,7 @@ const MCPManager: React.FC = () => {
   const [toolsModalVisible, setToolsModalVisible] = useState(false);
   const [selectedServer, setSelectedServer] = useState('');
   const [initialValues, setInitialValues] = useState<MCPServerConfig | undefined>();
-  const [modalTitle, setModalTitle] = useState('Add MCP Server');
+  const [modalTitle, setModalTitle] = useState('添加MCP服务器');
   const [activeTab, setActiveTab] = useState('visual');
 
   // AI生成工具相关状态
@@ -87,14 +87,14 @@ const MCPManager: React.FC = () => {
   const showAddModal = () => {
     setSelectedServer('');
     setInitialValues(undefined);
-    setModalTitle('Add MCP Server');
+    setModalTitle('添加MCP服务器');
     setModalVisible(true);
   };
 
   const showEditModal = (serverName: string) => {
     setSelectedServer(serverName);
     setInitialValues(config.mcpServers[serverName]);
-    setModalTitle(`Edit MCP Server: ${serverName}`);
+    setModalTitle(`编辑MCP服务器: ${serverName}`);
     setModalVisible(true);
   };
 
@@ -134,84 +134,84 @@ const MCPManager: React.FC = () => {
       if (selectedServer) {
         // Edit existing server
         await updateServer(selectedServer, serverConfig);
-        message.success(`Server "${selectedServer}" updated successfully`);
+        message.success(`服务器 "${selectedServer}" 更新成功`);
       } else {
         // Add new server
         if (config.mcpServers[serverName]) {
-          message.error(`Server "${serverName}" already exists`);
+          message.error(`服务器 "${serverName}" 已存在`);
           return;
         }
         await addServer(serverName, serverConfig);
-        message.success(`Server "${serverName}" added successfully`);
+        message.success(`服务器 "${serverName}" 添加成功`);
       }
       setModalVisible(false);
     } catch (err) {
-      message.error('Operation failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('操作失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleDeleteServer = async (serverName: string) => {
     try {
       await deleteServer(serverName);
-      message.success(`Server "${serverName}" deleted successfully`);
+      message.success(`服务器 "${serverName}" 删除成功`);
     } catch (err) {
-      message.error('Delete failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('删除失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleConnect = async (serverName: string) => {
     try {
       await connectServer(serverName);
-      message.success(`Connected to server "${serverName}"`);
+      message.success(`已连接到服务器 "${serverName}"`);
     } catch (err) {
-      message.error('Connection failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('连接失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleDisconnect = async (serverName: string) => {
     try {
       await disconnectServer(serverName);
-      message.success(`Disconnected from server "${serverName}"`);
+      message.success(`已从服务器 "${serverName}" 断开连接`);
     } catch (err) {
-      message.error('Disconnect failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('断开连接失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   // Handle batch connect operation for all servers
   const handleConnectAll = async () => {
     try {
-      message.loading('Connecting to all servers...', 0);
+      message.loading('正在连接所有服务器...', 0);
       const results = await connectAllServers();
       message.destroy();
 
       if (results.success.length > 0 && results.failed.length === 0) {
-        message.success(`Successfully connected to all ${results.success.length} servers`);
+        message.success(`成功连接所有 ${results.success.length} 个服务器`);
       } else if (results.success.length > 0 && results.failed.length > 0) {
-        message.warning(`Connected to ${results.success.length} servers, failed to connect to ${results.failed.length} servers`);
+        message.warning(`连接了 ${results.success.length} 个服务器，${results.failed.length} 个服务器连接失败`);
       } else if (results.success.length === 0 && results.failed.length > 0) {
-        message.error(`Failed to connect to all ${results.failed.length} servers`);
+        message.error(`所有 ${results.failed.length} 个服务器连接失败`);
       } else {
-        message.info('No servers to connect');
+        message.info('没有服务器需要连接');
       }
     } catch (err) {
       message.destroy();
-      message.error('Batch connection failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('批量连接失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleRefresh = () => {
     fetchConfig();
     fetchStatus();
-    message.info('Refreshing MCP status...');
+    message.info('正在刷新MCP状态...');
   };
 
   const handleSaveJson = async (newConfig: any) => {
     try {
       await updateConfig(newConfig);
-      message.success('Configuration saved successfully');
+      message.success('配置保存成功');
       fetchStatus();
     } catch (err) {
-      message.error('Failed to save configuration: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('保存配置失败: ' + (err instanceof Error ? err.message : String(err)));
       throw err;
     }
   };
@@ -296,7 +296,7 @@ const MCPManager: React.FC = () => {
       label: (
         <span>
           <AppstoreOutlined />
-          Visual Editor
+          可视化编辑
         </span>
       ),
       children: (
@@ -308,7 +308,7 @@ const MCPManager: React.FC = () => {
                 icon={<PlusOutlined />}
                 onClick={showAddModal}
               >
-                Add Server
+                添加服务器
               </Button>
               <Button
                 type="primary"
@@ -335,7 +335,7 @@ const MCPManager: React.FC = () => {
                 onClick={handleRefresh}
                 loading={loading}
               >
-                Refresh
+                刷新
               </Button>
               <Button
                 type="primary"
@@ -345,13 +345,13 @@ const MCPManager: React.FC = () => {
                 loading={loading}
                 disabled={serverNames.length === 0}
               >
-                Connect All
+                全部连接
               </Button>
             </div>
           </div>
 
           {serverNames.length === 0 ? (
-            <Empty description="No MCP servers configured" />
+            <Empty description="未配置MCP服务器" />
           ) : (
             <Row gutter={[16, 16]}>
               {serverNames.map(serverName => (
@@ -379,7 +379,7 @@ const MCPManager: React.FC = () => {
       label: (
         <span>
           <CodeOutlined />
-          JSON Editor
+          JSON编辑器
         </span>
       ),
       children: (
@@ -396,7 +396,7 @@ const MCPManager: React.FC = () => {
     <div>
       {error && (
         <Alert
-          message="Error"
+          message="错误"
           description={error}
           type="error"
           showIcon

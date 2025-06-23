@@ -42,7 +42,7 @@ const generateFormItem = (name: string, schema: any) => {
             tooltip={description}
             rules={[{ type: 'url', message: '请输入有效的URL' }]}
           >
-            <Input placeholder={description || 'Enter URL'} />
+            <Input placeholder={description || '输入URL'} />
           </Form.Item>
         );
       }
@@ -52,7 +52,7 @@ const generateFormItem = (name: string, schema: any) => {
           label={name}
           tooltip={description}
         >
-          <Input placeholder={description || `Enter ${name}`} />
+          <Input placeholder={description || `输入 ${name}`} />
         </Form.Item>
       );
     
@@ -68,7 +68,7 @@ const generateFormItem = (name: string, schema: any) => {
             style={{ width: '100%' }}
             min={minimum}
             max={maximum}
-            placeholder={description || `Enter ${name}`}
+            placeholder={description || `输入 ${name}`}
           />
         </Form.Item>
       );
@@ -94,7 +94,7 @@ const generateFormItem = (name: string, schema: any) => {
         >
           <TextArea 
             rows={3}
-            placeholder={`${description || `Enter ${name}`} (one item per line)`}
+            placeholder={`${description || `输入 ${name}`} (每行一项)`}
           />
         </Form.Item>
       );
@@ -108,7 +108,7 @@ const generateFormItem = (name: string, schema: any) => {
         >
           <TextArea 
             rows={4}
-            placeholder={`${description || `Enter ${name}`} (JSON format)`}
+            placeholder={`${description || `输入 ${name}`} (JSON格式)`}
           />
         </Form.Item>
       );
@@ -120,7 +120,7 @@ const generateFormItem = (name: string, schema: any) => {
           label={name}
           tooltip={description}
         >
-          <Input placeholder={description || `Enter ${name}`} />
+          <Input placeholder={description || `输入 ${name}`} />
         </Form.Item>
       );
   }

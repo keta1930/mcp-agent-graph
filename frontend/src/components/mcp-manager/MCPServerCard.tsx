@@ -66,19 +66,19 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
     if (config.transportType === 'sse') {
       return (
         <div>
-          <Text strong>SSE URL:</Text> {config.url}
+          <Text strong>SSE地址:</Text> {config.url}
         </div>
       );
     } else if (config.transportType === 'streamable_http') {
       return (
         <div>
-          <Text strong>HTTP URL:</Text> {config.url}
+          <Text strong>HTTP地址:</Text> {config.url}
         </div>
       );
     } else {
       return (
         <div>
-          <Text strong>Command:</Text> {config.command} {formattedArgs}
+          <Text strong>命令:</Text> {config.command} {formattedArgs}
         </div>
       );
     }
@@ -93,12 +93,12 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
       <div>
         <Text strong>
           <EnvironmentOutlined style={{ marginRight: '4px' }} />
-          Environment Variables:
+          环境变量:
         </Text>
         <div style={{ marginTop: '4px' }}>
           <Collapse size="small" ghost>
             <Panel 
-              header={`${Object.keys(config.env).length} variable(s) configured`} 
+              header={`已配置 ${Object.keys(config.env).length} 个变量`} 
               key="env"
             >
               <div style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
@@ -138,13 +138,13 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
             )}
           </div>
           {config.disabled ? (
-            <Tag color="gray">Disabled</Tag>
+            <Tag color="gray">已禁用</Tag>
           ) : connected ? (
-            <Tag icon={<CheckCircleOutlined />} color="success">Connected</Tag>
+            <Tag icon={<CheckCircleOutlined />} color="success">已连接</Tag>
           ) : initAttempted ? (
-            <Tag icon={<CloseCircleOutlined />} color="error">Failed</Tag>
+            <Tag icon={<CloseCircleOutlined />} color="error">连接失败</Tag>
           ) : (
-            <Tag icon={<ExclamationCircleOutlined />} color="warning">Not Connected</Tag>
+            <Tag icon={<ExclamationCircleOutlined />} color="warning">未连接</Tag>
           )}
         </div>
       }
@@ -156,7 +156,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               onClick={() => onDisconnect(serverName)}
               loading={loading}
             >
-              Disconnect
+              断开连接
             </Button>
           ) : (
             <Button
@@ -166,7 +166,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               disabled={config.disabled || connected || loading}
               loading={loading}
             >
-              Connect
+              连接
             </Button>
           )}
           <Button
@@ -174,22 +174,22 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
             onClick={() => onViewTools(serverName)}
             disabled={!connected}
           >
-            Tools
+            工具
           </Button>
           <Button
             icon={<EditOutlined />}
             onClick={() => onEdit(serverName)}
           >
-            Edit
+            编辑
           </Button>
           <Popconfirm
-            title="Are you sure you want to delete this server?"
+            title="您确定要删除这个服务器吗？"
             onConfirm={() => onDelete(serverName)}
-            okText="Yes"
-            cancelText="No"
+            okText="确定"
+            cancelText="取消"
           >
             <Button icon={<DeleteOutlined />} danger>
-              Delete
+              删除
             </Button>
           </Popconfirm>
         </Space>
@@ -197,21 +197,21 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
     >
       <div className="space-y-2">
         <div>
-          <Text strong>Transport Type:</Text> {config.transportType}
+          <Text strong>传输类型:</Text> {config.transportType}
           {isAIGenerated && (
             <Tag color="purple" size="small" style={{ marginLeft: '8px' }}>
-              AI Generated
+              AI生成
             </Tag>
           )}
         </div>
         {renderTransportInfo()}
         <div>
-          <Text strong>Timeout:</Text> {config.timeout} seconds
+          <Text strong>超时时间:</Text> {config.timeout} 秒
         </div>
         {renderEnvironmentVariables()}
         {Array.isArray(config.autoApprove) && config.autoApprove.length > 0 && (
           <div>
-            <Text strong>Auto Approve:</Text>{' '}
+            <Text strong>自动批准:</Text>{' '}
             {config.autoApprove.map(tool => (
               <Tag key={tool} color="blue">{tool}</Tag>
             ))}
@@ -219,7 +219,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
         )}
         {connected && tools.length > 0 && (
           <div>
-            <Text strong>Available Tools:</Text>{' '}
+            <Text strong>可用工具:</Text>{' '}
             {tools.map(tool => (
               <Tag key={tool} color="green">{tool}</Tag>
             ))}
@@ -227,7 +227,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
         )}
         {error && (
           <Paragraph type="danger">
-            <Text strong>Error:</Text> {error}
+            <Text strong>错误:</Text> {error}
           </Paragraph>
         )}
       </div>

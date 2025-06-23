@@ -85,7 +85,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       setJsonText(formatted);
       setError(null);
     } catch {
-      setError('Invalid JSON configuration');
+      setError('无效的JSON配置');
     }
   }, [config]);
 
@@ -102,9 +102,9 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       const formatted = JSON.stringify(cleaned, null, 2);
       setJsonText(formatted);
       setError(null);
-      message.success('JSON 格式化并清理完成');
+      message.success('JSON格式化并清理完成');
     } catch {
-      setError('无法格式化 JSON: 格式无效');
+      setError('无法格式化JSON: 格式无效');
     }
   };
 
@@ -117,14 +117,14 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
 
       // Basic validation for MCP config structure
       if (!configToSave || typeof configToSave !== 'object' || Array.isArray(configToSave)) {
-        setError('Invalid MCP configuration: configuration must be an object');
+        setError('无效的MCP配置: 配置必须是一个对象');
         return;
       }
       
       const typedConfig = configToSave as Record<string, unknown>;
       
       if (!typedConfig.mcpServers || typeof typedConfig.mcpServers !== 'object' || Array.isArray(typedConfig.mcpServers)) {
-        setError('Invalid MCP configuration: missing mcpServers property or it is not an object');
+        setError('无效的MCP配置: 缺少mcpServers属性或它不是一个对象');
         return;
       }
 
@@ -132,7 +132,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       const mcpServers = typedConfig.mcpServers as Record<string, Record<string, unknown>>;
       for (const [serverName, server] of Object.entries(mcpServers)) {
         if (!server.transportType) {
-          setError(`Server "${serverName}" is missing required property: transportType`);
+          setError(`服务器 "${serverName}" 缺少必需属性: transportType`);
           return;
         }
       }
@@ -144,7 +144,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       ]);
       
     } catch (err) {
-      const errorMsg = `Failed to save configuration: ${err instanceof Error ? err.message : String(err)}`;
+      const errorMsg = `保存配置失败: ${err instanceof Error ? err.message : String(err)}`;
       setError(errorMsg);
       await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
@@ -155,7 +155,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   const handleCopy = () => {
     navigator.clipboard.writeText(jsonText).then(() => {
       setCopied(true);
-      message.success('JSON copied to clipboard');
+      message.success('JSON已复制到剪贴板');
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -164,8 +164,8 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
     <div className="json-editor-container">
       <div className="json-editor-header">
         <div className="json-editor-title">
-          <span>Edit MCP Configuration JSON</span>
-          <Tooltip title="Edit the JSON configuration directly. The configuration will be validated and cleaned before saving.">
+          <span>编辑MCP配置JSON</span>
+          <Tooltip title="直接编辑JSON配置。配置将在保存前进行验证和清理。">
             <InfoCircleOutlined style={{ marginLeft: '8px', color: '#1890ff' }} />
           </Tooltip>
         </div>
@@ -173,7 +173,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
 
       {error && (
         <Alert
-          message="Error"
+          message="错误"
           description={error}
           type="error"
           showIcon
@@ -215,14 +215,14 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           onClick={formatJson}
           className="json-editor-format-btn"
         >
-          Format & Clean JSON
+          格式化并清理JSON
         </Button>
 
         <Button
           icon={copied ? <CheckOutlined /> : <CopyOutlined />}
           onClick={handleCopy}
         >
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? '已复制' : '复制'}
         </Button>
 
         <Button
@@ -233,12 +233,12 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           loading={loading || saving}
           className="json-editor-save-btn"
         >
-          Save Configuration
+          保存配置
         </Button>
       </div>
 
       <div style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>
-        <p>Configuration will be automatically cleaned to remove unnecessary fields before saving.</p>
+        <p>配置将在保存前自动清理，移除不必要的字段。</p>
       </div>
     </div>
   );

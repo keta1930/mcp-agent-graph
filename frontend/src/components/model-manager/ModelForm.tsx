@@ -110,15 +110,15 @@ const ModelForm: React.FC<ModelFormProps> = ({
           }
         } catch (e) {
           // JSON 解析失败时忽略该字段
-          console.warn('Invalid JSON in extra_body:', e);
+          console.warn('extra_body中的JSON格式无效:', e);
         }
       }
       
-      console.log('Submitting cleaned values:', cleanedValues);
+      console.log('提交清理后的值:', cleanedValues);
       onSubmit(cleanedValues as ModelConfig);
       form.resetFields();
     }).catch((errorInfo) => {
-      console.log('Validation failed:', errorInfo);
+      console.log('验证失败:', errorInfo);
     });
   };
 
@@ -130,10 +130,10 @@ const ModelForm: React.FC<ModelFormProps> = ({
       width={600}
       footer={[
         <Button key="cancel" onClick={onClose}>
-          Cancel
+          取消
         </Button>,
         <Button key="submit" type="primary" onClick={handleSubmit}>
-          Submit
+          提交
         </Button>,
       ]}
     >
@@ -145,209 +145,251 @@ const ModelForm: React.FC<ModelFormProps> = ({
         {/* 基本配置 */}
         <Form.Item
           name="name"
-          label="Model Name"
-          rules={[{ required: true, message: 'Please input model name!' }]}
+          label="模型名称"
+          rules={[{ required: true, message: '请输入模型名称!' }]}
         >
           <Input />
         </Form.Item>
         <Form.Item
           name="base_url"
-          label="Base URL"
-          rules={[{ required: true, message: 'Please input base URL!' }]}
+          label="基础URL"
+          rules={[{ required: true, message: '请输入基础URL!' }]}
         >
           <Input placeholder="https://api.openai.com/v1" />
         </Form.Item>
         <Form.Item
           name="api_key"
-          label="API Key"
+          label="API密钥"
           rules={[
             { 
               required: !initialValues, 
-              message: 'Please input API key!' 
+              message: '请输入API密钥!' 
             }
           ]}
-          help={initialValues ? "Leave blank to keep current API key, or enter new one to update" : undefined}
+          help={initialValues ? "留空保持当前API密钥，或输入新密钥进行更新" : undefined}
         >
           <Input.Password placeholder={initialValues ? "••••••••••••••••" : ""} />
         </Form.Item>
         <Form.Item
           name="model"
-          label="Model Identifier"
-          rules={[{ required: true, message: 'Please input model identifier!' }]}
+          label="模型标识符"
+          rules={[{ required: true, message: '请输入模型标识符!' }]}
         >
           <Input placeholder="gpt-4" />
         </Form.Item>
 
         {/* 高级配置 */}
         <Collapse ghost>
-          <Panel header="Advanced Configuration" key="advanced">
-            <Form.Item
-              name="stream"
-              label="Enable Streaming"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
+          <Panel header="高级配置" key="advanced">
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="stream"
+                label="启用流式响应"
+                valuePropName="checked"
+                style={{ marginBottom: '24px' }}
+              >
+                <Switch />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="temperature"
-              label="Temperature"
-              help="Controls randomness (0.0 to 2.0). Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={0}
-                max={2}
-                step={0.1}
-                placeholder="0.7"
-                style={{ width: '100%' }}
-                precision={2}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="temperature"
+                label="温度参数"
+                help="控制随机性 (0.0 到 2.0)。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  placeholder="0.7"
+                  style={{ width: '100%' }}
+                  precision={2}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="max_tokens"
-              label="Max Tokens"
-              help="Maximum number of tokens to generate. Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={1}
-                placeholder="1000"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="max_tokens"
+                label="最大令牌数"
+                help="生成的最大令牌数。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="1000"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="max_completion_tokens"
-              label="Max Completion Tokens"
-              help="Maximum number of completion tokens. Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={1}
-                placeholder="1000"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="max_completion_tokens"
+                label="最大完成令牌数"
+                help="完成部分的最大令牌数。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="1000"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="top_p"
-              label="Top P"
-              help="Nucleus sampling parameter (0.0 to 1.0). Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={0}
-                max={1}
-                step={0.1}
-                placeholder="1.0"
-                style={{ width: '100%' }}
-                precision={2}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="top_p"
+                label="Top P参数"
+                help="核采样参数 (0.0 到 1.0)。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  placeholder="1.0"
+                  style={{ width: '100%' }}
+                  precision={2}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="frequency_penalty"
-              label="Frequency Penalty"
-              help="Penalize frequent tokens (-2.0 to 2.0). Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={-2}
-                max={2}
-                step={0.1}
-                placeholder="0.0"
-                style={{ width: '100%' }}
-                precision={2}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="frequency_penalty"
+                label="频率惩罚"
+                help="对频繁令牌的惩罚 (-2.0 到 2.0)。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={-2}
+                  max={2}
+                  step={0.1}
+                  placeholder="0.0"
+                  style={{ width: '100%' }}
+                  precision={2}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="presence_penalty"
-              label="Presence Penalty"
-              help="Penalize present tokens (-2.0 to 2.0). Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={-2}
-                max={2}
-                step={0.1}
-                placeholder="0.0"
-                style={{ width: '100%' }}
-                precision={2}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="presence_penalty"
+                label="存在惩罚"
+                help="对已存在令牌的惩罚 (-2.0 到 2.0)。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={-2}
+                  max={2}
+                  step={0.1}
+                  placeholder="0.0"
+                  style={{ width: '100%' }}
+                  precision={2}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="n"
-              label="Number of Responses"
-              help="Number of completions to generate. Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={1}
-                max={10}
-                placeholder="1"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="n"
+                label="响应数量"
+                help="生成的完成数量。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={1}
+                  max={10}
+                  placeholder="1"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="stop"
-              label="Stop Sequences"
-              help="Comma-separated stop sequences. Leave empty to remove this parameter."
-            >
-              <Input placeholder="\\n, ." />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="stop"
+                label="停止序列"
+                help="逗号分隔的停止序列。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <Input placeholder="\\n, ." />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="seed"
-              label="Seed"
-              help="Random seed for reproducible results. Leave empty to remove this parameter."
-            >
-              <InputNumber
-                placeholder="12345"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="seed"
+                label="随机种子"
+                help="用于可重现结果的随机种子。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  placeholder="12345"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="logprobs"
-              label="Return Log Probabilities"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="logprobs"
+                label="返回对数概率"
+                valuePropName="checked"
+                style={{ marginBottom: '24px' }}
+              >
+                <Switch />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="top_logprobs"
-              label="Top Log Probabilities"
-              help="Number of most likely tokens to return. Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={0}
-                max={20}
-                placeholder="0"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="top_logprobs"
+                label="Top对数概率数量"
+                help="返回最可能令牌的数量。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={0}
+                  max={20}
+                  placeholder="0"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="timeout"
-              label="Timeout (seconds)"
-              help="Request timeout in seconds. Leave empty to remove this parameter."
-            >
-              <InputNumber
-                min={1}
-                placeholder="60"
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '24px' }}>
+              <Form.Item
+                name="timeout"
+                label="超时时间（秒）"
+                help="请求超时时间（秒）。留空将移除此参数。"
+                style={{ marginBottom: '24px' }}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="60"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
 
-            <Form.Item
-              name="extra_body_json"
-              label="Extra Body Parameters"
-              help="Additional request body parameters in JSON format. Leave empty to remove this parameter."
-            >
-              <TextArea
-                rows={4}
-                placeholder='{"custom_param": "value"}'
-              />
-            </Form.Item>
+            <div style={{ paddingBottom: '12px' }}>
+              <Form.Item
+                name="extra_body_json"
+                label="额外请求参数"
+                help="JSON格式的额外请求体参数。留空将移除此参数。"
+                style={{ marginBottom: '12px' }}
+              >
+                <TextArea
+                  rows={4}
+                  placeholder='{"custom_param": "value"}'
+                />
+              </Form.Item>
+            </div>
           </Panel>
         </Collapse>
       </Form>

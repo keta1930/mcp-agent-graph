@@ -12,7 +12,7 @@ const ModelManager: React.FC = () => {
   const { models, loading, error, fetchModels, addModel, updateModel, deleteModel } = useModelStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [currentModel, setCurrentModel] = useState<ModelConfig | undefined>(undefined);
-  const [modalTitle, setModalTitle] = useState('Add Model');
+  const [modalTitle, setModalTitle] = useState('添加模型');
   const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
@@ -21,7 +21,7 @@ const ModelManager: React.FC = () => {
 
   const showAddModal = () => {
     setCurrentModel(undefined);
-    setModalTitle('Add Model');
+    setModalTitle('添加模型');
     setModalVisible(true);
   };
 
@@ -34,17 +34,17 @@ const ModelManager: React.FC = () => {
         setCurrentModel(response.data);
       } else {
         // 如果获取失败，使用基本信息
-        console.warn('Failed to get full model config, using basic info');
+        console.warn('获取完整模型配置失败，使用基本信息');
         setCurrentModel(model);
       }
     } catch (error) {
       // 如果获取完整配置失败，使用基本信息
-      console.warn('Failed to get full model config, using basic info:', error);
+      console.warn('获取完整模型配置失败，使用基本信息:', error);
       setCurrentModel(model);
-      message.warning('Could not load full model configuration, showing basic info only');
+      message.warning('无法加载完整的模型配置，仅显示基本信息');
     } finally {
       setEditLoading(false);
-      setModalTitle('Edit Model');
+      setModalTitle('编辑模型');
       setModalVisible(true);
     }
   };
@@ -53,44 +53,44 @@ const ModelManager: React.FC = () => {
     try {
       if (currentModel) {
         await updateModel(currentModel.name, formData);
-        message.success(`Model "${formData.name}" updated successfully`);
+        message.success(`模型 "${formData.name}" 更新成功`);
       } else {
         await addModel(formData);
-        message.success(`Model "${formData.name}" added successfully`);
+        message.success(`模型 "${formData.name}" 添加成功`);
       }
       setModalVisible(false);
     } catch (err) {
-      message.error('Operation failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('操作失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const handleDelete = async (modelName: string) => {
     try {
       await deleteModel(modelName);
-      message.success(`Model "${modelName}" deleted successfully`);
+      message.success(`模型 "${modelName}" 删除成功`);
     } catch (err) {
-      message.error('Delete failed: ' + (err instanceof Error ? err.message : String(err)));
+      message.error('删除失败: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
   const columns = [
     {
-      title: 'Name',
+      title: '名称',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Base URL',
+      title: '基础URL',
       dataIndex: 'base_url',
       key: 'base_url',
     },
     {
-      title: 'Model',
+      title: '模型标识',
       dataIndex: 'model',
       key: 'model',
     },
     {
-      title: 'Actions',
+      title: '操作',
       key: 'actions',
       render: (_: any, record: ModelConfig) => (
         <Space size="middle">
@@ -100,20 +100,20 @@ const ModelManager: React.FC = () => {
             onClick={() => showEditModal(record)}
             loading={editLoading}
           >
-            Edit
+            编辑
           </Button>
           <Popconfirm
-            title="Are you sure you want to delete this model?"
+            title="您确定要删除这个模型吗？"
             onConfirm={() => handleDelete(record.name)}
-            okText="Yes"
-            cancelText="No"
+            okText="确定"
+            cancelText="取消"
           >
             <Button
               className="action-btn-delete"
               icon={<DeleteOutlined />}
               danger
             >
-              Delete
+              删除
             </Button>
           </Popconfirm>
         </Space>
@@ -123,10 +123,6 @@ const ModelManager: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold model-manager-title">Model Manager</h1>
-      </div>
-
       {error && <ErrorMessage className="error-message" message={error} />}
 
       <Table
@@ -144,7 +140,7 @@ const ModelManager: React.FC = () => {
           onClick={showAddModal}
           className="add-model-btn"
         >
-          Add Model
+          添加模型
         </Button>
       </div>
 

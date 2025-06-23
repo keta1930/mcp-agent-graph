@@ -107,10 +107,10 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
       onCancel={onClose}
       footer={[
         <Button key="cancel" onClick={onClose}>
-          Cancel
+          取消
         </Button>,
         <Button key="submit" type="primary" onClick={handleSubmit}>
-          Submit
+          提交
         </Button>,
       ]}
       width={800}
@@ -122,16 +122,16 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
       >
         <Form.Item
           name="serverName"
-          label="Server Name"
+          label="服务器名称"
           initialValue={initialName}
-          rules={[{ required: true, message: 'Please input server name!' }]}
+          rules={[{ required: true, message: '请输入服务器名称!' }]}
         >
           <Input disabled={!!initialName} />
         </Form.Item>
 
         <Form.Item
           name="disabled"
-          label="Disabled"
+          label="禁用状态"
           valuePropName="checked"
         >
           <Switch />
@@ -139,21 +139,21 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
 
         <Form.Item
           name="timeout"
-          label="Timeout (seconds)"
-          rules={[{ required: true, message: 'Please input timeout!' }]}
+          label="超时时间（秒）"
+          rules={[{ required: true, message: '请输入超时时间!' }]}
         >
           <InputNumber min={1} max={300} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
           name="transportType"
-          label="Transport Type"
-          rules={[{ required: true, message: 'Please select transport type!' }]}
+          label="传输类型"
+          rules={[{ required: true, message: '请选择传输类型!' }]}
         >
           <Select>
             <Select.Option value="stdio">STDIO</Select.Option>
             <Select.Option value="sse">SSE</Select.Option>
-            <Select.Option value="streamable_http">Streamable HTTP</Select.Option>
+            <Select.Option value="streamable_http">流式HTTP</Select.Option>
           </Select>
         </Form.Item>
 
@@ -162,15 +162,15 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
           <>
             <Form.Item
               name="command"
-              label="Command"
-              rules={[{ required: true, message: 'Please input command!' }]}
+              label="命令"
+              rules={[{ required: true, message: '请输入命令!' }]}
             >
               <Input placeholder="python -m mcp_server" />
             </Form.Item>
 
             <Form.Item
               name="args"
-              label="Arguments (comma separated)"
+              label="参数（逗号分隔）"
             >
               <Input placeholder="--arg1, --arg2" />
             </Form.Item>
@@ -181,8 +181,8 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         {(transportType === 'sse' || transportType === 'streamable_http') && (
           <Form.Item
             name="url"
-            label={transportType === 'sse' ? 'SSE URL' : 'HTTP URL'}
-            rules={[{ required: true, message: 'Please input URL!' }]}
+            label={transportType === 'sse' ? 'SSE地址' : 'HTTP地址'}
+            rules={[{ required: true, message: '请输入URL!' }]}
           >
             <Input placeholder={
               transportType === 'sse' 
@@ -194,7 +194,7 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
 
         <Form.Item
           name="autoApprove"
-          label="Auto Approve Tools (comma separated)"
+          label="自动批准的工具（逗号分隔）"
         >
           <Input placeholder="tool1, tool2" />
         </Form.Item>
@@ -203,10 +203,10 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
           name="envText"
           label={
             <div>
-              <Text>Environment Variables</Text>
+              <Text>环境变量</Text>
               <br />
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                Enter one per line in KEY=VALUE format (e.g., API_KEY=your-key-here)
+                每行一个，格式为 KEY=VALUE （例如：API_KEY=your-key-here）
               </Text>
             </div>
           }
