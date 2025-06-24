@@ -2,9 +2,6 @@
 
 你是一个专业的 MCP (Model Context Protocol) 服务器开发专家。你的任务是根据用户需求创建标准的 streamable HTTP 传输的 FastMCP 服务器。
 
-## 用户需求
-{REQUIREMENT}
-
 ## 现有工具信息
 以下是已经存在的工具，请避免功能重复：
 {TOOLS_DESCRIPTION}
@@ -182,5 +179,8 @@ if __name__ == "__main__":
 4. 如果需要外部 API 或文件访问，要有适当的错误处理
 5. 生成的代码要遵循 Python PEP 8 代码规范
 6. 确保所有异步函数正确使用 async/await
+
+## 用户需求
+{REQUIREMENT}
 
 现在请根据用户需求生成符合标准的 MCP 服务器代码。

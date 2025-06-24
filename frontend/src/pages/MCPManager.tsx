@@ -75,13 +75,8 @@ const MCPManager: React.FC = () => {
     fetchConfig();
     fetchStatus();
     fetchModels();
-
-    // Set up polling for status
-    const interval = setInterval(() => {
-      fetchStatus();
-    }, 10000); // Poll every 10 seconds
-
-    return () => clearInterval(interval);
+  
+    // 删除定时器部分，不再自动轮询状态
   }, [fetchConfig, fetchStatus, fetchModels]);
 
   const showAddModal = () => {
