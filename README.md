@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/keta1930-mcp-agent-graph-badge.png)](https://mseep.ai/app/keta1930-mcp-agent-graph)
+
 # MCP Agent Graph (MAG)
 
 English | [中文](README_CN.md)
