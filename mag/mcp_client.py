@@ -375,7 +375,8 @@ class MCPServer:
 
     async def call_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """调用工具，返回工具结果"""
-        TOOL_CALL_TIMEOUT = 20
+        tool_call_timeout = self.config.get('timeout', 60)
+        logger.info(f"开始调用工具 '{tool_name}', 超时: {tool_call_timeout} 秒")
 
         if not self.is_connected():
             raise RuntimeError(f"服务器 '{self.name}' 未连接")
@@ -387,7 +388,7 @@ class MCPServer:
             # 使用锁来保护会话调用，防止并发访问造成问题
             async with self._call_lock:
                 try:
-                    async with asyncio.timeout(TOOL_CALL_TIMEOUT):
+                    async with asyncio.timeout(tool_call_timeout):
                         result = await self.session.call_tool(tool_name, params)
                     return {
                         "tool_name": tool_name,
@@ -395,8 +396,8 @@ class MCPServer:
                         "content": result.content
                     }
                 except asyncio.TimeoutError:
-                    error_message = f"Tool execution timed out after {TOOL_CALL_TIMEOUT} seconds. The operation was canceled."
-                    logger.error(f"调用工具 '{tool_name}' 超时 (超过 {TOOL_CALL_TIMEOUT} 秒)")
+                    error_message = f"Tool execution timed out after {tool_call_timeout} seconds. The operation was canceled."
+                    logger.error(f"调用工具 '{tool_name}' 超时 (超过 {tool_call_timeout} 秒)")
                     return {
                         "tool_name": tool_name,
                         "server_name": self.name,
