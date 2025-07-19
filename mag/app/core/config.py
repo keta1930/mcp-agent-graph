@@ -3,17 +3,6 @@ import platform
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
-# 检查是否在Docker环境中
-IN_DOCKER = os.environ.get('APP_ENV') == 'production'
-
-# 尝试导入Docker环境的配置覆盖
-if IN_DOCKER:
-    try:
-        from app.core.docker_config_override import get_mag_dir
-    except ImportError:
-        get_mag_dir = None
-
-
 class Settings:
     """应用配置设置"""
 

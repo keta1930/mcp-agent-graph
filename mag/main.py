@@ -11,13 +11,9 @@ from app.api.routes import router
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
+from app.services.mongodb_service import mongodb_service 
 from app.core.file_manager import FileManager
 from app.core.config import settings
-
-
-os.environ['HTTP_PROXY'] = ''
-os.environ['HTTPS_PROXY'] = ''
-os.environ['NO_PROXY'] = '127.0.0.1,localhost'
 
 # 配置日志
 logging.basicConfig(
@@ -83,6 +79,9 @@ async def startup_event():
         # 初始化MCP服务 - 启动客户端进程
         await mcp_service.initialize()
         logger.info("MCP服务初始化成功")
+
+        await mongodb_service.initialize()
+        logger.info("MongoDB服务初始化成功")
 
         logger.info("所有服务初始化完成")
     except Exception as e:

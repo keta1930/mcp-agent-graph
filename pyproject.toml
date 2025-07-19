@@ -44,6 +44,7 @@ dependencies = [
     "tqdm",
     "python-multipart>=0.0.20",
     "starlette>=0.46.2",
+    "motor>=3.7.1",
 ]
 
 [project.urls]

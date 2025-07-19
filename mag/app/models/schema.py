@@ -346,3 +346,57 @@ class MCPToolTestResponse(BaseModel):
     result: Optional[Any] = Field(None, description="工具返回结果")
     error: Optional[str] = Field(None, description="错误信息")
     execution_time: Optional[float] = Field(None, description="执行时间（秒）")
+
+# ======= Chat模式相关数据模型 =======
+
+class ChatCompletionRequest(BaseModel):
+    """Chat完成请求"""
+    user_prompt: str = Field(..., description="用户输入的消息内容")
+    system_prompt: str = Field(default="你是一个专业的AI助手。", description="系统提示词")
+    mcp_servers: List[str] = Field(default_factory=list, description="选择的MCP服务器列表")
+    model_name: str = Field(..., description="选择的模型名称")
+    conversation_id: str = Field(..., description="对话ID")
+    user_id: str = Field(default="default_user", description="用户ID")
+
+class ChatMessage(BaseModel):
+    """Chat消息模型 - OpenAI兼容"""
+    role: str = Field(..., description="消息角色: system, user, assistant, tool")
+    content: Optional[str] = Field(None, description="消息内容")
+    tool_calls: Optional[List[Dict[str, Any]]] = Field(None, description="工具调用列表")
+    tool_call_id: Optional[str] = Field(None, description="工具调用ID（tool消息专用）")
+
+class ConversationListItem(BaseModel):
+    """对话列表项（轻量级元数据）"""
+    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    title: str = Field(..., description="对话标题")
+    created_at: str = Field(..., description="创建时间")
+    updated_at: str = Field(..., description="更新时间")
+    round_count: int = Field(..., description="轮次数")
+    tags: List[str] = Field(default_factory=list, description="标签列表")
+    
+    class Config:
+        allow_population_by_field_name = True
+
+class ConversationListResponse(BaseModel):
+    """对话列表响应"""
+    conversations: List[ConversationListItem] = Field(..., description="对话列表")
+    total_count: int = Field(..., description="总数量")
+
+class ConversationRound(BaseModel):
+    """对话轮次"""
+    round: int = Field(..., description="轮次编号")
+    messages: List[ChatMessage] = Field(..., description="轮次消息列表")
+
+class ConversationDetailResponse(BaseModel):
+    """对话详情响应（完整内容）"""
+    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    title: str = Field(..., description="对话标题")
+    created_at: str = Field(..., description="创建时间")
+    updated_at: str = Field(..., description="更新时间")
+    round_count: int = Field(..., description="轮次数")
+    tags: List[str] = Field(default_factory=list, description="标签列表")
+    user_id: str = Field(..., description="用户ID")
+    rounds: List[ConversationRound] = Field(default_factory=list, description="完整消息轮次")
+    
+    class Config:
+        allow_population_by_field_name = True

@@ -16,9 +16,6 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamablehttp_client
 from app.core.config import settings
-os.environ['HTTP_PROXY'] = ''
-os.environ['HTTPS_PROXY'] = ''
-os.environ['NO_PROXY'] = '127.0.0.1,localhost'
 
 # 配置日志
 logging.basicConfig(
