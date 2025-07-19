@@ -9,25 +9,31 @@ from typing import Dict, List, Any, Optional, AsyncGenerator
 from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service
 from app.services.mcp_service import mcp_service
+# 导入新组件
+from app.services.mcp.tool_executor import ToolExecutor
+from app.services.chat.message_builder import MessageBuilder
 
 logger = logging.getLogger(__name__)
 
 
 class ChatService:
-    """Chat服务 - 实现完整的对话功能和流式响应"""
+    """Chat服务"""
 
     def __init__(self):
         self.active_streams = {}
+        # 初始化新组件
+        self.tool_executor = ToolExecutor(mcp_service)
+        self.message_builder = MessageBuilder(mongodb_service)
 
     async def chat_completions_stream(self,
                                     conversation_id: str,
                                     user_prompt: str,
-                                    system_prompt: str = "你是一个专业的AI助手。",
+                                    system_prompt: str = "",
                                     mcp_servers: List[str] = None,
                                     model_name: str = None,
                                     user_id: str = "default_user") -> AsyncGenerator[str, None]:
         """
-        Chat completions流式接口 - 借鉴参考项目的消息构建方式
+        Chat completions流式接口
         """
         if not model_name:
             raise ValueError("必须指定模型名称")
@@ -40,7 +46,7 @@ class ChatService:
             await self._ensure_conversation_exists(conversation_id, user_id)
             
             # 构建消息上下文
-            messages = await self._build_message_context(
+            messages = await self.message_builder.build_chat_messages(
                 conversation_id, user_prompt, system_prompt
             )
             
@@ -92,12 +98,12 @@ class ChatService:
         current_messages = messages.copy()
         max_iterations = 10
         iteration = 0
-        all_round_messages = []  # 记录本轮次的所有消息
+        all_round_messages = []
         round_token_usage = {
             "total_tokens": 0,
             "prompt_tokens": 0, 
             "completion_tokens": 0
-        }  # 累积本轮次的token使用量
+        }
         
         try:
             while iteration < max_iterations:
@@ -124,23 +130,19 @@ class ChatService:
                 accumulated_content = ""
                 current_tool_calls = []
                 tool_calls_dict = {}
-                api_usage = None  # 收集token使用量
+                api_usage = None
                 
                 # 处理流式响应
                 async for chunk in stream:
-                    # 直接透传chunk给前端
                     chunk_dict = chunk.model_dump()
                     yield f"data: {json.dumps(chunk_dict)}\n\n"
                     
-                    # 收集数据用于后续处理
                     if chunk.choices and chunk.choices[0].delta:
                         delta = chunk.choices[0].delta
                         
-                        # 收集内容
                         if delta.content:
                             accumulated_content += delta.content
                         
-                        # 收集工具调用 - 参考前端的处理方式
                         if delta.tool_calls:
                             for tool_call_delta in delta.tool_calls:
                                 index = tool_call_delta.index
@@ -164,7 +166,6 @@ class ChatService:
                                     if tool_call_delta.function.arguments:
                                         tool_calls_dict[index]["function"]["arguments"] += tool_call_delta.function.arguments
                     
-                    # 收集token使用量信息 - 移到这里，在break之前
                     if hasattr(chunk, 'usage') and chunk.usage:
                         api_usage = {
                             "total_tokens": chunk.usage.total_tokens,
@@ -173,13 +174,11 @@ class ChatService:
                         }
                         logger.info(f"第 {iteration} 轮API调用token使用量: {api_usage}")
                     
-                    # 检查是否完成
                     if chunk.choices and chunk.choices[0].finish_reason:
                         current_tool_calls = list(tool_calls_dict.values())
                         logger.info(f"第 {iteration} 轮完成，finish_reason: {chunk.choices[0].finish_reason}")
                         break
                 
-                # 累积token使用量
                 if api_usage:
                     round_token_usage["total_tokens"] += api_usage["total_tokens"]
                     round_token_usage["prompt_tokens"] += api_usage["prompt_tokens"] 
@@ -188,10 +187,10 @@ class ChatService:
                 else:
                     logger.warning(f"第 {iteration} 轮未收集到token使用量信息")
                 
-                # 第二阶段：构建assistant消息 - 严格按照OpenAI格式
+                # 构建assistant消息
                 assistant_message = {
                     "role": "assistant",
-                    "content": accumulated_content or ""  # 确保content是字符串，可以为空
+                    "content": accumulated_content or ""  
                 }
                 
                 # 如果有工具调用，添加tool_calls字段
@@ -209,9 +208,9 @@ class ChatService:
                     logger.info(f"第 {iteration} 轮没有工具调用，对话完成")
                     break
                 
-                # 第三阶段：执行工具调用
+                # 执行工具调用
                 logger.info(f"执行 {len(current_tool_calls)} 个工具调用")
-                tool_results = await self._execute_tool_calls_batch(current_tool_calls, mcp_servers)
+                tool_results = await self.tool_executor.execute_tools_batch(current_tool_calls, mcp_servers)
                 
                 # 添加工具结果到消息列表并实时发送
                 for tool_result in tool_results:
@@ -223,7 +222,7 @@ class ChatService:
                     current_messages.append(tool_message)
                     all_round_messages.append(tool_message)
                     
-                    # 实时发送工具结果给前端 - 标准OpenAI格式
+                    # 实时发送工具结果给前端
                     tool_chunk = {
                         "id": f"tool-{int(time.time())}-{uuid.uuid4().hex[:8]}",
                         "object": "chat.completion.chunk",
@@ -266,99 +265,6 @@ class ChatService:
             logger.error(traceback.format_exc())
             raise
 
-    async def _execute_tool_calls_batch(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str]) -> List[Dict[str, Any]]:
-        """批量执行工具调用"""
-        tool_results = []
-        
-        # 创建异步任务
-        tasks = []
-        for tool_call in tool_calls:
-            tool_name = tool_call["function"]["name"]
-            tool_id = tool_call["id"]
-            
-            try:
-                arguments_str = tool_call["function"]["arguments"]
-                arguments = json.loads(arguments_str) if arguments_str else {}
-            except json.JSONDecodeError as e:
-                logger.error(f"工具参数JSON解析失败: {arguments_str}, 错误: {e}")
-                tool_results.append({
-                    "tool_call_id": tool_id,
-                    "content": f"工具调用解析失败：{str(e)}"
-                })
-                continue
-            
-            # 查找工具所属服务器
-            server_name = await self._find_tool_server(tool_name, mcp_servers)
-            if not server_name:
-                tool_results.append({
-                    "tool_call_id": tool_id,
-                    "content": f"找不到工具 '{tool_name}' 所属的服务器"
-                })
-                continue
-            
-            # 创建异步任务
-            task = asyncio.create_task(
-                self._call_single_tool(server_name, tool_name, arguments, tool_id)
-            )
-            tasks.append(task)
-        
-        # 等待所有工具执行完成
-        if tasks:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for result in results:
-                if isinstance(result, Exception):
-                    logger.error(f"工具执行异常: {result}")
-                    tool_results.append({
-                        "tool_call_id": "unknown",
-                        "content": f"工具执行异常: {str(result)}"
-                    })
-                else:
-                    tool_results.append(result)
-        
-        return tool_results
-
-    async def _call_single_tool(self, server_name: str, tool_name: str, 
-                               arguments: Dict[str, Any], tool_call_id: str) -> Dict[str, Any]:
-        """调用单个工具"""
-        try:
-            result = await mcp_service.call_tool(server_name, tool_name, arguments)
-            
-            if result.get("error"):
-                content = f"工具 {tool_name} 执行失败：{result['error']}"
-            else:
-                # 格式化成功结果
-                result_content = result.get("content", "")
-                if isinstance(result_content, dict) or isinstance(result_content, list):
-                    content = f"工具 {tool_name} 执行成功：{json.dumps(result_content, ensure_ascii=False)}"
-                else:
-                    content = f"工具 {tool_name} 执行成功：{str(result_content)}"
-            
-            return {
-                "tool_call_id": tool_call_id,
-                "content": content
-            }
-            
-        except Exception as e:
-            logger.error(f"工具 {tool_name} 执行失败: {str(e)}")
-            return {
-                "tool_call_id": tool_call_id,
-                "content": f"工具 {tool_name} 执行失败：{str(e)}"
-            }
-
-    async def _find_tool_server(self, tool_name: str, mcp_servers: List[str]) -> Optional[str]:
-        """查找工具所属的服务器"""
-        try:
-            all_tools = await mcp_service.get_all_tools()
-            for server_name in mcp_servers:
-                if server_name in all_tools:
-                    for tool in all_tools[server_name]:
-                        if tool["name"] == tool_name:
-                            return server_name
-            return None
-        except Exception as e:
-            logger.error(f"查找工具服务器时出错: {str(e)}")
-            return None
-
     def _add_model_params(self, params: Dict[str, Any], model_config: Dict[str, Any]):
         """添加模型配置参数"""
         optional_params = [
@@ -392,7 +298,7 @@ class ChatService:
                                  round_messages: List[Dict[str, Any]],
                                  token_usage: Dict[str, int],
                                  user_id: str):
-        """保存完整轮次到数据库，包含token统计"""
+        """保存完整轮次到数据库"""
         try:
             # 获取轮次编号
             round_number = await self._get_next_round_number(conversation_id)
@@ -411,7 +317,7 @@ class ChatService:
             
             logger.info(f"轮次 {round_number} 保存成功，token使用量: {token_usage}")
             
-            # 如果是第一轮，生成标题和标签
+            # 第一轮，生成标题和标签
             if round_number == 1:
                 await self._generate_title_and_tags_if_needed(
                     conversation_id, round_messages, model_service.get_model(list(model_service.clients.keys())[0])
@@ -426,7 +332,6 @@ class ChatService:
                                                model_config: Dict[str, Any]):
         """生成对话标题和标签"""
         try:
-            # 找到用户消息和第一个assistant回复
             user_message = ""
             assistant_content = ""
             
@@ -440,14 +345,12 @@ class ChatService:
             
             if not user_message or not assistant_content:
                 return
-            
-            # 生成标题 - 参考前端项目的简化方式
             title_prompt = f"""请为以下对话生成一个简洁的中文标题，不超过10个字，直接返回标题内容，不要加引号或其他格式：
 
-用户: {user_message[:100]}
-助手: {assistant_content[:100]}
+            用户: {user_message[:100]}
+            助手: {assistant_content[:100]}
 
-标题:"""
+            标题:"""
 
             title_result = await model_service.call_model(
                 model_name=model_config["name"],
@@ -462,10 +365,8 @@ class ChatService:
                 if not title or len(title) > 15:
                     title = "新对话"
             
-            # 简化标签生成
             tags = []
             
-            # 更新数据库
             await mongodb_service.update_conversation_title_and_tags(
                 conversation_id=conversation_id,
                 title=title,
@@ -474,8 +375,6 @@ class ChatService:
             
         except Exception as e:
             logger.error(f"生成标题和标签时出错: {str(e)}")
-
-    # === 辅助方法 ===
 
     async def _ensure_conversation_exists(self, conversation_id: str, user_id: str):
         """确保对话存在，不存在则创建"""
@@ -487,35 +386,6 @@ class ChatService:
                 title="新对话",
                 tags=[]
             )
-
-    async def _build_message_context(self,
-                                   conversation_id: str,
-                                   user_prompt: str,
-                                   system_prompt: str) -> List[Dict[str, Any]]:
-        """构建消息上下文"""
-        messages = []
-        
-        # 添加系统提示词
-        messages.append({
-            "role": "system",
-            "content": system_prompt
-        })
-        
-        # 获取历史消息
-        conversation_data = await mongodb_service.get_conversation_with_messages(conversation_id)
-        if conversation_data and conversation_data.get("rounds"):
-            for round_data in conversation_data["rounds"]:
-                for msg in round_data.get("messages", []):
-                    if msg.get("role") != "system":  # 避免重复添加系统消息
-                        messages.append(msg)
-        
-        # 添加当前用户消息
-        messages.append({
-            "role": "user",
-            "content": user_prompt
-        })
-        
-        return messages
 
     async def _prepare_mcp_tools(self, mcp_servers: List[str]) -> List[Dict[str, Any]]:
         """准备MCP工具列表"""

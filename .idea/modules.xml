@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../.idea/MAG.iml" filepath="$PROJECT_DIR$/../.idea/MAG.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../../project/QuantFactor/QuantFactorMiner/.idea/QuantFactorMiner.iml" filepath="$PROJECT_DIR$/../../project/QuantFactor/QuantFactorMiner/.idea/QuantFactorMiner.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../db/.idea/db.iml" filepath="$PROJECT_DIR$/../../db/.idea/db.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/.idea/frontend.iml" filepath="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform/.idea/frontend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../AIOpenSource/langmanus-main/.idea/langmanus-main.iml" filepath="$PROJECT_DIR$/../../../AIOpenSource/langmanus-main/.idea/langmanus-main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mcp-agent-graph.iml" filepath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" />
     </modules>
   </component>

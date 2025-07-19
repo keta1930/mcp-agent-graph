@@ -854,8 +854,7 @@ class GraphExecutor:
 
             # 简单检查节点是否配置了handoffs参数，无需考虑计数状态
             if node.get("handoffs") is not None:
-                logger.info(f"节点 '{node_name}' 配置了handoffs参数，将输出设为空字符串")
-                output_content = ""
+                output_content = output_content
 
             # 创建结果对象
             result = {
