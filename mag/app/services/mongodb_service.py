@@ -161,6 +161,43 @@ class MongoDBService:
         except Exception as e:
             logger.error(f"获取完整对话数据失败: {str(e)}")
             return None
+    
+    async def ensure_conversation_exists(self, conversation_id: str, user_id: str = "default_user") -> bool:
+        """
+        确保对话存在，不存在则创建
+        
+        Args:
+            conversation_id: 对话ID
+            user_id: 用户ID，默认为 "default_user"
+            
+        Returns:
+            bool: 操作是否成功（包括对话已存在的情况）
+        """
+        try:
+            # 检查对话是否已存在
+            conversation = await self.get_conversation(conversation_id)
+            if conversation:
+                logger.debug(f"对话已存在: {conversation_id}")
+                return True
+            
+            # 对话不存在，创建新对话
+            success = await self.create_conversation(
+                conversation_id=conversation_id,
+                user_id=user_id,
+                title="新对话",
+                tags=[]
+            )
+            
+            if success:
+                logger.info(f"自动创建对话成功: {conversation_id}")
+            else:
+                logger.error(f"自动创建对话失败: {conversation_id}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"确保对话存在时出错: {str(e)}")
+            return False
 
     async def add_round_to_conversation(self, conversation_id: str, round_number: int, 
                                       messages: List[Dict[str, Any]]) -> bool:

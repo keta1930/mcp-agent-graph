@@ -22,6 +22,132 @@ class GraphExecutor:
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
 
+    async def execute_mcp_node(self,
+                               model_name: str,
+                               messages: List[Dict[str, Any]],
+                               mcp_servers: List[str] = [],
+                               output_enabled: bool = True) -> Dict[str, Any]:
+        """执行Agent节点 - 从mcp_service迁移过来的方法"""
+        try:
+            # 使用message_builder验证消息格式
+            processed_messages = self.mcp_service.message_builder.validate_messages(messages)
+
+            # 使用server_manager准备工具
+            all_tools = await self.mcp_service.prepare_chat_tools(mcp_servers)
+
+            # 记录将要使用的工具
+            logger.info(f"可用工具: {[tool['function']['name'] for tool in all_tools]}")
+
+            # 直接调用模型
+            if not mcp_servers or not output_enabled:
+                logger.info("使用单阶段执行模式" if not output_enabled else "无MCP服务器，直接调用模型")
+
+                # 需要导入model_service
+                from app.services.model_service import model_service
+
+                result = await model_service.call_model(
+                    model_name=model_name,
+                    messages=processed_messages,
+                    tools=all_tools if all_tools else None
+                )
+
+                if result["status"] != "success":
+                    return result
+
+                # 处理工具调用
+                model_tool_calls = result.get("tool_calls", [])
+                if model_tool_calls and not output_enabled:
+                    tool_results = await self.mcp_service.tool_executor.execute_model_tools(model_tool_calls,
+                                                                                            mcp_servers)
+
+                    # 更新内容
+                    tool_content_parts = []
+                    for tool_result in tool_results:
+                        if "content" in tool_result and tool_result["content"]:
+                            tool_name = tool_result.get("tool_name", "unknown")
+                            tool_content_parts.append(f"【{tool_name} result】: {tool_result['content']}")
+
+                    if tool_content_parts:
+                        result["content"] = "\n\n".join(tool_content_parts)
+
+                    result["tool_calls"] = tool_results
+
+                return result
+
+            # 执行流程
+            from app.services.model_service import model_service
+            return await self._execute_two_stage_flow(
+                model_name, processed_messages, all_tools, mcp_servers, model_service
+            )
+
+        except Exception as e:
+            logger.error(f"执行节点时出错: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+
+    async def _execute_two_stage_flow(self, model_name: str, messages: List[Dict], all_tools: List[Dict],
+                                      mcp_servers: List[str], model_service) -> Dict[str, Any]:
+        """执行流程 - 从mcp_service迁移过来的方法"""
+        logger.info("开始两阶段执行流程")
+
+        current_messages = messages.copy()
+        total_tool_calls_results = []
+        max_iterations = 10
+
+        for iteration in range(max_iterations):
+            logger.info(f"开始第 {iteration + 1} 轮对话")
+
+            # 调用模型服务
+            result = await model_service.call_model(
+                model_name=model_name,
+                messages=current_messages,
+                tools=all_tools
+            )
+
+            if result["status"] != "success":
+                return result
+
+            # 获取响应内容
+            initial_message_content = result.get("content", "")
+            model_tool_calls = result.get("tool_calls", [])
+            if not model_tool_calls:
+                logger.info("模型未使用任何工具，这是最终结果")
+                return {
+                    "status": "success",
+                    "content": initial_message_content,
+                    "tool_calls": total_tool_calls_results
+                }
+
+            # 处理工具调用
+            tool_results = await self.mcp_service.tool_executor.execute_model_tools(model_tool_calls, mcp_servers)
+            total_tool_calls_results.extend(tool_results)
+
+            # 构建对话消息
+            current_messages.append({
+                "role": "assistant",
+                "content": initial_message_content
+            })
+
+            # 添加工具结果
+            for tool_result in tool_results:
+                if "content" in tool_result:
+                    current_messages.append({
+                        "role": "user",
+                        "content": f"工具执行结果: {tool_result['content']}"
+                    })
+
+        # 达到最大迭代次数
+        logger.warning("达到最大工具调用迭代次数")
+        return {
+            "status": "error",
+            "error": "达到最大工具调用迭代次数",
+            "tool_calls": total_tool_calls_results
+        }
+
     async def execute_graph(self,
                             graph_name: str,
                             original_config: Dict[str, Any],
@@ -163,10 +289,10 @@ class GraphExecutor:
     def _construct_execution_chain(self, conversation: Dict[str, Any]) -> List[Any]:
         """
         构造执行链条
-        
+
         Args:
             conversation: 会话对象
-            
+
         Returns:
             并行模式: List[List[str]] - 二维列表，每个子列表代表一个层级的节点
             顺序模式: List[str] - 一维列表，按执行顺序排列的节点名称
@@ -174,11 +300,11 @@ class GraphExecutor:
         results = conversation.get("results", [])
         graph_config = conversation.get("graph_config", {})
         is_parallel = conversation.get("parallel", False)
-        
+
         # 获取所有执行的节点（排除start输入节点）
         executed_nodes = []
         start_inputs = []
-        
+
         for result in results:
             if result.get("is_start_input", False):
                 start_inputs.append("start")
@@ -189,20 +315,20 @@ class GraphExecutor:
                         "name": node_name,
                         "result": result
                     })
-        print("executed_nodes",executed_nodes)
-        
+        print("executed_nodes", executed_nodes)
+
         if is_parallel:
             # 并行执行：按执行顺序构造，但保持level结构
             execution_chain = []
-            
+
             # 添加start节点（如果有）
             if start_inputs:
                 execution_chain.append(["start"])
-            
+
             # 为每个执行的节点找到对应的level，按执行顺序处理
             current_level_group = []
             current_level = None
-            
+
             for executed_node in executed_nodes:
                 node_name = executed_node["name"]
                 # 在graph_config中找到对应节点的level
@@ -211,36 +337,36 @@ class GraphExecutor:
                     if config_node["name"] == node_name:
                         node_level = config_node.get("level", 0)
                         break
-                
+
                 # 如果是新的level，保存上一个level的组并开始新组
                 if current_level is not None and node_level != current_level:
                     if current_level_group:
                         execution_chain.append(current_level_group)
                     current_level_group = []
-                
+
                 # 将当前节点添加到当前level组
                 current_level_group.append(node_name)
                 current_level = node_level
-            
+
             # 添加最后一个level组
             if current_level_group:
                 execution_chain.append(current_level_group)
-            
-            print("execution_chain",execution_chain)
+
+            print("execution_chain", execution_chain)
             return execution_chain
-        
+
         else:
             # 顺序执行：按执行顺序排列
             execution_chain = []
-            
+
             # 添加start节点（如果有）
             if start_inputs:
                 execution_chain.append("start")
-            
+
             # 按执行顺序添加节点
             for executed_node in executed_nodes:
                 execution_chain.append(executed_node["name"])
-            print("execution_chain",execution_chain)
+            print("execution_chain", execution_chain)
             return execution_chain
 
     def _record_user_input(self, conversation_id: str, input_text: str):
@@ -374,7 +500,7 @@ class GraphExecutor:
         current_level = 0
 
         while current_level <= max_level:
-            
+
             logger.info(f"开始执行层级 {current_level}")
 
             # 如果有重启点，则只处理该节点和后续节点
@@ -810,7 +936,7 @@ class GraphExecutor:
 
             # 执行节点 - 根据是否有mcp_servers决定调用方式
             if mcp_servers:
-                response = await self.mcp_service.execute_node(
+                response = await self.execute_mcp_node(
                     model_name=model_name,
                     messages=messages,
                     mcp_servers=mcp_servers,

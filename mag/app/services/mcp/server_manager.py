@@ -234,49 +234,6 @@ class MCPServerManager:
             logger.error(f"获取工具列表时出错: {str(e)}")
             return {}
 
-    async def call_tool_via_client(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        通过客户端调用指定服务器的工具
-        
-        Args:
-            server_name: 服务器名称
-            tool_name: 工具名称
-            params: 工具参数
-            
-        Returns:
-            工具调用结果
-        """
-        try:
-            session = await self._get_session()
-            async with session.post(
-                f"{self.client_url}/tool_call",
-                json={
-                    "server_name": server_name,
-                    "tool_name": tool_name,
-                    "params": params
-                }
-            ) as response:
-                if response.status == 200:
-                    return await response.json()
-                else:
-                    error_text = await response.text()
-                    error_msg = f"调用工具失败: {response.status} {error_text}"
-                    logger.error(error_msg)
-                    return {
-                        "tool_name": tool_name,
-                        "server_name": server_name,
-                        "error": error_msg
-                    }
-
-        except Exception as e:
-            error_msg = f"调用工具时出错: {str(e)}"
-            logger.error(error_msg)
-            return {
-                "tool_name": tool_name,
-                "server_name": server_name,
-                "error": error_msg
-            }
-
     async def ensure_servers_connected(self, server_names: List[str]) -> Dict[str, bool]:
         """
         确保指定的服务器已连接
@@ -306,6 +263,53 @@ class MCPServerManager:
                     logger.error(f"无法连接服务器 '{server_name}': {connect_result.get('error', '未知错误')}")
         
         return connection_status
+
+    async def prepare_chat_tools(self, mcp_servers: List[str]) -> List[Dict[str, Any]]:
+        """
+        为聊天准备MCP工具列表
+        
+        Args:
+            mcp_servers: MCP服务器名称列表
+            
+        Returns:
+            格式化后的工具列表，符合OpenAI tools格式
+        """
+        tools = []
+
+        if not mcp_servers:
+            return tools
+
+        try:
+            # 确保服务器已连接
+            connection_status = await self.ensure_servers_connected(mcp_servers)
+            
+            # 检查连接失败的服务器
+            failed_servers = [name for name, status in connection_status.items() if not status]
+            if failed_servers:
+                logger.warning(f"以下服务器连接失败，将跳过: {', '.join(failed_servers)}")
+
+            # 获取所有工具
+            all_tools = await self.get_all_tools()
+
+            # 格式化工具为OpenAI tools格式
+            for server_name in mcp_servers:
+                if server_name in all_tools and connection_status.get(server_name, False):
+                    for tool in all_tools[server_name]:
+                        tools.append({
+                            "type": "function",
+                            "function": {
+                                "name": tool["name"],
+                                "description": f"[Tool from:{server_name}] {tool['description']}",
+                                "parameters": tool["input_schema"]
+                            }
+                        })
+                        
+            logger.info(f"为聊天准备了 {len(tools)} 个MCP工具")
+            
+        except Exception as e:
+            logger.error(f"准备聊天工具时出错: {str(e)}")
+
+        return tools
 
     async def cleanup(self):
         """清理资源"""

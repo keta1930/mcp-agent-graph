@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/mag" isTestSource="false" />
+    </content>
     <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at E:\AI-Instructions\AI-Instructions\MAG\mcp-agent-graph-p\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="frontend" />
-    <orderEntry type="module" module-name="db" />
-    <orderEntry type="module" module-name="langmanus-main" />
   </component>
 </module>

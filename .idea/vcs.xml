@@ -6,8 +6,7 @@
     <mapping directory="$PROJECT_DIR$/../mcp-agent-graph - 副本" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../mcp-agent-graph-p - 副本" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../mcp-agent-graph-v" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../../RAGLAG/LingYu-AI-Platform" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../../db" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../../project/paper_code/paper" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../../tutorials/langgraph_pro/builder/langgraph-builder" vcs="Git" />
   </component>
 </project>

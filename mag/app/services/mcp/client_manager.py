@@ -170,6 +170,48 @@ class MCPClientManager:
             logger.error(f"通知MCP Client时出错: {str(e)}")
             return False
 
+    async def update_config(self, config: Dict[str, Any], config_path: str = None) -> Dict[str, Dict[str, Any]]:
+        """
+        更新MCP配置并通知客户端
+        
+        Args:
+            config: 新的配置字典
+            config_path: 配置文件路径，如果为None则使用默认路径
+            
+        Returns:
+            更新结果
+        """
+        try:
+            # 导入必要的模块
+            from app.core.file_manager import FileManager
+            from app.core.config import settings
+            
+            # 确定配置文件路径
+            if config_path is None:
+                config_path = str(settings.MCP_PATH)
+            
+            # 保存配置到文件
+            save_success = FileManager.save_mcp_config(config)
+            if not save_success:
+                logger.error("保存MCP配置到文件失败")
+                return {"status": {"error": "保存配置文件失败"}}
+
+            logger.info("MCP配置已保存到文件")
+
+            # 通知客户端
+            success = self._notify_config_change(config_path)
+
+            if success:
+                return {"status": {"message": "配置已更新并通知MCP Client"}}
+            else:
+                return {"status": {"warning": "配置已保存但无法通知MCP Client"}}
+
+        except Exception as e:
+            logger.error(f"更新MCP配置时出错: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {"status": {"error": f"更新配置失败: {str(e)}"}}
+
     async def notify_client_shutdown(self) -> bool:
         """通知客户端优雅关闭"""
         if not self.client_started:

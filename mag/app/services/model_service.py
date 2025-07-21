@@ -148,6 +148,72 @@ class ModelService:
 
         return True
 
+    # === 新增：模型参数处理方法 ===
+
+    def add_model_params(self, params: Dict[str, Any], model_config: Dict[str, Any]) -> None:
+        """
+        添加模型配置参数到API调用参数中
+        
+        Args:
+            params: API调用参数字典，会被直接修改
+            model_config: 模型配置字典
+        """
+        optional_params = [
+            'temperature', 'max_tokens', 'max_completion_tokens',
+            'top_p', 'frequency_penalty', 'presence_penalty', 'n',
+            'stop', 'seed', 'logprobs', 'top_logprobs'
+        ]
+        
+        for param in optional_params:
+            if param in model_config and model_config[param] is not None:
+                if param in ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty']:
+                    params[param] = float(model_config[param])
+                elif param in ['max_tokens', 'max_completion_tokens', 'n', 'seed', 'top_logprobs']:
+                    params[param] = int(model_config[param])
+                else:
+                    params[param] = model_config[param]
+
+    def get_extra_kwargs(self, model_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        获取额外的请求参数
+        
+        Args:
+            model_config: 模型配置字典
+            
+        Returns:
+            包含额外请求参数的字典
+        """
+        extra_kwargs = {}
+        if model_config.get('extra_headers'):
+            extra_kwargs['extra_headers'] = model_config['extra_headers']
+        if model_config.get('timeout'):
+            extra_kwargs['timeout'] = model_config['timeout']
+        if model_config.get('extra_body'):
+            extra_kwargs['extra_body'] = model_config['extra_body']
+        return extra_kwargs
+
+    def prepare_api_params(self, base_params: Dict[str, Any], model_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        准备完整的API调用参数
+        
+        Args:
+            base_params: 基础参数（model, messages等）
+            model_config: 模型配置
+            
+        Returns:
+            包含所有参数和额外配置的元组 (params, extra_kwargs)
+        """
+        # 复制基础参数以避免修改原始字典
+        params = base_params.copy()
+        
+        # 添加模型配置参数
+        self.add_model_params(params, model_config)
+        
+        # 获取额外参数
+        extra_kwargs = self.get_extra_kwargs(model_config)
+        
+        return params, extra_kwargs
+
     async def call_model(self,
                         model_name: str,
                         messages: List[Dict[str, Any]],
@@ -163,40 +229,17 @@ class ModelService:
 
         try:
             # 准备基本调用参数
-            params = {
+            base_params = {
                 "model": model_config["model"],
                 "messages": messages
             }
 
-            # 添加可选参数（从模型配置中自动获取）
-            optional_params = [
-                'temperature', 'max_tokens', 'max_completion_tokens',
-                'top_p', 'frequency_penalty', 'presence_penalty', 'n',
-                'stop', 'seed', 'logprobs', 'top_logprobs'
-            ]
-            
-            for param in optional_params:
-                if param in model_config and model_config[param] is not None:
-                    # 确保数值类型参数的正确类型
-                    if param in ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty']:
-                        params[param] = float(model_config[param])
-                    elif param in ['max_tokens', 'max_completion_tokens', 'n', 'seed', 'top_logprobs']:
-                        params[param] = int(model_config[param])
-                    else:
-                        params[param] = model_config[param]
-
             # 如果提供了工具，添加到参数中
             if tools:
-                params["tools"] = tools
+                base_params["tools"] = tools
 
-            # 处理额外的请求参数
-            extra_kwargs = {}
-            if model_config.get('extra_headers'):
-                extra_kwargs['extra_headers'] = model_config['extra_headers']
-            if model_config.get('timeout'):
-                extra_kwargs['timeout'] = model_config['timeout']
-            if model_config.get('extra_body'):
-                extra_kwargs['extra_body'] = model_config['extra_body']
+            # 使用新的参数准备方法
+            params, extra_kwargs = self.prepare_api_params(base_params, model_config)
 
             # 检查是否启用流式返回
             is_stream = model_config.get('stream', False)
@@ -261,6 +304,9 @@ class ModelService:
                                 if tool_call_delta.function.arguments:
                                     current_tool_calls[index]["function"]["arguments"] += tool_call_delta.function.arguments
 
+            # 保存原始工具调用信息（用于构造标准消息格式）
+            raw_tool_calls = list(current_tool_calls.values())
+
             # 处理完整的工具调用
             for tool_call_data in current_tool_calls.values():
                 tool_name = tool_call_data["function"]["name"]
@@ -294,7 +340,8 @@ class ModelService:
             return {
                 "status": "success",
                 "content": cleaned_content,
-                "tool_calls": tool_calls
+                "tool_calls": tool_calls,
+                "raw_tool_calls": raw_tool_calls
             }
             
         except Exception as e:
@@ -312,7 +359,20 @@ class ModelService:
 
             # 处理工具调用
             tool_calls = []
+            raw_tool_calls = []
             if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
+                # 保存原始工具调用信息
+                for tool_call in response.choices[0].message.tool_calls:
+                    raw_tool_calls.append({
+                        "id": tool_call.id,
+                        "type": tool_call.type,
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments
+                        }
+                    })
+                
+                # 处理简化的工具调用信息
                 for tool_call in response.choices[0].message.tool_calls:
                     try:
                         tool_args = json.loads(tool_call.function.arguments)
@@ -340,7 +400,8 @@ class ModelService:
             return {
                 "status": "success",
                 "content": cleaned_content,
-                "tool_calls": tool_calls
+                "tool_calls": tool_calls,
+                "raw_tool_calls": raw_tool_calls
             }
             
         except Exception as e:

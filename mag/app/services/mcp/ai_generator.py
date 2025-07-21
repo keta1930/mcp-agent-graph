@@ -280,6 +280,68 @@ class MCPAIGenerator:
                 "error": f"生成MCP工具时出错: {str(e)}"
             }
 
+    async def generate_and_register_mcp_tool(self, requirement: str, model_name: str, model_service, 
+                                           all_tools_data: Dict[str, List[Dict]] = None,
+                                           update_config_func=None) -> Dict[str, Any]:
+        """
+        AI生成MCP工具并自动注册到配置
+        
+        Args:
+            requirement: 用户需求
+            model_name: 模型名称
+            model_service: 模型服务实例
+            all_tools_data: 所有工具数据
+            update_config_func: 配置更新函数
+            
+        Returns:
+            生成和注册结果
+        """
+        try:
+            # 1. 生成MCP工具
+            result = await self.generate_mcp_tool(
+                requirement, model_name, model_service, all_tools_data
+            )
+            
+            # 2. 如果生成成功，自动注册到配置
+            if result.get("status") == "success":
+                folder_name = result["folder_name"]
+                port = result["port"]
+                
+                # 验证端口号
+                if port is None:
+                    logger.error("生成的工具缺少端口号")
+                    FileManager.delete_mcp_tool(folder_name)
+                    return {
+                        "status": "error",
+                        "error": "生成的工具缺少端口号"
+                    }
+                
+                # 注册到配置
+                if update_config_func:
+                    register_success = await self.register_ai_mcp_tool(
+                        folder_name, port, update_config_func
+                    )
+                    
+                    if not register_success:
+                        # 注册失败，清理文件
+                        FileManager.delete_mcp_tool(folder_name)
+                        return {
+                            "status": "error",
+                            "error": "注册MCP工具到配置失败"
+                        }
+                else:
+                    logger.warning("未提供配置更新函数，跳过自动注册")
+                    result["warning"] = "工具已生成但未自动注册到配置"
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"生成并注册MCP工具时出错: {str(e)}")
+            return {
+                "status": "error",
+                "error": f"生成工具失败: {str(e)}"
+            }
+
     async def register_ai_mcp_tool(self, tool_name: str, port: int, update_config_func) -> bool:
         """
         注册AI生成的MCP工具到配置
