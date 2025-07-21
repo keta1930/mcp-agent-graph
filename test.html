@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAG Chat 流式测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .response-container {
+            margin-top: 20px;
+        }
+
+        .status {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.completed {
+            background: #cce7ff;
+            color: #0c5aa6;
+            border: 1px solid #99d3ff;
+        }
+
+        .chat-area {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            min-height: 300px;
+            max-height: 600px;
+            overflow-y: auto;
+            background: #fafafa;
+            padding: 10px;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .message.assistant {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .message.tool-call {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+        }
+
+        .message.tool-result {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+        }
+
+        .message.system {
+            background: #f5f5f5;
+            border-left: 4px solid #6c757d;
+        }
+
+        .message-header {
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .message-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            word-wrap: break-word;
+            font-size: 14px;
+        }
+
+        .tool-call-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+        }
+
+        .tool-call-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 6px;
+        }
+
+        .tool-params {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 8px;
+            font-size: 12px;
+            color: #6c757d;
+            overflow-x: auto;
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .stats {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+
+        .round-divider {
+            text-align: center;
+            margin: 20px 0;
+            padding: 8px;
+            background: #e9ecef;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 MAG Chat 流式测试</h1>
+
+        <form id="chatForm">
+            <div class="form-group">
+                <label for="userPrompt">💬 用户提示:</label>
+                <textarea id="userPrompt" placeholder="输入你的问题..." required>前往modelscope模型页第一页查看有哪些模型</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="systemPrompt">⚙️ 系统提示:</label>
+                <textarea id="systemPrompt" placeholder="系统提示词...">你是一个专业的AI助手。</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="mcpServers">🔧 MCP服务器 (逗号分隔):</label>
+                <input type="text" id="mcpServers" placeholder="playwright,filesystem" value="playwright">
+            </div>
+
+            <div class="form-group">
+                <label for="modelName">🎯 模型名称:</label>
+                <input type="text" id="modelName" placeholder="模型名称" required value="deepseek-chat">
+            </div>
+
+            <div class="form-group">
+                <label for="conversationId">💭 对话ID:</label>
+                <input type="text" id="conversationId" placeholder="对话ID" value="">
+            </div>
+
+            <button type="submit" id="sendBtn">🚀 发送消息</button>
+            <button type="button" id="clearBtn">🗑️ 清空对话</button>
+        </form>
+
+        <div class="response-container">
+            <div id="status" class="status" style="display: none;"></div>
+
+            <div class="chat-area" id="chatArea">
+                <div style="padding: 20px; text-align: center; color: #6c757d;">
+                    准备开始对话...
+                </div>
+            </div>
+
+            <div id="stats" class="stats" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('chatForm');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const statusDiv = document.getElementById('status');
+        const chatArea = document.getElementById('chatArea');
+        const statsDiv = document.getElementById('stats');
+
+        let currentAssistantMessage = null;
+        let currentToolCalls = [];
+        let isStreaming = false;
+        let startTime = null;
+        let tokenCount = 0;
+        let roundCount = 0;
+
+        // 生成随机对话ID
+        function generateConversationId() {
+            return 'conv_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 初始化对话ID
+        document.getElementById('conversationId').value = generateConversationId();
+
+        // 显示状态
+        function showStatus(message, type, showSpinner = false) {
+            statusDiv.innerHTML = `
+                ${showSpinner ? '<span class="typing-indicator">●●●</span>' : ''}
+                ${message}
+            `;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        // 添加轮次分隔符
+        function addRoundDivider(roundNum) {
+            const dividerDiv = document.createElement('div');
+            dividerDiv.className = 'round-divider';
+            dividerDiv.textContent = `--- 第 ${roundNum} 轮对话 ---`;
+            chatArea.appendChild(dividerDiv);
+        }
+
+        // 添加消息到聊天区域
+        function addMessage(role, content, isComplete = true) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const roleNames = {
+                'user': '👤 用户',
+                'assistant': '🤖 助手回复',
+                'tool-call': '🔧 工具调用',
+                'tool-result': '✅ 工具结果',
+                'system': '⚙️ 系统'
+            };
+
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    ${roleNames[role] || role}
+                    ${!isComplete && role === 'assistant' ? '<span class="typing-indicator">正在输入...</span>' : ''}
+                </div>
+                <div class="message-content">${content}</div>
+            `;
+
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            return messageDiv;
+        }
+
+        // 更新消息内容
+        function updateMessage(messageDiv, content, isComplete = true) {
+            const contentDiv = messageDiv.querySelector('.message-content');
+            const headerDiv = messageDiv.querySelector('.message-header');
+
+            contentDiv.textContent = content;
+
+            if (isComplete) {
+                const typingIndicator = headerDiv.querySelector('.typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+        }
+
+        // 添加工具调用消息
+        function addToolCallMessage(toolCalls) {
+            if (!toolCalls || toolCalls.length === 0) return;
+
+            let content = '';
+            toolCalls.forEach((toolCall, index) => {
+                const toolName = toolCall.function?.name || '未知工具';
+                const toolArgs = toolCall.function?.arguments || '{}';
+
+                content += `<div class="tool-call-item">
+                    <div class="tool-name">🔧 ${toolName}</div>
+                    <div class="tool-params">${toolArgs}</div>
+                </div>`;
+            });
+
+            const messageDiv = addMessage('tool-call', '');
+            messageDiv.querySelector('.message-content').innerHTML = content;
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            if (startTime) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                const speed = tokenCount > 0 ? (tokenCount / (Date.now() - startTime) * 1000).toFixed(1) : '0';
+
+                statsDiv.innerHTML = `
+                    ⏱️ 耗时: ${duration}s |
+                    📊 字符数: ${tokenCount} |
+                    ⚡ 速度: ${speed} 字符/秒 |
+                    🔄 轮次: ${roundCount}
+                `;
+                statsDiv.style.display = 'block';
+            }
+        }
+
+        // 清空对话
+        clearBtn.addEventListener('click', () => {
+            chatArea.innerHTML = '<div style="padding: 20px; text-align: center; color: #6c757d;">准备开始对话...</div>';
+            statusDiv.style.display = 'none';
+            statsDiv.style.display = 'none';
+
+            // 生成新的对话ID
+            document.getElementById('conversationId').value = generateConversationId();
+
+            currentAssistantMessage = null;
+            currentToolCalls = [];
+            isStreaming = false;
+            startTime = null;
+            tokenCount = 0;
+            roundCount = 0;
+
+            sendBtn.disabled = false;
+            sendBtn.textContent = '🚀 发送消息';
+        });
+
+        // 发送消息
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (isStreaming) {
+                return;
+            }
+
+            const formData = {
+                user_prompt: document.getElementById('userPrompt').value,
+                system_prompt: document.getElementById('systemPrompt').value,
+                mcp_servers: document.getElementById('mcpServers').value.split(',').map(s => s.trim()).filter(s => s),
+                model_name: document.getElementById('modelName').value,
+                conversation_id: document.getElementById('conversationId').value,
+                user_id: "default_user"
+            };
+
+            // 清空初始提示
+            if (chatArea.innerHTML.includes('准备开始对话')) {
+                chatArea.innerHTML = '';
+            }
+
+            // 增加轮次计数
+            roundCount++;
+            addRoundDivider(roundCount);
+
+            // 添加用户消息
+            addMessage('user', formData.user_prompt);
+
+            // 重置状态
+            isStreaming = true;
+            currentAssistantMessage = null;
+            currentToolCalls = [];
+            startTime = Date.now();
+            if (roundCount === 1) tokenCount = 0; // 只在第一轮重置token计数
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = '🔄 发送中...';
+
+            showStatus('正在连接AI模型...', 'connecting', true);
+
+            try {
+                const response = await fetch('http://localhost:9999/api/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                showStatus('已连接，正在接收回复...', 'connected', true);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let assistantContent = '';
+                let hasToolCalls = false;
+                let toolCallsMap = {}; // 用于累积tool_calls
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) {
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (!line || !line.startsWith('data: ')) continue;
+
+                        const dataStr = line.substring(6);
+
+                        if (dataStr === '[DONE]') {
+                            showStatus('✅ 对话完成', 'completed');
+                            isStreaming = false;
+                            sendBtn.disabled = false;
+                            sendBtn.textContent = '🚀 发送消息';
+
+                            // 完成当前助手消息
+                            if (currentAssistantMessage) {
+                                updateMessage(currentAssistantMessage, assistantContent, true);
+                            }
+
+                            // 如果有工具调用，显示工具调用消息
+                            if (hasToolCalls && Object.keys(toolCallsMap).length > 0) {
+                                const toolCallsArray = Object.values(toolCallsMap);
+                                addToolCallMessage(toolCallsArray);
+                            }
+
+                            updateStats();
+                            continue;
+                        }
+
+                        try {
+                            const data = JSON.parse(dataStr);
+
+                            // 处理错误
+                            if (data.error) {
+                                showStatus(`❌ 错误: ${data.error.message}`, 'error');
+                                isStreaming = false;
+                                sendBtn.disabled = false;
+                                sendBtn.textContent = '🚀 发送消息';
+                                break;
+                            }
+
+                            // 处理工具结果消息
+                            if (data.role === 'tool') {
+                                addMessage('tool-result', `工具ID: ${data.tool_call_id}\n\n${data.content}`);
+                                continue;
+                            }
+
+                            // 处理模型回复
+                            if (data.choices && data.choices[0] && data.choices[0].delta) {
+                                const delta = data.choices[0].delta;
+
+                                // 处理文本内容
+                                if (delta.content) {
+                                    assistantContent += delta.content;
+                                    tokenCount += delta.content.length;
+
+                                    if (!currentAssistantMessage) {
+                                        currentAssistantMessage = addMessage('assistant', assistantContent, false);
+                                    } else {
+                                        updateMessage(currentAssistantMessage, assistantContent, false);
+                                    }
+
+                                    updateStats();
+                                }
+
+                                // 累积工具调用信息
+                                if (delta.tool_calls) {
+                                    hasToolCalls = true;
+                                    for (const toolCallDelta of delta.tool_calls) {
+                                        const index = toolCallDelta.index;
+
+                                        if (!toolCallsMap[index]) {
+                                            toolCallsMap[index] = {
+                                                id: toolCallDelta.id || "",
+                                                type: "function",
+                                                function: {
+                                                    name: "",
+                                                    arguments: ""
+                                                }
+                                            };
+                                        }
+
+                                        if (toolCallDelta.id) {
+                                            toolCallsMap[index].id = toolCallDelta.id;
+                                        }
+
+                                        if (toolCallDelta.function) {
+                                            if (toolCallDelta.function.name) {
+                                                toolCallsMap[index].function.name += toolCallDelta.function.name;
+                                            }
+                                            if (toolCallDelta.function.arguments) {
+                                                toolCallsMap[index].function.arguments += toolCallDelta.function.arguments;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 检查是否完成了一个流式响应的片段
+                                if (data.choices[0].finish_reason) {
+                                    // 完成当前助手消息
+                                    if (currentAssistantMessage) {
+                                        updateMessage(currentAssistantMessage, assistantContent, true);
+                                    }
+
+                                    // 如果有工具调用，显示工具调用消息
+                                    if (hasToolCalls && Object.keys(toolCallsMap).length > 0) {
+                                        const toolCallsArray = Object.values(toolCallsMap);
+                                        addToolCallMessage(toolCallsArray);
+                                    }
+
+                                    // 重置为下一轮做准备
+                                    currentAssistantMessage = null;
+                                    assistantContent = '';
+                                    hasToolCalls = false;
+                                    toolCallsMap = {};
+                                }
+                            }
+
+                        } catch (parseError) {
+                            console.warn('解析SSE数据失败:', parseError, '原数据:', dataStr);
+                        }
+                    }
+                }
+
+            } catch (error) {
+                showStatus(`❌ 连接错误: ${error.message}`, 'error');
+                isStreaming = false;
+                sendBtn.disabled = false;
+                sendBtn.textContent = '🚀 发送消息';
+            }
+        });
+    </script>
+</body>
+</html>

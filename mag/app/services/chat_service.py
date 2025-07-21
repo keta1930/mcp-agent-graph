@@ -9,9 +9,11 @@ from typing import Dict, List, Any, Optional, AsyncGenerator
 from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service
 from app.services.mcp_service import mcp_service
-# 导入新组件
 from app.services.mcp.tool_executor import ToolExecutor
 from app.services.chat.message_builder import MessageBuilder
+from app.services.chat.prompts import get_summarize_prompt,get_title_prompt
+from app.utils.text_tool import detect_language
+from app.utils.text_parser import parse_title_and_tags_response
 
 logger = logging.getLogger(__name__)
 
@@ -225,26 +227,7 @@ class ChatService:
                     }
                     current_messages.append(tool_message)
                     all_round_messages.append(tool_message)
-
-                    # 实时发送工具结果给前端
-                    tool_chunk = {
-                        "id": f"tool-{int(time.time())}-{uuid.uuid4().hex[:8]}",
-                        "object": "chat.completion.chunk",
-                        "created": int(time.time()),
-                        "model": model_config["model"],
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {
-                                    "role": "tool",
-                                    "content": tool_result["content"],
-                                    "tool_call_id": tool_result["tool_call_id"]
-                                },
-                                "finish_reason": None
-                            }
-                        ]
-                    }
-                    yield f"data: {json.dumps(tool_chunk)}\n\n"
+                    yield f"data: {json.dumps(tool_message)}\n\n"
 
                 # 继续下一轮循环
                 logger.info(f"工具执行完成，准备第 {iteration + 1} 轮模型调用")
@@ -295,17 +278,17 @@ class ChatService:
 
             # 第一轮，生成标题和标签
             if round_number == 1:
-                await self._generate_title_and_tags_if_needed(
+                await self._generate_title_and_tags(
                     conversation_id, round_messages, model_service.get_model(list(model_service.clients.keys())[0])
                 )
 
         except Exception as e:
             logger.error(f"保存轮次时出错: {str(e)}")
 
-    async def _generate_title_and_tags_if_needed(self,
-                                                 conversation_id: str,
-                                                 messages: List[Dict[str, Any]],
-                                                 model_config: Dict[str, Any]):
+    async def _generate_title_and_tags(self,
+                                             conversation_id: str,
+                                             messages: List[Dict[str, Any]],
+                                             model_config: Dict[str, Any]):
         """生成对话标题和标签"""
         try:
             user_message = ""
@@ -321,27 +304,49 @@ class ChatService:
 
             if not user_message or not assistant_content:
                 return
-            title_prompt = f"""请为以下对话生成一个简洁的中文标题，不超过10个字，直接返回标题内容，不要加引号或其他格式：
+            
+            # 检测消息语言
+            combined_text = user_message + " " + assistant_content
+            language = detect_language(combined_text)
+            
+            # 获取对应语言的标题生成提示词
+            title_prompt_template = get_title_prompt(language)
+            
+            # 构建标题生成提示词，限制消息长度避免token过多
+            title_prompt = title_prompt_template.format(
+                user_message=user_message,
+                assistant_message=assistant_content
+            )
 
-            用户: {user_message[:100]}
-            助手: {assistant_content[:100]}
-
-            标题:"""
-
-            title_result = await model_service.call_model(
+            # 调用模型生成标题和标签
+            result = await model_service.call_model(
                 model_name=model_config["name"],
                 messages=[{"role": "user", "content": title_prompt}]
             )
 
             title = "新对话"
-            if title_result.get("status") == "success":
-                title = title_result.get("content", "新对话").strip()
-                # 清理引号
-                title = title.strip('"\'""''')
-                if not title or len(title) > 15:
-                    title = "新对话"
-
             tags = []
+
+            if result.get("status") == "success":
+                response_content = result.get("content", "")
+                
+                parsed_result = parse_title_and_tags_response(response_content)
+    
+                if parsed_result.get("success"):
+                    title = parsed_result.get("title", "").strip() 
+                    parsed_tags = parsed_result.get("tags", [])
+                    if parsed_tags:
+                        tags = []
+                        for tag in parsed_tags:
+                            cleaned_tag = tag.strip()
+                            tags.append(cleaned_tag)
+
+                else:
+                    logger.warning(f"解析标题和标签失败: {parsed_result.get('error', '未知错误')}")
+                    if response_content:
+                        fallback_title = response_content.strip()[:10]
+                        if fallback_title:
+                            title = fallback_title
 
             await mongodb_service.update_conversation_title_and_tags(
                 conversation_id=conversation_id,
@@ -349,8 +354,110 @@ class ChatService:
                 tags=tags
             )
 
+            logger.info(f"生成对话标题和标签成功: 标题='{title}', 标签={tags}")
+
         except Exception as e:
             logger.error(f"生成标题和标签时出错: {str(e)}")
+
+    async def compact_conversation(self,
+                             conversation_id: str,
+                             model_name: str,
+                             compact_type: str = "brutal",
+                             compact_threshold: int = 2000,
+                             user_id: str = "default_user") -> Dict[str, Any]:
+        """
+        压缩对话内容
+        
+        Args:
+            conversation_id: 对话ID
+            model_name: 用于内容总结的模型名称
+            compact_type: 压缩类型 'brutal'（暴力压缩）或 'precise'（精确压缩）
+            compact_threshold: 压缩阈值，超过此长度的tool content将被压缩
+            user_id: 用户ID
+            
+        Returns:
+            Dict[str, Any]: 压缩结果
+        """
+        try:
+            # 验证参数
+            if compact_type not in ['brutal', 'precise']:
+                return {"status": "error", "error": "压缩类型必须是 'brutal' 或 'precise'"}
+            
+            # 验证模型是否存在
+            model_config = model_service.get_model(model_name)
+            if not model_config:
+                return {"status": "error", "error": f"找不到模型配置: {model_name}"}
+
+            # 创建总结回调函数（仅用于精确压缩）
+            summarize_callback = None
+            if compact_type == "precise":
+                summarize_callback = lambda content: self._summarize_tool_content(content, model_name)
+
+            # 调用MongoDB服务执行压缩
+            result = await mongodb_service.compact_conversation(
+                conversation_id=conversation_id,
+                compact_type=compact_type,
+                compact_threshold=compact_threshold,
+                summarize_callback=summarize_callback,
+                user_id=user_id
+            )
+
+            logger.info(f"对话压缩完成: {conversation_id}, 结果: {result.get('status')}")
+            return result
+
+        except Exception as e:
+            logger.error(f"压缩对话时出错: {str(e)}")
+            return {"status": "error", "error": str(e)}
+
+    async def _summarize_tool_content(self, content: str, model_name: str) -> Dict[str, Any]:
+        """
+        使用模型总结工具内容
+        
+        Args:
+            content: 要总结的内容
+            model_name: 用于总结的模型名称
+            
+        Returns:
+            Dict[str, Any]: 总结结果
+        """
+        try:
+            # 检测内容语言
+            language = detect_language(content)
+            
+            # 获取对应语言的提示词
+            prompt_template = get_summarize_prompt(language)
+            
+            # 限制输入内容长度以避免token超限
+            truncated_content = content
+            
+            # 构建总结提示词
+            summary_prompt = prompt_template.format(content=truncated_content)
+
+            # 构建消息
+            messages = [
+                {"role": "user", "content": summary_prompt}
+            ]
+
+            # 调用模型
+            result = await model_service.call_model(
+                model_name=model_name,
+                messages=messages
+            )
+
+            if result.get("status") == "success":
+                summary_content = result.get("content", "").strip()
+                
+                return {
+                    "status": "success", 
+                    "content": summary_content
+                }
+            else:
+                logger.warning(f"内容总结失败: {result.get('error', '未知错误')}")
+                return {"status": "error", "error": result.get("error", "总结失败")}
+
+        except Exception as e:
+            logger.error(f"总结工具内容时出错: {str(e)}")
+            return {"status": "error", "error": str(e)}
 
     async def _get_next_round_number(self, conversation_id: str) -> int:
         """获取下一个轮次编号"""

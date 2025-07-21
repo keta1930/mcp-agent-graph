@@ -29,7 +29,8 @@ from app.models.schema import (
     MCPToolRegistration, MCPGenerationResponse, MCPToolTestRequest,
     MCPToolTestResponse,
     ChatCompletionRequest, ChatMessage, ConversationListItem,
-    ConversationListResponse, ConversationDetailResponse, ConversationRound
+    ConversationListResponse, ConversationDetailResponse, ConversationRound,UpdateConversationTitleRequest,
+    UpdateConversationTagsRequest,ConversationCompactRequest, ConversationCompactResponse
 )
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.text_parser import parse_graph_response
@@ -2197,13 +2198,13 @@ async def chat_completions(request: ChatCompletionRequest):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="用户消息不能为空"
             )
-        
+
         if not request.model_name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="必须指定模型名称"
             )
-        
+
         # 验证模型是否存在
         model_config = model_service.get_model(request.model_name)
         if not model_config:
@@ -2211,7 +2212,7 @@ async def chat_completions(request: ChatCompletionRequest):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"找不到模型配置: {request.model_name}"
             )
-        
+
         # 生成流式响应
         async def generate_stream():
             try:
@@ -2234,7 +2235,7 @@ async def chat_completions(request: ChatCompletionRequest):
                 }
                 yield f"data: {json.dumps(error_chunk)}\n\n"
                 yield "data: [DONE]\n\n"
-        
+
         return StreamingResponse(
             generate_stream(),
             media_type="text/event-stream",
@@ -2262,24 +2263,24 @@ async def get_conversations_list(user_id: str = "default_user"):
             limit=100,  # 固定限制，不需要分页
             skip=0
         )
-        
+
         # 转换为轻量级格式
         conversation_items = []
         for conv in conversations:
             # 处理时间格式
             created_at = conv.get("created_at", "")
             updated_at = conv.get("updated_at", "")
-            
+
             if isinstance(created_at, datetime):
                 created_at = created_at.isoformat()
             elif created_at:
                 created_at = str(created_at)
-            
+
             if isinstance(updated_at, datetime):
                 updated_at = updated_at.isoformat()
             elif updated_at:
                 updated_at = str(updated_at)
-            
+
             conversation_items.append(ConversationListItem(
                 _id=conv["_id"],
                 title=conv.get("title", "新对话"),
@@ -2288,12 +2289,12 @@ async def get_conversations_list(user_id: str = "default_user"):
                 round_count=conv.get("round_count", 0),
                 tags=conv.get("tags", [])
             ))
-        
+
         return ConversationListResponse(
             conversations=conversation_items,
             total_count=len(conversation_items)
         )
-        
+
     except Exception as e:
         logger.error(f"获取对话列表出错: {str(e)}")
         raise HTTPException(
@@ -2306,27 +2307,27 @@ async def get_conversation_detail(conversation_id: str):
     """获取对话完整内容（用户切换对话时调用）"""
     try:
         conversation = await chat_service.get_conversation_detail(conversation_id)
-        
+
         if not conversation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到对话 '{conversation_id}'"
             )
-        
+
         # 处理时间格式
         created_at = conversation.get("created_at", "")
         updated_at = conversation.get("updated_at", "")
-        
+
         if isinstance(created_at, datetime):
             created_at = created_at.isoformat()
         elif created_at:
             created_at = str(created_at)
-        
+
         if isinstance(updated_at, datetime):
             updated_at = updated_at.isoformat()
         elif updated_at:
             updated_at = str(updated_at)
-        
+
         # 处理轮次数据 - 转换为OpenAI格式
         rounds = []
         for round_data in conversation.get("rounds", []):
@@ -2334,7 +2335,7 @@ async def get_conversation_detail(conversation_id: str):
                 round=round_data.get("round", 0),
                 messages=[ChatMessage(**msg) for msg in round_data.get("messages", [])]
             ))
-        
+
         return ConversationDetailResponse(
             _id=conversation["_id"],
             title=conversation.get("title", "新对话"),
@@ -2345,7 +2346,7 @@ async def get_conversation_detail(conversation_id: str):
             user_id=conversation.get("user_id", "default_user"),
             rounds=rounds
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -2360,13 +2361,13 @@ async def delete_conversation(conversation_id: str):
     """删除对话"""
     try:
         success = await chat_service.delete_conversation(conversation_id)
-        
+
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到对话 '{conversation_id}' 或删除失败"
             )
-        
+
         return {
             "status": "success",
             "message": f"对话 '{conversation_id}' 删除成功",
@@ -2381,6 +2382,158 @@ async def delete_conversation(conversation_id: str):
             detail=f"删除对话出错: {str(e)}"
         )
 
+
+@router.put("/chat/conversations/{conversation_id}/title")
+async def update_conversation_title(conversation_id: str, request: UpdateConversationTitleRequest):
+    """更新对话标题"""
+    try:
+        # 验证标题不为空
+        if not request.title.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="标题不能为空"
+            )
+
+        # 调用mongodb_service更新标题
+        success = await mongodb_service.update_conversation_title(
+            conversation_id=conversation_id,
+            title=request.title.strip(),
+            user_id=request.user_id
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}' 或更新失败"
+            )
+
+        return {
+            "status": "success",
+            "message": "对话标题更新成功",
+            "conversation_id": conversation_id,
+            "title": request.title.strip()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"更新对话标题出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"更新对话标题出错: {str(e)}"
+        )
+
+
+@router.put("/chat/conversations/{conversation_id}/tags")
+async def update_conversation_tags(conversation_id: str, request: UpdateConversationTagsRequest):
+    """更新对话标签"""
+    try:
+        # 调用mongodb_service更新标签
+        success = await mongodb_service.update_conversation_tags(
+            conversation_id=conversation_id,
+            tags=request.tags,
+            user_id=request.user_id
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}' 或更新失败"
+            )
+
+        return {
+            "status": "success",
+            "message": "对话标签更新成功",
+            "conversation_id": conversation_id,
+            "tags": request.tags
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"更新对话标签出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"更新对话标签出错: {str(e)}"
+        )
+
+@router.post("/chat/conversations/{conversation_id}/compact", response_model=ConversationCompactResponse)
+async def compact_conversation(conversation_id: str, request: ConversationCompactRequest):
+    """
+    压缩对话内容
+    
+    支持两种压缩类型：
+    - brutal（暴力压缩）：保留每轮的系统提示词、用户消息和最后一个assistant消息
+    - precise（精确压缩）：对长工具内容进行智能总结
+    """
+    try:
+        # 验证对话ID是否匹配
+        if request.conversation_id != conversation_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请求路径中的对话ID与请求体中的对话ID不匹配"
+            )
+
+        # 验证模型名称
+        model_config = model_service.get_model(request.model_name)
+        if not model_config:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"找不到模型配置: {request.model_name}"
+            )
+
+        # 检查对话是否存在
+        conversation = await chat_service.get_conversation_detail(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        # 验证对话所有权
+        if conversation.get("user_id") != request.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限访问此对话"
+            )
+
+        # 执行压缩
+        result = await chat_service.compact_conversation(
+            conversation_id=conversation_id,
+            model_name=request.model_name,
+            compact_type=request.compact_type,
+            compact_threshold=request.compact_threshold,
+            user_id=request.user_id
+        )
+
+        # 处理结果
+        if result["status"] == "error":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result.get("error", "压缩失败")
+            )
+
+        return ConversationCompactResponse(
+            status="success",
+            message=result.get("message", "对话压缩成功"),
+            conversation_id=conversation_id,
+            compact_type=request.compact_type,
+            statistics=result.get("statistics"),
+            error=None
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"压缩对话出错: {str(e)}")
+        return ConversationCompactResponse(
+            status="error",
+            message="压缩对话时发生未知错误",
+            conversation_id=conversation_id,
+            compact_type=request.compact_type,
+            statistics=None,
+            error=str(e)
+        )
 # ============系统接口===========
 @router.post("/system/shutdown", response_model=Dict[str, Any])
 async def shutdown_service(background_tasks: BackgroundTasks):

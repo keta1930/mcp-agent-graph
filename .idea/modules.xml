@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../../chat/.idea/chat.iml" filepath="$PROJECT_DIR$/../../chat/.idea/chat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../db/.idea/db.iml" filepath="$PROJECT_DIR$/../../db/.idea/db.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mcp-agent-graph.iml" filepath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" />
     </modules>
   </component>

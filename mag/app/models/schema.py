@@ -400,3 +400,58 @@ class ConversationDetailResponse(BaseModel):
     
     class Config:
         allow_population_by_field_name = True
+
+class UpdateConversationTitleRequest(BaseModel):
+    """更新对话标题请求"""
+    title: str = Field(..., description="新的对话标题", max_length=100)
+    user_id: str = Field(default="default_user", description="用户ID")
+
+
+class UpdateConversationTagsRequest(BaseModel):
+    """更新对话标签请求"""
+    tags: List[str] = Field(..., description="新的标签列表")
+    user_id: str = Field(default="default_user", description="用户ID")
+
+    @validator('tags')
+    def validate_tags(cls, v):
+        # 验证标签格式
+        if len(v) > 10:  # 限制最多10个标签
+            raise ValueError('标签数量不能超过10个')
+        for tag in v:
+            if not tag.strip():
+                raise ValueError('标签不能为空')
+            if len(tag) > 20:  # 限制单个标签长度
+                raise ValueError('单个标签长度不能超过20个字符')
+        return [tag.strip() for tag in v]  # 去除空格
+
+class ConversationCompactRequest(BaseModel):
+    """对话压缩请求"""
+    conversation_id: str = Field(..., description="要压缩的对话ID")
+    model_name: str = Field(..., description="用于内容总结的模型名称")
+    compact_type: str = Field(default="brutal", description="压缩类型：precise（精确压缩）/ brutal（暴力压缩）")
+    compact_threshold: int = Field(default=2000, description="压缩阈值，超过此长度的tool content将被压缩")
+    user_id: str = Field(default="default_user", description="用户ID")
+
+    @validator('compact_type')
+    def validate_compact_type(cls, v):
+        if v not in ['precise', 'brutal']:
+            raise ValueError('压缩类型只能是 precise 或 brutal')
+        return v
+
+    @validator('compact_threshold')
+    def validate_compact_threshold(cls, v):
+        if v < 100:
+            raise ValueError('压缩阈值不能小于100')
+        if v > 10000:
+            raise ValueError('压缩阈值不能大于10000')
+        return v
+
+
+class ConversationCompactResponse(BaseModel):
+    """对话压缩响应"""
+    status: str = Field(..., description="压缩状态：success 或 error")
+    message: str = Field(..., description="响应消息")
+    conversation_id: str = Field(..., description="对话ID")
+    compact_type: str = Field(..., description="压缩类型")
+    statistics: Optional[Dict[str, Any]] = Field(None, description="压缩统计信息")
+    error: Optional[str] = Field(None, description="错误信息")
