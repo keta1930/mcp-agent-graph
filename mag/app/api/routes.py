@@ -515,34 +515,89 @@ async def get_mcp_generator_template():
             detail=f"获取MCP生成器模板时出错: {str(e)}"
         )
 
-@router.post("/mcp/generate", response_model=MCPGenerationResponse)
+@router.post("/mcp/generate")
 async def generate_mcp_tool(request: MCPGenerationRequest):
-    """AI生成MCP工具"""
+    """AI生成MCP工具接口 - 流式SSE响应"""
     try:
-        connect_result = await mcp_service.connect_all_servers()
-        logger.info(f"连接所有服务器结果: {connect_result}")
-        result = await mcp_service.generate_mcp_tool(request.requirement, request.model_name)
-        
-        if result.get("status") == "success":
-            return MCPGenerationResponse(
-                status="success",
-                message=result.get("message"),
-                tool_name=result.get("tool_name"),
-                folder_name=result.get("folder_name"),
-                model_output=result.get("model_output")
+        # 基本参数验证
+        if not request.requirement.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户需求不能为空"
             )
-        else:
-            return MCPGenerationResponse(
-                status="error",
-                error=result.get("error"),
-                model_output=result.get("model_output")
+
+        if not request.model_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="必须指定模型名称"
             )
-            
+
+        # 验证模型是否存在
+        model_config = model_service.get_model(request.model_name)
+        if not model_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到模型 '{request.model_name}'"
+            )
+
+        # 生成流式响应
+        async def generate_stream():
+            try:
+                async for chunk in mcp_service.ai_generate_mcp_stream(
+                    requirement=request.requirement,
+                    model_name=request.model_name,
+                    conversation_id=request.conversation_id,
+                    user_id=request.user_id
+                ):
+                    yield chunk
+            except Exception as e:
+                logger.error(f"AI MCP生成流式响应出错: {str(e)}")
+                error_chunk = {
+                    "error": {
+                        "message": str(e),
+                        "type": "api_error"
+                    }
+                }
+                yield f"data: {json.dumps(error_chunk)}\n\n"
+                yield "data: [DONE]\n\n"
+
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"AI生成MCP工具时出错: {str(e)}")
-        return MCPGenerationResponse(
-            status="error",
-            error=f"AI生成MCP工具时出错: {str(e)}"
+        logger.error(f"AI MCP生成处理出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"处理AI MCP生成请求时出错: {str(e)}"
+        )
+
+@router.get("/mcp/generate/{conversation_id}")
+async def get_mcp_generation_conversation(conversation_id: str):
+    """获取MCP生成对话详情"""
+    try:
+        conversation = await mcp_service.get_mcp_generation_conversation(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+        return conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取MCP生成对话时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP生成对话时出错: {str(e)}"
         )
 
 @router.post("/mcp/register-tool", response_model=Dict[str, Any])

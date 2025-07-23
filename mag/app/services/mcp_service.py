@@ -2,17 +2,17 @@ import asyncio
 import json
 import logging
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, AsyncGenerator
 
 from app.core.config import settings
 from app.core.file_manager import FileManager
 from app.services.model_service import model_service
 from app.services.mcp.client_manager import MCPClientManager
 from app.services.mcp.server_manager import MCPServerManager
-from app.services.mcp.ai_generator import MCPAIGenerator
+from app.services.mcp.ai_mcp_generator import AIMCPGenerator
 from app.services.mcp.tool_executor import ToolExecutor
 from app.services.chat.message_builder import MessageBuilder
-
+from app.services.mongodb_service import mongodb_service
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +23,7 @@ class MCPService:
         # 初始化子模块
         self.client_manager = MCPClientManager()
         self.server_manager = MCPServerManager(self.client_manager.client_url)
-        self.ai_generator = MCPAIGenerator()
+        self.ai_mcp_generator = AIMCPGenerator()
         self.tool_executor = ToolExecutor(self)
         self.message_builder = MessageBuilder()
         self.client_process = None
@@ -117,26 +117,36 @@ class MCPService:
     async def get_mcp_generator_template(self, requirement: str) -> str:
         """获取MCP生成器的提示词模板"""
         all_tools_data = await self.get_all_tools()
-        return await self.ai_generator.get_mcp_generator_template(requirement, all_tools_data)
+        return await self.ai_mcp_generator.get_mcp_generator_template(requirement, all_tools_data)
 
-    async def generate_mcp_tool(self, requirement: str, model_name: str) -> Dict[str, Any]:
+    async def ai_generate_mcp_stream(self,
+                                     requirement: str,
+                                     model_name: str,
+                                     conversation_id: Optional[str] = None,
+                                     user_id: str = "default_user") -> AsyncGenerator[str, None]:
         """
-        AI生成MCP工具并自动注册
+        AI生成MCP工具的流式接口
         """
-        # 获取所有工具数据
-        all_tools_data = await self.get_all_tools()
+        async for chunk in self.ai_mcp_generator.ai_generate_stream(
+                requirement=requirement,
+                model_name=model_name,
+                conversation_id=conversation_id,
+                user_id=user_id
+        ):
+            yield chunk
 
-        return await self.ai_generator.generate_and_register_mcp_tool(
-            requirement=requirement,
-            model_name=model_name,
-            model_service=model_service,
-            all_tools_data=all_tools_data,
-            update_config_func=self.update_config
-        )
+    async def get_mcp_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取MCP生成对话"""
+
+        return await mongodb_service.get_mcp_generation_conversation(conversation_id)
+
+    async def register_ai_mcp_tool(self, tool_name: str) -> bool:
+        """注册AI生成的MCP工具到配置"""
+        return await self.ai_mcp_generator.register_ai_mcp_tool_stdio(tool_name)
 
     async def unregister_ai_mcp_tool(self, tool_name: str) -> bool:
         """从配置中注销AI生成的MCP工具"""
-        return await self.ai_generator.unregister_ai_mcp_tool(tool_name, self.update_config)
+        return await self.ai_mcp_generator.unregister_ai_mcp_tool_stdio(tool_name)
 
     async def cleanup(self, force=True):
         """清理资源"""
