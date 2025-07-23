@@ -82,15 +82,13 @@ class MongoDBService:
     
     # === 图生成管理方法 ===
 
-    async def create_graph_generation_conversation(self, conversation_id: str, user_id: str = "default_user", 
-                                                model_name: str = "") -> bool:
+    async def create_graph_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """创建新的图生成对话"""
         try:
             now = datetime.utcnow()
             generation_doc = {
                 "_id": conversation_id,
                 "user_id": user_id,
-                "model_name": model_name,
                 "created_at": now,
                 "updated_at": now,
                 "total_token_usage": {
@@ -109,11 +107,11 @@ class MongoDBService:
                 },
                 "final_graph_config": None
             }
-            
+
             await self.graph_generations_collection.insert_one(generation_doc)
             logger.info(f"创建图生成对话成功: {conversation_id}")
             return True
-            
+
         except DuplicateKeyError:
             logger.warning(f"图生成对话已存在: {conversation_id}")
             return False
@@ -290,34 +288,34 @@ class MongoDBService:
             logger.error(f"更新最终图配置失败: {str(e)}")
             return False
 
-    async def ensure_graph_generation_conversation_exists(self, conversation_id: str, 
-                                                        user_id: str = "default_user",
-                                                        model_name: str = "") -> bool:
-        """确保图生成对话存在，不存在则创建"""
-        try:
-            # 检查对话是否已存在
-            conversation = await self.get_graph_generation_conversation(conversation_id)
-            if conversation:
-                logger.debug(f"图生成对话已存在: {conversation_id}")
-                return True
-            
-            # 对话不存在，创建新对话
-            success = await self.create_graph_generation_conversation(
-                conversation_id=conversation_id,
-                user_id=user_id,
-                model_name=model_name
-            )
-            
-            if success:
-                logger.info(f"自动创建图生成对话成功: {conversation_id}")
-            else:
-                logger.error(f"自动创建图生成对话失败: {conversation_id}")
-            
-            return success
-            
-        except Exception as e:
-            logger.error(f"确保图生成对话存在时出错: {str(e)}")
-            return False
+    # async def ensure_graph_generation_conversation_exists(self, conversation_id: str,
+    #                                                     user_id: str = "default_user",
+    #                                                     model_name: str = "") -> bool:
+    #     """确保图生成对话存在，不存在则创建"""
+    #     try:
+    #         # 检查对话是否已存在
+    #         conversation = await self.get_graph_generation_conversation(conversation_id)
+    #         if conversation:
+    #             logger.debug(f"图生成对话已存在: {conversation_id}")
+    #             return True
+    #
+    #         # 对话不存在，创建新对话
+    #         success = await self.create_graph_generation_conversation(
+    #             conversation_id=conversation_id,
+    #             user_id=user_id,
+    #             model_name=model_name
+    #         )
+    #
+    #         if success:
+    #             logger.info(f"自动创建图生成对话成功: {conversation_id}")
+    #         else:
+    #             logger.error(f"自动创建图生成对话失败: {conversation_id}")
+    #
+    #         return success
+    #
+    #     except Exception as e:
+    #         logger.error(f"确保图生成对话存在时出错: {str(e)}")
+    #         return False
 
     # === 对话管理方法 ===
 

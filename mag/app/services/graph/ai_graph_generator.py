@@ -54,7 +54,7 @@ class AIGraphGenerator:
             # 创建或继续对话
             if conversation_id is None:
                 # 没有conversation_id，创建新对话
-                conversation_id = await self._create_conversation(user_id, model_name, requirement)
+                conversation_id = await self._create_conversation(user_id, requirement)
                 if not conversation_id:
                     error_chunk = {
                         "error": {
@@ -83,7 +83,7 @@ class AIGraphGenerator:
                         return
                 else:
                     # 对话不存在，使用该conversation_id创建新对话
-                    success = await self._create_conversation(user_id, model_name, requirement, conversation_id)
+                    success = await self._create_conversation(user_id, requirement, conversation_id)
                     if not success:
                         error_chunk = {
                             "error": {
@@ -278,7 +278,7 @@ class AIGraphGenerator:
         except Exception as e:
             logger.error(f"解析和更新结果时出错: {str(e)}")
 
-    async def _create_conversation(self, user_id: str, model_name: str, requirement: str,
+    async def _create_conversation(self, user_id: str, requirement: str,
                                    conversation_id: Optional[str] = None) -> Optional[str]:
         """创建新的图生成对话"""
         try:
@@ -289,8 +289,7 @@ class AIGraphGenerator:
             # 创建对话
             success = await mongodb_service.create_graph_generation_conversation(
                 conversation_id=conversation_id,
-                user_id=user_id,
-                model_name=model_name
+                user_id=user_id
             )
 
             if not success:

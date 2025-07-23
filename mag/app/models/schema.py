@@ -472,7 +472,6 @@ class GraphGenerationSession(BaseModel):
     """图生成会话模型"""
     conversation_id: str = Field(..., description="对话ID", alias="_id")
     user_id: str = Field(..., description="用户ID")
-    model_name: str = Field(..., description="使用的模型名称")
     created_at: str = Field(..., description="创建时间")
     updated_at: str = Field(..., description="更新时间")
     total_token_usage: Dict[str, int] = Field(..., description="总token使用量")

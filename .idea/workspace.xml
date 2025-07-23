@@ -23,10 +23,9 @@
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mag/app/models/schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/models/schema.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mag/app/services/graph/ai_graph_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/graph/ai_graph_generator.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mag/app/services/mongodb_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/mongodb_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mag/app/templates/prompt_template.md" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/templates/prompt_template.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mag/app/utils/text_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/utils/text_parser.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" afterDir="false" />
@@ -393,7 +392,7 @@
       <workItem from="1753078807051" duration="784000" />
       <workItem from="1753082299220" duration="16043000" />
       <workItem from="1753156208058" duration="626000" />
-      <workItem from="1753248218157" duration="11533000" />
+      <workItem from="1753248218157" duration="12023000" />
     </task>
     <servers />
   </component>
