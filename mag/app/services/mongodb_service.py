@@ -37,6 +37,7 @@ class MongoDBService:
             # 获取集合引用
             self.conversations_collection = self.db.conversations
             self.messages_collection = self.db.messages
+            self.graph_generations_collection = self.db.graph_generations
 
             # 测试连接
             await self.client.admin.command('ping')
@@ -63,6 +64,10 @@ class MongoDBService:
             # 为messages集合创建索引
             await self.messages_collection.create_index([("conversation_id", 1)])
             
+            # 为graph_generations集合创建索引
+            await self.graph_generations_collection.create_index([("user_id", 1), ("created_at", -1)])
+            await self.graph_generations_collection.create_index([("updated_at", -1)])
+            
             logger.info("MongoDB索引创建成功")
             
         except Exception as e:
@@ -74,6 +79,185 @@ class MongoDBService:
             self.client.close()
             self.is_connected = False
             logger.info("MongoDB连接已断开")
+    
+    # === 图生成管理方法 ===
+
+    async def create_graph_generation_conversation(self, conversation_id: str, user_id: str = "default_user", 
+                                                model_name: str = "") -> bool:
+        """创建新的图生成对话"""
+        try:
+            now = datetime.utcnow()
+            generation_doc = {
+                "_id": conversation_id,
+                "user_id": user_id,
+                "model_name": model_name,
+                "created_at": now,
+                "updated_at": now,
+                "total_token_usage": {
+                    "total_tokens": 0,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0
+                },
+                "messages": [],
+                "parsed_results": {
+                    "analysis": None,
+                    "todo": None,
+                    "graph_name": None,
+                    "graph_description": None,
+                    "nodes": [],
+                    "end_template": None
+                },
+                "final_graph_config": None
+            }
+            
+            await self.graph_generations_collection.insert_one(generation_doc)
+            logger.info(f"创建图生成对话成功: {conversation_id}")
+            return True
+            
+        except DuplicateKeyError:
+            logger.warning(f"图生成对话已存在: {conversation_id}")
+            return False
+        except Exception as e:
+            logger.error(f"创建图生成对话失败: {str(e)}")
+            return False
+
+    async def get_graph_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取图生成对话"""
+        try:
+            conversation = await self.graph_generations_collection.find_one({"_id": conversation_id})
+            if conversation:
+                return self._convert_objectid_to_str(conversation)
+            return None
+        except Exception as e:
+            logger.error(f"获取图生成对话失败: {str(e)}")
+            return None
+
+    async def add_message_to_graph_generation(self, conversation_id: str, 
+                                            message: Dict[str, Any]) -> bool:
+        """向图生成对话添加消息"""
+        try:
+            result = await self.graph_generations_collection.update_one(
+                {"_id": conversation_id},
+                {
+                    "$push": {"messages": message},
+                    "$set": {"updated_at": datetime.utcnow()}
+                }
+            )
+            
+            if result.modified_count > 0:
+                logger.info(f"向图生成对话 {conversation_id} 添加消息成功")
+                return True
+            else:
+                logger.error(f"向图生成对话 {conversation_id} 添加消息失败")
+                return False
+                
+        except Exception as e:
+            logger.error(f"添加图生成对话消息失败: {str(e)}")
+            return False
+
+    async def update_graph_generation_parsed_results(self, conversation_id: str, 
+                                                parsed_results: Dict[str, Any]) -> bool:
+        """更新图生成对话的解析结果"""
+        try:
+            # 只更新非None的字段
+            update_data = {"updated_at": datetime.utcnow()}
+            
+            for key, value in parsed_results.items():
+                if value is not None:
+                    if key == "nodes" and isinstance(value, list):
+                        # 对于nodes，采用追加模式
+                        result = await self.graph_generations_collection.update_one(
+                            {"_id": conversation_id},
+                            {
+                                "$push": {"parsed_results.nodes": {"$each": value}},
+                                "$set": update_data
+                            }
+                        )
+                    else:
+                        # 对于其他字段，直接更新
+                        update_data[f"parsed_results.{key}"] = value
+            
+            if "parsed_results.nodes" not in str(update_data):
+                result = await self.graph_generations_collection.update_one(
+                    {"_id": conversation_id},
+                    {"$set": update_data}
+                )
+            
+            return result.modified_count > 0 if 'result' in locals() else True
+            
+        except Exception as e:
+            logger.error(f"更新图生成解析结果失败: {str(e)}")
+            return False
+
+    async def update_graph_generation_token_usage(self, conversation_id: str, 
+                                                prompt_tokens: int, completion_tokens: int) -> bool:
+        """更新图生成对话的token使用量"""
+        try:
+            total_tokens = prompt_tokens + completion_tokens
+            result = await self.graph_generations_collection.update_one(
+                {"_id": conversation_id},
+                {
+                    "$inc": {
+                        "total_token_usage.total_tokens": total_tokens,
+                        "total_token_usage.prompt_tokens": prompt_tokens,
+                        "total_token_usage.completion_tokens": completion_tokens
+                    },
+                    "$set": {"updated_at": datetime.utcnow()}
+                }
+            )
+            
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"更新图生成token使用量失败: {str(e)}")
+            return False
+
+    async def update_graph_generation_final_config(self, conversation_id: str, 
+                                                final_graph_config: Dict[str, Any]) -> bool:
+        """更新图生成对话的最终图配置"""
+        try:
+            result = await self.graph_generations_collection.update_one(
+                {"_id": conversation_id},
+                {
+                    "$set": {
+                        "final_graph_config": final_graph_config,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"更新最终图配置失败: {str(e)}")
+            return False
+
+    async def ensure_graph_generation_conversation_exists(self, conversation_id: str, 
+                                                        user_id: str = "default_user",
+                                                        model_name: str = "") -> bool:
+        """确保图生成对话存在，不存在则创建"""
+        try:
+            # 检查对话是否已存在
+            conversation = await self.get_graph_generation_conversation(conversation_id)
+            if conversation:
+                logger.debug(f"图生成对话已存在: {conversation_id}")
+                return True
+            
+            # 对话不存在，创建新对话
+            success = await self.create_graph_generation_conversation(
+                conversation_id=conversation_id,
+                user_id=user_id,
+                model_name=model_name
+            )
+            
+            if success:
+                logger.info(f"自动创建图生成对话成功: {conversation_id}")
+            else:
+                logger.error(f"自动创建图生成对话失败: {conversation_id}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"确保图生成对话存在时出错: {str(e)}")
+            return False
 
     # === 对话管理方法 ===
 

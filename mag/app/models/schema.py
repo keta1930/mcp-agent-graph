@@ -293,11 +293,6 @@ class GraphResult(BaseModel):
     completed: bool = Field(default=False, description="是否完成执行")
     error: Optional[str] = Field(default=None, description="错误信息（如果有）")
 
-class GraphGenerationRequest(BaseModel):
-    """图生成请求"""
-    requirement: str  # 用户的图生成需求
-    model_name: str   # 指定的模型名称
-
 class GraphOptimizationRequest(BaseModel):
     """图优化请求"""
     graph_name: str   # 要优化的图名称
@@ -455,3 +450,35 @@ class ConversationCompactResponse(BaseModel):
     compact_type: str = Field(..., description="压缩类型")
     statistics: Optional[Dict[str, Any]] = Field(None, description="压缩统计信息")
     error: Optional[str] = Field(None, description="错误信息")
+
+class GraphGenerationRequest(BaseModel):
+    """图生成请求"""
+    requirement: str  # 用户的图生成需求
+    model_name: str   # 指定的模型名称
+    conversation_id: Optional[str] = None  # 对话ID，为空时创建新对话
+    user_id: str = Field(default="default_user", description="用户ID")
+
+class GraphGenerationResponse(BaseModel):
+    """图生成响应"""
+    status: str = Field(..., description="响应状态：success 或 error")
+    message: Optional[str] = Field(None, description="响应消息")
+    conversation_id: Optional[str] = Field(None, description="对话ID")
+    graph_name: Optional[str] = Field(None, description="生成的图名称")
+    final_graph_config: Optional[Dict[str, Any]] = Field(None, description="最终生成的图配置")
+    error: Optional[str] = Field(None, description="错误信息")
+
+
+class GraphGenerationSession(BaseModel):
+    """图生成会话模型"""
+    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    user_id: str = Field(..., description="用户ID")
+    model_name: str = Field(..., description="使用的模型名称")
+    created_at: str = Field(..., description="创建时间")
+    updated_at: str = Field(..., description="更新时间")
+    total_token_usage: Dict[str, int] = Field(..., description="总token使用量")
+    messages: List[ChatMessage] = Field(..., description="对话消息列表")
+    parsed_results: Dict[str, Any] = Field(..., description="解析结果")
+    final_graph_config: Optional[Dict[str, Any]] = Field(None, description="最终图配置")
+
+    class Config:
+        allow_population_by_field_name = True

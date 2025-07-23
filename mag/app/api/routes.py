@@ -1256,11 +1256,24 @@ async def get_optimize_prompt_template(graph_name: Optional[str] = None):
             detail=f"生成优化图提示词模板时出错: {str(e)}"
         )
 
-@router.post("/graphs/generate", response_model=Dict[str, Any])
+@router.post("/graphs/generate")
 async def generate_graph(request: GraphGenerationRequest):
-    """根据用户需求自动生成图配置"""
+    """AI生成图接口 - 流式SSE响应"""
     try:
-        # 1. 验证模型是否存在
+        # 基本参数验证
+        if not request.requirement.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户需求不能为空"
+            )
+
+        if not request.model_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="必须指定模型名称"
+            )
+
+        # 验证模型是否存在
         model_config = model_service.get_model(request.model_name)
         if not model_config:
             raise HTTPException(
@@ -1268,90 +1281,44 @@ async def generate_graph(request: GraphGenerationRequest):
                 detail=f"找不到模型 '{request.model_name}'"
             )
 
-        # 2. 复用现有的 get_prompt_template 函数获取提示词模板
-        template_response = await get_prompt_template()
-        final_prompt = template_response["prompt"].replace("{CREATE_GRAPH}", request.requirement)
-        
-        # 3. 调用模型生成图配置
-        messages = [
-            {"role": "user", "content": final_prompt}
-        ]
-        
-        model_response = await model_service.call_model(
-            model_name=request.model_name,
-            messages=messages
-        )
-        
-        if model_response.get("status") != "success":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"模型调用失败: {model_response.get('error', '未知错误')}"
-            )
-        
-        # 4. 解析模型输出
-        model_output = model_response.get("content", "")
-        parsed_result = parse_graph_response(model_output)
-        
-        if not parsed_result["success"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"解析模型输出失败: {parsed_result.get('error', '未知错误')}"
-            )
-        
-        graph_config = parsed_result["graph_config"]
-        analysis = parsed_result.get("analysis", "")
-        
-        # 5. 验证图配置基本格式
-        if not graph_config.get("name"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="生成的图配置缺少名称"
-            )
-        
-        # 6. 处理重名冲突
-        graph_name = graph_config.get("name")
-        existing_graph = graph_service.get_graph(graph_name)
-        if existing_graph:
-            base_name = graph_name
-            counter = 1
-            while existing_graph:
-                graph_name = f"{base_name}_{counter}"
-                existing_graph = graph_service.get_graph(graph_name)
-                counter += 1
-            graph_config["name"] = graph_name
-        try:
-            validated_config = GraphConfig(**graph_config)
-            create_response = await create_graph(validated_config)
-            
-            if create_response.get("status") != "success":
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"创建图失败: {create_response.get('message', '未知错误')}"
-                )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"生成的图配置验证失败: {str(e)}"
-            )
+        # 生成流式响应
+        async def generate_stream():
+            try:
+                async for chunk in graph_service.ai_generate_graph(
+                    requirement=request.requirement,
+                    model_name=request.model_name,
+                    conversation_id=request.conversation_id,
+                    user_id=request.user_id
+                ):
+                    yield chunk
+            except Exception as e:
+                logger.error(f"AI图生成流式响应出错: {str(e)}")
+                error_chunk = {
+                    "error": {
+                        "message": str(e),
+                        "type": "api_error"
+                    }
+                }
+                yield f"data: {json.dumps(error_chunk)}\n\n"
+                yield "data: [DONE]\n\n"
 
-        return {
-            "status": "success", 
-            "message": f"图 '{graph_name}' 生成成功",
-            "graph_name": graph_name,
-            "analysis": analysis,
-            "model_output": model_output,
-            "create_result": create_response
-        }
-        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"生成图时出错: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"AI图生成处理出错: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"生成图时出错: {str(e)}"
+            detail=f"处理AI图生成请求时出错: {str(e)}"
         )
 
 @router.post("/graphs/optimize", response_model=Dict[str, Any])

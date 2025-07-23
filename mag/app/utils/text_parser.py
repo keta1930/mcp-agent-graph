@@ -2,6 +2,7 @@ import re
 import json
 import logging
 from typing import Optional, Dict, Any, List
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -221,4 +222,177 @@ def parse_title_and_tags_response(text: str) -> Dict[str, Any]:
     except Exception as e:
         result["error"] = f"解析标题和标签响应时出错: {str(e)}"
     
+    return result
+
+
+# 在 text_parser.py 中添加以下方法
+
+def extract_todo_content(text: str) -> Optional[str]:
+    """
+    从文本中提取 to do 标签中的内容
+    """
+    if not text:
+        return None
+
+    try:
+        pattern = r'<todo>\s*(.*?)\s*</todo>'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        if match:
+            todo_content = match.group(1).strip()
+            return todo_content if todo_content else None
+        else:
+            logger.warning("未找到 <todo></todo> 标签")
+            return None
+
+    except Exception as e:
+        logger.error(f"提取TODO内容时出错: {str(e)}")
+        return None
+
+
+def extract_graph_name_content(text: str) -> Optional[str]:
+    """
+    从文本中提取 <graph_name></graph_name> 标签中的内容
+    """
+    if not text:
+        return None
+
+    try:
+        # 使用正则表达式提取 <graph_name></graph_name> 中的内容
+        pattern = r'<graph_name>\s*(.*?)\s*</graph_name>'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        if match:
+            graph_name = match.group(1).strip()
+            return graph_name if graph_name else None
+        else:
+            logger.warning("未找到 <graph_name></graph_name> 标签")
+            return None
+
+    except Exception as e:
+        logger.error(f"提取图名称时出错: {str(e)}")
+        return None
+
+
+def extract_graph_description_content(text: str) -> Optional[str]:
+    """
+    从文本中提取 <graph_description></graph_description> 标签中的内容
+    """
+    if not text:
+        return None
+
+    try:
+        # 使用正则表达式提取 <graph_description></graph_description> 中的内容
+        pattern = r'<graph_description>\s*(.*?)\s*</graph_description>'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        if match:
+            graph_description = match.group(1).strip()
+            return graph_description if graph_description else None
+        else:
+            logger.warning("未找到 <graph_description></graph_description> 标签")
+            return None
+
+    except Exception as e:
+        logger.error(f"提取图描述时出错: {str(e)}")
+        return None
+
+
+def extract_node_content(text: str) -> List[Dict[str, Any]]:
+    """
+    从文本中提取所有 <node></node> 标签中的内容
+    """
+    if not text:
+        return []
+
+    try:
+        # 使用正则表达式提取所有 <node></node> 中的内容
+        pattern = r'<node>\s*(.*?)\s*</node>'
+        matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        nodes = []
+        for match in matches:
+            node_content = match.strip()
+            if node_content:
+                try:
+                    # 尝试解析JSON
+                    node_config = json.loads(node_content)
+                    nodes.append(node_config)
+                except json.JSONDecodeError as e:
+                    logger.error(f"节点配置JSON解析失败: {str(e)}")
+                    logger.error(f"节点内容: {node_content}")
+                    continue
+
+        logger.info(f"成功提取 {len(nodes)} 个节点配置")
+        return nodes
+
+    except Exception as e:
+        logger.error(f"提取节点内容时出错: {str(e)}")
+        return []
+
+
+def extract_end_template_content(text: str) -> Optional[str]:
+    """
+    从文本中提取 <end_template></end_template> 标签中的内容
+    """
+    if not text:
+        return None
+
+    try:
+        # 使用正则表达式提取 <end_template></end_template> 中的内容
+        pattern = r'<end_template>\s*(.*?)\s*</end_template>'
+        match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        if match:
+            end_template = match.group(1).strip()
+            return end_template if end_template else None
+        else:
+            logger.warning("未找到 <end_template></end_template> 标签")
+            return None
+
+    except Exception as e:
+        logger.error(f"提取结束模板时出错: {str(e)}")
+        return None
+
+
+def parse_ai_generation_response(text: str) -> Dict[str, Any]:
+    """
+    解析AI图生成响应，提取所有可能的结构化内容
+    """
+    result = {
+        "analysis": None,
+        "todo": None,
+        "graph_name": None,
+        "graph_description": None,
+        "nodes": [],
+        "end_template": None,
+        "raw_response": text
+    }
+
+    try:
+        # 提取各种内容
+        result["analysis"] = extract_analysis_content(text)
+        result["todo"] = extract_todo_content(text)
+        result["graph_name"] = extract_graph_name_content(text)
+        result["graph_description"] = extract_graph_description_content(text)
+        result["nodes"] = extract_node_content(text)
+        result["end_template"] = extract_end_template_content(text)
+
+        # 记录提取到的内容类型
+        extracted_types = []
+        for key, value in result.items():
+            if key != "raw_response" and value is not None:
+                if key == "nodes" and len(value) > 0:
+                    extracted_types.append(f"{key}({len(value)})")
+                elif key != "nodes":
+                    extracted_types.append(key)
+
+        if extracted_types:
+            logger.info(f"成功解析AI响应，提取到: {', '.join(extracted_types)}")
+        else:
+            logger.warning("AI响应中未找到任何结构化内容")
+
+    except Exception as e:
+        logger.error(f"解析AI生成响应时出错: {str(e)}")
+
     return result

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import json
 import uuid
-from typing import Dict, List, Any, Optional, Set, Tuple
+from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import re
 import os
 
@@ -11,10 +11,11 @@ from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.models.schema import GraphConfig, AgentNode, NodeResult, GraphResult
 
-# 导入新的模块
+# 导入现有的模块
 from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor
+from app.services.graph.ai_graph_generator import AIGraphGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,7 @@ class GraphService:
         self.processor = GraphProcessor(self.get_graph)
         self.conversation_manager = ConversationManager()
         self.executor = GraphExecutor(self.conversation_manager, mcp_service)
-
-        # 保持与旧代码兼容的属性引用
+        self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
 
     async def initialize(self) -> None:
@@ -201,6 +201,20 @@ class GraphService:
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含层次结构的会话详情"""
         return self.conversation_manager.get_conversation_with_hierarchy(conversation_id)
+
+    async def ai_generate_graph(self,
+                                requirement: str,
+                                model_name: str,
+                                conversation_id: Optional[str] = None,
+                                user_id: str = "default_user") -> AsyncGenerator[str, None]:
+        """AI生成图的流式接口"""
+        async for chunk in self.ai_generator.ai_generate_stream(
+                requirement=requirement,
+                model_name=model_name,
+                conversation_id=conversation_id,
+                user_id=user_id
+        ):
+            yield chunk
 
     def generate_mcp_script(self, graph_name: str, graph_config: Dict[str, Any], host_url: str) -> Dict[str, Any]:
         """生成MCP服务器脚本"""
