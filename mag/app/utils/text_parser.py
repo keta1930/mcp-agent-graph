@@ -355,6 +355,34 @@ def extract_end_template_content(text: str) -> Optional[str]:
         return None
 
 
+def extract_delete_node_content(text: str) -> List[str]:
+    """
+    从文本中提取所有 <delete_node></delete_node> 标签中的内容
+    """
+    if not text:
+        return []
+
+    try:
+        # 使用正则表达式提取所有 <delete_node></delete_node> 中的内容
+        pattern = r'<delete_node>\s*(.*?)\s*</delete_node>'
+        matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        # 清理节点名称
+        node_names = []
+        for match in matches:
+            node_name = match.strip()
+            if node_name:
+                node_names.append(node_name)
+
+        if node_names:
+            logger.info(f"成功提取 {len(node_names)} 个删除节点指令: {node_names}")
+
+        return node_names
+
+    except Exception as e:
+        logger.error(f"提取删除节点内容时出错: {str(e)}")
+        return []
+
 def parse_ai_generation_response(text: str) -> Dict[str, Any]:
     """
     解析AI图生成响应，提取所有可能的结构化内容
@@ -365,6 +393,7 @@ def parse_ai_generation_response(text: str) -> Dict[str, Any]:
         "graph_name": None,
         "graph_description": None,
         "nodes": [],
+        "delete_nodes": [],  # 新增：删除节点列表
         "end_template": None,
         "raw_response": text
     }
@@ -376,15 +405,16 @@ def parse_ai_generation_response(text: str) -> Dict[str, Any]:
         result["graph_name"] = extract_graph_name_content(text)
         result["graph_description"] = extract_graph_description_content(text)
         result["nodes"] = extract_node_content(text)
+        result["delete_nodes"] = extract_delete_node_content(text)  # 新增
         result["end_template"] = extract_end_template_content(text)
 
         # 记录提取到的内容类型
         extracted_types = []
         for key, value in result.items():
             if key != "raw_response" and value is not None:
-                if key == "nodes" and len(value) > 0:
+                if key in ["nodes", "delete_nodes"] and len(value) > 0:
                     extracted_types.append(f"{key}({len(value)})")
-                elif key != "nodes":
+                elif key not in ["nodes", "delete_nodes"]:
                     extracted_types.append(key)
 
         if extracted_types:

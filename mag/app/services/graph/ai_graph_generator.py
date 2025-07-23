@@ -29,17 +29,15 @@ class AIGraphGenerator:
                                  user_id: str = "default_user") -> AsyncGenerator[str, None]:
         """
         AI生成图的流式接口
-
-        Args:
-            requirement: 用户需求或继续指令
-            model_name: 使用的模型名称
-            conversation_id: 对话ID，为空时创建新对话
-            user_id: 用户ID
-
-        Yields:
-            SSE格式的流式数据
         """
         try:
+            # 检查是否为结束指令
+            if requirement.strip() == "<end>END</end>":
+                # 处理结束指令
+                async for chunk in self._handle_end_instruction(conversation_id, user_id):
+                    yield chunk
+                return
+
             # 验证模型是否存在
             model_config = model_service.get_model(model_name)
             if not model_config:
@@ -181,6 +179,34 @@ class AIGraphGenerator:
             # 解析响应并更新结果
             await self._parse_and_update_results(conversation_id, accumulated_content)
 
+            # 发送完成信号
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            logger.error(f"AI图生成流式处理出错: {str(e)}")
+            error_chunk = {
+                "error": {
+                    "message": str(e),
+                    "type": "api_error"
+                }
+            }
+            yield f"data: {json.dumps(error_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
+
+    async def _handle_end_instruction(self, conversation_id: Optional[str], user_id: str) -> AsyncGenerator[str, None]:
+        """处理结束指令"""
+        try:
+            if not conversation_id:
+                error_chunk = {
+                    "error": {
+                        "message": "没有提供对话ID",
+                        "type": "parameter_error"
+                    }
+                }
+                yield f"data: {json.dumps(error_chunk)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
             # 检查是否完成了所有阶段
             completion_result = await self._check_completion(conversation_id)
             if completion_result["completed"]:
@@ -195,20 +221,62 @@ class AIGraphGenerator:
                         }
                     }
                     yield f"data: {json.dumps(completion_chunk)}\n\n"
+                else:
+                    error_chunk = {
+                        "error": {
+                            "message": f"组装最终图配置失败: {final_result.get('error', '未知错误')}",
+                            "type": "assembly_error"
+                        }
+                    }
+                    yield f"data: {json.dumps(error_chunk)}\n\n"
+            else:
+                # 发送未完成信息
+                missing_fields = completion_result.get("missing", [])
+                incomplete_chunk = {
+                    "incomplete": {
+                        "message": f"图设计尚未完成，缺少: {', '.join(missing_fields)}",
+                        "missing_fields": missing_fields
+                    }
+                }
+                yield f"data: {json.dumps(incomplete_chunk)}\n\n"
 
             # 发送完成信号
             yield "data: [DONE]\n\n"
 
         except Exception as e:
-            logger.error(f"AI图生成流式处理出错: {str(e)}")
+            logger.error(f"处理结束指令时出错: {str(e)}")
             error_chunk = {
                 "error": {
                     "message": str(e),
-                    "type": "api_error"
+                    "type": "end_instruction_error"
                 }
             }
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
+
+    async def _parse_and_update_results(self, conversation_id: str, response_content: str):
+        """解析AI响应并更新结果 - 支持替换和删除逻辑"""
+        try:
+            # 解析响应内容
+            parsed_results = parse_ai_generation_response(response_content)
+
+            # 只包含非空的结果
+            update_data = {}
+            for key, value in parsed_results.items():
+                if key != "raw_response" and value is not None:
+                    if key in ["nodes", "delete_nodes"] and len(value) > 0:
+                        update_data[key] = value
+                    elif key not in ["nodes", "delete_nodes"]:
+                        update_data[key] = value
+
+            if update_data:
+                await mongodb_service.update_graph_generation_parsed_results(
+                    conversation_id, update_data
+                )
+                logger.info(f"更新解析结果: {list(update_data.keys())}")
+
+        except Exception as e:
+            logger.error(f"解析和更新结果时出错: {str(e)}")
 
     async def _create_conversation(self, user_id: str, model_name: str, requirement: str,
                                    conversation_id: Optional[str] = None) -> Optional[str]:
@@ -347,30 +415,6 @@ class AIGraphGenerator:
         except Exception as e:
             logger.error(f"构建系统提示词时出错: {str(e)}")
             raise e  # 直接抛出异常，不使用默认提示词
-
-    async def _parse_and_update_results(self, conversation_id: str, response_content: str):
-        """解析AI响应并更新结果"""
-        try:
-            # 解析响应内容
-            parsed_results = parse_ai_generation_response(response_content)
-
-            # 只更新非空的结果
-            update_data = {}
-            for key, value in parsed_results.items():
-                if key != "raw_response" and value is not None:
-                    if key == "nodes" and len(value) > 0:
-                        update_data[key] = value
-                    elif key != "nodes":
-                        update_data[key] = value
-
-            if update_data:
-                await mongodb_service.update_graph_generation_parsed_results(
-                    conversation_id, update_data
-                )
-                logger.info(f"更新解析结果: {list(update_data.keys())}")
-
-        except Exception as e:
-            logger.error(f"解析和更新结果时出错: {str(e)}")
 
     async def _check_completion(self, conversation_id: str) -> Dict[str, Any]:
         """检查是否完成了所有必需阶段"""

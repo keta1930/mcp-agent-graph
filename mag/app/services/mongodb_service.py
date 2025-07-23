@@ -155,36 +155,96 @@ class MongoDBService:
             logger.error(f"添加图生成对话消息失败: {str(e)}")
             return False
 
-    async def update_graph_generation_parsed_results(self, conversation_id: str, 
-                                                parsed_results: Dict[str, Any]) -> bool:
-        """更新图生成对话的解析结果"""
+    async def update_graph_generation_parsed_results(self, conversation_id: str,
+                                                     parsed_results: Dict[str, Any]) -> bool:
+        """更新图生成对话的解析结果 - 支持替换和删除逻辑"""
         try:
-            # 只更新非None的字段
-            update_data = {"updated_at": datetime.utcnow()}
-            
-            for key, value in parsed_results.items():
-                if value is not None:
-                    if key == "nodes" and isinstance(value, list):
-                        # 对于nodes，采用追加模式
-                        result = await self.graph_generations_collection.update_one(
-                            {"_id": conversation_id},
-                            {
-                                "$push": {"parsed_results.nodes": {"$each": value}},
-                                "$set": update_data
-                            }
-                        )
-                    else:
-                        # 对于其他字段，直接更新
-                        update_data[f"parsed_results.{key}"] = value
-            
-            if "parsed_results.nodes" not in str(update_data):
+            update_operations = []
+
+            # 处理简单替换字段
+            simple_fields = ["analysis", "todo", "graph_name", "graph_description", "end_template"]
+            set_updates = {"updated_at": datetime.utcnow()}
+
+            for field in simple_fields:
+                if field in parsed_results and parsed_results[field] is not None:
+                    set_updates[f"parsed_results.{field}"] = parsed_results[field]
+
+            # 处理节点替换/追加逻辑
+            if "nodes" in parsed_results and parsed_results["nodes"]:
+                # 获取当前对话数据
+                conversation_data = await self.graph_generations_collection.find_one({"_id": conversation_id})
+                if conversation_data:
+                    current_nodes = conversation_data.get("parsed_results", {}).get("nodes", [])
+
+                    # 创建节点名称到索引的映射
+                    node_name_to_index = {}
+                    for i, node in enumerate(current_nodes):
+                        if isinstance(node, dict) and "name" in node:
+                            node_name_to_index[node["name"]] = i
+
+                    # 处理新节点
+                    for new_node in parsed_results["nodes"]:
+                        if isinstance(new_node, dict) and "name" in new_node:
+                            node_name = new_node["name"]
+                            if node_name in node_name_to_index:
+                                # 替换现有节点
+                                index = node_name_to_index[node_name]
+                                update_operations.append({
+                                    "updateOne": {
+                                        "filter": {"_id": conversation_id},
+                                        "update": {"$set": {f"parsed_results.nodes.{index}": new_node}}
+                                    }
+                                })
+                                logger.info(f"替换节点: {node_name}")
+                            else:
+                                # 追加新节点
+                                update_operations.append({
+                                    "updateOne": {
+                                        "filter": {"_id": conversation_id},
+                                        "update": {"$push": {"parsed_results.nodes": new_node}}
+                                    }
+                                })
+                                logger.info(f"新增节点: {node_name}")
+
+            # 处理节点删除逻辑
+            if "delete_nodes" in parsed_results and parsed_results["delete_nodes"]:
+                for node_name in parsed_results["delete_nodes"]:
+                    update_operations.append({
+                        "updateOne": {
+                            "filter": {"_id": conversation_id},
+                            "update": {"$pull": {"parsed_results.nodes": {"name": node_name}}}
+                        }
+                    })
+                    logger.info(f"删除节点: {node_name}")
+
+            # 执行所有更新操作
+            success = True
+
+            # 先执行简单字段的更新
+            if set_updates:
                 result = await self.graph_generations_collection.update_one(
                     {"_id": conversation_id},
-                    {"$set": update_data}
+                    {"$set": set_updates}
                 )
-            
-            return result.modified_count > 0 if 'result' in locals() else True
-            
+                if result.modified_count == 0:
+                    success = False
+
+            # 执行节点相关的更新操作
+            if update_operations:
+                for operation in update_operations:
+                    try:
+                        result = await self.graph_generations_collection.update_one(
+                            operation["updateOne"]["filter"],
+                            operation["updateOne"]["update"]
+                        )
+                        if result.modified_count == 0:
+                            logger.warning(f"节点操作未影响任何文档: {operation}")
+                    except Exception as e:
+                        logger.error(f"执行节点操作时出错: {str(e)}")
+                        success = False
+
+            return success
+
         except Exception as e:
             logger.error(f"更新图生成解析结果失败: {str(e)}")
             return False
