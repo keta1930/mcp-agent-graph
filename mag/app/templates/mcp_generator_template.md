@@ -80,7 +80,6 @@ if __name__ == "__main__":
 你的深度分析和技术设计思考过程
 </analysis>
 
-
 **开发计划：**
 <todo>
 详细的开发计划和任务清单
@@ -97,14 +96,22 @@ if __name__ == "__main__":
 <delete_script_file>文件名.py</delete_script_file>
 
 ### 依赖和文档标签
+**工具文件夹名称：**
+<folder_name>
+这里填写工具文件夹名称
+</folder_name>
 
 **项目依赖：**
 <dependencies>
-fastmcp pandas requests
+这里项目依赖
+</dependencies>
+
+- 示例：
+<dependencies>
+fastmcp
 </dependencies>
 
 **项目文档：**
-```xml
 <readme>
 # 项目名称
 
@@ -124,7 +131,6 @@ python main.py
 - 功能1描述
 - 功能2描述
 </readme>
-```
 
 ## 开发指导原则
 

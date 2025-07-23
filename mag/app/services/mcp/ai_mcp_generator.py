@@ -10,7 +10,6 @@ from pathlib import Path
 from app.core.file_manager import FileManager
 from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service
-from app.services.mcp_service import mcp_service
 from app.utils.text_parser import parse_ai_mcp_generation_response
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ class AIMCPGenerator:
             # 检查是否为结束指令
             if requirement.strip() == "<end>END</end>":
                 # 处理结束指令
-                async for chunk in self._handle_end_instruction(conversation_id, user_id):
+                async for chunk in self._handle_end_instruction(conversation_id):
                     yield chunk
                 return
 
@@ -193,7 +192,7 @@ class AIMCPGenerator:
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
 
-    async def _handle_end_instruction(self, conversation_id: Optional[str], user_id: str) -> AsyncGenerator[str, None]:
+    async def _handle_end_instruction(self, conversation_id: Optional[str]) -> AsyncGenerator[str, None]:
         """处理结束指令"""
         try:
             if not conversation_id:
@@ -345,6 +344,7 @@ class AIMCPGenerator:
         """构建系统提示词"""
         try:
             # 1. 连接所有服务器以确保所有工具可用
+            from app.services.mcp_service import mcp_service
             connect_result = await mcp_service.connect_all_servers()
             logger.info(f"连接所有服务器结果: {connect_result}")
 
@@ -555,6 +555,7 @@ class AIMCPGenerator:
             }
 
             # 保存配置
+            from app.services.mcp_service import mcp_service
             success = await mcp_service.update_config(current_config)
             if success.get("status", {}).get("message"):
                 logger.info(f"成功注册AI生成的MCP工具: {tool_name}")
@@ -578,6 +579,7 @@ class AIMCPGenerator:
                 del current_config["mcpServers"][tool_name]
 
                 # 保存配置
+                from app.services.mcp_service import mcp_service
                 success = await mcp_service.update_config(current_config)
                 if success.get("status", {}).get("message"):
                     logger.info(f"成功注销AI生成的MCP工具: {tool_name}")

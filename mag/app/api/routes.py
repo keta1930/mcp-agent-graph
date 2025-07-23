@@ -26,7 +26,7 @@ from app.models.schema import (
     MCPServerConfig, MCPConfig, ModelConfig, GraphConfig, GraphInput,
     GraphResult, NodeResult, ModelConfigList, GraphGenerationRequest, 
     GraphOptimizationRequest, GraphFilePath, MCPGenerationRequest,
-    MCPToolRegistration, MCPGenerationResponse, MCPToolTestRequest,
+    MCPToolRegistration, MCPToolTestRequest,
     MCPToolTestResponse,
     ChatCompletionRequest, ChatMessage, ConversationListItem,
     ConversationListResponse, ConversationDetailResponse, ConversationRound,UpdateConversationTitleRequest,

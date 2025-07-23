@@ -302,46 +302,6 @@ class GraphOptimizationRequest(BaseModel):
 class GraphFilePath(BaseModel):
     file_path: str
 
-
-class MCPGenerationRequest(BaseModel):
-    """MCP生成请求"""
-    requirement: str  # 用户的MCP生成需求
-    model_name: str   # 指定的模型名称
-
-class MCPToolRegistration(BaseModel):
-    """MCP工具注册请求"""
-    folder_name: str
-    script_files: Dict[str, str]  # 文件名: 文件内容
-    readme: str
-    dependencies: str
-    port: Optional[int] = None
-
-class MCPGenerationResponse(BaseModel):
-    """MCP生成响应"""
-    status: str
-    message: Optional[str] = None
-    tool_name: Optional[str] = None
-    folder_name: Optional[str] = None
-    port: Optional[int] = None
-    model_output: Optional[str] = None
-    error: Optional[str] = None
-
-class MCPToolTestRequest(BaseModel):
-    """MCP工具测试请求"""
-    server_name: str = Field(..., description="服务器名称")
-    tool_name: str = Field(..., description="工具名称") 
-    params: Dict[str, Any] = Field(default_factory=dict, description="工具参数")
-
-class MCPToolTestResponse(BaseModel):
-    """MCP工具测试响应"""
-    status: str = Field(..., description="调用状态：success 或 error")
-    server_name: str = Field(..., description="服务器名称")
-    tool_name: str = Field(..., description="工具名称")
-    params: Dict[str, Any] = Field(..., description="调用参数")
-    result: Optional[Any] = Field(None, description="工具返回结果")
-    error: Optional[str] = Field(None, description="错误信息")
-    execution_time: Optional[float] = Field(None, description="执行时间（秒）")
-
 # ======= Chat模式相关数据模型 =======
 
 class ChatCompletionRequest(BaseModel):
@@ -482,3 +442,47 @@ class GraphGenerationSession(BaseModel):
 
     class Config:
         allow_population_by_field_name = True
+
+class MCPGenerationRequest(BaseModel):
+    """MCP生成请求"""
+    requirement: str  # 用户的MCP生成需求
+    model_name: str   # 指定的模型名称
+    conversation_id: Optional[str] = None  # 对话ID，为空时创建新对话
+    user_id: str = Field(default="default_user", description="用户ID")
+
+class MCPGenerationSession(BaseModel):
+    """MCP生成会话模型"""
+    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    user_id: str = Field(..., description="用户ID")
+    created_at: str = Field(..., description="创建时间")
+    updated_at: str = Field(..., description="更新时间")
+    total_token_usage: Dict[str, int] = Field(..., description="总token使用量")
+    messages: List[ChatMessage] = Field(..., description="对话消息列表")
+    parsed_results: Dict[str, Any] = Field(..., description="解析结果")
+    final_mcp_config: Optional[Dict[str, Any]] = Field(None, description="最终MCP配置")
+
+    class Config:
+        allow_population_by_field_name = True
+
+class MCPToolRegistration(BaseModel):
+    """MCP工具注册请求"""
+    folder_name: str
+    script_files: Dict[str, str]  # 文件名: 文件内容
+    readme: str
+    dependencies: str
+
+class MCPToolTestRequest(BaseModel):
+    """MCP工具测试请求"""
+    server_name: str = Field(..., description="服务器名称")
+    tool_name: str = Field(..., description="工具名称")
+    params: Dict[str, Any] = Field(default_factory=dict, description="工具参数")
+
+class MCPToolTestResponse(BaseModel):
+    """MCP工具测试响应"""
+    status: str = Field(..., description="调用状态：success 或 error")
+    server_name: str = Field(..., description="服务器名称")
+    tool_name: str = Field(..., description="工具名称")
+    params: Dict[str, Any] = Field(..., description="调用参数")
+    result: Optional[Any] = Field(None, description="工具返回结果")
+    error: Optional[str] = Field(None, description="错误信息")
+    execution_time: Optional[float] = Field(None, description="执行时间（秒）")
