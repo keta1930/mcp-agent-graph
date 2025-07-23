@@ -830,14 +830,14 @@ async def get_graph_readme(graph_name: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到图 '{graph_name}'"
             )
-        
+
         # 获取图的目录
         agent_dir = settings.get_agent_dir(graph_name)
-        
+
         # 查找可能的README文件（不区分大小写）
         readme_content = None
         readme_patterns = ["readme.md", "README.md", "Readme.md"]
-        
+
         for pattern in readme_patterns:
             readme_path = agent_dir / pattern
             if readme_path.exists() and readme_path.is_file():
@@ -847,14 +847,14 @@ async def get_graph_readme(graph_name: str):
                     break
                 except Exception as e:
                     logger.error(f"读取README文件出错: {str(e)}")
-        
+
         # 构建返回的图信息
         graph_info = {
             "name": graph_name,
             "config": graph_config,
             "readme": readme_content or "未找到README文件"
         }
-        
+
         return graph_info
     except HTTPException:
         raise
@@ -1281,6 +1281,16 @@ async def generate_graph(request: GraphGenerationRequest):
                 detail=f"找不到模型 '{request.model_name}'"
             )
 
+        # 获取graph配置（如果提供了graph_name）
+        graph_config = None
+        if request.graph_name:
+            graph_config = graph_service.get_graph(request.graph_name)
+            if not graph_config:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"找不到图 '{request.graph_name}'"
+                )
+
         # 生成流式响应
         async def generate_stream():
             try:
@@ -1288,7 +1298,8 @@ async def generate_graph(request: GraphGenerationRequest):
                     requirement=request.requirement,
                     model_name=request.model_name,
                     conversation_id=request.conversation_id,
-                    user_id=request.user_id
+                    user_id=request.user_id,
+                    graph_config=graph_config
                 ):
                     yield chunk
             except Exception as e:

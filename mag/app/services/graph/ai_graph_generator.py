@@ -26,7 +26,8 @@ class AIGraphGenerator:
                                  requirement: str,
                                  model_name: str,
                                  conversation_id: Optional[str] = None,
-                                 user_id: str = "default_user") -> AsyncGenerator[str, None]:
+                                 user_id: str = "default_user",
+                                 graph_config: Optional[Dict[str, Any]] = None) -> AsyncGenerator[str, None]:
         """
         AI生成图的流式接口
         """
@@ -54,7 +55,7 @@ class AIGraphGenerator:
             # 创建或继续对话
             if conversation_id is None:
                 # 没有conversation_id，创建新对话
-                conversation_id = await self._create_conversation(user_id, requirement)
+                conversation_id = await self._create_conversation(user_id, requirement, graph_config)
                 if not conversation_id:
                     error_chunk = {
                         "error": {
@@ -83,7 +84,7 @@ class AIGraphGenerator:
                         return
                 else:
                     # 对话不存在，使用该conversation_id创建新对话
-                    success = await self._create_conversation(user_id, requirement, conversation_id)
+                    success = await self._create_conversation(user_id, requirement, graph_config, conversation_id)
                     if not success:
                         error_chunk = {
                             "error": {
@@ -279,6 +280,7 @@ class AIGraphGenerator:
             logger.error(f"解析和更新结果时出错: {str(e)}")
 
     async def _create_conversation(self, user_id: str, requirement: str,
+                                   graph_config: Optional[Dict[str, Any]] = None,
                                    conversation_id: Optional[str] = None) -> Optional[str]:
         """创建新的图生成对话"""
         try:
@@ -296,7 +298,7 @@ class AIGraphGenerator:
                 return None
 
             # 构建系统提示词
-            system_prompt = await self._build_system_prompt()
+            system_prompt = await self._build_system_prompt(graph_config)
 
             # 添加系统消息
             system_message = {
@@ -339,7 +341,7 @@ class AIGraphGenerator:
             logger.error(f"继续对话时出错: {str(e)}")
             return False
 
-    async def _build_system_prompt(self) -> str:
+    async def _build_system_prompt(self, graph_config: Optional[Dict[str, Any]] = None) -> str:
         """构建系统提示词"""
         try:
             # 获取可用模型列表
@@ -408,6 +410,11 @@ class AIGraphGenerator:
             # 替换占位符
             system_prompt = template_content.replace("{MODELS_DESCRIPTION}", models_description)
             system_prompt = system_prompt.replace("{TOOLS_DESCRIPTION}", tools_description)
+
+            # 如果提供了graph_config，添加到系统提示词的最后
+            if graph_config:
+                graph_section = f"\n\n## 以下是本次需要更新的graph：\n\n{json.dumps(graph_config, ensure_ascii=False, indent=2)}\n\n请按照用户需求对graph进行更新"
+                system_prompt += graph_section
 
             return system_prompt
 

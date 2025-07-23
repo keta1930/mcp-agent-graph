@@ -456,6 +456,7 @@ class GraphGenerationRequest(BaseModel):
     requirement: str  # 用户的图生成需求
     model_name: str   # 指定的模型名称
     conversation_id: Optional[str] = None  # 对话ID，为空时创建新对话
+    graph_name: Optional[str] = None  # 图名称，用于更新已有的图
     user_id: str = Field(default="default_user", description="用户ID")
 
 class GraphGenerationResponse(BaseModel):
