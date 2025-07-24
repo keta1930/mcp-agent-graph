@@ -7,34 +7,42 @@ logger = logging.getLogger(__name__)
 
 
 class GraphManager:
-    """图生成管理器 - 负责AI图生成对话的数据管理"""
+    """图生成管理器 - 负责graph_messages集合的rounds格式消息管理"""
 
-    def __init__(self, db, graph_generations_collection):
+    def __init__(self, db, graph_messages_collection, conversation_manager):
         """
         初始化图生成管理器
 
         Args:
             db: MongoDB数据库实例
-            graph_generations_collection: 图生成集合
+            graph_messages_collection: 图消息集合
+            conversation_manager: 对话管理器实例（用于管理基本信息）
         """
         self.db = db
-        self.graph_generations_collection = graph_generations_collection
+        self.graph_messages_collection = graph_messages_collection
+        self.conversation_manager = conversation_manager
 
     async def create_graph_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """创建新的图生成对话"""
         try:
+            # 1. 在conversations集合中创建基本信息
+            conversation_success = await self.conversation_manager.create_conversation(
+                conversation_id=conversation_id,
+                conversation_type="agent",  # 图生成属于agent类型
+                user_id=user_id,
+                title="AI图生成",
+                tags=[]
+            )
+
+            if not conversation_success:
+                return False
+
+            # 2. 在graph_messages集合中创建消息文档
             now = datetime.utcnow()
-            generation_doc = {
+            messages_doc = {
                 "_id": conversation_id,
-                "user_id": user_id,
-                "created_at": now,
-                "updated_at": now,
-                "total_token_usage": {
-                    "total_tokens": 0,
-                    "prompt_tokens": 0,
-                    "completion_tokens": 0
-                },
-                "messages": [],
+                "conversation_id": conversation_id,
+                "rounds": [],  # 新格式：rounds列表
                 "parsed_results": {
                     "analysis": None,
                     "todo": None,
@@ -46,7 +54,7 @@ class GraphManager:
                 "final_graph_config": None
             }
 
-            await self.graph_generations_collection.insert_one(generation_doc)
+            await self.graph_messages_collection.insert_one(messages_doc)
             logger.info(f"创建图生成对话成功: {conversation_id}")
             return True
 
@@ -58,30 +66,98 @@ class GraphManager:
             return False
 
     async def get_graph_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取图生成对话"""
+        """获取图生成对话（包含基本信息和详细消息）"""
         try:
-            conversation = await self.graph_generations_collection.find_one({"_id": conversation_id})
-            if conversation:
-                return self._convert_objectid_to_str(conversation)
-            return None
+            # 获取基本信息
+            conversation_info = await self.conversation_manager.get_conversation(conversation_id)
+            if not conversation_info or conversation_info.get("type") != "agent":
+                return None
+
+            # 获取详细消息
+            messages_doc = await self.graph_messages_collection.find_one({"conversation_id": conversation_id})
+            if not messages_doc:
+                return None
+
+            # 合并返回（保持向后兼容的格式）
+            result = conversation_info.copy()
+            result.update({
+                "rounds": messages_doc.get("rounds", []),
+                "parsed_results": messages_doc.get("parsed_results", {}),
+                "final_graph_config": messages_doc.get("final_graph_config")
+            })
+
+            # 为了兼容旧格式，将rounds转换为messages（如果需要）
+            messages = []
+            for round_data in messages_doc.get("rounds", []):
+                messages.extend(round_data.get("messages", []))
+            result["messages"] = messages
+
+            return self._convert_objectid_to_str(result)
         except Exception as e:
             logger.error(f"获取图生成对话失败: {str(e)}")
             return None
 
     async def add_message_to_graph_generation(self, conversation_id: str,
                                               message: Dict[str, Any]) -> bool:
-        """向图生成对话添加消息"""
+        """向图生成对话添加消息（自动管理rounds）"""
         try:
-            result = await self.graph_generations_collection.update_one(
-                {"_id": conversation_id},
-                {
-                    "$push": {"messages": message},
-                    "$set": {"updated_at": datetime.utcnow()}
-                }
+            # 获取当前rounds数量来确定是否需要创建新round
+            messages_doc = await self.graph_messages_collection.find_one(
+                {"conversation_id": conversation_id},
+                {"rounds": 1}
             )
+
+            if not messages_doc:
+                logger.error(f"图生成对话不存在: {conversation_id}")
+                return False
+
+            current_rounds = messages_doc.get("rounds", [])
+            current_round_number = len(current_rounds)
+
+            # 判断是否需要创建新的round
+            if message.get("role") == "user":
+                # 用户消息总是开启新round
+                new_round_number = current_round_number + 1
+                round_data = {
+                    "round": new_round_number,
+                    "messages": [message]
+                }
+
+                # 添加新round
+                result = await self.graph_messages_collection.update_one(
+                    {"conversation_id": conversation_id},
+                    {"$push": {"rounds": round_data}}
+                )
+
+                # 更新对话基本信息
+                if result.modified_count > 0:
+                    await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
+
+            else:
+                # assistant消息添加到当前round
+                if current_rounds:
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {f"rounds.{current_round_number - 1}.messages": message}}
+                    )
+                else:
+                    # 如果没有rounds，创建第一个round
+                    round_data = {
+                        "round": 1,
+                        "messages": [message]
+                    }
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {"rounds": round_data}}
+                    )
+                    await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
 
             if result.modified_count > 0:
                 logger.info(f"向图生成对话 {conversation_id} 添加消息成功")
+
+                # 检查是否需要生成title和tags（第一轮完成时）
+                await self._check_and_generate_title_tags(conversation_id)
+
                 return True
             else:
                 logger.error(f"向图生成对话 {conversation_id} 添加消息失败")
@@ -91,6 +167,51 @@ class GraphManager:
             logger.error(f"添加图生成对话消息失败: {str(e)}")
             return False
 
+    async def _check_and_generate_title_tags(self, conversation_id: str):
+        """检查并生成标题和标签（第一轮完成后）"""
+        try:
+            # 获取当前round数量
+            conversation_info = await self.conversation_manager.get_conversation(conversation_id)
+            if not conversation_info:
+                return
+
+            round_count = conversation_info.get("round_count", 0)
+
+            # 只在第一轮完成时生成
+            if round_count == 1:
+                # 获取第一轮消息
+                messages_doc = await self.graph_messages_collection.find_one(
+                    {"conversation_id": conversation_id},
+                    {"rounds": {"$slice": 1}}
+                )
+
+                if messages_doc and messages_doc.get("rounds"):
+                    first_round = messages_doc["rounds"][0]
+                    messages = first_round.get("messages", [])
+
+                    # 获取第一个可用模型配置
+                    from app.services.model_service import model_service
+                    available_models = list(model_service.clients.keys())
+                    if not available_models:
+                        logger.warning("没有可用的模型进行标题生成")
+                        return
+
+                    model_config = model_service.get_model(available_models[0])
+                    if not model_config:
+                        return
+
+                    # 调用统一的标题和标签生成方法
+                    await self.conversation_manager.generate_conversation_title_and_tags(
+                        conversation_id=conversation_id,
+                        messages=messages,
+                        model_config=model_config
+                    )
+
+                    logger.info(f"为图生成对话 {conversation_id} 生成标题和标签")
+
+        except Exception as e:
+            logger.error(f"生成图生成对话标题和标签时出错: {str(e)}")
+
     async def update_graph_generation_parsed_results(self, conversation_id: str,
                                                      parsed_results: Dict[str, Any]) -> bool:
         """更新图生成对话的解析结果 - 支持替换和删除逻辑"""
@@ -99,7 +220,7 @@ class GraphManager:
 
             # 处理简单替换字段
             simple_fields = ["analysis", "todo", "graph_name", "graph_description", "end_template"]
-            set_updates = {"updated_at": datetime.utcnow()}
+            set_updates = {}
 
             for field in simple_fields:
                 if field in parsed_results and parsed_results[field] is not None:
@@ -108,9 +229,9 @@ class GraphManager:
             # 处理节点替换/追加逻辑
             if "nodes" in parsed_results and parsed_results["nodes"]:
                 # 获取当前对话数据
-                conversation_data = await self.graph_generations_collection.find_one({"_id": conversation_id})
-                if conversation_data:
-                    current_nodes = conversation_data.get("parsed_results", {}).get("nodes", [])
+                messages_doc = await self.graph_messages_collection.find_one({"conversation_id": conversation_id})
+                if messages_doc:
+                    current_nodes = messages_doc.get("parsed_results", {}).get("nodes", [])
 
                     # 创建节点名称到索引的映射
                     node_name_to_index = {}
@@ -127,7 +248,7 @@ class GraphManager:
                                 index = node_name_to_index[node_name]
                                 update_operations.append({
                                     "updateOne": {
-                                        "filter": {"_id": conversation_id},
+                                        "filter": {"conversation_id": conversation_id},
                                         "update": {"$set": {f"parsed_results.nodes.{index}": new_node}}
                                     }
                                 })
@@ -136,7 +257,7 @@ class GraphManager:
                                 # 追加新节点
                                 update_operations.append({
                                     "updateOne": {
-                                        "filter": {"_id": conversation_id},
+                                        "filter": {"conversation_id": conversation_id},
                                         "update": {"$push": {"parsed_results.nodes": new_node}}
                                     }
                                 })
@@ -147,7 +268,7 @@ class GraphManager:
                 for node_name in parsed_results["delete_nodes"]:
                     update_operations.append({
                         "updateOne": {
-                            "filter": {"_id": conversation_id},
+                            "filter": {"conversation_id": conversation_id},
                             "update": {"$pull": {"parsed_results.nodes": {"name": node_name}}}
                         }
                     })
@@ -158,8 +279,8 @@ class GraphManager:
 
             # 先执行简单字段的更新
             if set_updates:
-                result = await self.graph_generations_collection.update_one(
-                    {"_id": conversation_id},
+                result = await self.graph_messages_collection.update_one(
+                    {"conversation_id": conversation_id},
                     {"$set": set_updates}
                 )
                 if result.modified_count == 0:
@@ -169,7 +290,7 @@ class GraphManager:
             if update_operations:
                 for operation in update_operations:
                     try:
-                        result = await self.graph_generations_collection.update_one(
+                        result = await self.graph_messages_collection.update_one(
                             operation["updateOne"]["filter"],
                             operation["updateOne"]["update"]
                         )
@@ -187,22 +308,11 @@ class GraphManager:
 
     async def update_graph_generation_token_usage(self, conversation_id: str,
                                                   prompt_tokens: int, completion_tokens: int) -> bool:
-        """更新图生成对话的token使用量"""
+        """更新图生成对话的token使用量（委托给conversation_manager）"""
         try:
-            total_tokens = prompt_tokens + completion_tokens
-            result = await self.graph_generations_collection.update_one(
-                {"_id": conversation_id},
-                {
-                    "$inc": {
-                        "total_token_usage.total_tokens": total_tokens,
-                        "total_token_usage.prompt_tokens": prompt_tokens,
-                        "total_token_usage.completion_tokens": completion_tokens
-                    },
-                    "$set": {"updated_at": datetime.utcnow()}
-                }
+            return await self.conversation_manager.update_conversation_token_usage(
+                conversation_id, prompt_tokens, completion_tokens
             )
-
-            return result.modified_count > 0
         except Exception as e:
             logger.error(f"更新图生成token使用量失败: {str(e)}")
             return False
@@ -211,19 +321,39 @@ class GraphManager:
                                                    final_graph_config: Dict[str, Any]) -> bool:
         """更新图生成对话的最终图配置"""
         try:
-            result = await self.graph_generations_collection.update_one(
-                {"_id": conversation_id},
-                {
-                    "$set": {
-                        "final_graph_config": final_graph_config,
-                        "updated_at": datetime.utcnow()
-                    }
-                }
+            result = await self.graph_messages_collection.update_one(
+                {"conversation_id": conversation_id},
+                {"$set": {"final_graph_config": final_graph_config}}
             )
 
             return result.modified_count > 0
         except Exception as e:
             logger.error(f"更新最终图配置失败: {str(e)}")
+            return False
+
+    async def get_graph_generation_messages_only(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """仅获取图生成的消息部分（不包含基本信息）"""
+        try:
+            messages_doc = await self.graph_messages_collection.find_one({"conversation_id": conversation_id})
+            if messages_doc:
+                return self._convert_objectid_to_str(messages_doc)
+            return None
+        except Exception as e:
+            logger.error(f"获取图生成消息失败: {str(e)}")
+            return None
+
+    async def delete_graph_generation_messages(self, conversation_id: str) -> bool:
+        """删除图生成消息"""
+        try:
+            result = await self.graph_messages_collection.delete_one({"conversation_id": conversation_id})
+            if result.deleted_count > 0:
+                logger.info(f"图生成消息 {conversation_id} 已删除")
+                return True
+            else:
+                logger.warning(f"图生成消息 {conversation_id} 不存在")
+                return False
+        except Exception as e:
+            logger.error(f"删除图生成消息失败: {str(e)}")
             return False
 
     def _convert_objectid_to_str(self, doc: Dict[str, Any]) -> Dict[str, Any]:

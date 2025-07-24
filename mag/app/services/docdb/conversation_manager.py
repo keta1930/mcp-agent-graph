@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 from bson import ObjectId
 
@@ -7,29 +7,38 @@ logger = logging.getLogger(__name__)
 
 
 class ConversationManager:
-    """对话管理器 - 负责普通对话的CRUD操作"""
+    """对话管理器 - 负责conversations集合的通用操作（所有类型对话的基础信息）"""
 
-    def __init__(self, db, conversations_collection, messages_collection):
+    def __init__(self, db, conversations_collection):
         """
         初始化对话管理器
 
         Args:
             db: MongoDB数据库实例
             conversations_collection: 对话集合
-            messages_collection: 消息集合
         """
         self.db = db
         self.conversations_collection = conversations_collection
-        self.messages_collection = messages_collection
 
-    async def create_conversation(self, conversation_id: str, user_id: str = "default_user",
-                                  title: str = "", tags: List[str] = None) -> bool:
-        """创建新对话"""
+    async def create_conversation(self, conversation_id: str, conversation_type: str = "chat",
+                                  user_id: str = "default_user", title: str = "",
+                                  tags: List[str] = None) -> bool:
+        """
+        创建新对话（统一入口，支持所有类型）
+
+        Args:
+            conversation_id: 对话ID
+            conversation_type: 对话类型 ("chat" | "agent")
+            user_id: 用户ID
+            title: 对话标题
+            tags: 对话标签
+        """
         try:
             now = datetime.utcnow()
             conversation_doc = {
                 "_id": conversation_id,
                 "user_id": user_id,
+                "type": conversation_type,  # 新增：对话类型
                 "title": title,
                 "created_at": now,
                 "updated_at": now,
@@ -43,18 +52,8 @@ class ConversationManager:
                 "tags": tags or []
             }
 
-            # 创建对话文档
             await self.conversations_collection.insert_one(conversation_doc)
-
-            # 创建对应的消息文档
-            messages_doc = {
-                "_id": conversation_id,
-                "conversation_id": conversation_id,
-                "rounds": []
-            }
-            await self.messages_collection.insert_one(messages_doc)
-
-            logger.info(f"创建对话成功: {conversation_id}")
+            logger.info(f"创建对话成功: {conversation_id}, 类型: {conversation_type}")
             return True
 
         except Exception as e:
@@ -69,51 +68,21 @@ class ConversationManager:
         try:
             conversation = await self.conversations_collection.find_one({"_id": conversation_id})
             if conversation:
-                # 转换ObjectId为字符串（如果有的话）
                 return self._convert_objectid_to_str(conversation)
             return None
         except Exception as e:
             logger.error(f"获取对话失败: {str(e)}")
             return None
 
-    async def get_conversation_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取对话的完整消息历史"""
-        try:
-            messages_doc = await self.messages_collection.find_one({"conversation_id": conversation_id})
-            if messages_doc:
-                return self._convert_objectid_to_str(messages_doc)
-            return None
-        except Exception as e:
-            logger.error(f"获取对话消息失败: {str(e)}")
-            return None
-
-    async def get_conversation_with_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取包含消息的完整对话数据"""
-        try:
-            # 获取对话基本信息
-            conversation = await self.get_conversation(conversation_id)
-            if not conversation:
-                return None
-
-            # 获取消息历史
-            messages_doc = await self.get_conversation_messages(conversation_id)
-            if messages_doc:
-                conversation["rounds"] = messages_doc.get("rounds", [])
-            else:
-                conversation["rounds"] = []
-
-            return conversation
-        except Exception as e:
-            logger.error(f"获取完整对话数据失败: {str(e)}")
-            return None
-
-    async def ensure_conversation_exists(self, conversation_id: str, user_id: str = "default_user") -> bool:
+    async def ensure_conversation_exists(self, conversation_id: str, conversation_type: str = "chat",
+                                         user_id: str = "default_user") -> bool:
         """
         确保对话存在，不存在则创建
 
         Args:
             conversation_id: 对话ID
-            user_id: 用户ID，默认为 "default_user"
+            conversation_type: 对话类型
+            user_id: 用户ID
 
         Returns:
             bool: 操作是否成功（包括对话已存在的情况）
@@ -128,13 +97,14 @@ class ConversationManager:
             # 对话不存在，创建新对话
             success = await self.create_conversation(
                 conversation_id=conversation_id,
+                conversation_type=conversation_type,
                 user_id=user_id,
-                title="新对话",
+                title="新对话" if conversation_type == "chat" else "AI生成对话",
                 tags=[]
             )
 
             if success:
-                logger.info(f"自动创建对话成功: {conversation_id}")
+                logger.info(f"自动创建对话成功: {conversation_id}, 类型: {conversation_type}")
             else:
                 logger.error(f"自动创建对话失败: {conversation_id}")
 
@@ -144,43 +114,114 @@ class ConversationManager:
             logger.error(f"确保对话存在时出错: {str(e)}")
             return False
 
-    async def add_round_to_conversation(self, conversation_id: str, round_number: int,
-                                        messages: List[Dict[str, Any]]) -> bool:
-        """向对话添加新的轮次"""
+    async def update_conversation_round_count(self, conversation_id: str, increment: int = 1) -> bool:
+        """更新对话轮次计数"""
         try:
-            # 添加轮次到消息集合
-            round_data = {
-                "round": round_number,
-                "messages": messages
-            }
-
-            result = await self.messages_collection.update_one(
-                {"conversation_id": conversation_id},
-                {"$push": {"rounds": round_data}}
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id},
+                {
+                    "$set": {"updated_at": datetime.utcnow()},
+                    "$inc": {"round_count": increment}
+                }
             )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"更新对话轮次计数失败: {str(e)}")
+            return False
 
-            if result.modified_count > 0:
-                # 更新对话的基本信息
-                await self.conversations_collection.update_one(
-                    {"_id": conversation_id},
-                    {
-                        "$set": {"updated_at": datetime.utcnow()},
-                        "$inc": {"round_count": 1}
-                    }
-                )
-                logger.info(f"向对话 {conversation_id} 添加轮次 {round_number} 成功")
-                return True
-            else:
-                logger.error(f"向对话 {conversation_id} 添加轮次失败")
+    async def generate_conversation_title_and_tags(self,
+                                                   conversation_id: str,
+                                                   messages: List[Dict[str, Any]],
+                                                   model_config: Dict[str, Any]) -> bool:
+        """
+        统一的对话标题和标签生成方法（母方法）
+
+        Args:
+            conversation_id: 对话ID
+            messages: 第一轮的消息列表
+            model_config: 模型配置
+
+        Returns:
+            bool: 生成是否成功
+        """
+        try:
+            user_message = ""
+            assistant_content = ""
+
+            for msg in messages:
+                if msg.get("role") == "user" and not user_message:
+                    user_message = msg.get("content", "")
+                elif msg.get("role") == "assistant" and not assistant_content:
+                    assistant_content = msg.get("content", "")
+                    if user_message and assistant_content:
+                        break
+
+            if not user_message or not assistant_content:
                 return False
 
+            # 检测消息语言
+            from app.utils.text_tool import detect_language
+            combined_text = user_message + " " + assistant_content
+            language = detect_language(combined_text)
+
+            # 获取对应语言的标题生成提示词
+            from app.services.chat.prompts import get_title_prompt
+            title_prompt_template = get_title_prompt(language)
+
+            # 构建标题生成提示词，限制消息长度避免token过多
+            title_prompt = title_prompt_template.format(
+                user_message=user_message,
+                assistant_message=assistant_content
+            )
+
+            # 调用模型生成标题和标签
+            from app.services.model_service import model_service
+            result = await model_service.call_model(
+                model_name=model_config["name"],
+                messages=[{"role": "user", "content": title_prompt}]
+            )
+
+            title = "新对话"
+            tags = []
+
+            if result.get("status") == "success":
+                response_content = result.get("content", "")
+
+                from app.utils.text_parser import parse_title_and_tags_response
+                parsed_result = parse_title_and_tags_response(response_content)
+
+                if parsed_result.get("success"):
+                    title = parsed_result.get("title", "").strip()
+                    parsed_tags = parsed_result.get("tags", [])
+                    if parsed_tags:
+                        tags = []
+                        for tag in parsed_tags:
+                            cleaned_tag = tag.strip()
+                            tags.append(cleaned_tag)
+
+                else:
+                    logger.warning(f"解析标题和标签失败: {parsed_result.get('error', '未知错误')}")
+                    if response_content:
+                        fallback_title = response_content.strip()[:10]
+                        if fallback_title:
+                            title = fallback_title
+
+            await self.update_conversation_title_and_tags(
+                conversation_id=conversation_id,
+                title=title,
+                tags=tags
+            )
+
+            logger.info(f"生成对话标题和标签成功: 标题='{title}', 标签={tags}")
+            return True
+
         except Exception as e:
-            logger.error(f"添加对话轮次失败: {str(e)}")
+            logger.error(f"生成标题和标签时出错: {str(e)}")
             return False
 
     async def update_conversation_title_and_tags(self, conversation_id: str,
                                                  title: str = None, tags: List[str] = None) -> bool:
-        """更新对话标题和标签（仅在第一轮时调用）"""
+        """更新对话标题和标签（首次生成时调用）"""
         try:
             update_data = {"updated_at": datetime.utcnow()}
             if title:
@@ -199,7 +240,7 @@ class ConversationManager:
             return False
 
     async def update_conversation_title(self, conversation_id: str, title: str, user_id: str = "default_user") -> bool:
-        """更新对话标题"""
+        """更新对话标题（用户主动修改）"""
         try:
             # 验证对话是否存在且属于该用户
             conversation = await self.conversations_collection.find_one({
@@ -236,7 +277,7 @@ class ConversationManager:
 
     async def update_conversation_tags(self, conversation_id: str, tags: List[str],
                                        user_id: str = "default_user") -> bool:
-        """更新对话标签"""
+        """更新对话标签（用户主动修改）"""
         try:
             # 验证对话是否存在且属于该用户
             conversation = await self.conversations_collection.find_one({
@@ -293,13 +334,24 @@ class ConversationManager:
             logger.error(f"更新token使用量失败: {str(e)}")
             return False
 
-    async def list_conversations(self, user_id: str = "default_user",
+    async def list_conversations(self, user_id: str = "default_user", conversation_type: str = None,
                                  limit: int = 50, skip: int = 0) -> List[Dict[str, Any]]:
-        """获取用户的对话列表"""
+        """
+        获取用户的对话列表
+
+        Args:
+            user_id: 用户ID
+            conversation_type: 对话类型过滤 ("chat" | "agent" | None表示所有)
+            limit: 限制数量
+            skip: 跳过数量
+        """
         try:
-            cursor = self.conversations_collection.find(
-                {"user_id": user_id, "status": "active"}
-            ).sort("updated_at", -1).skip(skip).limit(limit)
+            # 构建查询条件
+            query = {"user_id": user_id, "status": "active"}
+            if conversation_type:
+                query["type"] = conversation_type
+
+            cursor = self.conversations_collection.find(query).sort("updated_at", -1).skip(skip).limit(limit)
 
             conversations = []
             async for conversation in cursor:
@@ -331,12 +383,8 @@ class ConversationManager:
             return False
 
     async def permanently_delete_conversation(self, conversation_id: str) -> bool:
-        """永久删除对话和相关消息"""
+        """永久删除对话"""
         try:
-            # 删除消息文档
-            await self.messages_collection.delete_one({"conversation_id": conversation_id})
-
-            # 删除对话文档
             result = await self.conversations_collection.delete_one({"_id": conversation_id})
 
             if result.deleted_count > 0:
@@ -350,235 +398,34 @@ class ConversationManager:
             logger.error(f"永久删除对话失败: {str(e)}")
             return False
 
-    async def compact_conversation(self,
-                                   conversation_id: str,
-                                   compact_type: str = "brutal",
-                                   compact_threshold: int = 2000,
-                                   summarize_callback: Optional[Callable] = None,
-                                   user_id: str = "default_user") -> Dict[str, Any]:
+    async def get_conversation_stats(self, user_id: str = "default_user", conversation_type: str = None) -> Dict[
+        str, Any]:
         """
-        压缩对话内容
+        获取用户的对话统计信息
 
         Args:
-            conversation_id: 对话ID
-            compact_type: 压缩类型 'brutal'（暴力压缩）或 'precise'（精确压缩）
-            compact_threshold: 压缩阈值，超过此长度的tool content将被压缩
-            summarize_callback: 内容总结回调函数，用于精确压缩
             user_id: 用户ID
-
-        Returns:
-            Dict[str, Any]: 压缩结果
+            conversation_type: 对话类型过滤
         """
         try:
-            # 获取完整对话数据
-            conversation_data = await self.get_conversation_with_messages(conversation_id)
-            if not conversation_data:
-                return {"status": "error", "error": "对话不存在"}
+            # 构建基础查询条件
+            base_query = {"user_id": user_id, "status": "active"}
 
-            # 验证对话所有权
-            if conversation_data.get("user_id") != user_id:
-                return {"status": "error", "error": "无权限访问此对话"}
-
-            rounds = conversation_data.get("rounds", [])
-            if not rounds:
-                return {"status": "error", "error": "对话无内容可压缩"}
-
-            # 计算原始统计
-            original_stats = self._calculate_stats(rounds)
-
-            # 执行压缩
-            if compact_type == "brutal":
-                compacted_rounds = self._brutal_compact(rounds)
-                tool_contents_summarized = 0
-            else:  # precise
-                if not summarize_callback:
-                    return {"status": "error", "error": "精确压缩需要提供总结回调函数"}
-                compacted_rounds, tool_contents_summarized = await self._precise_compact(
-                    rounds, compact_threshold, summarize_callback
-                )
-
-            # 更新数据库
-            update_result = await self.messages_collection.update_one(
-                {"conversation_id": conversation_id},
-                {"$set": {"rounds": compacted_rounds}}
-            )
-
-            if update_result.modified_count == 0:
-                return {"status": "error", "error": "更新对话失败"}
-
-            # 更新对话修改时间
-            await self.conversations_collection.update_one(
-                {"_id": conversation_id},
-                {"$set": {"updated_at": datetime.utcnow()}}
-            )
-
-            # 计算压缩后统计
-            compacted_stats = self._calculate_stats(compacted_rounds)
-
-            # 计算压缩比例
-            compression_ratio = (
-                1 - (compacted_stats["total_messages"] / original_stats["total_messages"])
-                if original_stats["total_messages"] > 0 else 0
-            )
-
-            statistics = {
-                "original_rounds": original_stats["total_rounds"],
-                "original_messages": original_stats["total_messages"],
-                "compacted_rounds": compacted_stats["total_rounds"],
-                "compacted_messages": compacted_stats["total_messages"],
-                "compression_ratio": round(compression_ratio, 3),
-                "tool_contents_summarized": tool_contents_summarized
-            }
-
-            logger.info(f"对话 {conversation_id} 压缩成功，类型: {compact_type}, 压缩比: {compression_ratio:.1%}")
-
-            return {
-                "status": "success",
-                "message": f"对话压缩成功，压缩比: {compression_ratio:.1%}",
-                "statistics": statistics
-            }
-
-        except Exception as e:
-            logger.error(f"压缩对话失败: {str(e)}")
-            return {"status": "error", "error": str(e)}
-
-    def _brutal_compact(self, rounds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        暴力压缩：每轮只保留system + user + 最后一个assistant消息
-        """
-        compacted_rounds = []
-
-        for round_data in rounds:
-            messages = round_data.get("messages", [])
-            if not messages:
-                continue
-
-            # 查找并保留消息
-            system_message = None
-            user_message = None
-            last_assistant_message = None
-
-            for message in messages:
-                role = message.get("role")
-                if role == "system" and not system_message:
-                    system_message = message
-                elif role == "user" and not user_message:
-                    user_message = message
-                elif role == "assistant":
-                    last_assistant_message = message  # 保留最后一个assistant消息
-
-            # 构建压缩后的消息列表
-            compacted_messages = []
-            if system_message:
-                compacted_messages.append(system_message)
-            if user_message:
-                compacted_messages.append(user_message)
-            if last_assistant_message:
-                compacted_messages.append(last_assistant_message)
-
-            if compacted_messages:
-                compacted_rounds.append({
-                    "round": round_data["round"],
-                    "messages": compacted_messages
-                })
-
-        return compacted_rounds
-
-    async def _precise_compact(self,
-                               rounds: List[Dict[str, Any]],
-                               threshold: int,
-                               summarize_callback: Callable) -> tuple:
-        """
-        精确压缩：对超过阈值的tool消息内容进行总结
-
-        Returns:
-            tuple: (compacted_rounds, tool_contents_summarized)
-        """
-        compacted_rounds = []
-        tool_contents_summarized = 0
-
-        for round_data in rounds:
-            messages = round_data.get("messages", [])
-            if not messages:
-                continue
-
-            compacted_messages = []
-
-            for message in messages:
-                if message.get("role") == "tool":
-                    content = message.get("content", "")
-
-                    # 检查是否需要压缩
-                    if len(content) >= threshold:
-                        try:
-                            # 调用总结回调函数
-                            summary_result = await summarize_callback(content)
-                            if summary_result.get("status") == "success":
-                                # 使用总结内容替换原内容
-                                compacted_message = message.copy()
-                                compacted_message["content"] = f"[已总结] {summary_result.get('content', '')}"
-                                compacted_messages.append(compacted_message)
-                                tool_contents_summarized += 1
-                            else:
-                                # 总结失败，截断内容
-                                compacted_message = message.copy()
-                                compacted_message["content"] = f"[总结失败，已截断] {content[:200]}..."
-                                compacted_messages.append(compacted_message)
-                        except Exception as e:
-                            logger.warning(f"总结工具内容失败: {str(e)}")
-                            # 总结失败，截断内容
-                            compacted_message = message.copy()
-                            compacted_message["content"] = f"[总结失败，已截断] {content[:200]}..."
-                            compacted_messages.append(compacted_message)
-                    else:
-                        # 内容长度未超过阈值，保持原样
-                        compacted_messages.append(message)
-                else:
-                    # 非tool消息，保持原样
-                    compacted_messages.append(message)
-
-            if compacted_messages:
-                compacted_rounds.append({
-                    "round": round_data["round"],
-                    "messages": compacted_messages
-                })
-
-        return compacted_rounds, tool_contents_summarized
-
-    def _calculate_stats(self, rounds: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """计算对话统计信息"""
-        total_rounds = len(rounds)
-        total_messages = 0
-
-        for round_data in rounds:
-            messages = round_data.get("messages", [])
-            total_messages += len(messages)
-
-        return {
-            "total_rounds": total_rounds,
-            "total_messages": total_messages
-        }
-
-    async def get_conversation_stats(self, user_id: str = "default_user") -> Dict[str, Any]:
-        """获取用户的对话统计信息"""
-        try:
             # 总对话数
-            total_conversations = await self.conversations_collection.count_documents({
-                "user_id": user_id,
-                "status": "active"
-            })
+            total_query = base_query.copy()
+            if conversation_type:
+                total_query["type"] = conversation_type
+            total_conversations = await self.conversations_collection.count_documents(total_query)
 
             # 今天的对话数
             today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-            today_conversations = await self.conversations_collection.count_documents({
-                "user_id": user_id,
-                "status": "active",
-                "created_at": {"$gte": today_start}
-            })
+            today_query = total_query.copy()
+            today_query["created_at"] = {"$gte": today_start}
+            today_conversations = await self.conversations_collection.count_documents(today_query)
 
             # 总token使用量
             pipeline = [
-                {"$match": {"user_id": user_id, "status": "active"}},
+                {"$match": total_query},
                 {"$group": {
                     "_id": None,
                     "total_tokens": {"$sum": "$total_token_usage.total_tokens"},
@@ -590,12 +437,18 @@ class ConversationManager:
             total_tokens = agg_result[0]["total_tokens"] if agg_result else 0
             total_rounds = agg_result[0]["total_rounds"] if agg_result else 0
 
-            return {
+            stats = {
                 "total_conversations": total_conversations,
                 "today_conversations": today_conversations,
                 "total_tokens": total_tokens,
                 "total_rounds": total_rounds
             }
+
+            # 如果是按类型过滤，添加类型信息
+            if conversation_type:
+                stats["conversation_type"] = conversation_type
+
+            return stats
         except Exception as e:
             logger.error(f"获取统计信息失败: {str(e)}")
             return {

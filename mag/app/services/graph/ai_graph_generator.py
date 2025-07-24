@@ -288,7 +288,7 @@ class AIGraphGenerator:
             if conversation_id is None:
                 conversation_id = f"gen_{uuid.uuid4().hex[:16]}"
 
-            # 创建对话
+            # 创建对话（使用新的统一结构）
             success = await mongodb_service.create_graph_generation_conversation(
                 conversation_id=conversation_id,
                 user_id=user_id
@@ -330,7 +330,7 @@ class AIGraphGenerator:
                 logger.error(f"对话不存在: {conversation_id}")
                 return False
 
-            # 添加新的用户消息
+            # 添加新的用户消息（会自动开启新round）
             user_message = {
                 "role": "user",
                 "content": requirement

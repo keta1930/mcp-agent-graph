@@ -289,73 +289,14 @@ class ChatService:
                                              conversation_id: str,
                                              messages: List[Dict[str, Any]],
                                              model_config: Dict[str, Any]):
-        """生成对话标题和标签"""
+        """生成对话标题和标签（调用统一方法）"""
         try:
-            user_message = ""
-            assistant_content = ""
-
-            for msg in messages:
-                if msg.get("role") == "user" and not user_message:
-                    user_message = msg.get("content", "")
-                elif msg.get("role") == "assistant" and not assistant_content:
-                    assistant_content = msg.get("content", "")
-                    if user_message and assistant_content:
-                        break
-
-            if not user_message or not assistant_content:
-                return
-            
-            # 检测消息语言
-            combined_text = user_message + " " + assistant_content
-            language = detect_language(combined_text)
-            
-            # 获取对应语言的标题生成提示词
-            title_prompt_template = get_title_prompt(language)
-            
-            # 构建标题生成提示词，限制消息长度避免token过多
-            title_prompt = title_prompt_template.format(
-                user_message=user_message,
-                assistant_message=assistant_content
-            )
-
-            # 调用模型生成标题和标签
-            result = await model_service.call_model(
-                model_name=model_config["name"],
-                messages=[{"role": "user", "content": title_prompt}]
-            )
-
-            title = "新对话"
-            tags = []
-
-            if result.get("status") == "success":
-                response_content = result.get("content", "")
-                
-                parsed_result = parse_title_and_tags_response(response_content)
-    
-                if parsed_result.get("success"):
-                    title = parsed_result.get("title", "").strip() 
-                    parsed_tags = parsed_result.get("tags", [])
-                    if parsed_tags:
-                        tags = []
-                        for tag in parsed_tags:
-                            cleaned_tag = tag.strip()
-                            tags.append(cleaned_tag)
-
-                else:
-                    logger.warning(f"解析标题和标签失败: {parsed_result.get('error', '未知错误')}")
-                    if response_content:
-                        fallback_title = response_content.strip()[:10]
-                        if fallback_title:
-                            title = fallback_title
-
-            await mongodb_service.update_conversation_title_and_tags(
+            # 调用ConversationManager的统一标题和标签生成方法
+            await mongodb_service.conversation_manager.generate_conversation_title_and_tags(
                 conversation_id=conversation_id,
-                title=title,
-                tags=tags
+                messages=messages,
+                model_config=model_config
             )
-
-            logger.info(f"生成对话标题和标签成功: 标题='{title}', 标签={tags}")
-
         except Exception as e:
             logger.error(f"生成标题和标签时出错: {str(e)}")
 
