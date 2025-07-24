@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelService:
-    """模型服务管理 - 专注于模型调用和参数处理"""
+    """模型服务管理"""
 
     def __init__(self):
         self.models: List[Dict[str, Any]] = []
@@ -69,7 +69,7 @@ class ModelService:
             return False
 
         try:
-            # 创建异步客户端实例以验证配置是否有效
+            # 验证配置是否有效
             client = AsyncOpenAI(
                 api_key=model_config["api_key"],
                 base_url=model_config["base_url"]
@@ -103,7 +103,7 @@ class ModelService:
             if 'api_key' not in model_config or not model_config['api_key']:
                 model_config['api_key'] = self.models[index]['api_key']
             
-            # 创建异步客户端实例以验证配置是否有效
+            # 验证配置是否有效
             client = AsyncOpenAI(
                 api_key=model_config["api_key"],
                 base_url=model_config["base_url"]
@@ -148,16 +148,10 @@ class ModelService:
 
         return True
 
-    # === 新增：模型参数处理方法 ===
+    # === 模型参数处理方法 ===
 
     def add_model_params(self, params: Dict[str, Any], model_config: Dict[str, Any]) -> None:
-        """
-        添加模型配置参数到API调用参数中
-        
-        Args:
-            params: API调用参数字典，会被直接修改
-            model_config: 模型配置字典
-        """
+        """添加模型配置参数到API调用参数中"""
         optional_params = [
             'temperature', 'max_tokens', 'max_completion_tokens',
             'top_p', 'frequency_penalty', 'presence_penalty', 'n',
@@ -174,15 +168,7 @@ class ModelService:
                     params[param] = model_config[param]
 
     def get_extra_kwargs(self, model_config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        获取额外的请求参数
-        
-        Args:
-            model_config: 模型配置字典
-            
-        Returns:
-            包含额外请求参数的字典
-        """
+        """获取额外的请求参数"""
         extra_kwargs = {}
         if model_config.get('extra_headers'):
             extra_kwargs['extra_headers'] = model_config['extra_headers']
@@ -193,16 +179,7 @@ class ModelService:
         return extra_kwargs
 
     def prepare_api_params(self, base_params: Dict[str, Any], model_config: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        准备完整的API调用参数
-        
-        Args:
-            base_params: 基础参数（model, messages等）
-            model_config: 模型配置
-            
-        Returns:
-            包含所有参数和额外配置的元组 (params, extra_kwargs)
-        """
+        """准备完整的API调用参数"""
         # 复制基础参数以避免修改原始字典
         params = base_params.copy()
         

@@ -37,7 +37,6 @@ class MCPService:
         """初始化MCP服务，启动客户端进程"""
         config_path = str(settings.MCP_PATH)
         result = await self.client_manager.initialize(config_path)
-        # 同步状态以保持兼容性
         self.client_process = self.client_manager.client_process
         self.client_started = self.client_manager.client_started
         return result
@@ -55,9 +54,7 @@ class MCPService:
         return self.client_manager._notify_config_change(config_path)
 
     async def update_config(self, config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-        """
-        更新MCP配置并通知客户端
-        """
+        """更新MCP配置并通知客户端"""
         return await self.client_manager.update_config(config)
 
     async def get_server_status(self) -> Dict[str, Dict[str, Any]]:
@@ -67,7 +64,7 @@ class MCPService:
         return await self.server_manager.get_server_status()
 
     def get_server_status_sync(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有服务器的状态（同步版本）"""
+        """获取所有服务器的状态"""
         if not self.client_started:
             return {}
         return self.server_manager.get_server_status_sync()
@@ -103,9 +100,7 @@ class MCPService:
         return await self.server_manager.get_all_tools()
 
     async def prepare_chat_tools(self, mcp_servers: List[str]) -> List[Dict[str, Any]]:
-        """
-        为聊天准备MCP工具列表
-        """
+        """为聊天准备MCP工具列表"""
         return await self.server_manager.prepare_chat_tools(mcp_servers)
 
     async def call_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -124,9 +119,7 @@ class MCPService:
                                      model_name: str,
                                      conversation_id: Optional[str] = None,
                                      user_id: str = "default_user") -> AsyncGenerator[str, None]:
-        """
-        AI生成MCP工具的流式接口
-        """
+        """AI生成MCP工具的流式接口"""
         async for chunk in self.ai_mcp_generator.ai_generate_stream(
                 requirement=requirement,
                 model_name=model_name,
@@ -137,7 +130,6 @@ class MCPService:
 
     async def get_mcp_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取MCP生成对话"""
-
         return await mongodb_service.get_mcp_generation_conversation(conversation_id)
 
     async def register_ai_mcp_tool(self, tool_name: str) -> bool:
@@ -155,8 +147,6 @@ class MCPService:
 
         # 清理client_manager的资源
         await self.client_manager.cleanup(force)
-
-        # 同步状态以保持兼容性
         self.client_process = self.client_manager.client_process
         self.client_started = self.client_manager.client_started
 

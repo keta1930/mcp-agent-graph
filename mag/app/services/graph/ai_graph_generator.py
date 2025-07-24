@@ -28,9 +28,7 @@ class AIGraphGenerator:
                                  conversation_id: Optional[str] = None,
                                  user_id: str = "default_user",
                                  graph_config: Optional[Dict[str, Any]] = None) -> AsyncGenerator[str, None]:
-        """
-        AI生成图的流式接口
-        """
+        """AI生成图的流式接口"""
         try:
             # 检查是否为结束指令
             if requirement.strip() == "<end>END</end>":
@@ -288,7 +286,7 @@ class AIGraphGenerator:
             if conversation_id is None:
                 conversation_id = f"gen_{uuid.uuid4().hex[:16]}"
 
-            # 创建对话（使用新的统一结构）
+            # 创建对话
             success = await mongodb_service.create_graph_generation_conversation(
                 conversation_id=conversation_id,
                 user_id=user_id
@@ -330,7 +328,7 @@ class AIGraphGenerator:
                 logger.error(f"对话不存在: {conversation_id}")
                 return False
 
-            # 添加新的用户消息（会自动开启新round）
+            # 添加新的用户消息
             user_message = {
                 "role": "user",
                 "content": requirement

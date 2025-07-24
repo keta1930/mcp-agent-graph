@@ -10,14 +10,7 @@ class GraphManager:
     """图生成管理器 - 负责graph_messages集合的rounds格式消息管理"""
 
     def __init__(self, db, graph_messages_collection, conversation_manager):
-        """
-        初始化图生成管理器
-
-        Args:
-            db: MongoDB数据库实例
-            graph_messages_collection: 图消息集合
-            conversation_manager: 对话管理器实例（用于管理基本信息）
-        """
+        """初始化图生成管理器"""
         self.db = db
         self.graph_messages_collection = graph_messages_collection
         self.conversation_manager = conversation_manager
@@ -42,7 +35,7 @@ class GraphManager:
             messages_doc = {
                 "_id": conversation_id,
                 "conversation_id": conversation_id,
-                "rounds": [],  # 新格式：rounds列表
+                "rounds": [],
                 "parsed_results": {
                     "analysis": None,
                     "todo": None,
@@ -78,7 +71,7 @@ class GraphManager:
             if not messages_doc:
                 return None
 
-            # 合并返回（保持向后兼容的格式）
+            # 合并返回
             result = conversation_info.copy()
             result.update({
                 "rounds": messages_doc.get("rounds", []),
@@ -308,7 +301,7 @@ class GraphManager:
 
     async def update_graph_generation_token_usage(self, conversation_id: str,
                                                   prompt_tokens: int, completion_tokens: int) -> bool:
-        """更新图生成对话的token使用量（委托给conversation_manager）"""
+        """更新图生成对话的token使用量"""
         try:
             return await self.conversation_manager.update_conversation_token_usage(
                 conversation_id, prompt_tokens, completion_tokens

@@ -69,8 +69,8 @@ class ConversationManager:
                 "parallel": False,
                 "start_time": start_time,
                 "conversation_id": conversation_id,
-                "handoffs_counters": {},  # handoffs计数器
-                "global_outputs": {}  # 全局输出存储
+                "handoffs_counters": {},
+                "global_outputs": {}
             }
 
             # 创建初始模板和JSON
@@ -286,7 +286,7 @@ class ConversationManager:
         # 重组结果
         structured_results = []
 
-        # 先添加start输入（如果有）
+        # 先添加start输入
         for result in flattened_results:
             if result.get("is_start_input", False):
                 structured_results.append(result)

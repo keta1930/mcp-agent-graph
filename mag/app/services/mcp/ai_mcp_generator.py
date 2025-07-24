@@ -26,9 +26,7 @@ class AIMCPGenerator:
                                  model_name: str,
                                  conversation_id: Optional[str] = None,
                                  user_id: str = "default_user") -> AsyncGenerator[str, None]:
-        """
-        AI生成MCP的流式接口
-        """
+        """AI生成MCP的流式接口"""
         try:
             # 检查是否为结束指令
             if requirement.strip() == "<end>END</end>":
@@ -329,7 +327,7 @@ class AIMCPGenerator:
                 logger.error(f"对话不存在: {conversation_id}")
                 return False
 
-            # 添加新的用户消息（会自动开启新round）
+            # 添加新的用户消息
             user_message = {
                 "role": "user",
                 "content": requirement
@@ -398,7 +396,7 @@ class AIMCPGenerator:
 
             parsed_results = conversation_data.get("parsed_results", {})
 
-            # 检查必需的字段（新增folder_name）
+            # 检查必需的字段
             required_fields = ["analysis", "todo", "folder_name", "script_files", "dependencies", "readme"]
             missing_fields = []
 
@@ -481,16 +479,7 @@ class AIMCPGenerator:
             return {"success": False, "error": str(e)}
 
     async def get_mcp_generator_template(self, requirement: str, all_tools_data: Dict[str, List[Dict]] = None) -> str:
-        """
-        获取MCP生成器的提示词模板
-
-        Args:
-            requirement: 用户需求
-            all_tools_data: 所有工具数据，如果为None则需要外部提供
-
-        Returns:
-            生成的提示词模板
-        """
+        """获取MCP生成器的提示词模板"""
         try:
             # 1. 读取模板文件
             current_file_dir = Path(__file__).parent.parent.parent
@@ -543,7 +532,7 @@ class AIMCPGenerator:
                 logger.error(f"找不到工具 {tool_name} 的Python解释器或主脚本")
                 return False
 
-            # 添加新的MCP服务器配置（使用stdio）
+            # 添加新的MCP服务器配置
             current_config.setdefault("mcpServers", {})[tool_name] = {
                 "autoApprove": [],
                 "disabled": False,
@@ -551,7 +540,7 @@ class AIMCPGenerator:
                 "command": str(venv_python),
                 "args": [str(main_script)],
                 "transportType": "stdio",
-                "ai_generated": True  # 标记为AI生成的工具
+                "ai_generated": True
             }
 
             # 保存配置

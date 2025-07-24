@@ -10,8 +10,6 @@ from app.core.file_manager import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.models.schema import GraphConfig, AgentNode, NodeResult, GraphResult
-
-# 导入现有的模块
 from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor
@@ -86,7 +84,6 @@ class GraphService:
 
     def validate_graph(self, graph_config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         """验证图配置是否有效"""
-        # 调用processor验证图，并传入模型服务和服务器状态获取函数
         return self.processor.validate_graph(
             graph_config,
             model_service.get_model,
@@ -116,7 +113,7 @@ class GraphService:
             logger.info(f"找到 {len(conversation_ids)} 个现有会话文件")
 
             # 尝试加载部分会话信息，但不放入内存
-            for conversation_id in conversation_ids[:5]:  # 仅加载前5个作为示例
+            for conversation_id in conversation_ids[:5]:
                 json_data = FileManager.load_conversation_json(conversation_id)
                 if json_data:
                     graph_name = json_data.get("graph_name", "未知图")
@@ -132,7 +129,7 @@ class GraphService:
             logger.error(traceback.format_exc())
 
     def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
-        """使用指定配置创建新的会话 - 确保唯一性"""
+        """使用指定配置创建新的会话"""
         try:
             conversation_id = self.conversation_manager.create_conversation(graph_name, graph_config)
             logger.info(f"成功创建会话（指定配置）: {conversation_id}")

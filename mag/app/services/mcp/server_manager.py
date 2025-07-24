@@ -20,12 +20,7 @@ class MCPServerManager:
         return self._session
 
     async def get_server_status(self) -> Dict[str, Dict[str, Any]]:
-        """
-        获取所有服务器的状态
-        
-        Returns:
-            服务器状态字典
-        """
+        """获取所有服务器的状态"""
         try:
             session = await self._get_session()
             async with session.get(f"{self.client_url}/servers") as response:
@@ -40,7 +35,7 @@ class MCPServerManager:
             return {}
 
     def get_server_status_sync(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有服务器的状态（同步版本）"""
+        """获取所有服务器的状态"""
         try:
             import requests
             response = requests.get(f"{self.client_url}/servers")
@@ -55,15 +50,7 @@ class MCPServerManager:
             return {}
 
     async def connect_server(self, server_name: str) -> Dict[str, Any]:
-        """
-        连接指定的服务器
-        
-        Args:
-            server_name: 服务器名称
-            
-        Returns:
-            连接结果
-        """
+        """连接指定的服务器"""
         try:
             session = await self._get_session()
             async with session.post(
@@ -84,15 +71,7 @@ class MCPServerManager:
             return {"status": "error", "error": str(e)}
 
     async def disconnect_server(self, server_name: str) -> Dict[str, Any]:
-        """
-        断开指定服务器的连接
-        
-        Args:
-            server_name: 服务器名称
-            
-        Returns:
-            断开连接结果
-        """
+        """断开指定服务器的连接"""
         try:
             session = await self._get_session()
             async with session.post(
@@ -114,15 +93,7 @@ class MCPServerManager:
             return {"status": "error", "error": error_msg}
 
     async def connect_all_servers(self, server_configs: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        连接所有已配置的MCP服务器
-        
-        Args:
-            server_configs: 服务器配置字典
-            
-        Returns:
-            批量连接结果
-        """
+        """连接所有已配置的MCP服务器"""
         try:
             all_servers = server_configs.get("mcpServers", {})
             
@@ -202,12 +173,7 @@ class MCPServerManager:
             }
 
     async def get_all_tools(self) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        获取所有可用工具的信息
-        
-        Returns:
-            按服务器分组的工具字典
-        """
+        """获取所有可用工具的信息"""
         try:
             session = await self._get_session()
             async with session.get(f"{self.client_url}/tools") as response:
@@ -235,15 +201,7 @@ class MCPServerManager:
             return {}
 
     async def ensure_servers_connected(self, server_names: List[str]) -> Dict[str, bool]:
-        """
-        确保指定的服务器已连接
-        
-        Args:
-            server_names: 服务器名称列表
-            
-        Returns:
-            每个服务器的连接状态
-        """
+        """确保指定的服务器已连接"""
         connection_status = {}
         
         # 获取当前服务器状态
@@ -265,15 +223,7 @@ class MCPServerManager:
         return connection_status
 
     async def prepare_chat_tools(self, mcp_servers: List[str]) -> List[Dict[str, Any]]:
-        """
-        为聊天准备MCP工具列表
-        
-        Args:
-            mcp_servers: MCP服务器名称列表
-            
-        Returns:
-            格式化后的工具列表，符合OpenAI tools格式
-        """
+        """为聊天准备MCP工具列表"""
         tools = []
 
         if not mcp_servers:

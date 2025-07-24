@@ -23,15 +23,7 @@ class MCPClientManager:
         self.retry_delay = 1
 
     async def initialize(self, config_path: str) -> Dict[str, Dict[str, Any]]:
-        """
-        初始化MCP客户端进程
-        
-        Args:
-            config_path: MCP配置文件路径
-            
-        Returns:
-            初始化结果状态
-        """
+        """初始化MCP客户端进程"""
         try:
             # 检查是否已有进程在运行
             if await self._check_existing_client():
@@ -171,16 +163,7 @@ class MCPClientManager:
             return False
 
     async def update_config(self, config: Dict[str, Any], config_path: str = None) -> Dict[str, Dict[str, Any]]:
-        """
-        更新MCP配置并通知客户端
-        
-        Args:
-            config: 新的配置字典
-            config_path: 配置文件路径，如果为None则使用默认路径
-            
-        Returns:
-            更新结果
-        """
+        """更新MCP配置并通知客户端"""
         try:
             # 导入必要的模块
             from app.core.file_manager import FileManager

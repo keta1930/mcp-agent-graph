@@ -10,13 +10,7 @@ class ChatManager:
     """聊天消息管理器 - 负责chat_messages集合的CRUD操作"""
 
     def __init__(self, db, chat_messages_collection):
-        """
-        初始化聊天消息管理器
-
-        Args:
-            db: MongoDB数据库实例
-            chat_messages_collection: 聊天消息集合
-        """
+        """初始化聊天消息管理器"""
         self.db = db
         self.chat_messages_collection = chat_messages_collection
 
@@ -34,7 +28,7 @@ class ChatManager:
         except Exception as e:
             if "duplicate key" in str(e).lower():
                 logger.warning(f"聊天消息文档已存在: {conversation_id}")
-                return True  # 已存在也算成功
+                return True
             logger.error(f"创建聊天消息文档失败: {str(e)}")
             return False
 
@@ -114,18 +108,7 @@ class ChatManager:
                                     compact_type: str = "brutal",
                                     compact_threshold: int = 2000,
                                     summarize_callback: Optional[Callable] = None) -> Dict[str, Any]:
-        """
-        压缩聊天消息内容
-
-        Args:
-            conversation_id: 对话ID
-            compact_type: 压缩类型 'brutal'（暴力压缩）或 'precise'（精确压缩）
-            compact_threshold: 压缩阈值，超过此长度的tool content将被压缩
-            summarize_callback: 内容总结回调函数，用于精确压缩
-
-        Returns:
-            Dict[str, Any]: 压缩结果
-        """
+        """压缩聊天消息内容"""
         try:
             # 获取消息数据
             messages_doc = await self.get_chat_messages(conversation_id)
@@ -190,9 +173,7 @@ class ChatManager:
             return {"status": "error", "error": str(e)}
 
     def _brutal_compact(self, rounds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        暴力压缩：每轮只保留system + user + 最后一个assistant消息
-        """
+        """暴力压缩：每轮只保留system + user + 最后一个assistant消息"""
         compacted_rounds = []
 
         for round_data in rounds:
@@ -235,12 +216,7 @@ class ChatManager:
                                rounds: List[Dict[str, Any]],
                                threshold: int,
                                summarize_callback: Callable) -> tuple:
-        """
-        精确压缩：对超过阈值的tool消息内容进行总结
-
-        Returns:
-            tuple: (compacted_rounds, tool_contents_summarized)
-        """
+        """精确压缩：对超过阈值的tool消息内容进行总结"""
         compacted_rounds = []
         tool_contents_summarized = 0
 

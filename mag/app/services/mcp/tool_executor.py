@@ -11,25 +11,11 @@ class ToolExecutor:
     """统一的工具调用执行器"""
 
     def __init__(self, mcp_service=None):
-        """
-        初始化工具执行器
-        
-        Args:
-            mcp_service: MCP服务实例，用于实际的工具调用
-        """
+        """初始化工具执行器"""
         self.mcp_service = mcp_service
 
     async def execute_tools_batch(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str]) -> List[Dict[str, Any]]:
-        """
-        批量执行工具调用
-        
-        Args:
-            tool_calls: 工具调用列表
-            mcp_servers: MCP服务器列表
-            
-        Returns:
-            工具执行结果列表
-        """
+        """批量执行工具调用"""
         tool_results = []
         
         # 创建异步任务
@@ -80,17 +66,7 @@ class ToolExecutor:
         return tool_results
 
     async def execute_single_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        执行单个工具
-        
-        Args:
-            server_name: 服务器名称
-            tool_name: 工具名称  
-            params: 工具参数
-            
-        Returns:
-            工具执行结果
-        """
+        """执行单个工具"""
         if not self.mcp_service:
             return {"error": "MCP服务未初始化"}
         
@@ -117,16 +93,7 @@ class ToolExecutor:
             }
 
     async def execute_model_tools(self, model_tool_calls: List[Dict], mcp_servers: List[str]) -> List[Dict[str, Any]]:
-        """
-        执行模型返回的工具调用
-        
-        Args:
-            model_tool_calls: 模型返回的工具调用列表
-            mcp_servers: 可用的MCP服务器列表
-            
-        Returns:
-            工具执行结果列表
-        """
+        """执行模型返回的工具调用"""
         tool_results = []
         tool_call_tasks = []
         
@@ -189,16 +156,7 @@ class ToolExecutor:
             }
 
     async def _find_tool_server(self, tool_name: str, mcp_servers: List[str]) -> Optional[str]:
-        """
-        查找工具所属的服务器
-        
-        Args:
-            tool_name: 工具名称
-            mcp_servers: 可用服务器列表
-            
-        Returns:
-            服务器名称或None
-        """
+        """查找工具所属的服务器"""
         try:
             if not self.mcp_service:
                 return None
@@ -215,9 +173,7 @@ class ToolExecutor:
             return None
 
     async def _call_mcp_client_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        调用MCP客户端工具
-        """
+        """调用MCP客户端工具"""
         if not self.mcp_service:
             return {"error": "MCP服务未初始化"}
         

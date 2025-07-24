@@ -23,7 +23,6 @@ class ChatService:
 
     def __init__(self):
         self.active_streams = {}
-        # 初始化新组件
         self.tool_executor = ToolExecutor(mcp_service)
         self.message_builder = MessageBuilder(mongodb_service)
 
@@ -34,9 +33,7 @@ class ChatService:
                                       mcp_servers: List[str] = None,
                                       model_name: str = None,
                                       user_id: str = "default_user") -> AsyncGenerator[str, None]:
-        """
-        Chat completions流式接口
-        """
+        """Chat completions流式接口"""
         if not model_name:
             raise ValueError("必须指定模型名称")
 
@@ -125,10 +122,10 @@ class ChatService:
                 if tools:
                     base_params["tools"] = tools
 
-                # 使用model_service的新方法准备参数
+                # 准备参数
                 params, extra_kwargs = model_service.prepare_api_params(base_params, model_config)
 
-                # 第一阶段：流式调用模型
+                # 流式调用模型
                 stream = await client.chat.completions.create(**params, **extra_kwargs)
 
                 # 收集响应数据
@@ -205,8 +202,8 @@ class ChatService:
 
                 # 添加到消息列表
                 current_messages.append(assistant_message)
-                if iteration == 1:  # 只在第一轮记录用户消息
-                    all_round_messages.append(messages[-1])  # 用户消息
+                if iteration == 1:
+                    all_round_messages.append(messages[-1])
                 all_round_messages.append(assistant_message)
 
                 # 如果没有工具调用，结束循环
@@ -276,7 +273,7 @@ class ChatService:
 
             logger.info(f"轮次 {round_number} 保存成功，token使用量: {token_usage}")
 
-            # 第一轮，生成标题和标签
+            # 生成标题和标签
             if round_number == 1:
                 await self._generate_title_and_tags(
                     conversation_id, round_messages, model_service.get_model(list(model_service.clients.keys())[0])
@@ -291,7 +288,7 @@ class ChatService:
                                              model_config: Dict[str, Any]):
         """生成对话标题和标签（调用统一方法）"""
         try:
-            # 调用ConversationManager的统一标题和标签生成方法
+            # 标题和标签生成方法
             await mongodb_service.conversation_manager.generate_conversation_title_and_tags(
                 conversation_id=conversation_id,
                 messages=messages,
@@ -306,19 +303,7 @@ class ChatService:
                              compact_type: str = "brutal",
                              compact_threshold: int = 2000,
                              user_id: str = "default_user") -> Dict[str, Any]:
-        """
-        压缩对话内容
-        
-        Args:
-            conversation_id: 对话ID
-            model_name: 用于内容总结的模型名称
-            compact_type: 压缩类型 'brutal'（暴力压缩）或 'precise'（精确压缩）
-            compact_threshold: 压缩阈值，超过此长度的tool content将被压缩
-            user_id: 用户ID
-            
-        Returns:
-            Dict[str, Any]: 压缩结果
-        """
+        """压缩对话内容"""
         try:
             # 验证参数
             if compact_type not in ['brutal', 'precise']:
@@ -329,7 +314,7 @@ class ChatService:
             if not model_config:
                 return {"status": "error", "error": f"找不到模型配置: {model_name}"}
 
-            # 创建总结回调函数（仅用于精确压缩）
+            # 创建总结回调函数（用于精确压缩）
             summarize_callback = None
             if compact_type == "precise":
                 summarize_callback = lambda content: self._summarize_tool_content(content, model_name)
@@ -351,27 +336,11 @@ class ChatService:
             return {"status": "error", "error": str(e)}
 
     async def _summarize_tool_content(self, content: str, model_name: str) -> Dict[str, Any]:
-        """
-        使用模型总结工具内容
-        
-        Args:
-            content: 要总结的内容
-            model_name: 用于总结的模型名称
-            
-        Returns:
-            Dict[str, Any]: 总结结果
-        """
+        """使用模型总结工具结果进行压缩内容"""
         try:
-            # 检测内容语言
             language = detect_language(content)
-            
-            # 获取对应语言的提示词
             prompt_template = get_summarize_prompt(language)
-            
-            # 限制输入内容长度以避免token超限
             truncated_content = content
-            
-            # 构建总结提示词
             summary_prompt = prompt_template.format(content=truncated_content)
 
             # 构建消息

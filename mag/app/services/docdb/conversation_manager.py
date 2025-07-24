@@ -10,35 +10,20 @@ class ConversationManager:
     """对话管理器 - 负责conversations集合的通用操作（所有类型对话的基础信息）"""
 
     def __init__(self, db, conversations_collection):
-        """
-        初始化对话管理器
-
-        Args:
-            db: MongoDB数据库实例
-            conversations_collection: 对话集合
-        """
+        """初始化对话管理器"""
         self.db = db
         self.conversations_collection = conversations_collection
 
     async def create_conversation(self, conversation_id: str, conversation_type: str = "chat",
                                   user_id: str = "default_user", title: str = "",
                                   tags: List[str] = None) -> bool:
-        """
-        创建新对话（统一入口，支持所有类型）
-
-        Args:
-            conversation_id: 对话ID
-            conversation_type: 对话类型 ("chat" | "agent")
-            user_id: 用户ID
-            title: 对话标题
-            tags: 对话标签
-        """
+        """创建新对话（统一入口，支持所有类型）"""
         try:
             now = datetime.utcnow()
             conversation_doc = {
                 "_id": conversation_id,
                 "user_id": user_id,
-                "type": conversation_type,  # 新增：对话类型
+                "type": conversation_type,
                 "title": title,
                 "created_at": now,
                 "updated_at": now,
@@ -76,17 +61,7 @@ class ConversationManager:
 
     async def ensure_conversation_exists(self, conversation_id: str, conversation_type: str = "chat",
                                          user_id: str = "default_user") -> bool:
-        """
-        确保对话存在，不存在则创建
-
-        Args:
-            conversation_id: 对话ID
-            conversation_type: 对话类型
-            user_id: 用户ID
-
-        Returns:
-            bool: 操作是否成功（包括对话已存在的情况）
-        """
+        """确保对话存在，不存在则创建"""
         try:
             # 检查对话是否已存在
             conversation = await self.get_conversation(conversation_id)
@@ -133,17 +108,7 @@ class ConversationManager:
                                                    conversation_id: str,
                                                    messages: List[Dict[str, Any]],
                                                    model_config: Dict[str, Any]) -> bool:
-        """
-        统一的对话标题和标签生成方法（母方法）
-
-        Args:
-            conversation_id: 对话ID
-            messages: 第一轮的消息列表
-            model_config: 模型配置
-
-        Returns:
-            bool: 生成是否成功
-        """
+        """统一的对话标题和标签生成方法"""
         try:
             user_message = ""
             assistant_content = ""
@@ -336,15 +301,7 @@ class ConversationManager:
 
     async def list_conversations(self, user_id: str = "default_user", conversation_type: str = None,
                                  limit: int = 200, skip: int = 0) -> List[Dict[str, Any]]:
-        """
-        获取用户的对话列表
-
-        Args:
-            user_id: 用户ID
-            conversation_type: 对话类型过滤 ("chat" | "agent" | None表示所有)
-            limit: 限制数量
-            skip: 跳过数量
-        """
+        """获取用户的对话列表"""
         try:
             # 构建查询条件
             query = {"user_id": user_id}
@@ -404,26 +361,6 @@ class ConversationManager:
             logger.error(f"更新对话状态失败: {str(e)}")
             return False
 
-    async def delete_conversation(self, conversation_id: str) -> bool:
-        """删除对话（软删除，标记为deleted状态）"""
-        try:
-            # 软删除对话
-            result = await self.conversations_collection.update_one(
-                {"_id": conversation_id},
-                {"$set": {"status": "deleted", "updated_at": datetime.utcnow()}}
-            )
-
-            if result.modified_count > 0:
-                logger.info(f"对话 {conversation_id} 已标记为删除")
-                return True
-            else:
-                logger.warning(f"对话 {conversation_id} 不存在或已删除")
-                return False
-
-        except Exception as e:
-            logger.error(f"删除对话失败: {str(e)}")
-            return False
-
     async def permanently_delete_conversation(self, conversation_id: str) -> bool:
         """永久删除对话"""
         try:
@@ -442,13 +379,7 @@ class ConversationManager:
 
     async def get_conversation_stats(self, user_id: str = "default_user", conversation_type: str = None) -> Dict[
         str, Any]:
-        """
-        获取用户的对话统计信息
-
-        Args:
-            user_id: 用户ID
-            conversation_type: 对话类型过滤
-        """
+        """获取用户的对话统计信息"""
         try:
             # 构建基础查询条件
             base_query = {"user_id": user_id, "status": "active"}

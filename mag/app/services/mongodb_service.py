@@ -22,9 +22,9 @@ class MongoDBService:
 
         # 更新后的集合引用
         self.conversations_collection = None  # 统一对话基本信息
-        self.chat_messages_collection = None  # 聊天详细消息（从messages重命名）
-        self.graph_messages_collection = None  # 图生成详细消息（新格式）
-        self.mcp_messages_collection = None  # MCP生成详细消息（新格式）
+        self.chat_messages_collection = None  # 聊天详细消息
+        self.graph_messages_collection = None  # 图生成详细消息
+        self.mcp_messages_collection = None  # MCP生成详细消息
 
         self.is_connected = False
 
@@ -40,7 +40,7 @@ class MongoDBService:
             # 创建异步MongoDB客户端
             self.client = AsyncIOMotorClient(
                 connection_string,
-                serverSelectionTimeoutMS=5000,  # 5秒超时
+                serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=5000,
                 socketTimeoutMS=5000
             )
@@ -48,7 +48,7 @@ class MongoDBService:
             # 选择数据库
             self.db = self.client.conversationdb
 
-            # 获取集合引用（更新后的结构）
+            # 获取集合引用
             self.conversations_collection = self.db.conversations  # 统一基本信息
             self.chat_messages_collection = self.db.chat_messages  # 聊天详细消息
             self.graph_messages_collection = self.db.graph_messages  # 图生成详细消息
@@ -231,13 +231,10 @@ class MongoDBService:
 
             elif conversation_type == "agent":
                 # agent类型：需要判断是graph还是mcp对话
-                # 先尝试从graph_messages获取
                 graph_messages_doc = await self.graph_manager.get_graph_generation_messages_only(conversation_id)
 
                 if graph_messages_doc and graph_messages_doc.get("rounds"):
-                    # 是图生成对话
                     conversation["rounds"] = graph_messages_doc.get("rounds", [])
-                    # 添加图生成的额外信息
                     conversation["parsed_results"] = graph_messages_doc.get("parsed_results", {})
                     conversation["final_graph_config"] = graph_messages_doc.get("final_graph_config")
                     conversation["generation_type"] = "graph"
@@ -246,13 +243,10 @@ class MongoDBService:
                     mcp_messages_doc = await self.mcp_manager.get_mcp_generation_messages_only(conversation_id)
 
                     if mcp_messages_doc and mcp_messages_doc.get("rounds"):
-                        # 是MCP生成对话
                         conversation["rounds"] = mcp_messages_doc.get("rounds", [])
-                        # 添加MCP生成的额外信息
                         conversation["parsed_results"] = mcp_messages_doc.get("parsed_results", {})
                         conversation["generation_type"] = "mcp"
                     else:
-                        # 都没有找到，返回空rounds
                         conversation["rounds"] = []
                         conversation["generation_type"] = "unknown"
             else:
@@ -339,7 +333,7 @@ class MongoDBService:
             if conversation_type == "chat":
                 await self.chat_manager.delete_chat_messages(conversation_id)
             elif conversation_type == "agent":
-                # 尝试删除图生成和MCP生成消息（可能只有其中一个存在）
+                # 尝试删除图生成和MCP生成消息
                 await self.graph_manager.delete_graph_generation_messages(conversation_id)
                 await self.mcp_manager.delete_mcp_generation_messages(conversation_id)
 
@@ -356,7 +350,7 @@ class MongoDBService:
                                    compact_threshold: int = 2000,
                                    summarize_callback: Optional[Callable] = None,
                                    user_id: str = "default_user") -> Dict[str, Any]:
-        """压缩对话内容（目前只支持聊天对话）"""
+        """压缩对话内容（只支持聊天对话）"""
         try:
             # 检查对话类型
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -370,7 +364,7 @@ class MongoDBService:
             if conversation.get("user_id") != user_id:
                 return {"status": "error", "error": "无权限访问此对话"}
 
-            # 委托给chat_manager处理
+            # chat_manager处理
             return await self.chat_manager.compact_chat_messages(
                 conversation_id, compact_type, compact_threshold, summarize_callback
             )

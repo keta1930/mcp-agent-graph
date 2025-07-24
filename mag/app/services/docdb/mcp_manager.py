@@ -10,14 +10,7 @@ class MCPManager:
     """MCP生成管理器 - 负责mcp_messages集合的rounds格式消息管理"""
 
     def __init__(self, db, mcp_messages_collection, conversation_manager):
-        """
-        初始化MCP生成管理器
-
-        Args:
-            db: MongoDB数据库实例
-            mcp_messages_collection: MCP消息集合
-            conversation_manager: 对话管理器实例（用于管理基本信息）
-        """
+        """初始化MCP生成管理器"""
         self.db = db
         self.mcp_messages_collection = mcp_messages_collection
         self.conversation_manager = conversation_manager
@@ -42,7 +35,7 @@ class MCPManager:
             messages_doc = {
                 "_id": conversation_id,
                 "conversation_id": conversation_id,
-                "rounds": [],  # 新格式：rounds列表
+                "rounds": [],
                 "parsed_results": {
                     "analysis": None,
                     "todo": None,
@@ -77,14 +70,14 @@ class MCPManager:
             if not messages_doc:
                 return None
 
-            # 合并返回（保持向后兼容的格式）
+            # 合并返回
             result = conversation_info.copy()
             result.update({
                 "rounds": messages_doc.get("rounds", []),
                 "parsed_results": messages_doc.get("parsed_results", {})
             })
 
-            # 为了兼容旧格式，将rounds转换为messages（如果需要）
+            # 将rounds转换为messages（如果需要）
             messages = []
             for round_data in messages_doc.get("rounds", []):
                 messages.extend(round_data.get("messages", []))
@@ -267,7 +260,7 @@ class MCPManager:
 
     async def update_mcp_generation_token_usage(self, conversation_id: str,
                                                 prompt_tokens: int, completion_tokens: int) -> bool:
-        """更新MCP生成对话的token使用量（委托给conversation_manager）"""
+        """更新MCP生成对话的token使用量"""
         try:
             return await self.conversation_manager.update_conversation_token_usage(
                 conversation_id, prompt_tokens, completion_tokens
