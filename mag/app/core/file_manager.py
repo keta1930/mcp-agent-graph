@@ -191,7 +191,7 @@ class FileManager:
 
             # 重命名目录
             old_dir.rename(new_dir)
-            
+
             # 更新配置文件中的名称
             config_path = settings.get_agent_config_path(new_name)
             if config_path.exists():
@@ -222,7 +222,7 @@ class FileManager:
     def ensure_attachment_dir_atomic(conversation_id: str) -> Path:
         """确保附件目录存在"""
         attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
-        
+
         # 使用 exist_ok=True 来处理并发创建
         try:
             attachment_dir.mkdir(parents=True, exist_ok=True)
@@ -241,21 +241,20 @@ class FileManager:
 
     @staticmethod
     def save_conversation_atomic(conversation_id: str, graph_name: str,
-                               start_time: str, md_content: str, json_content: Dict[str, Any],
-                               html_content: str = None) -> bool:
-        """保存会话内容，避免并发冲突"""
+                                 start_time: str, json_content: Dict[str, Any]) -> bool:
+        """保存会话内容，避免并发冲突，只保存JSON文件"""
         try:
             # 获取目标路径
             conversation_dir = FileManager.get_conversation_dir(conversation_id)
-            
+
             # 确保父目录存在
             conversation_dir.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # 检查目录是否已存在（防止冲突）
             if conversation_dir.exists():
                 logger.error(f"会话目录已存在，可能存在ID冲突: {conversation_dir}")
                 return False
-            
+
             # 创建临时目录
             temp_dir = None
             try:
@@ -265,29 +264,18 @@ class FileManager:
                     dir=conversation_dir.parent
                 )
                 temp_path = Path(temp_dir)
-                
-                # 在临时目录中创建文件
-                md_path = temp_path / f"{conversation_id}.md"
+
+                # 在临时目录中创建JSON文件
                 json_path = temp_path / f"{conversation_id}.json"
-                html_path = temp_path / f"{conversation_id}.html"
-                
-                # 写入Markdown文件
-                with open(md_path, 'w', encoding='utf-8') as f:
-                    f.write(md_content)
-                
+
                 # 写入JSON文件
                 with open(json_path, 'w', encoding='utf-8') as f:
                     json.dump(json_content, f, ensure_ascii=False, indent=2)
-                
-                # 写入HTML文件（如果提供）
-                if html_content:
-                    with open(html_path, 'w', encoding='utf-8') as f:
-                        f.write(html_content)
-                
+
                 # 创建attachment子目录
                 attachment_dir = temp_path / "attachment"
                 attachment_dir.mkdir(exist_ok=True)
-                
+
                 # 重命名（移动整个目录）
                 try:
                     shutil.move(str(temp_path), str(conversation_dir))
@@ -299,7 +287,7 @@ class FileManager:
                         return False
                     else:
                         raise
-                        
+
             finally:
                 # 清理临时目录（如果还存在）
                 if temp_dir and Path(temp_dir).exists():
@@ -307,7 +295,7 @@ class FileManager:
                         shutil.rmtree(temp_dir)
                     except:
                         pass
-                        
+
         except Exception as e:
             logger.error(f"保存会话时出错: {str(e)}")
             return False
@@ -324,8 +312,8 @@ class FileManager:
             logger.error(f"清理会话文件时出错: {str(e)}")
 
     @staticmethod
-    def save_node_output_to_file_atomic(conversation_id: str, node_name: str, 
-                                      content: str, file_ext: str) -> Optional[str]:
+    def save_node_output_to_file_atomic(conversation_id: str, node_name: str,
+                                        content: str, file_ext: str) -> Optional[str]:
         """保存节点输出到文件"""
         try:
             # 创建时间戳（包含微秒）
@@ -341,7 +329,7 @@ class FileManager:
             base_filename = f"{node_name}_{full_timestamp}"
             filename = f"{base_filename}.{file_ext}"
             file_path = attachment_dir / filename
-            
+
             # 如果文件已存在，添加计数器
             counter = 1
             while file_path.exists():
@@ -354,19 +342,19 @@ class FileManager:
 
             # 使用临时文件+原子重命名
             with tempfile.NamedTemporaryFile(
-                mode='w', 
-                encoding='utf-8', 
-                dir=str(attachment_dir),
-                prefix=f"temp_{node_name}_",
-                suffix=f".{file_ext}",
-                delete=False
+                    mode='w',
+                    encoding='utf-8',
+                    dir=str(attachment_dir),
+                    prefix=f"temp_{node_name}_",
+                    suffix=f".{file_ext}",
+                    delete=False
             ) as temp_file:
                 temp_file.write(content)
                 temp_path = temp_file.name
 
             # 重命名
             shutil.move(temp_path, str(file_path))
-            
+
             logger.info(f"保存节点输出: {file_path}")
             return str(file_path)
 
@@ -386,28 +374,18 @@ class FileManager:
         return FileManager.save_node_output_to_file_atomic(conversation_id, node_name, content, file_ext)
 
     @staticmethod
-    def get_conversation_md_path(conversation_id: str) -> Path:
-        """获取会话Markdown文件路径"""
-        return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.md"
-
-    @staticmethod
     def get_conversation_json_path(conversation_id: str) -> Path:
         """获取会话JSON文件路径"""
         return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.json"
 
     @staticmethod
-    def get_conversation_html_path(conversation_id: str) -> Path:
-        """获取会话HTML文件路径"""
-        return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.html"
-
-    @staticmethod
     def get_conversation_attachments(conversation_id: str) -> List[Dict[str, Any]]:
         """获取会话附件目录中的所有文件信息"""
         attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
-        
+
         if not attachment_dir.exists():
             return []
-        
+
         attachments = []
         for file_path in attachment_dir.glob("*"):
             if file_path.is_file():
@@ -421,36 +399,24 @@ class FileManager:
                     "relative_path": f"attachment/{file_path.name}"
                 }
                 attachments.append(file_info)
-        
+
         # 按修改时间排序，最新的在前
         attachments.sort(key=lambda x: os.path.getmtime(x["path"]), reverse=True)
-        
+
         return attachments
 
     @staticmethod
     def save_conversation(conversation_id: str, graph_name: str,
-                          start_time: str, md_content: str, json_content: Dict[str, Any],
-                          html_content: str = None) -> bool:
-        """保存会话内容到Markdown、JSON和HTML文件"""
+                          start_time: str, json_content: Dict[str, Any]) -> bool:
+        """保存会话内容到JSON文件"""
         try:
             # 创建会话目录
             conversation_dir = FileManager.get_conversation_dir(conversation_id)
             conversation_dir.mkdir(parents=True, exist_ok=True)
 
-            # 保存Markdown文件
-            md_path = FileManager.get_conversation_md_path(conversation_id)
-            with open(md_path, 'w', encoding='utf-8') as f:
-                f.write(md_content)
-
             # 保存JSON文件
             json_path = FileManager.get_conversation_json_path(conversation_id)
             FileManager.save_json(json_path, json_content)
-
-            # 保存HTML文件（如果提供了HTML内容）
-            if html_content:
-                html_path = FileManager.get_conversation_html_path(conversation_id)
-                with open(html_path, 'w', encoding='utf-8') as f:
-                    f.write(html_content)
 
             return True
         except Exception as e:
@@ -458,28 +424,16 @@ class FileManager:
             return False
 
     @staticmethod
-    def update_conversation(conversation_id: str, md_content: str, json_content: Dict[str, Any],
-                            html_content: str = None) -> bool:
+    def update_conversation(conversation_id: str, json_content: Dict[str, Any]) -> bool:
         """更新会话内容"""
         try:
             # 确保会话目录存在
             conversation_dir = FileManager.get_conversation_dir(conversation_id)
             conversation_dir.mkdir(parents=True, exist_ok=True)
 
-            # 更新Markdown文件
-            md_path = FileManager.get_conversation_md_path(conversation_id)
-            with open(md_path, 'w', encoding='utf-8') as f:
-                f.write(md_content)
-
             # 更新JSON文件
             json_path = FileManager.get_conversation_json_path(conversation_id)
             FileManager.save_json(json_path, json_content)
-
-            # 更新HTML文件（如果提供了HTML内容）
-            if html_content:
-                html_path = FileManager.get_conversation_html_path(conversation_id)
-                with open(html_path, 'w', encoding='utf-8') as f:
-                    f.write(html_content)
 
             return True
         except Exception as e:
@@ -524,19 +478,6 @@ class FileManager:
             return False
 
     @staticmethod
-    def load_conversation_md(conversation_id: str) -> Optional[str]:
-        """加载会话Markdown内容"""
-        try:
-            md_path = FileManager.get_conversation_md_path(conversation_id)
-            if not md_path.exists():
-                return None
-            with open(md_path, 'r', encoding='utf-8') as f:
-                return f.read()
-        except Exception as e:
-            logger.error(f"加载会话Markdown {conversation_id} 时出错: {str(e)}")
-            return None
-
-    @staticmethod
     def load_conversation_json(conversation_id: str) -> Optional[Dict[str, Any]]:
         """加载会话JSON内容"""
         try:
@@ -554,7 +495,7 @@ class FileManager:
         try:
             # 列出会话目录中的所有子目录
             conversation_dirs = [d.name for d in settings.CONVERSATION_DIR.iterdir()
-                                 if d.is_dir() and (d / f"{d.name}.md").exists()]
+                                 if d.is_dir() and (d / f"{d.name}.json").exists()]
             return conversation_dirs
         except Exception as e:
             logger.error(f"列出会话时出错: {str(e)}")
@@ -668,7 +609,6 @@ class FileManager:
                     updated_prompt = updated_prompt.replace(f"{{{file_name}}}", file_content)
 
         return updated_prompt
-    
 
     @staticmethod
     def list_mcp_tools() -> List[str]:
@@ -685,13 +625,13 @@ class FileManager:
             return []
 
     @staticmethod
-    def create_mcp_tool(tool_name: str, script_files: Dict[str, str], 
-                    readme: str, dependencies: str) -> bool:
+    def create_mcp_tool(tool_name: str, script_files: Dict[str, str],
+                        readme: str, dependencies: str) -> bool:
         """创建MCP工具目录和文件"""
         try:
             tool_dir = settings.get_mcp_tool_dir(tool_name)
             tool_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # 保存脚本文件
             for filename, content in script_files.items():
                 script_path = tool_dir / filename
@@ -700,46 +640,46 @@ class FileManager:
                 # 如果是Python文件，设置可执行权限
                 if filename.endswith('.py'):
                     script_path.chmod(0o755)
-            
+
             # 保存README文件
             readme_path = tool_dir / "README.md"
             with open(readme_path, 'w', encoding='utf-8') as f:
                 f.write(readme)
-            
+
             # 创建虚拟环境和安装依赖
             if dependencies.strip():
                 # 1. 初始化uv项目（创建pyproject.toml）
                 result = subprocess.run([
                     "uv", "init", "--bare"
                 ], capture_output=True, text=True, cwd=str(tool_dir))
-                
+
                 if result.returncode != 0:
                     logger.error(f"初始化uv项目失败: {result.stderr}")
                     return False
-                
+
                 # 2. 创建虚拟环境
                 result = subprocess.run([
                     "uv", "venv", str(tool_dir / ".venv")
                 ], capture_output=True, text=True, cwd=str(tool_dir))
-                
+
                 if result.returncode != 0:
                     logger.error(f"创建虚拟环境失败: {result.stderr}")
                     return False
-                
+
                 # 3. 安装依赖
                 deps = [dep.strip() for dep in dependencies.split() if dep.strip()]
                 if deps:
                     result = subprocess.run([
-                        "uv", "add"
-                    ] + deps, capture_output=True, text=True, cwd=str(tool_dir))
-                    
+                                                "uv", "add"
+                                            ] + deps, capture_output=True, text=True, cwd=str(tool_dir))
+
                     if result.returncode != 0:
                         logger.error(f"安装依赖失败: {result.stderr}")
                         return False
-            
+
             logger.info(f"成功创建MCP工具: {tool_name}")
             return True
-            
+
         except Exception as e:
             logger.error(f"创建MCP工具 {tool_name} 时出错: {str(e)}")
             return False
@@ -772,18 +712,18 @@ class FileManager:
         tool_dir = settings.get_mcp_tool_dir(tool_name)
         if not tool_dir.exists():
             return None
-        
+
         # 常见的主脚本名称
         main_scripts = ["main_server.py", "server.py", "main.py"]
         for script_name in main_scripts:
             script_path = tool_dir / script_name
             if script_path.exists():
                 return script_path
-        
+
         # 如果没找到，返回第一个.py文件
         for py_file in tool_dir.glob("*.py"):
             return py_file
-        
+
         return None
 
     @staticmethod
@@ -791,15 +731,15 @@ class FileManager:
         """获取MCP工具虚拟环境的Python解释器路径"""
         tool_dir = settings.get_mcp_tool_dir(tool_name)
         venv_dir = tool_dir / ".venv"
-        
+
         if not venv_dir.exists():
             return None
-        
+
         # 根据操作系统确定Python解释器路径
         system = platform.system()
         if system == "Windows":
             python_path = venv_dir / "Scripts" / "python.exe"
         else:
             python_path = venv_dir / "bin" / "python"
-        
+
         return python_path if python_path.exists() else None

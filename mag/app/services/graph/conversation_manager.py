@@ -6,8 +6,7 @@ import copy
 import threading
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
-from app.templates.conversation_template import ConversationTemplate, HTMLConversationTemplate
-from app.utils.output_tools import _parse_placeholder,_format_content_with_default_style
+from app.utils.output_tools import _parse_placeholder, _format_content_with_default_style
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +23,8 @@ class ConversationManager:
         """生成唯一的会话ID，确保不冲突"""
         for attempt in range(max_retries):
             # 生成候选ID
-            candidate_id = ConversationTemplate.generate_conversation_filename(graph_name)
-            
+            candidate_id = f"{graph_name}_{int(time.time() * 1000000)}_{str(uuid.uuid4())[:8]}"
+
             # 检查是否冲突
             with self._conversation_lock:
                 # 检查内存中的活跃会话
@@ -37,18 +36,18 @@ class ConversationManager:
                         self._active_conversation_ids.add(candidate_id)
                         logger.info(f"生成唯一会话ID: {candidate_id} (尝试 {attempt + 1})")
                         return candidate_id
-            
+
             # 如果冲突，等待很短时间后重试（避免时间戳完全相同）
             time.sleep(0.001 * (attempt + 1))
             logger.warning(f"会话ID冲突，重试生成: {candidate_id} (尝试 {attempt + 1})")
-        
+
         # 如果多次重试失败，使用UUID后备方案
         fallback_id = f"{graph_name}_{int(time.time() * 1000000)}_{str(uuid.uuid4())}"
         logger.error(f"会话ID生成重试失败，使用后备方案: {fallback_id}")
-        
+
         with self._conversation_lock:
             self._active_conversation_ids.add(fallback_id)
-        
+
         return fallback_id
 
     def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
@@ -73,26 +72,12 @@ class ConversationManager:
                 "global_outputs": {}
             }
 
-            # 创建初始模板和JSON
-            initial_md = ConversationTemplate.generate_header(graph_name, conversation_id, "", start_time)
-            initial_md += ConversationTemplate.generate_final_output("")
-
-            # 创建初始HTML
-            initial_html = HTMLConversationTemplate.generate_html_template({
-                "conversation_id": conversation_id,
-                "graph_name": graph_name,
-                "start_time": start_time,
-                "input": "",
-                "output": "",
-                "node_results": []
-            })
-
             # 准备JSON内容
             json_content = self._prepare_json_content(self.active_conversations[conversation_id])
 
-            # 原子性保存到文件
+            # 原子性保存到文件（只保存JSON）
             success = FileManager.save_conversation_atomic(
-                conversation_id, graph_name, start_time, initial_md, json_content, initial_html
+                conversation_id, graph_name, start_time, json_content
             )
 
             if not success:
@@ -114,14 +99,14 @@ class ConversationManager:
             # 从内存中移除
             if conversation_id in self.active_conversations:
                 del self.active_conversations[conversation_id]
-            
+
             # 从活跃ID集合中移除
             with self._conversation_lock:
                 self._active_conversation_ids.discard(conversation_id)
-            
+
             # 清理可能已创建的文件
             FileManager.cleanup_conversation_files(conversation_id)
-            
+
         except Exception as e:
             logger.error(f"清理失败会话时出错: {str(e)}")
 
@@ -176,20 +161,11 @@ class ConversationManager:
         conversation = self.active_conversations[conversation_id]
 
         try:
-            # 准备层次结构的会话数据
-            conversation_with_hierarchy = self.get_conversation_with_hierarchy(conversation_id)
-
-            # 生成新的Markdown内容
-            md_content = ConversationTemplate.generate_template(conversation_with_hierarchy)
-
-            # 生成新的HTML内容
-            html_content = HTMLConversationTemplate.generate_html_template(conversation_with_hierarchy)
-
             # 准备JSON内容
             json_content = self._prepare_json_content(conversation)
 
-            # 保存更新后的内容
-            return FileManager.update_conversation(conversation_id, md_content, json_content, html_content)
+            # 保存更新后的内容（只更新JSON）
+            return FileManager.update_conversation(conversation_id, json_content)
         except Exception as e:
             logger.error(f"更新会话文件 {conversation_id} 时出错: {str(e)}")
             return False
@@ -266,7 +242,7 @@ class ConversationManager:
 
             # 删除会话文件
             return FileManager.delete_conversation(conversation_id)
-            
+
         except Exception as e:
             logger.error(f"删除会话时出错: {str(e)}")
             return False
@@ -557,10 +533,10 @@ class ConversationManager:
             "graph_config": conversation.get("graph_config", {}),
             "results": conversation.get("results", []),
             "attachments": attachments,
-            "node_states": conversation.get("node_states", {}),  
-            "handoffs_counters": conversation.get("handoffs_counters", {}), 
-            "global_outputs": conversation.get("global_outputs", {}), 
-            "parallel": conversation.get("parallel", False) 
+            "node_states": conversation.get("node_states", {}),
+            "handoffs_counters": conversation.get("handoffs_counters", {}),
+            "global_outputs": conversation.get("global_outputs", {}),
+            "parallel": conversation.get("parallel", False)
         }
 
         return result
@@ -568,43 +544,43 @@ class ConversationManager:
     def is_graph_execution_complete(self, conversation: Dict[str, Any]) -> bool:
         """检查图是否执行完毕 - 基于层级的简化判断方式"""
         graph_config = conversation["graph_config"]
-        
+
         # 如果没有结果，表示尚未开始执行
         if not conversation.get("results", []):
             return False
-        
+
         # 查找是否有未处理的handoffs选择
         for result in conversation.get("results", []):
             if not result.get("is_start_input", False) and result.get("_selected_handoff"):
                 return False
-        
+
         # 获取最高层级
         max_level = 0
         for node in graph_config.get("nodes", []):
             level = node.get("level", 0)
             max_level = max(max_level, level)
-        
+
         # 检查每个层级是否都有至少一个节点已执行
         executed_nodes = set()
         for result in conversation.get("results", []):
             if not result.get("is_start_input", False):
                 executed_nodes.add(result.get("node_name"))
-        
+
         # 检查每个层级
         for level in range(max_level + 1):
-            level_nodes = [node for node in graph_config.get("nodes", []) 
-                          if node.get("level", 0) == level]
-            
+            level_nodes = [node for node in graph_config.get("nodes", [])
+                           if node.get("level", 0) == level]
+
             # 检查此层级是否有节点已执行
             level_executed = False
             for node in level_nodes:
                 if node["name"] in executed_nodes:
                     level_executed = True
                     break
-            
+
             if not level_executed:
                 # 发现未执行的层级
                 return False
-        
+
         # 所有层级都至少有一个节点已执行
         return True
