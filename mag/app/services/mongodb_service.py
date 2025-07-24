@@ -325,10 +325,6 @@ class MongoDBService:
             conversation_id, status, user_id
         )
 
-    async def delete_conversation(self, conversation_id: str) -> bool:
-        """删除对话（软删除，标记为deleted状态）"""
-        return await self.conversation_manager.delete_conversation(conversation_id)
-
     async def permanently_delete_conversation(self, conversation_id: str) -> bool:
         """永久删除对话和相关消息"""
         try:
