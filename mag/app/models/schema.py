@@ -352,8 +352,9 @@ class ConversationRound(BaseModel):
     round: int = Field(..., description="轮次编号")
     messages: List[ChatMessage] = Field(..., description="轮次消息列表")
 
+
 class ConversationDetailResponse(BaseModel):
-    """对话详情响应（完整内容）"""
+    """对话详情响应（完整内容，支持所有类型）"""
     conversation_id: str = Field(..., description="对话ID", alias="_id")
     title: str = Field(..., description="对话标题")
     created_at: str = Field(..., description="创建时间")
@@ -361,8 +362,11 @@ class ConversationDetailResponse(BaseModel):
     round_count: int = Field(..., description="轮次数")
     tags: List[str] = Field(default_factory=list, description="标签列表")
     user_id: str = Field(..., description="用户ID")
-    rounds: List[ConversationRound] = Field(default_factory=list, description="完整消息轮次")
-    
+    type: str = Field(..., description="对话类型：chat（聊天）/ agent（AI生成）")
+    status: str = Field(..., description="对话状态：active（活跃）/ deleted（已删除）/ favorite（收藏）")
+    rounds: List[Dict[str, Any]] = Field(default_factory=list, description="完整消息轮次（原始OpenAI格式）")
+    generation_type: Optional[str] = Field(None, description="生成类型：graph（图生成）/ mcp（工具生成）/ chat")
+
     class Config:
         allow_population_by_field_name = True
 
@@ -497,6 +501,14 @@ class MCPToolTestResponse(BaseModel):
     error: Optional[str] = Field(None, description="错误信息")
     execution_time: Optional[float] = Field(None, description="执行时间（秒）")
 
-class FavoriteConversationRequest(BaseModel):
-    """收藏对话请求"""
+class UpdateConversationStatusRequest(BaseModel):
+    """更新对话状态请求"""
+    status: str = Field(..., description="新状态：active（活跃）/ deleted（软删除）/ favorite（收藏）")
     user_id: str = Field(default="default_user", description="用户ID")
+
+    @validator('status')
+    def validate_status(cls, v):
+        valid_statuses = ["active", "deleted", "favorite"]
+        if v not in valid_statuses:
+            raise ValueError(f'状态必须是以下值之一: {", ".join(valid_statuses)}')
+        return v

@@ -209,12 +209,8 @@ class MongoDBService:
         """获取对话基本信息"""
         return await self.conversation_manager.get_conversation(conversation_id)
 
-    async def get_conversation_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取对话的完整消息历史"""
-        return await self.chat_manager.get_chat_messages(conversation_id)
-
     async def get_conversation_with_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取包含消息的完整对话数据"""
+        """获取包含消息的完整对话数据（支持所有类型）"""
         try:
             # 获取基本信息
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -222,22 +218,52 @@ class MongoDBService:
                 return None
 
             # 根据类型获取详细消息
-            if conversation.get("type") == "chat":
-                messages_doc = await self.chat_manager.get_chat_messages(conversation_id)
-            else:
-                # agent类型的对话（暂时不在这里处理，保持向后兼容）
-                messages_doc = None
+            conversation_type = conversation.get("type", "chat")
 
-            if messages_doc:
-                conversation["rounds"] = messages_doc.get("rounds", [])
+            if conversation_type == "chat":
+                # chat类型：从chat_messages集合获取
+                messages_doc = await self.chat_manager.get_chat_messages(conversation_id)
+                if messages_doc:
+                    conversation["rounds"] = messages_doc.get("rounds", [])
+                    conversation["generation_type"] = "chat"
+                else:
+                    conversation["rounds"] = []
+
+            elif conversation_type == "agent":
+                # agent类型：需要判断是graph还是mcp对话
+                # 先尝试从graph_messages获取
+                graph_messages_doc = await self.graph_manager.get_graph_generation_messages_only(conversation_id)
+
+                if graph_messages_doc and graph_messages_doc.get("rounds"):
+                    # 是图生成对话
+                    conversation["rounds"] = graph_messages_doc.get("rounds", [])
+                    # 添加图生成的额外信息
+                    conversation["parsed_results"] = graph_messages_doc.get("parsed_results", {})
+                    conversation["final_graph_config"] = graph_messages_doc.get("final_graph_config")
+                    conversation["generation_type"] = "graph"
+                else:
+                    # 尝试从mcp_messages获取
+                    mcp_messages_doc = await self.mcp_manager.get_mcp_generation_messages_only(conversation_id)
+
+                    if mcp_messages_doc and mcp_messages_doc.get("rounds"):
+                        # 是MCP生成对话
+                        conversation["rounds"] = mcp_messages_doc.get("rounds", [])
+                        # 添加MCP生成的额外信息
+                        conversation["parsed_results"] = mcp_messages_doc.get("parsed_results", {})
+                        conversation["generation_type"] = "mcp"
+                    else:
+                        # 都没有找到，返回空rounds
+                        conversation["rounds"] = []
+                        conversation["generation_type"] = "unknown"
             else:
+                # 未知类型，返回空rounds
                 conversation["rounds"] = []
 
             return conversation
+
         except Exception as e:
             logger.error(f"获取完整对话数据失败: {str(e)}")
             return None
-
     async def ensure_conversation_exists(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """确保聊天对话存在，不存在则创建"""
         # 先检查对话是否存在

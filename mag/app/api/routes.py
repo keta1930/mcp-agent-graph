@@ -32,7 +32,7 @@ from app.models.schema import (
     ConversationListResponse, ConversationDetailResponse, ConversationRound,
     UpdateConversationTitleRequest, UpdateConversationTagsRequest,
     ConversationCompactRequest, ConversationCompactResponse,
-    TokenUsage,FavoriteConversationRequest
+    TokenUsage, UpdateConversationStatusRequest
 )
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.text_parser import parse_graph_response
@@ -2353,9 +2353,10 @@ async def get_conversations_list(user_id: str = "default_user"):
 
 @router.get("/chat/conversations/{conversation_id}", response_model=ConversationDetailResponse)
 async def get_conversation_detail(conversation_id: str):
-    """获取对话完整内容（用户切换对话时调用）"""
+    """获取对话完整内容（支持所有类型的对话）"""
     try:
-        conversation = await chat_service.get_conversation_detail(conversation_id)
+        # 直接调用mongodb_service的get_conversation_with_messages方法
+        conversation = await mongodb_service.get_conversation_with_messages(conversation_id)
 
         if not conversation:
             raise HTTPException(
@@ -2378,12 +2379,7 @@ async def get_conversation_detail(conversation_id: str):
             updated_at = str(updated_at)
 
         # 处理轮次数据 - 转换为OpenAI格式
-        rounds = []
-        for round_data in conversation.get("rounds", []):
-            rounds.append(ConversationRound(
-                round=round_data.get("round", 0),
-                messages=[ChatMessage(**msg) for msg in round_data.get("messages", [])]
-            ))
+        rounds = conversation.get("rounds", [])
 
         return ConversationDetailResponse(
             _id=conversation["_id"],
@@ -2393,7 +2389,10 @@ async def get_conversation_detail(conversation_id: str):
             round_count=conversation.get("round_count", 0),
             tags=conversation.get("tags", []),
             user_id=conversation.get("user_id", "default_user"),
-            rounds=rounds
+            type=conversation.get("type", "chat"),
+            status=conversation.get("status", "active"),
+            rounds=rounds,
+            generation_type=conversation.get("generation_type"),
         )
 
     except HTTPException:
@@ -2405,64 +2404,89 @@ async def get_conversation_detail(conversation_id: str):
             detail=f"获取对话详情出错: {str(e)}"
         )
 
-@router.put("/chat/conversations/{conversation_id}/favorite")
-async def favorite_conversation(conversation_id: str, request: FavoriteConversationRequest):
-    """收藏对话"""
+@router.put("/chat/conversations/{conversation_id}/status")
+async def update_conversation_status(conversation_id: str, request: UpdateConversationStatusRequest):
+    """更新对话状态（统一接口：活跃/软删除/收藏）"""
     try:
-        # 调用mongodb_service更新对话状态为收藏
+        # 调用mongodb_service更新对话状态
         success = await mongodb_service.update_conversation_status(
             conversation_id=conversation_id,
-            status="favorite",
+            status=request.status,
             user_id=request.user_id
         )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到对话 '{conversation_id}' 或收藏失败"
+                detail=f"找不到对话 '{conversation_id}' 或状态更新失败"
             )
+
+        # 根据状态返回不同的成功消息
+        status_messages = {
+            "active": "对话已恢复为活跃状态",
+            "deleted": "对话已删除",
+            "favorite": "对话已收藏"
+        }
 
         return {
             "status": "success",
-            "message": "对话收藏成功",
-            "conversation_id": conversation_id
+            "message": status_messages.get(request.status, "对话状态更新成功"),
+            "conversation_id": conversation_id,
+            "new_status": request.status
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"收藏对话出错: {str(e)}")
+        logger.error(f"更新对话状态出错: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"收藏对话出错: {str(e)}"
+            detail=f"更新对话状态出错: {str(e)}"
         )
 
 
-@router.delete("/chat/conversations/{conversation_id}")
-async def delete_conversation(conversation_id: str):
-    """删除对话"""
+@router.delete("/chat/conversations/{conversation_id}/permanent")
+async def permanently_delete_conversation(conversation_id: str, user_id: str = "default_user"):
+    """永久删除对话"""
     try:
-        success = await chat_service.delete_conversation(conversation_id)
+        # 验证对话是否存在且属于该用户
+        conversation = await mongodb_service.get_conversation(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        if conversation.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限访问此对话"
+            )
+
+        # 执行硬删除
+        success = await mongodb_service.permanently_delete_conversation(conversation_id)
 
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到对话 '{conversation_id}' 或删除失败"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"永久删除对话 '{conversation_id}' 失败"
             )
 
         return {
             "status": "success",
-            "message": f"对话 '{conversation_id}' 删除成功",
+            "message": f"对话 '{conversation_id}' 已永久删除",
             "conversation_id": conversation_id
         }
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"删除对话出错: {str(e)}")
+        logger.error(f"永久删除对话出错: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除对话出错: {str(e)}"
+            detail=f"永久删除对话出错: {str(e)}"
         )
+
 
 
 @router.put("/chat/conversations/{conversation_id}/title")
