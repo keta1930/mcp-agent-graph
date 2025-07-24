@@ -85,14 +85,14 @@ class MongoDBService:
             self.chat_messages_collection
         )
 
-        # 图生成管理器（需要conversation_manager来管理基本信息）
+        # 图生成管理器
         self.graph_manager = GraphManager(
             self.db,
             self.graph_messages_collection,
             self.conversation_manager
         )
 
-        # MCP生成管理器（需要conversation_manager来管理基本信息）
+        # MCP生成管理器
         self.mcp_manager = MCPManager(
             self.db,
             self.mcp_messages_collection,
@@ -128,7 +128,7 @@ class MongoDBService:
             self.is_connected = False
             logger.info("MongoDB连接已断开")
 
-    # === 图生成管理方法（委托给GraphManager）===
+    # === 图生成管理方法===
 
     async def create_graph_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """创建新的图生成对话"""
@@ -159,7 +159,7 @@ class MongoDBService:
         """更新图生成对话的最终图配置"""
         return await self.graph_manager.update_graph_generation_final_config(conversation_id, final_graph_config)
 
-    # === MCP生成管理方法（委托给MCPManager）===
+    # === MCP生成管理方法===
 
     async def create_mcp_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """创建新的MCP生成对话"""
@@ -185,7 +185,7 @@ class MongoDBService:
         return await self.mcp_manager.update_mcp_generation_token_usage(conversation_id, prompt_tokens,
                                                                         completion_tokens)
 
-    # === 对话管理方法（委托给ConversationManager和ChatManager）===
+    # === 对话管理方法===
 
     async def create_conversation(self, conversation_id: str, user_id: str = "default_user",
                                   title: str = "", tags: List[str] = None) -> bool:
@@ -261,9 +261,9 @@ class MongoDBService:
         # 1. 添加消息到chat_messages
         success = await self.chat_manager.add_round_to_chat(conversation_id, round_number, messages)
 
-        # 2. 更新对话基本信息（round_count在chat_manager中已处理）
+        # 2. 更新对话基本信息
         if success:
-            await self.conversation_manager.update_conversation_round_count(conversation_id, 0)  # 不重复增加
+            await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
 
         return success
 
@@ -287,10 +287,17 @@ class MongoDBService:
         return await self.conversation_manager.update_conversation_token_usage(conversation_id, prompt_tokens,
                                                                                completion_tokens)
 
-    async def list_conversations(self, user_id: str = "default_user",
+    async def list_conversations(self, user_id: str = "default_user",conversation_type: str = "chat",
                                  limit: int = 50, skip: int = 0) -> List[Dict[str, Any]]:
         """获取用户的聊天对话列表"""
-        return await self.conversation_manager.list_conversations(user_id, "chat", limit, skip)
+        return await self.conversation_manager.list_conversations(user_id, conversation_type, limit, skip)
+
+    async def update_conversation_status(self, conversation_id: str, status: str,
+                                         user_id: str = "default_user") -> bool:
+        """更新对话状态"""
+        return await self.conversation_manager.update_conversation_status(
+            conversation_id, status, user_id
+        )
 
     async def delete_conversation(self, conversation_id: str) -> bool:
         """删除对话（软删除，标记为deleted状态）"""

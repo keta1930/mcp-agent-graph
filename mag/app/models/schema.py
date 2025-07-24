@@ -320,15 +320,25 @@ class ChatMessage(BaseModel):
     tool_calls: Optional[List[Dict[str, Any]]] = Field(None, description="工具调用列表")
     tool_call_id: Optional[str] = Field(None, description="工具调用ID（tool消息专用）")
 
+class TokenUsage(BaseModel):
+    """Token使用量统计"""
+    total_tokens: int = Field(..., description="总token数")
+    prompt_tokens: int = Field(..., description="输入token数")
+    completion_tokens: int = Field(..., description="输出token数")
+
 class ConversationListItem(BaseModel):
-    """对话列表项（轻量级元数据）"""
+    """对话列表项（包含conversations集合的所有字段）"""
     conversation_id: str = Field(..., description="对话ID", alias="_id")
+    user_id: str = Field(..., description="用户ID")
+    type: str = Field(..., description="对话类型：chat（聊天）/ agent（AI生成）")
     title: str = Field(..., description="对话标题")
     created_at: str = Field(..., description="创建时间")
     updated_at: str = Field(..., description="更新时间")
     round_count: int = Field(..., description="轮次数")
+    total_token_usage: TokenUsage = Field(..., description="总token使用量统计")
+    status: str = Field(..., description="对话状态：active（活跃）/ deleted（已删除）")
     tags: List[str] = Field(default_factory=list, description="标签列表")
-    
+
     class Config:
         allow_population_by_field_name = True
 
@@ -486,3 +496,7 @@ class MCPToolTestResponse(BaseModel):
     result: Optional[Any] = Field(None, description="工具返回结果")
     error: Optional[str] = Field(None, description="错误信息")
     execution_time: Optional[float] = Field(None, description="执行时间（秒）")
+
+class FavoriteConversationRequest(BaseModel):
+    """收藏对话请求"""
+    user_id: str = Field(default="default_user", description="用户ID")

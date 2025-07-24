@@ -29,8 +29,10 @@ from app.models.schema import (
     MCPToolRegistration, MCPToolTestRequest,
     MCPToolTestResponse,
     ChatCompletionRequest, ChatMessage, ConversationListItem,
-    ConversationListResponse, ConversationDetailResponse, ConversationRound,UpdateConversationTitleRequest,
-    UpdateConversationTagsRequest,ConversationCompactRequest, ConversationCompactResponse
+    ConversationListResponse, ConversationDetailResponse, ConversationRound,
+    UpdateConversationTitleRequest, UpdateConversationTagsRequest,
+    ConversationCompactRequest, ConversationCompactResponse,
+    TokenUsage,FavoriteConversationRequest
 )
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.text_parser import parse_graph_response
@@ -600,6 +602,7 @@ async def get_mcp_generation_conversation(conversation_id: str):
             detail=f"获取MCP生成对话时出错: {str(e)}"
         )
 
+# todo 更新为stdio
 @router.post("/mcp/register-tool", response_model=Dict[str, Any])
 async def register_mcp_tool(request: MCPToolRegistration):
     """注册MCP工具到系统"""
@@ -2289,15 +2292,16 @@ async def chat_completions(request: ChatCompletionRequest):
 
 @router.get("/chat/conversations", response_model=ConversationListResponse)
 async def get_conversations_list(user_id: str = "default_user"):
-    """获取对话列表（只返回基本信息用于前端缓存）"""
+    """获取对话列表（返回所有类型的对话）"""
     try:
-        conversations = await chat_service.get_conversations_list(
+        conversations = await mongodb_service.list_conversations(
             user_id=user_id,
-            limit=100,  # 固定限制，不需要分页
+            conversation_type=None,
+            limit=200,
             skip=0
         )
 
-        # 转换为轻量级格式
+        # 转换为完整格式
         conversation_items = []
         for conv in conversations:
             # 处理时间格式
@@ -2314,12 +2318,24 @@ async def get_conversations_list(user_id: str = "default_user"):
             elif updated_at:
                 updated_at = str(updated_at)
 
+            # 处理token使用量统计
+            total_token_usage = conv.get("total_token_usage", {})
+            token_usage = TokenUsage(
+                total_tokens=total_token_usage.get("total_tokens", 0),
+                prompt_tokens=total_token_usage.get("prompt_tokens", 0),
+                completion_tokens=total_token_usage.get("completion_tokens", 0)
+            )
+
             conversation_items.append(ConversationListItem(
                 _id=conv["_id"],
+                user_id=conv.get("user_id", "default_user"),
+                type=conv.get("type", "chat"),
                 title=conv.get("title", "新对话"),
                 created_at=created_at,
                 updated_at=updated_at,
                 round_count=conv.get("round_count", 0),
+                total_token_usage=token_usage,
+                status=conv.get("status", "active"),
                 tags=conv.get("tags", [])
             ))
 
@@ -2388,6 +2404,39 @@ async def get_conversation_detail(conversation_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"获取对话详情出错: {str(e)}"
         )
+
+@router.put("/chat/conversations/{conversation_id}/favorite")
+async def favorite_conversation(conversation_id: str, request: FavoriteConversationRequest):
+    """收藏对话"""
+    try:
+        # 调用mongodb_service更新对话状态为收藏
+        success = await mongodb_service.update_conversation_status(
+            conversation_id=conversation_id,
+            status="favorite",
+            user_id=request.user_id
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}' 或收藏失败"
+            )
+
+        return {
+            "status": "success",
+            "message": "对话收藏成功",
+            "conversation_id": conversation_id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"收藏对话出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"收藏对话出错: {str(e)}"
+        )
+
 
 @router.delete("/chat/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str):

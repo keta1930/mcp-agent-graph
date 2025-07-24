@@ -335,7 +335,7 @@ class ConversationManager:
             return False
 
     async def list_conversations(self, user_id: str = "default_user", conversation_type: str = None,
-                                 limit: int = 50, skip: int = 0) -> List[Dict[str, Any]]:
+                                 limit: int = 200, skip: int = 0) -> List[Dict[str, Any]]:
         """
         获取用户的对话列表
 
@@ -347,7 +347,7 @@ class ConversationManager:
         """
         try:
             # 构建查询条件
-            query = {"user_id": user_id, "status": "active"}
+            query = {"user_id": user_id}
             if conversation_type:
                 query["type"] = conversation_type
 
@@ -361,6 +361,48 @@ class ConversationManager:
         except Exception as e:
             logger.error(f"获取对话列表失败: {str(e)}")
             return []
+
+    async def update_conversation_status(self, conversation_id: str, status: str,
+                                         user_id: str = "default_user") -> bool:
+        """更新对话状态"""
+        try:
+            # 验证状态值
+            valid_statuses = ["active", "deleted", "favorite"]
+            if status not in valid_statuses:
+                logger.error(f"无效的状态值: {status}")
+                return False
+
+            # 验证对话是否存在且属于该用户
+            conversation = await self.conversations_collection.find_one({
+                "_id": conversation_id,
+                "user_id": user_id
+            })
+
+            if not conversation:
+                logger.warning(f"对话不存在或不属于用户 {user_id}: {conversation_id}")
+                return False
+
+            # 更新状态和修改时间
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id, "user_id": user_id},
+                {
+                    "$set": {
+                        "status": status,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"成功更新对话 {conversation_id} 的状态为: {status}")
+                return True
+            else:
+                logger.warning(f"更新对话状态失败: {conversation_id}")
+                return False
+
+        except Exception as e:
+            logger.error(f"更新对话状态失败: {str(e)}")
+            return False
 
     async def delete_conversation(self, conversation_id: str) -> bool:
         """删除对话（软删除，标记为deleted状态）"""
