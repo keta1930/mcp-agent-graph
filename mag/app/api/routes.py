@@ -24,8 +24,8 @@ from app.services.chat_service import chat_service
 from app.core.file_manager import FileManager
 from app.models.schema import (
     MCPServerConfig, MCPConfig, ModelConfig, GraphConfig, GraphInput,
-    GraphResult, NodeResult, ModelConfigList, GraphGenerationRequest, 
-    GraphOptimizationRequest, GraphFilePath, MCPGenerationRequest,
+    ModelConfigList, GraphGenerationRequest,
+    GraphFilePath, MCPGenerationRequest,
     MCPToolRegistration, MCPToolTestRequest,
     MCPToolTestResponse,
     ChatCompletionRequest, ChatMessage, ConversationListItem,
@@ -1390,105 +1390,6 @@ async def generate_graph(request: GraphGenerationRequest):
             detail=f"处理AI图生成请求时出错: {str(e)}"
         )
 
-@router.post("/graphs/optimize", response_model=Dict[str, Any])
-async def optimize_graph(request: GraphOptimizationRequest):
-    """根据用户需求优化现有图配置"""
-    try:
-        # 1. 验证模型是否存在
-        model_config = model_service.get_model(request.model_name)
-        if not model_config:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到模型 '{request.model_name}'"
-            )
-
-        # 2. 获取现有图配置
-        existing_graph = graph_service.get_graph(request.graph_name)
-        if not existing_graph:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到图 '{request.graph_name}'"
-            )
-
-        # 3. 获取优化图提示词模板
-        template_response = await get_optimize_prompt_template()
-        
-        # 4. 将现有图配置和优化需求嵌入到模板中
-        graph_config_json = json.dumps(existing_graph, ensure_ascii=False, indent=2)
-        final_prompt = template_response["prompt"].replace("{GRAPH_CONFIG}", graph_config_json)
-        final_prompt = final_prompt.replace("{OPTIMIZATION_REQUIREMENT}", request.optimization_requirement)
-        
-        # 5. 调用模型进行优化
-        messages = [
-            {"role": "user", "content": final_prompt}
-        ]
-        
-        model_response = await model_service.call_model(
-            model_name=request.model_name,
-            messages=messages
-        )
-        
-        if model_response.get("status") != "success":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"模型调用失败: {model_response.get('error', '未知错误')}"
-            )
-        
-        # 6. 解析模型输出
-        model_output = model_response.get("content", "")
-        parsed_result = parse_graph_response(model_output)
-        
-        if not parsed_result["success"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"解析模型输出失败: {parsed_result.get('error', '未知错误')}"
-            )
-        
-        optimized_graph_config = parsed_result["graph_config"]
-        analysis = parsed_result.get("analysis", "")
-        
-        # 7. 验证优化后的图配置基本格式
-        optimized_graph_name = optimized_graph_config.get("name")
-        if not optimized_graph_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="优化后的图配置缺少名称"
-            )
-        try:
-            validated_config = GraphConfig(**optimized_graph_config)
-            create_response = await create_graph(validated_config)
-            if create_response.get("status") != "success":
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"创建优化后的图失败: {create_response.get('message', '未知错误')}"
-                )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"优化后的图配置验证失败: {str(e)}"
-            )
-
-        return {
-            "status": "success", 
-            "message": f"图 '{request.graph_name}' 优化成功，新图名称为 '{optimized_graph_name}'",
-            "original_graph_name": request.graph_name,
-            "optimized_graph_name": optimized_graph_name,
-            "analysis": analysis,
-            "model_output": model_output,
-            "create_result": create_response
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"优化图时出错: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"优化图时出错: {str(e)}"
-        )
-
 # ======= 图导入/导出功能 =======
 @router.post("/graphs/import", response_model=Dict[str, Any])
 async def import_graph(data: GraphFilePath):
@@ -2061,7 +1962,7 @@ async def export_graph(graph_name: str):
 
 # ======= 图执行 =======
 
-@router.post("/graphs/execute", response_model=GraphResult)
+@router.post("/graphs/execute")
 async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTasks):
     """执行图并返回结果"""
     try:
@@ -2159,7 +2060,7 @@ async def list_conversations():
         )
 
 
-@router.post("/graphs/continue", response_model=GraphResult)
+@router.post("/graphs/continue")
 async def continue_graph_execution(input_data: GraphInput):
     """从文件恢复并继续执行会话"""
     try:

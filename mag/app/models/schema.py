@@ -206,22 +206,6 @@ class AgentNode(BaseModel):
     level: Optional[int] = Field(default=None, description="节点在图中的层级，用于确定执行顺序")
     save: Optional[str] = Field(default=None, description="输出保存的文件扩展名，如md、html、py、txt等")
 
-    @validator('context_mode')
-    def validate_context_mode(cls, v):
-        """验证context_mode格式"""
-        if v == "all":
-            return v
-        # 检查是否为数字字符串
-        try:
-            n = int(v)
-            if n <= 0:
-                raise ValueError('context_mode数字值必须大于0')
-            return v
-        except ValueError:
-            if 'context_mode数字值必须大于0' in str(ValueError):
-                raise
-            raise ValueError('context_mode必须是"all"或正整数字符串（如"1","2","3"等）')
-
     @validator('name')
     def name_must_be_valid(cls, v):
         if not v or '/' in v or '\\' in v or '.' in v:
@@ -244,11 +228,11 @@ class AgentNode(BaseModel):
     @validator('level')
     def validate_level(cls, v):
         if v is None:
-            return None  
+            return None
         try:
-            return int(v) 
+            return int(v)
         except (ValueError, TypeError):
-            return None  
+            return None
 
     @validator('save')
     def validate_save(cls, v):
@@ -258,6 +242,21 @@ class AgentNode(BaseModel):
         if v and not v.isalnum():
             v = ''.join(c for c in v if c.isalnum())
         return v
+
+    @validator('context_mode')
+    def validate_context_mode(cls, v):
+        """验证context_mode格式"""
+        if v == "all":
+            return v
+        try:
+            n = int(v)
+            if n <= 0:
+                raise ValueError('context_mode数字值必须大于0')
+            return v
+        except ValueError:
+            if 'context_mode数字值必须大于0' in str(ValueError):
+                raise
+            raise ValueError('context_mode必须是"all"或正整数字符串（如"1","2","3"等）')
 
 
 class GraphConfig(BaseModel):
@@ -273,45 +272,12 @@ class GraphConfig(BaseModel):
             raise ValueError('名称不能包含特殊字符 (/, \\, .)')
         return v
 
-
 class GraphInput(BaseModel):
     """图执行输入"""
     graph_name: Optional[str] = Field(None, description="图名称")
     input_text: Optional[str] = Field(None, description="输入文本")
     conversation_id: Optional[str] = Field(None, description="会话ID，用于继续现有会话")
     continue_from_checkpoint: bool = Field(default=False, description="是否从断点继续执行")
-
-class NodeResult(BaseModel):
-    """节点执行结果"""
-    node_name: str = Field(..., description="节点名称")
-    input: str = Field(..., description="输入内容")
-    output: str = Field(..., description="输出内容")
-    tool_calls: List[Dict[str, Any]] = Field(default_factory=list, description="工具调用")
-    tool_results: List[Dict[str, Any]] = Field(default_factory=list, description="工具调用结果")
-    is_subgraph: Optional[bool] = Field(default=False, description="是否为子图节点")
-    subgraph_name: Optional[str] = Field(default=None, description="子图名称")
-    subgraph_conversation_id: Optional[str] = Field(default=None, description="子图会话ID")
-    subgraph_results: Optional[List[Dict[str, Any]]] = Field(default=None, description="子图执行结果")
-    error: Optional[str] = Field(default=None, description="错误信息（如果有）")
-    is_start_input: Optional[bool] = Field(default=None, description="是否为起始输入")
-
-
-class GraphResult(BaseModel):
-    """图执行结果"""
-    graph_name: str = Field(..., description="图名称")
-    conversation_id: str = Field(..., description="会话ID")
-    input: str = Field(..., description="输入内容")
-    output: str = Field(..., description="最终输出内容")
-    node_results: List[NodeResult] = Field(default_factory=list, description="节点执行结果")
-    execution_chain: Optional[Any] = Field(default=None, description="执行链条")
-    completed: bool = Field(default=False, description="是否完成执行")
-    error: Optional[str] = Field(default=None, description="错误信息（如果有）")
-
-class GraphOptimizationRequest(BaseModel):
-    """图优化请求"""
-    graph_name: str   # 要优化的图名称
-    optimization_requirement: str  # 优化需求描述
-    model_name: str   # 指定的模型名称
 
 class GraphFilePath(BaseModel):
     file_path: str

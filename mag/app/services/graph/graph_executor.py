@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+import json
 from typing import Dict, List, Any, Optional, Set, Tuple
 import copy
 from app.core.file_manager import FileManager
@@ -12,141 +13,8 @@ class GraphExecutor:
     """图执行服务 - 处理图和节点的实际执行流程"""
 
     def __init__(self, conversation_manager, mcp_service):
-        """
-        初始化图执行器
-
-        Args:
-            conversation_manager: 会话管理器实例
-            mcp_service: MCP服务实例
-        """
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
-
-    async def execute_mcp_node(self,
-                               model_name: str,
-                               messages: List[Dict[str, Any]],
-                               mcp_servers: List[str] = [],
-                               output_enabled: bool = True) -> Dict[str, Any]:
-        """执行Agent节点 - 从mcp_service迁移过来的方法"""
-        try:
-            # 使用message_builder验证消息格式
-            processed_messages = self.mcp_service.message_builder.validate_messages(messages)
-
-            # 使用server_manager准备工具
-            all_tools = await self.mcp_service.prepare_chat_tools(mcp_servers)
-
-            # 记录将要使用的工具
-            logger.info(f"可用工具: {[tool['function']['name'] for tool in all_tools]}")
-
-            # 直接调用模型
-            if not mcp_servers or not output_enabled:
-                logger.info("使用单阶段执行模式" if not output_enabled else "无MCP服务器，直接调用模型")
-
-                # 需要导入model_service
-                from app.services.model_service import model_service
-
-                result = await model_service.call_model(
-                    model_name=model_name,
-                    messages=processed_messages,
-                    tools=all_tools if all_tools else None
-                )
-
-                if result["status"] != "success":
-                    return result
-
-                # 处理工具调用
-                model_tool_calls = result.get("tool_calls", [])
-                if model_tool_calls and not output_enabled:
-                    tool_results = await self.mcp_service.tool_executor.execute_model_tools(model_tool_calls,
-                                                                                            mcp_servers)
-
-                    # 更新内容
-                    tool_content_parts = []
-                    for tool_result in tool_results:
-                        if "content" in tool_result and tool_result["content"]:
-                            tool_name = tool_result.get("tool_name", "unknown")
-                            tool_content_parts.append(f"【{tool_name} result】: {tool_result['content']}")
-
-                    if tool_content_parts:
-                        result["content"] = "\n\n".join(tool_content_parts)
-
-                    result["tool_calls"] = tool_results
-
-                return result
-
-            # 执行流程
-            from app.services.model_service import model_service
-            return await self._execute_two_stage_flow(
-                model_name, processed_messages, all_tools, mcp_servers, model_service
-            )
-
-        except Exception as e:
-            logger.error(f"执行节点时出错: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            return {
-                "status": "error",
-                "error": str(e)
-            }
-
-    async def _execute_two_stage_flow(self, model_name: str, messages: List[Dict], all_tools: List[Dict],
-                                      mcp_servers: List[str], model_service) -> Dict[str, Any]:
-        """执行流程 - 从mcp_service迁移过来的方法"""
-        logger.info("开始两阶段执行流程")
-
-        current_messages = messages.copy()
-        total_tool_calls_results = []
-        max_iterations = 10
-
-        for iteration in range(max_iterations):
-            logger.info(f"开始第 {iteration + 1} 轮对话")
-
-            # 调用模型服务
-            result = await model_service.call_model(
-                model_name=model_name,
-                messages=current_messages,
-                tools=all_tools
-            )
-
-            if result["status"] != "success":
-                return result
-
-            # 获取响应内容
-            initial_message_content = result.get("content", "")
-            model_tool_calls = result.get("tool_calls", [])
-            if not model_tool_calls:
-                logger.info("模型未使用任何工具，这是最终结果")
-                return {
-                    "status": "success",
-                    "content": initial_message_content,
-                    "tool_calls": total_tool_calls_results
-                }
-
-            # 处理工具调用
-            tool_results = await self.mcp_service.tool_executor.execute_model_tools(model_tool_calls, mcp_servers)
-            total_tool_calls_results.extend(tool_results)
-
-            # 构建对话消息
-            current_messages.append({
-                "role": "assistant",
-                "content": initial_message_content
-            })
-
-            # 添加工具结果
-            for tool_result in tool_results:
-                if "content" in tool_result:
-                    current_messages.append({
-                        "role": "user",
-                        "content": f"工具执行结果: {tool_result['content']}"
-                    })
-
-        # 达到最大迭代次数
-        logger.warning("达到最大工具调用迭代次数")
-        return {
-            "status": "error",
-            "error": "达到最大工具调用迭代次数",
-            "tool_calls": total_tool_calls_results
-        }
 
     async def execute_graph(self,
                             graph_name: str,
@@ -154,33 +22,32 @@ class GraphExecutor:
                             flattened_config: Dict[str, Any],
                             input_text: str,
                             model_service=None) -> Dict[str, Any]:
-        """执行整个图并返回结果 - 基于层级的简化执行方式"""
-        # 创建会话
+        """执行整个图并返回结果 - 直接返回JSON格式"""
         conversation_id = self.conversation_manager.create_conversation_with_config(graph_name, flattened_config)
 
-        # 初始化会话状态
         conversation = self.conversation_manager.get_conversation(conversation_id)
-        conversation["original_config"] = original_config
-        conversation["graph_name"] = graph_name  # 保存图名称，用于文件替换
+        conversation["graph_name"] = graph_name
 
-        # 记录用户输入
         self._record_user_input(conversation_id, input_text)
 
         await self._execute_graph_by_level_sequential(conversation_id, model_service)
 
-        # 获取最终输出
         conversation = self.conversation_manager.get_conversation(conversation_id)
         final_output = self.conversation_manager._get_final_output(conversation)
-        execution_chain = self._construct_execution_chain(conversation)
 
-        # 创建结果对象
+        self.conversation_manager.update_conversation_file(conversation_id)
+
         result = {
+            "_id": conversation_id,
             "conversation_id": conversation_id,
             "graph_name": graph_name,
+            "rounds": conversation.get("rounds", []),
+            "graph_config": conversation.get("graph_config", {}),
             "input": input_text,
-            "output": final_output,
-            "node_results": self.conversation_manager._restructure_results(conversation),
-            "execution_chain": execution_chain,
+            "global_outputs": conversation.get("global_outputs", {}),
+            "final_result": final_output,
+            "execution_chain": conversation.get("execution_chain", []),
+            "handoffs_status": conversation.get("handoffs_status", {}),
             "completed": True
         }
 
@@ -191,144 +58,742 @@ class GraphExecutor:
                                     input_text: str = None,
                                     model_service=None,
                                     continue_from_checkpoint: bool = False) -> Dict[str, Any]:
-        """继续现有会话 - 基于层级的简化执行方式"""
+        """继续现有会话 - 支持完整的断点传续"""
         conversation = self.conversation_manager.get_conversation(conversation_id)
         if not conversation:
             raise ValueError(f"找不到会话 '{conversation_id}'")
 
-        # 获取图配置和名称
-        original_config = conversation.get("original_config")
-        graph_config = conversation.get("graph_config")
         graph_name = conversation.get("graph_name")
 
-        # 如果是从断点继续而不是提供新输入
-        if continue_from_checkpoint:
+        if continue_from_checkpoint or not input_text:
             logger.info(f"从断点继续会话 {conversation_id}")
 
-            # 检查是否有未处理的handoffs选择
-            restart_node = None
-            for result in reversed(conversation.get("results", [])):
-                if not result.get("is_start_input", False) and result.get("_selected_handoff"):
-                    restart_node = result["_selected_handoff"]
-                    # 清除选择标记
-                    result["_selected_handoff"] = None
-                    break
+            resumption_info = self.conversation_manager.check_execution_resumption_point(conversation_id)
+            action = resumption_info.get("action")
 
-            # 如果有重启节点，从该节点开始执行
-            if restart_node:
-                logger.info(f"从断点继续时处理未完成的handoffs选择: {restart_node}")
-                # 查找该节点
-                restart_node_obj = self._find_node_by_name(graph_config, restart_node)
+            if action == "error":
+                raise ValueError(resumption_info.get("message"))
+            elif action == "handoffs_continue":
+                target_node = resumption_info.get("target_node")
+                await self._continue_from_handoffs_selection(conversation_id, target_node, model_service)
+            elif action == "handoffs_wait":
+                current_node = resumption_info.get("current_node")
+                await self._continue_waiting_handoffs(conversation_id, current_node, model_service)
+            elif action == "continue":
+                from_level = resumption_info.get("from_level")
+                await self._continue_graph_by_level_sequential(conversation_id, from_level, None, model_service)
 
-                if restart_node_obj:
-                    current_level = restart_node_obj.get("level", 0)
-
-
-                    await self._continue_graph_by_level_sequential(conversation_id, current_level, restart_node,
-                                                                       model_service)
-                else:
-                    logger.error(f"找不到重启节点: {restart_node}")
-            else:
-                # 找出上次执行到的最大层级
-                max_executed_level = self._get_max_executed_level(conversation)
-
-                await self._continue_graph_by_level_sequential(conversation_id, max_executed_level + 1, None,
-                                                                   model_service)
         else:
-            # 提供了新输入，重新开始执行
-            previous_results = [r for r in conversation.get("results", []) if r.get("is_start_input", False)]
+            previous_rounds = [r for r in conversation.get("rounds", []) if r.get("node_name") == "start"]
+            conversation["rounds"] = previous_rounds
+            conversation["_current_round"] = len(previous_rounds)
+            conversation["execution_chain"] = []
+            conversation["handoffs_status"] = {}
 
-            # 更新会话，重置状态但保留历史输入
-            conversation["results"] = previous_results
-
-            # 添加新的用户输入
             if input_text:
                 self._record_user_input(conversation_id, input_text)
 
             await self._execute_graph_by_level_sequential(conversation_id, model_service)
 
-        # 获取最终输出
         conversation = self.conversation_manager.get_conversation(conversation_id)
         final_output = self.conversation_manager._get_final_output(conversation)
-        execution_chain = self._construct_execution_chain(conversation)
 
-        # 创建结果对象
+        self.conversation_manager.update_conversation_file(conversation_id)
+
         result = {
+            "_id": conversation_id,
             "conversation_id": conversation_id,
             "graph_name": graph_name,
-            "input": input_text or "",
-            "output": final_output,
-            "node_results": self.conversation_manager._restructure_results(conversation),
-            "execution_chain": execution_chain,
+            "rounds": conversation.get("rounds", []),
+            "graph_config": conversation.get("graph_config", {}),
+            "input": input_text or conversation.get("input", ""),
+            "global_outputs": conversation.get("global_outputs", {}),
+            "final_result": final_output,
+            "execution_chain": conversation.get("execution_chain", []),
+            "handoffs_status": conversation.get("handoffs_status", {}),
             "completed": True
         }
 
         return result
 
-    def _construct_execution_chain(self, conversation: Dict[str, Any]) -> List[Any]:
-        """
-        构造执行链条
+    async def _execute_graph_by_level_sequential(self, conversation_id: str, model_service=None):
+        """基于层级的顺序执行方法 - 修复handoffs跳转逻辑"""
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        graph_config = conversation["graph_config"]
 
-        Args:
-            conversation: 会话对象
+        max_level = self._get_max_level(graph_config)
+        current_level = 0
 
-        Returns:
-            顺序模式: List[str] - 一维列表，按执行顺序排列的节点名称
-        """
-        results = conversation.get("results", [])
-        graph_config = conversation.get("graph_config", {})
+        while current_level <= max_level:
+            logger.info(f"开始执行层级 {current_level}")
 
-        executed_nodes = []
-        start_inputs = []
+            nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
 
-        for result in results:
-            if result.get("is_start_input", False):
-                start_inputs.append("start")
+            for node in nodes_to_execute:
+                node_input = self._get_node_input_from_rounds(node, conversation)
+
+                result = await self._execute_node(node, node_input, conversation_id, model_service)
+
+                self.conversation_manager.update_conversation_file(conversation_id)
+
+                # 检测到handoffs选择时，立即跳转执行被选择的节点
+                if result.get("_selected_handoff"):
+                    selected_node_name = result["_selected_handoff"]
+                    selected_node = self._find_node_by_name(graph_config, selected_node_name)
+
+                    if selected_node:
+                        logger.info(f"检测到handoffs选择: {selected_node_name}，立即跳转执行")
+
+                        # 立即执行被选择的节点，然后从该节点的层级继续
+                        target_level = selected_node.get("level", 0)
+                        await self._continue_graph_by_level_sequential(
+                            conversation_id,
+                            target_level,
+                            selected_node_name,  # 直接指定要执行的节点
+                            model_service
+                        )
+                        return  # 跳转执行完成，退出当前执行流程
+
+            # 如果没有handoffs跳转，继续下一层级
+            current_level += 1
+
+    async def _continue_graph_by_level_sequential(self,
+                                                  conversation_id: str,
+                                                  start_level: int,
+                                                  restart_node: Optional[str],
+                                                  model_service=None):
+        """从指定层级继续顺序执行图 - 优化handoffs节点重启逻辑"""
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        graph_config = conversation["graph_config"]
+
+        max_level = self._get_max_level(graph_config)
+        current_level = start_level
+
+        # 如果指定了重启节点，先执行该节点
+        if restart_node:
+            restart_node_obj = self._find_node_by_name(graph_config, restart_node)
+            if restart_node_obj:
+                current_level = restart_node_obj.get("level", 0)
+                logger.info(f"执行handoffs选择的节点: {restart_node}")
+
+                node_input = self._get_node_input_from_rounds(restart_node_obj, conversation)
+                result = await self._execute_node(restart_node_obj, node_input, conversation_id, model_service)
+
+                self.conversation_manager.update_conversation_file(conversation_id)
+
+                # 检查重启节点是否也有handoffs选择
+                if result.get("_selected_handoff"):
+                    next_selected = result["_selected_handoff"]
+                    logger.info(f"handoffs节点 {restart_node} 又选择了: {next_selected}")
+
+                    # 递归处理连续的handoffs跳转
+                    await self._continue_graph_by_level_sequential(
+                        conversation_id,
+                        current_level,
+                        next_selected,
+                        model_service
+                    )
+                    return
+
+                # 执行完重启节点，继续下一层级
+                current_level += 1
+
+        # 继续正常的层级执行流程
+        while current_level <= max_level:
+            logger.info(f"继续执行层级 {current_level}")
+
+            nodes = self._get_nodes_at_level(graph_config, current_level)
+
+            for node in nodes:
+                node_input = self._get_node_input_from_rounds(node, conversation)
+                result = await self._execute_node(node, node_input, conversation_id, model_service)
+
+                self.conversation_manager.update_conversation_file(conversation_id)
+
+                # 在继续执行中也要处理handoffs
+                if result.get("_selected_handoff"):
+                    selected_node_name = result["_selected_handoff"]
+                    logger.info(f"层级执行中检测到handoffs选择: {selected_node_name}")
+
+                    await self._continue_graph_by_level_sequential(
+                        conversation_id,
+                        current_level,
+                        selected_node_name,
+                        model_service
+                    )
+                    return
+
+            current_level += 1
+
+    async def _execute_handoffs_jump(self,
+                                     conversation_id: str,
+                                     target_node_name: str,
+                                     model_service) -> Dict[str, Any]:
+        """执行handoffs跳转到指定节点"""
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        graph_config = conversation["graph_config"]
+
+        target_node = self._find_node_by_name(graph_config, target_node_name)
+        if not target_node:
+            logger.error(f"handoffs目标节点不存在: {target_node_name}")
+            return {"error": f"目标节点不存在: {target_node_name}"}
+
+        logger.info(f"执行handoffs跳转: {target_node_name} (level {target_node.get('level', 0)})")
+
+        # 执行目标节点
+        node_input = self._get_node_input_from_rounds(target_node, conversation)
+        result = await self._execute_node(target_node, node_input, conversation_id, model_service)
+
+        self.conversation_manager.update_conversation_file(conversation_id)
+
+        return result
+
+    def _log_handoffs_execution(self, from_node: str, to_node: str, conversation_id: str):
+        """记录handoffs执行信息"""
+        logger.info(f"Handoffs跳转: {from_node} -> {to_node} (会话: {conversation_id})")
+
+        # 可以在这里添加更详细的执行链条记录
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        if conversation and "execution_chain" in conversation:
+            # 记录handoffs跳转信息
+            if not conversation["execution_chain"]:
+                conversation["execution_chain"] = []
+
+            # 在执行链中标记handoffs跳转
+            last_chain = conversation["execution_chain"][-1] if conversation["execution_chain"] else []
+            if isinstance(last_chain, list) and from_node in last_chain:
+                # 在同一level中添加handoffs标记
+                handoffs_marker = f"{from_node}→{to_node}"
+                if handoffs_marker not in last_chain:
+                    last_chain.append(handoffs_marker)
+
+    async def _continue_from_handoffs_selection(self, conversation_id: str, target_node: str, model_service=None):
+        """从handoffs选择继续执行 - 确保正确的执行顺序"""
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        graph_config = conversation["graph_config"]
+
+        target_node_obj = self._find_node_by_name(graph_config, target_node)
+        if not target_node_obj:
+            logger.error(f"找不到handoffs目标节点: {target_node}")
+            return
+
+        current_level = target_node_obj.get("level", 0)
+        logger.info(f"从handoffs选择继续执行: {target_node} (level {current_level})")
+
+        # 使用改进的continue方法，确保正确处理handoffs链
+        await self._continue_graph_by_level_sequential(
+            conversation_id,
+            current_level,
+            target_node,
+            model_service
+        )
+
+    async def _continue_waiting_handoffs(self, conversation_id: str, current_node: str, model_service=None):
+        """继续等待handoffs的节点"""
+        conversation = self.conversation_manager.get_conversation(conversation_id)
+        graph_config = conversation["graph_config"]
+
+        current_node_obj = self._find_node_by_name(graph_config, current_node)
+        if not current_node_obj:
+            logger.error(f"找不到当前节点: {current_node}")
+            return
+
+        node_input = self._get_node_input_from_rounds(current_node_obj, conversation)
+        result = await self._execute_node(current_node_obj, node_input, conversation_id, model_service)
+
+        self.conversation_manager.update_conversation_file(conversation_id)
+
+        if result.get("_selected_handoff"):
+            await self._continue_from_handoffs_selection(conversation_id, result["_selected_handoff"], model_service)
+
+    async def _execute_node(self,
+                            node: Dict[str, Any],
+                            input_text: str,
+                            conversation_id: str,
+                            model_service) -> Dict[str, Any]:
+        """执行单个节点 - 支持完整的消息记录和handoffs"""
+        try:
+            conversation = self.conversation_manager.get_conversation(conversation_id)
+            if not conversation:
+                raise ValueError(f"找不到会话 '{conversation_id}'")
+
+            conversation["_current_round"] += 1
+            current_round = conversation["_current_round"]
+
+            node_name = node["name"]
+            model_name = node["model_name"]
+            mcp_servers = node.get("mcp_servers", [])
+            output_enabled = node.get("output_enabled", True)
+            node_level = node.get("level", 0)
+
+            node_outputs = self._get_node_outputs_for_inputs(node, conversation)
+            node_copy = copy.deepcopy(node)
+            node_copy["_conversation_id"] = conversation_id
+
+            conversation_messages = self._create_agent_messages(node_copy, input_text, node_outputs)
+
+            handoffs_limit = node.get("handoffs")
+            handoffs_status = self.conversation_manager.get_handoffs_status(conversation_id, node_name)
+            current_handoffs_count = handoffs_status.get("used_count", 0)
+
+            handoffs_enabled = handoffs_limit is not None and current_handoffs_count < handoffs_limit
+
+            handoffs_tools = []
+            if handoffs_enabled:
+                handoffs_tools = self._create_handoffs_tools(node, conversation["graph_config"])
+
+            mcp_tools = []
+            if mcp_servers:
+                mcp_tools = await self.mcp_service.prepare_chat_tools(mcp_servers)
+
+            all_tools = handoffs_tools + mcp_tools
+
+            round_messages = conversation_messages.copy()
+            final_output = ""
+            selected_handoff = None
+
+            current_messages = conversation_messages.copy()
+            max_iterations = 10
+
+            for iteration in range(max_iterations):
+                logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
+
+                result = await model_service.call_model(
+                    model_name=model_name,
+                    messages=current_messages,
+                    tools=all_tools if all_tools else None
+                )
+
+                if result["status"] != "success":
+                    raise ValueError(result.get("error", "模型调用失败"))
+
+                assistant_content = result.get("content", "")
+                raw_tool_calls = result.get("raw_tool_calls", [])
+
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": assistant_content
+                }
+                if raw_tool_calls:
+                    assistant_msg["tool_calls"] = raw_tool_calls
+
+                round_messages.append(assistant_msg)
+                current_messages.append(assistant_msg)
+
+                if not raw_tool_calls:
+                    final_output = assistant_content
+                    break
+
+                tool_results = []
+                has_handoffs = False
+
+                for tool_call in raw_tool_calls:
+                    tool_name = tool_call["function"]["name"]
+
+                    if tool_name.startswith("transfer_to_"):
+                        selected_node = tool_name[len("transfer_to_"):]
+                        if selected_node in node.get("output_nodes", []):
+                            selected_handoff = selected_node
+                            has_handoffs = True
+
+                            if handoffs_limit is not None:
+                                self.conversation_manager.update_handoffs_status(
+                                    conversation_id, node_name, handoffs_limit, current_handoffs_count + 1,
+                                    selected_handoff
+                                )
+
+                            tool_result_msg = {
+                                "role": "tool",
+                                "tool_call_id": tool_call["id"],
+                                "content": f"已选择节点: {selected_node}"
+                            }
+                            round_messages.append(tool_result_msg)
+                            current_messages.append(tool_result_msg)
+                            tool_results.append({
+                                "tool_name": tool_name,
+                                "content": f"选择了节点: {selected_node}",
+                                "selected_node": selected_node
+                            })
+                    else:
+                        try:
+                            tool_args = json.loads(tool_call["function"]["arguments"]) if tool_call["function"][
+                                "arguments"] else {}
+                        except json.JSONDecodeError:
+                            tool_args = {}
+
+                        tool_result = await self._execute_single_tool(tool_name, tool_args, mcp_servers)
+
+                        tool_result_msg = {
+                            "role": "tool",
+                            "tool_call_id": tool_call["id"],
+                            "content": tool_result.get("content", "")
+                        }
+                        round_messages.append(tool_result_msg)
+                        current_messages.append(tool_result_msg)
+                        tool_results.append(tool_result)
+
+                if has_handoffs:
+                    final_output = assistant_content
+                    break
+
+            round_data = {
+                "round": current_round,
+                "node_name": node_name,
+                "level": node_level,
+                "messages": round_messages
+            }
+
+            if mcp_servers:
+                round_data["mcp_servers"] = mcp_servers
+
+            conversation["rounds"].append(round_data)
+
+            if node.get("global_output", False) and output_enabled and final_output:
+                logger.info(f"将节点 '{node_name}' 的输出添加到全局管理")
+                self.conversation_manager._add_global_output(
+                    conversation_id,
+                    node_name,
+                    final_output
+                )
+
+            save_ext = node.get("save")
+            if save_ext and final_output.strip():
+                FileManager.save_node_output_to_file(
+                    conversation_id,
+                    node_name,
+                    final_output,
+                    save_ext
+                )
+
+            self._update_execution_chain(conversation)
+
+            result = {
+                "node_name": node_name,
+                "input": input_text,
+                "output": final_output,
+                "tool_calls": [],
+                "tool_results": [],
+                "_selected_handoff": selected_handoff
+            }
+
+            return result
+
+        except Exception as e:
+            logger.error(f"执行节点 '{node['name']}' 时出错: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+
+            error_result = {
+                "node_name": node["name"],
+                "input": input_text,
+                "output": f"执行出错: {str(e)}",
+                "tool_calls": [],
+                "tool_results": [],
+                "error": str(e)
+            }
+
+            return error_result
+
+    async def _execute_single_tool(self, tool_name: str, tool_args: Dict[str, Any], mcp_servers: List[str]) -> Dict[
+        str, Any]:
+        """执行单个工具"""
+        server_name = await self._find_tool_server(tool_name, mcp_servers)
+        if not server_name:
+            return {
+                "tool_name": tool_name,
+                "content": f"找不到工具 '{tool_name}' 所属的服务器",
+                "error": "工具不存在"
+            }
+
+        try:
+            result = await self.mcp_service.call_tool(server_name, tool_name, tool_args)
+
+            if result.get("error"):
+                content = f"工具 {tool_name} 执行失败：{result['error']}"
             else:
-                node_name = result.get("node_name")
-                if node_name:
-                    executed_nodes.append({
-                        "name": node_name,
-                        "result": result
-                    })
-        print("executed_nodes", executed_nodes)
+                result_content = result.get("content", "")
+                if isinstance(result_content, (dict, list)):
+                    content = json.dumps(result_content, ensure_ascii=False)
+                else:
+                    content = str(result_content)
 
-        execution_chain = []
-        if start_inputs:
-            execution_chain.append("start")
+            return {
+                "tool_name": tool_name,
+                "content": content,
+                "server_name": server_name
+            }
 
-            # 按执行顺序添加节点
-        for executed_node in executed_nodes:
-            execution_chain.append(executed_node["name"])
-        print("execution_chain", execution_chain)
-        return execution_chain
+        except Exception as e:
+            logger.error(f"执行工具 {tool_name} 时出错: {str(e)}")
+            return {
+                "tool_name": tool_name,
+                "content": f"工具执行异常: {str(e)}",
+                "error": str(e)
+            }
+
+    async def _find_tool_server(self, tool_name: str, mcp_servers: List[str]) -> Optional[str]:
+        """查找工具所属的服务器"""
+        try:
+            all_tools = await self.mcp_service.get_all_tools()
+            for server_name in mcp_servers:
+                if server_name in all_tools:
+                    for tool in all_tools[server_name]:
+                        if tool["name"] == tool_name:
+                            return server_name
+            return None
+        except Exception as e:
+            logger.error(f"查找工具服务器时出错: {str(e)}")
+            return None
+
+    def _create_handoffs_tools(self, node: Dict[str, Any], graph_config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """为handoffs节点创建工具选择列表"""
+        tools = []
+
+        for output_node_name in node.get("output_nodes", []):
+            if output_node_name == "end":
+                continue
+
+            target_node = None
+            for n in graph_config["nodes"]:
+                if n["name"] == output_node_name:
+                    target_node = n
+                    break
+
+            if not target_node:
+                continue
+
+            node_description = target_node.get("description", "")
+            tool_description = f"Transfer to {output_node_name}. {node_description}"
+
+            tool = {
+                "type": "function",
+                "function": {
+                    "name": f"transfer_to_{output_node_name}",
+                    "description": tool_description,
+                    "parameters": {
+                        "additionalProperties": False,
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
+            }
+
+            tools.append(tool)
+
+        return tools
+
+    def _create_agent_messages(self,
+                               node: Dict[str, Any],
+                               input_text: str,
+                               node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
+        """创建Agent的消息列表"""
+        messages = []
+
+        if node_outputs is None:
+            node_outputs = {}
+
+        conversation_id = node.get("_conversation_id", "")
+        conversation = None
+        graph_name = ""
+        if conversation_id:
+            conversation = self.conversation_manager.get_conversation(conversation_id)
+            if conversation:
+                graph_name = conversation.get("graph_name", "")
+
+        used_input_nodes = set()
+
+        system_prompt = node.get("system_prompt", "")
+        if system_prompt:
+            if graph_name:
+                system_prompt = FileManager.replace_prompt_file_placeholders(graph_name, system_prompt)
+
+            for node_name, output in node_outputs.items():
+                placeholder = "{" + node_name + "}"
+                if placeholder in system_prompt:
+                    system_prompt = system_prompt.replace(placeholder, output)
+                    used_input_nodes.add(node_name)
+
+            messages.append({"role": "system", "content": system_prompt})
+
+        user_prompt = node.get("user_prompt", "")
+        if user_prompt:
+            if graph_name:
+                user_prompt = FileManager.replace_prompt_file_placeholders(graph_name, user_prompt)
+
+            for node_name, output in node_outputs.items():
+                placeholder = "{" + node_name + "}"
+                if placeholder in user_prompt:
+                    user_prompt = user_prompt.replace(placeholder, output)
+                    used_input_nodes.add(node_name)
+
+            unused_inputs = []
+            for node_name, output in node_outputs.items():
+                if node_name not in used_input_nodes and output.strip():
+                    unused_inputs.append(output)
+
+            if unused_inputs and (user_prompt.strip() or not used_input_nodes):
+                if user_prompt and not user_prompt.endswith("\n"):
+                    user_prompt += "\n\n"
+                user_prompt += "\n\n".join(unused_inputs)
+
+            messages.append({"role": "user", "content": user_prompt})
+        else:
+            messages.append({"role": "user", "content": input_text})
+
+        return messages
 
     def _record_user_input(self, conversation_id: str, input_text: str):
-        """记录用户输入，并将其添加到全局管理内容中"""
+        """记录用户输入为round格式"""
         conversation = self.conversation_manager.get_conversation(conversation_id)
 
-        # 添加到会话结果列表
-        conversation["results"].append({
-            "is_start_input": True,
-            "node_name": "start",
-            "input": input_text,
-            "output": "",
-            "tool_calls": [],
-            "tool_results": []
-        })
+        conversation["_current_round"] += 1
+        current_round = conversation["_current_round"]
 
-        # 将用户输入添加到全局管理内容中，便于任何节点通过context或占位符引用
+        conversation["input"] = input_text
+
+        start_round = {
+            "round": current_round,
+            "node_name": "start",
+            "level": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": input_text
+                }
+            ]
+        }
+        conversation["rounds"].append(start_round)
+
         if "global_outputs" not in conversation:
             conversation["global_outputs"] = {}
 
-        # 确保start作为特殊的全局管理节点
         if "start" not in conversation["global_outputs"]:
             conversation["global_outputs"]["start"] = []
 
-        # 添加用户输入到全局管理的start节点内容
         conversation["global_outputs"]["start"].append(input_text)
 
-        logger.info(f"已将用户输入添加到全局管理内容中，可通过context=['start']或占位符start引用")
+        logger.info(f"已记录用户输入为round {current_round}")
+
+    def _update_execution_chain(self, conversation: Dict[str, Any]):
+        """更新execution_chain - 按level合并相邻节点"""
+        rounds = conversation.get("rounds", [])
+
+        if not rounds:
+            conversation["execution_chain"] = []
+            return
+
+        execution_chain = []
+        current_level_group = []
+        current_level = None
+
+        for round_data in rounds:
+            node_name = round_data.get("node_name", "")
+            level = round_data.get("level", 0)
+
+            if current_level is None:
+                current_level = level
+                current_level_group = [node_name]
+            elif level == current_level:
+                if node_name not in current_level_group:
+                    current_level_group.append(node_name)
+            else:
+                if current_level_group:
+                    execution_chain.append(current_level_group)
+                current_level = level
+                current_level_group = [node_name]
+
+        if current_level_group:
+            execution_chain.append(current_level_group)
+
+        conversation["execution_chain"] = execution_chain
+
+    def _get_node_outputs_for_inputs(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> Dict[str, str]:
+        """获取节点输入所需的所有输出结果"""
+        node_outputs = {}
+
+        for input_node_name in node.get("input_nodes", []):
+            if input_node_name == "start":
+                user_input = self._get_user_input_from_rounds(conversation)
+                if user_input:
+                    node_outputs["start"] = user_input
+            else:
+                node_output = self._get_node_output_from_rounds(conversation, input_node_name)
+                if node_output:
+                    node_outputs[input_node_name] = node_output
+
+        context_nodes = node.get("context", [])
+        if context_nodes:
+            context_mode = node.get("context_mode", "all")
+
+            for context_node_name in context_nodes:
+                global_outputs = self.conversation_manager._get_global_outputs(
+                    conversation["conversation_id"],
+                    context_node_name,
+                    context_mode
+                )
+
+                if global_outputs:
+                    node_outputs[context_node_name] = "\n\n".join(global_outputs)
+
+        return node_outputs
+
+    def _get_node_input_from_rounds(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
+        """从rounds中获取节点输入"""
+        input_nodes = node.get("input_nodes", [])
+        inputs = []
+
+        for input_node_name in input_nodes:
+            if input_node_name == "start":
+                user_input = self._get_user_input_from_rounds(conversation)
+                if user_input:
+                    inputs.append(user_input)
+            else:
+                node_output = self._get_node_output_from_rounds(conversation, input_node_name)
+                if node_output:
+                    inputs.append(node_output)
+
+        context_nodes = node.get("context", [])
+        if context_nodes:
+            context_mode = node.get("context_mode", "all")
+
+            for context_node_name in context_nodes:
+                global_outputs = self.conversation_manager._get_global_outputs(
+                    conversation["conversation_id"],
+                    context_node_name,
+                    context_mode
+                )
+
+                if global_outputs:
+                    inputs.append("\n\n".join(global_outputs))
+
+        return "\n\n".join(inputs)
+
+    def _get_user_input_from_rounds(self, conversation: Dict[str, Any]) -> str:
+        """从rounds中获取最新的用户输入"""
+        rounds = conversation.get("rounds", [])
+
+        for round_data in reversed(rounds):
+            if round_data.get("node_name") == "start":
+                messages = round_data.get("messages", [])
+                for message in messages:
+                    if message.get("role") == "user":
+                        return message.get("content", "")
+
+        return ""
+
+    def _get_node_output_from_rounds(self, conversation: Dict[str, Any], node_name: str) -> str:
+        """从rounds中获取指定节点的最新输出"""
+        rounds = conversation.get("rounds", [])
+
+        for round_data in reversed(rounds):
+            if round_data.get("node_name") == node_name:
+                messages = round_data.get("messages", [])
+                for message in reversed(messages):
+                    if message.get("role") == "assistant":
+                        return message.get("content", "")
+
+        return ""
 
     def _get_max_level(self, graph_config: Dict[str, Any]) -> int:
         """获取图中的最大层级"""
@@ -349,531 +814,3 @@ class GraphExecutor:
             if node["name"] == node_name:
                 return node
         return None
-
-    def _get_nodes_starting_from(self, graph_config: Dict[str, Any], start_node_name: str) -> List[Dict[str, Any]]:
-        """获取从特定节点开始的执行序列"""
-        # 找到起始节点
-        start_node = self._find_node_by_name(graph_config, start_node_name)
-        if not start_node:
-            return []
-
-        # 仅返回该节点，后续节点会在下一层级处理
-        return [start_node]
-
-    def _get_node_input_simple(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
-        """简化版的节点输入获取方法"""
-        input_nodes = node.get("input_nodes", [])
-        inputs = []
-
-        # 处理输入节点
-        for input_node_name in input_nodes:
-            if input_node_name == "start":
-                # 获取用户输入
-                for result in conversation["results"]:
-                    if result.get("is_start_input", False):
-                        inputs.append(result["input"])
-                        break
-            else:
-                # 获取节点输出
-                for result in reversed(conversation["results"]):
-                    if result.get("node_name") == input_node_name:
-                        inputs.append(result["output"])
-                        break
-
-        # 处理全局输出内容
-        context_nodes = node.get("context", [])
-        if context_nodes:
-            context_mode = node.get("context_mode", "all")
-            context_n = node.get("context_n", 1)
-
-            for context_node_name in context_nodes:
-                global_outputs = self.conversation_manager._get_global_outputs(
-                    conversation["conversation_id"],
-                    context_node_name,
-                    context_mode,
-                    context_n
-                )
-
-                if global_outputs:
-                    inputs.append("\n\n".join(global_outputs))
-
-        # 合并所有输入
-        return "\n\n".join(inputs)
-
-    def _get_max_executed_level(self, conversation: Dict[str, Any]) -> int:
-        """获取已执行节点中的最大层级"""
-        graph_config = conversation["graph_config"]
-        max_level = -1
-
-        # 遍历所有结果，找出已执行节点的最大层级
-        for result in conversation.get("results", []):
-            if result.get("is_start_input", False):
-                continue
-
-            node_name = result.get("node_name")
-            node = self._find_node_by_name(graph_config, node_name)
-
-            if node:
-                level = node.get("level", 0)
-                max_level = max(max_level, level)
-
-        return max_level
-
-    async def _execute_graph_by_level_sequential(self, conversation_id: str, model_service=None):
-        """基于层级的顺序执行方法"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        graph_config = conversation["graph_config"]
-
-        # 找出所有层级
-        max_level = self._get_max_level(graph_config)
-
-        # 指示是否需要重新从特定节点开始执行
-        restart_from_node = None
-
-        # 从层级0开始顺序执行
-        current_level = 0
-
-        while current_level <= max_level:
-
-            logger.info(f"开始执行层级 {current_level}")
-
-            # 如果有重启点，则只处理该节点和后续节点
-            if restart_from_node:
-                nodes_to_execute = self._get_nodes_starting_from(graph_config, restart_from_node)
-                restart_from_node = None  # 重置重启点
-            else:
-                # 获取当前层级的所有节点
-                nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
-
-            # 顺序执行当前层级的节点
-            for i, node in enumerate(nodes_to_execute):
-                # 获取节点输入
-                node_input = self._get_node_input_simple(node, conversation)
-
-                # 执行节点
-                result = await self._execute_node(node, node_input, conversation_id, model_service)
-
-                # 保存会话状态
-                self.conversation_manager.update_conversation_file(conversation_id)
-
-                # 检查是否有handoffs选择
-                if result.get("_selected_handoff"):
-                    # 找到选择的节点
-                    selected_node_name = result["_selected_handoff"]
-                    selected_node = self._find_node_by_name(graph_config, selected_node_name)
-
-                    if selected_node:
-                        logger.info(f"检测到handoffs选择: {selected_node_name}，重新开始执行")
-                        # 清除选择标记
-                        result["_selected_handoff"] = None
-                        # 设置重启点
-                        restart_from_node = selected_node_name
-                        # 从选择的节点所在层级重新开始
-                        current_level = selected_node.get("level", 0)
-                        break
-
-            # 如果没有重启点，正常进入下一层级
-            if not restart_from_node:
-                current_level += 1
-
-    async def _continue_graph_by_level_sequential(self,
-                                                  conversation_id: str,
-                                                  start_level: int,
-                                                  restart_node: Optional[str],
-                                                  model_service=None):
-        """从指定层级继续顺序执行图"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        graph_config = conversation["graph_config"]
-
-        # 获取最大层级
-        max_level = self._get_max_level(graph_config)
-
-        # 当前层级
-        current_level = start_level
-
-        # 优先处理重启节点
-        if restart_node:
-            restart_node_obj = self._find_node_by_name(graph_config, restart_node)
-            if restart_node_obj:
-                # 重设当前层级
-                current_level = restart_node_obj.get("level", 0)
-
-                # 执行重启节点
-                node_input = self._get_node_input_simple(restart_node_obj, conversation)
-                result = await self._execute_node(restart_node_obj, node_input, conversation_id, model_service)
-
-                # 保存会话状态
-                self.conversation_manager.update_conversation_file(conversation_id)
-
-                # 检查是否有新的handoffs选择
-                if result.get("_selected_handoff"):
-                    # 递归处理
-                    await self._continue_graph_by_level_sequential(
-                        conversation_id,
-                        current_level,
-                        result["_selected_handoff"],
-                        model_service
-                    )
-                    return
-
-                # 继续执行下一层级
-                current_level += 1
-
-        # 继续执行剩余层级
-        while current_level <= max_level:
-            # 当前层级的所有节点
-            nodes = self._get_nodes_at_level(graph_config, current_level)
-
-            for node in nodes:
-                # 获取节点输入
-                node_input = self._get_node_input_simple(node, conversation)
-
-                # 执行节点
-                result = await self._execute_node(node, node_input, conversation_id, model_service)
-
-                # 保存会话状态
-                self.conversation_manager.update_conversation_file(conversation_id)
-
-                # 检查是否有handoffs选择
-                if result.get("_selected_handoff"):
-                    # 递归处理
-                    await self._continue_graph_by_level_sequential(
-                        conversation_id,
-                        current_level,
-                        result["_selected_handoff"],
-                        model_service
-                    )
-                    return
-
-            # 进入下一层级
-            current_level += 1
-    def _create_agent_messages(self,
-                               node: Dict[str, Any],
-                               input_text: str,
-                               node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
-        """
-        创建Agent的消息列表
-        """
-        messages = []
-
-        # 如果没有提供节点输出映射，则使用空字典
-        if node_outputs is None:
-            node_outputs = {}
-
-        # 确保有conversation_id
-        conversation_id = node.get("_conversation_id", "")
-        if not conversation_id:
-            logger.warning("节点缺少会话ID，可能无法正确处理提示词文件")
-
-        # 获取会话以找出图名称
-        conversation = None
-        graph_name = ""
-        if conversation_id:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
-            if conversation:
-                graph_name = conversation.get("graph_name", "")
-
-        # 跟踪已使用的输入节点
-        used_input_nodes = set()
-
-        # 处理系统提示词
-        system_prompt = node.get("system_prompt", "")
-        if system_prompt:
-            # 如果有图名称，尝试替换提示词中的文件占位符
-            if graph_name:
-                system_prompt = FileManager.replace_prompt_file_placeholders(graph_name, system_prompt)
-
-            # 查找并替换占位符
-            for node_name, output in node_outputs.items():
-                placeholder = "{" + node_name + "}"
-                if placeholder in system_prompt:
-                    system_prompt = system_prompt.replace(placeholder, output)
-                    used_input_nodes.add(node_name)
-
-            messages.append({"role": "system", "content": system_prompt})
-
-        # 处理用户提示词
-        user_prompt = node.get("user_prompt", "")
-        if user_prompt:
-            # 如果有图名称，尝试替换提示词中的文件占位符
-            if graph_name:
-                user_prompt = FileManager.replace_prompt_file_placeholders(graph_name, user_prompt)
-
-            # 查找并替换占位符
-            for node_name, output in node_outputs.items():
-                placeholder = "{" + node_name + "}"
-                if placeholder in user_prompt:
-                    user_prompt = user_prompt.replace(placeholder, output)
-                    used_input_nodes.add(node_name)
-
-            # 收集未使用的输入内容
-            unused_inputs = []
-            for node_name, output in node_outputs.items():
-                if node_name not in used_input_nodes and output.strip():
-                    unused_inputs.append(output)
-
-            # 如果存在未使用的输入内容，附加到用户提示词末尾
-            if unused_inputs and (user_prompt.strip() or not used_input_nodes):
-                # 确保有分隔符
-                if user_prompt and not user_prompt.endswith("\n"):
-                    user_prompt += "\n\n"
-                user_prompt += "\n\n".join(unused_inputs)
-
-            messages.append({"role": "user", "content": user_prompt})
-        else:
-            # 如果没有设置用户提示词，直接使用input_text
-            messages.append({"role": "user", "content": input_text})
-
-        return messages
-
-    def _create_handoffs_tools(self, node: Dict[str, Any], graph_config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """为handoffs节点创建工具选择列表"""
-        tools = []
-
-        for output_node_name in node.get("output_nodes", []):
-            # 跳过"end"节点
-            if output_node_name == "end":
-                continue
-
-            # 查找对应的节点
-            target_node = None
-            for n in graph_config["nodes"]:
-                if n["name"] == output_node_name:
-                    target_node = n
-                    break
-
-            if not target_node:
-                continue
-
-            # 获取节点描述
-            node_description = target_node.get("description", "")
-            tool_description = f"Handoff to the {output_node_name} {node_description}"
-
-            # 创建工具
-            tool = {
-                "type": "function",
-                "function": {
-                    "name": f"transfer_to_{output_node_name}",
-                    "description": tool_description,
-                    "parameters": {
-                        "additionalProperties": False,
-                        "type": "object",
-                        "properties": {},
-                        "required": []
-                    }
-                }
-            }
-
-            tools.append(tool)
-
-        return tools
-
-    async def _execute_node(self,
-                            node: Dict[str, Any],
-                            input_text: str,
-                            conversation_id: str,
-                            model_service) -> Dict[str, Any]:
-        """执行单个节点"""
-        try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
-            if not conversation:
-                raise ValueError(f"找不到会话 '{conversation_id}'")
-
-            # 获取节点的handoffs参数和当前使用次数
-            handoffs_limit = node.get("handoffs")
-            node_name = node["name"]
-
-            # 初始化handoffs计数器（如果不存在）
-            if "handoffs_counters" not in conversation:
-                conversation["handoffs_counters"] = {}
-
-            # 检查是否还可以使用handoffs
-            handoffs_enabled = False
-            if handoffs_limit is not None:
-                current_count = conversation["handoffs_counters"].get(node_name, 0)
-                # 只有当前使用次数小于限制时，才启用handoffs
-                handoffs_enabled = current_count < handoffs_limit
-                logger.info(
-                    f"节点 '{node_name}' 的handoffs状态: {current_count}/{handoffs_limit}, 已启用={handoffs_enabled}")
-
-            # 准备节点输入 - 获取当前路径上已执行节点的输出
-            node_outputs = self._get_node_outputs_for_inputs(node, conversation)
-
-            node_copy = copy.deepcopy(node)
-            node_copy["_conversation_id"] = conversation_id
-
-            # 创建消息
-            messages = self._create_agent_messages(node_copy, input_text, node_outputs)
-
-            # 从节点获取模型信息
-            model_name = node["model_name"]
-            # 提取MCP服务器列表
-            mcp_servers = node.get("mcp_servers", [])
-            output_enabled = node.get("output_enabled", True)
-
-            # 创建handoffs工具（如果启用）
-            handoffs_tools = []
-            if handoffs_enabled:
-                handoffs_tools = self._create_handoffs_tools(node, conversation["graph_config"])
-
-            # 执行节点 - 根据是否有mcp_servers决定调用方式
-            if mcp_servers:
-                response = await self.execute_mcp_node(
-                    model_name=model_name,
-                    messages=messages,
-                    mcp_servers=mcp_servers,
-                    output_enabled=output_enabled
-                )
-            else:
-                # 如果没有MCP服务器，直接使用model_service执行
-                logger.info(f"节点 '{node_name}' 没有MCP服务器，使用model_service直接执行")
-                response = await model_service.call_model(
-                    model_name=model_name,
-                    messages=messages,
-                    tools=handoffs_tools if handoffs_tools else None
-                )
-
-            # 检查执行状态
-            if response.get("status") == "error":
-                raise ValueError(response.get("error", "执行节点失败"))
-
-            # 处理工具调用和handoffs选择
-            original_tool_calls = response.get("tool_calls", [])
-            selected_handoff = None
-
-            # 查找handoffs选择
-            for tool_call in original_tool_calls:
-                tool_name = tool_call.get("tool_name", "")
-                if tool_name.startswith("transfer_to_"):
-                    selected_node = tool_name[len("transfer_to_"):]
-                    if selected_node in node.get("output_nodes", []):
-                        selected_handoff = selected_node
-
-                        # 如果选择了handoffs，增加计数器
-                        if handoffs_enabled:
-                            current_count = conversation["handoffs_counters"].get(node_name, 0)
-                            conversation["handoffs_counters"][node_name] = current_count + 1
-                            logger.info(
-                                f"节点 '{node_name}' 的handoffs计数更新为: {current_count + 1}/{handoffs_limit}")
-
-                        break
-
-            output_content = str(response.get("content", "") or "")
-
-            # 简单检查节点是否配置了handoffs参数，无需考虑计数状态
-            if node.get("handoffs") is not None:
-                output_content = output_content
-
-            # 创建结果对象
-            result = {
-                "node_name": node_name,
-                "input": input_text,
-                "output": output_content,
-                "tool_calls": original_tool_calls,
-                "tool_results": response.get("tool_results", []),
-                "_original_name": node.get("_original_name", node_name),
-                "_node_path": node.get("_node_path", ""),
-                "_selected_handoff": selected_handoff
-            }
-
-            # 处理全局输出存储
-            if node.get("global_output", False) and output_enabled and result["output"]:
-                logger.info(f"将节点 '{node_name}' 的输出添加到全局管理")
-                self.conversation_manager._add_global_output(
-                    conversation_id,
-                    node_name,
-                    result["output"]
-                )
-
-            # 检查节点是否配置了save参数，如果有则保存输出到文件
-            save_ext = node.get("save")
-            if save_ext and output_content.strip():
-                logger.info(f"节点 '{node_name}' 配置了save参数，将输出保存为.{save_ext}文件")
-                saved_path = FileManager.save_node_output_to_file(
-                    conversation_id,
-                    node_name,
-                    output_content,
-                    save_ext
-                )
-                # 将保存路径添加到结果中，方便后续引用
-                if saved_path:
-                    result["saved_file_path"] = saved_path
-
-            # 更新节点状态
-            if "node_states" not in conversation:
-                conversation["node_states"] = {}
-            conversation["node_states"][node["name"]] = {
-                "messages": messages,
-                "result": result
-            }
-
-            conversation["results"].append(result)
-
-            return result
-
-        except Exception as e:
-            logger.error(f"执行节点 '{node['name']}' 时出错: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-
-            # 创建错误结果
-            error_result = {
-                "node_name": node["name"],
-                "input": input_text,
-                "output": f"执行出错: {str(e)}",
-                "tool_calls": [],
-                "tool_results": [],
-                "error": str(e),
-                "_original_name": node.get("_original_name", node["name"]),
-                "_node_path": node.get("_node_path", "")
-            }
-
-            # 更新会话状态
-            if conversation:
-                if "node_states" not in conversation:
-                    conversation["node_states"] = {}
-                conversation["node_states"][node["name"]] = {
-                    "error": str(e)
-                }
-                conversation["results"].append(error_result)
-
-            return error_result
-
-    def _get_node_outputs_for_inputs(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> Dict[str, str]:
-        """获取节点输入所需的所有输出结果"""
-        node_outputs = {}
-
-        # 处理所有输入节点
-        for input_node_name in node.get("input_nodes", []):
-            if input_node_name == "start":
-                # 获取最新的用户输入
-                for result in reversed(conversation["results"]):
-                    if result.get("is_start_input", False):
-                        node_outputs["start"] = result["input"]
-                        break
-            else:
-                # 获取输入节点的最新结果
-                for result in reversed(conversation["results"]):
-                    if (not result.get("is_start_input", False) and
-                            result.get("node_name") == input_node_name):
-                        # 找到了输入节点的最新结果
-                        node_outputs[input_node_name] = result["output"]
-                        break
-
-        # 处理全局输出内容作为上下文
-        context_nodes = node.get("context", [])
-        if context_nodes:
-            context_mode = node.get("context_mode", "all")
-
-            for context_node_name in context_nodes:
-                global_outputs = self.conversation_manager._get_global_outputs(
-                    conversation["conversation_id"],
-                    context_node_name,
-                    context_mode
-                )
-
-                if global_outputs:
-                    # 合并全局输出内容
-                    node_outputs[context_node_name] = "\n\n".join(global_outputs)
-
-        return node_outputs
