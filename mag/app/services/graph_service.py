@@ -14,6 +14,7 @@ from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor
 from app.services.graph.ai_graph_generator import AIGraphGenerator
+from app.utils.sse_helper import SSEHelper
 
 logger = logging.getLogger(__name__)
 
@@ -146,51 +147,64 @@ class GraphService:
         """删除会话"""
         return self.conversation_manager.delete_conversation(conversation_id)
 
-    async def execute_graph(self, graph_name: str, input_text: str) -> Dict[str, Any]:
-        """执行整个图并返回结果 - 使用基于层级的新方法"""
-        # 加载原始图配置
-        original_config = self.get_graph(graph_name)
-        if not original_config:
-            raise ValueError(f"找不到图 '{graph_name}'")
+    async def execute_graph_stream(self, graph_name: str, input_text: str) -> AsyncGenerator[str, None]:
+        """执行整个图并返回流式结果 - 混合方案"""
+        try:
+            # 加载原始图配置
+            original_config = self.get_graph(graph_name)
+            if not original_config:
+                yield SSEHelper.send_error(f"找不到图 '{graph_name}'")
+                return
 
-        # 检查循环引用
-        cycle = self.detect_graph_cycles(graph_name)
-        if cycle:
-            raise ValueError(f"检测到循环引用链: {' -> '.join(cycle)}")
+            # 检查循环引用
+            cycle = self.detect_graph_cycles(graph_name)
+            if cycle:
+                yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
+                return
 
-        # 展开图配置，处理所有子图
-        flattened_config = self.preprocess_graph(original_config)
+            # 展开图配置，处理所有子图
+            flattened_config = self.preprocess_graph(original_config)
 
-        # 使用新的执行器执行图
-        return await self.executor.execute_graph(
-            graph_name,
-            original_config,
-            flattened_config,
-            input_text,
-            model_service
-        )
+            # 使用新的流式执行器执行图
+            async for sse_data in self.executor.execute_graph_stream(
+                    graph_name,
+                    original_config,
+                    flattened_config,
+                    input_text,
+                    model_service
+            ):
+                yield sse_data
 
-    async def continue_conversation(self,
-                                    conversation_id: str,
-                                    input_text: str = None,
-                                    continue_from_checkpoint: bool = False) -> Dict[str, Any]:
-        """继续现有会话 - 使用基于层级的新方法"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        if not conversation:
-            raise ValueError(f"找不到会话 '{conversation_id}'")
+        except Exception as e:
+            logger.error(f"执行图流式处理时出错: {str(e)}")
+            yield SSEHelper.send_error(f"执行图时出错: {str(e)}")
 
-        # 使用执行器继续会话
-        result = await self.executor.continue_conversation(
-            conversation_id,
-            input_text,
-            model_service,
-            continue_from_checkpoint
-        )
+    async def continue_conversation_stream(self,
+                                           conversation_id: str,
+                                           input_text: str = None,
+                                           continue_from_checkpoint: bool = False) -> AsyncGenerator[str, None]:
+        """继续现有会话并返回流式结果 - 混合方案"""
+        try:
+            conversation = self.conversation_manager.get_conversation(conversation_id)
+            if not conversation:
+                yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
+                return
 
-        # 确保更新后的结果被保存到文件
-        self.conversation_manager.update_conversation_file(conversation_id)
+            # 使用流式执行器继续会话
+            async for sse_data in self.executor.continue_conversation_stream(
+                    conversation_id,
+                    input_text,
+                    model_service,
+                    continue_from_checkpoint
+            ):
+                yield sse_data
 
-        return result
+            # 确保更新后的结果被保存到文件
+            self.conversation_manager.update_conversation_file(conversation_id)
+
+        except Exception as e:
+            logger.error(f"继续会话流式处理时出错: {str(e)}")
+            yield SSEHelper.send_error(f"继续会话时出错: {str(e)}")
 
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含层次结构的会话详情"""

@@ -36,6 +36,7 @@ from app.models.schema import (
 )
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.text_parser import parse_graph_response
+from app.utils.sse_helper import SSEHelper
 from app.services.mongodb_service import mongodb_service
 
 logger = logging.getLogger(__name__)
@@ -1964,7 +1965,7 @@ async def export_graph(graph_name: str):
 
 @router.post("/graphs/execute")
 async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTasks):
-    """执行图并返回结果"""
+    """执行图并返回流式结果 - 混合方案"""
     try:
         # 检查图是否存在
         graph_config = graph_service.get_graph(input_data.graph_name)
@@ -1974,29 +1975,52 @@ async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTask
                 detail=f"找不到图 '{input_data.graph_name}'"
             )
 
-        # 同步模式：等待执行完成
-        if input_data.conversation_id:
-            # 继续现有会话
-            result = await graph_service.continue_conversation(
-                input_data.conversation_id,
-                input_data.input_text,
-            )
-        else:
-            # 创建新会话
-            result = await graph_service.execute_graph(
-                input_data.graph_name,
-                input_data.input_text,
-            )
+        async def generate_hybrid_stream():
+            try:
+                if input_data.conversation_id:
+                    # 继续现有会话
+                    async for sse_data in graph_service.continue_conversation_stream(
+                            input_data.conversation_id,
+                            input_data.input_text,
+                    ):
+                        yield sse_data
+                else:
+                    # 创建新会话
+                    async for sse_data in graph_service.execute_graph_stream(
+                            input_data.graph_name,
+                            input_data.input_text,
+                    ):
+                        yield sse_data
 
-        return result
+                # 发送完成标记
+                yield SSEHelper.format_done()
+
+            except HTTPException as he:
+                yield SSEHelper.send_error(he.detail)
+                yield SSEHelper.format_done()
+            except Exception as e:
+                logger.error(f"执行图时出错: {str(e)}")
+                yield SSEHelper.send_error(f"执行图时出错: {str(e)}")
+                yield SSEHelper.format_done()
+
+        return StreamingResponse(
+            generate_hybrid_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+            }
+        )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"执行图时出错: {str(e)}")
+        logger.error(f"初始化执行图时出错: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"执行图时出错: {str(e)}"
+            detail=f"初始化执行图时出错: {str(e)}"
         )
 
 
