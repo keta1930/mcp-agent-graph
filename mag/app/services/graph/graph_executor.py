@@ -306,12 +306,14 @@ class GraphExecutor:
         if result.get("_selected_handoff"):
             await self._continue_from_handoffs_selection(conversation_id, result["_selected_handoff"], model_service)
 
+    # ============= 1. graph_executor.py - _execute_node方法修复 =============
+
     async def _execute_node(self,
                             node: Dict[str, Any],
                             input_text: str,
                             conversation_id: str,
                             model_service) -> Dict[str, Any]:
-        """执行单个节点 - 支持完整的消息记录和handoffs"""
+        """执行单个节点 - 支持output_enabled功能"""
         try:
             conversation = self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
@@ -323,7 +325,7 @@ class GraphExecutor:
             node_name = node["name"]
             model_name = node["model_name"]
             mcp_servers = node.get("mcp_servers", [])
-            output_enabled = node.get("output_enabled", True)
+            output_enabled = node.get("output_enabled", True)  # 关键参数
             node_level = node.get("level", 0)
 
             node_outputs = self._get_node_outputs_for_inputs(node, conversation)
@@ -349,7 +351,8 @@ class GraphExecutor:
             all_tools = handoffs_tools + mcp_tools
 
             round_messages = conversation_messages.copy()
-            final_output = ""
+            assistant_final_output = ""  # assistant的最终输出
+            tool_results_content = []  # 收集所有工具结果
             selected_handoff = None
 
             current_messages = conversation_messages.copy()
@@ -381,7 +384,7 @@ class GraphExecutor:
                 current_messages.append(assistant_msg)
 
                 if not raw_tool_calls:
-                    final_output = assistant_content
+                    assistant_final_output = assistant_content
                     break
 
                 tool_results = []
@@ -422,24 +425,42 @@ class GraphExecutor:
                             tool_args = {}
 
                         tool_result = await self._execute_single_tool(tool_name, tool_args, mcp_servers)
+                        tool_content = tool_result.get("content", "")
+
+                        # 收集工具结果内容（用于output_enabled=false的情况）
+                        if tool_content and not tool_name.startswith("transfer_to_"):
+                            tool_results_content.append(tool_content)
 
                         tool_result_msg = {
                             "role": "tool",
                             "tool_call_id": tool_call["id"],
-                            "content": tool_result.get("content", "")
+                            "content": tool_content
                         }
                         round_messages.append(tool_result_msg)
                         current_messages.append(tool_result_msg)
                         tool_results.append(tool_result)
 
                 if has_handoffs:
-                    final_output = assistant_content
+                    assistant_final_output = assistant_content
                     break
 
+            # 根据output_enabled决定最终输出内容
+            if output_enabled:
+                # 使用assistant的最终输出
+                final_output = assistant_final_output
+                logger.info(f"节点 '{node_name}' 使用assistant输出 (output_enabled=True)")
+            else:
+                # 使用工具调用结果的拼接
+                final_output = "\n".join(tool_results_content) if tool_results_content else ""
+                logger.info(
+                    f"节点 '{node_name}' 使用工具结果输出 (output_enabled=False): {len(tool_results_content)} 个工具结果")
+
+            # 创建round数据，包含output_enabled信息
             round_data = {
                 "round": current_round,
                 "node_name": node_name,
                 "level": node_level,
+                "output_enabled": output_enabled,  # 存储output_enabled信息
                 "messages": round_messages
             }
 
@@ -448,14 +469,29 @@ class GraphExecutor:
 
             conversation["rounds"].append(round_data)
 
-            if node.get("global_output", False) and output_enabled and final_output:
-                logger.info(f"将节点 '{node_name}' 的输出添加到全局管理")
-                self.conversation_manager._add_global_output(
-                    conversation_id,
-                    node_name,
-                    final_output
-                )
+            # 处理全局输出存储 - 修复逻辑
+            if node.get("global_output", False):
+                if output_enabled:
+                    # 存储assistant输出
+                    if final_output:
+                        logger.info(f"将节点 '{node_name}' 的assistant输出添加到全局管理")
+                        self.conversation_manager._add_global_output(
+                            conversation_id,
+                            node_name,
+                            final_output
+                        )
+                else:
+                    # 存储工具结果
+                    if tool_results_content:
+                        tool_output = "\n".join(tool_results_content)
+                        logger.info(f"将节点 '{node_name}' 的工具结果添加到全局管理")
+                        self.conversation_manager._add_global_output(
+                            conversation_id,
+                            node_name,
+                            tool_output
+                        )
 
+            # 保存文件（如果配置了save参数）
             save_ext = node.get("save")
             if save_ext and final_output.strip():
                 FileManager.save_node_output_to_file(
@@ -470,7 +506,7 @@ class GraphExecutor:
             result = {
                 "node_name": node_name,
                 "input": input_text,
-                "output": final_output,
+                "output": final_output,  # 根据output_enabled决定的输出
                 "tool_calls": [],
                 "tool_results": [],
                 "_selected_handoff": selected_handoff
@@ -709,7 +745,7 @@ class GraphExecutor:
         conversation["execution_chain"] = execution_chain
 
     def _get_node_outputs_for_inputs(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> Dict[str, str]:
-        """获取节点输入所需的所有输出结果"""
+        """获取节点输入所需的所有输出结果 - 支持output_enabled"""
         node_outputs = {}
 
         for input_node_name in node.get("input_nodes", []):
@@ -718,6 +754,7 @@ class GraphExecutor:
                 if user_input:
                     node_outputs["start"] = user_input
             else:
+                # 使用更新后的方法获取节点输出
                 node_output = self._get_node_output_from_rounds(conversation, input_node_name)
                 if node_output:
                     node_outputs[input_node_name] = node_output
@@ -739,7 +776,7 @@ class GraphExecutor:
         return node_outputs
 
     def _get_node_input_from_rounds(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
-        """从rounds中获取节点输入"""
+        """从rounds中获取节点输入 - 支持output_enabled"""
         input_nodes = node.get("input_nodes", [])
         inputs = []
 
@@ -749,6 +786,7 @@ class GraphExecutor:
                 if user_input:
                     inputs.append(user_input)
             else:
+                # 使用更新后的方法获取节点输出
                 node_output = self._get_node_output_from_rounds(conversation, input_node_name)
                 if node_output:
                     inputs.append(node_output)
@@ -783,15 +821,46 @@ class GraphExecutor:
         return ""
 
     def _get_node_output_from_rounds(self, conversation: Dict[str, Any], node_name: str) -> str:
-        """从rounds中获取指定节点的最新输出"""
+        """从rounds中获取指定节点的输出 - 支持output_enabled"""
         rounds = conversation.get("rounds", [])
+        graph_config = conversation.get("graph_config", {})
 
+        # 查找节点配置以获取output_enabled设置
+        node_config = None
+        for node in graph_config.get("nodes", []):
+            if node["name"] == node_name:
+                node_config = node
+                break
+
+        # 从最新的对应节点round中获取输出
         for round_data in reversed(rounds):
             if round_data.get("node_name") == node_name:
                 messages = round_data.get("messages", [])
-                for message in reversed(messages):
-                    if message.get("role") == "assistant":
-                        return message.get("content", "")
+
+                # 检查round中存储的output_enabled设置（优先）
+                round_output_enabled = round_data.get("output_enabled")
+                if round_output_enabled is None and node_config:
+                    # 如果round中没有，使用节点配置
+                    round_output_enabled = node_config.get("output_enabled", True)
+                else:
+                    round_output_enabled = True  # 默认值
+
+                if round_output_enabled:
+                    # 获取assistant的最终输出
+                    for message in reversed(messages):
+                        if message.get("role") == "assistant":
+                            return message.get("content", "")
+                else:
+                    # 获取所有工具结果并拼接
+                    tool_contents = []
+                    for message in messages:
+                        if message.get("role") == "tool":
+                            content = message.get("content", "")
+                            # 排除handoffs相关的工具结果
+                            if content and not content.startswith("已选择节点:"):
+                                tool_contents.append(content)
+
+                    return "\n".join(tool_contents) if tool_contents else ""
 
         return ""
 

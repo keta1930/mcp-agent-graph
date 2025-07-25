@@ -284,7 +284,7 @@ class ConversationManager:
         }
 
     def _get_final_output(self, conversation: Dict[str, Any]) -> str:
-        """获取图的最终输出 - 从rounds中获取数据"""
+        """获取图的最终输出 - 支持output_enabled的占位符替换"""
         graph_config = conversation["graph_config"]
         rounds = conversation.get("rounds", [])
 
@@ -303,10 +303,24 @@ class ConversationManager:
                             node_outputs["start"] = msg.get("content", "")
                             break
                 else:
-                    for msg in reversed(messages):
-                        if msg.get("role") == "assistant":
-                            node_outputs[node_name] = msg.get("content", "")
-                            break
+                    # 根据output_enabled获取正确的输出
+                    output_enabled = round_data.get("output_enabled", True)
+
+                    if output_enabled:
+                        # 获取assistant的最终输出
+                        for msg in reversed(messages):
+                            if msg.get("role") == "assistant":
+                                node_outputs[node_name] = msg.get("content", "")
+                                break
+                    else:
+                        # 获取工具结果
+                        tool_contents = []
+                        for msg in messages:
+                            if msg.get("role") == "tool":
+                                content = msg.get("content", "")
+                                if content and not content.startswith("已选择节点:"):
+                                    tool_contents.append(content)
+                        node_outputs[node_name] = "\n".join(tool_contents) if tool_contents else ""
 
             output = end_template
             placeholder_pattern = r'\{([^}]+)\}'
@@ -343,15 +357,34 @@ class ConversationManager:
             conversation["final_result"] = output
             return output
 
+        # 如果没有模板，使用最后一个非start节点的输出
         if not rounds:
             return ""
 
         for round_data in reversed(rounds):
             if round_data.get("node_name") != "start":
+                node_name = round_data.get("node_name", "")
                 messages = round_data.get("messages", [])
-                for msg in reversed(messages):
-                    if msg.get("role") == "assistant":
-                        final_output = msg.get("content", "")
+                output_enabled = round_data.get("output_enabled", True)
+
+                if output_enabled:
+                    # 获取assistant输出
+                    for msg in reversed(messages):
+                        if msg.get("role") == "assistant":
+                            final_output = msg.get("content", "")
+                            conversation["final_result"] = final_output
+                            return final_output
+                else:
+                    # 获取工具结果
+                    tool_contents = []
+                    for msg in messages:
+                        if msg.get("role") == "tool":
+                            content = msg.get("content", "")
+                            if content and not content.startswith("已选择节点:"):
+                                tool_contents.append(content)
+
+                    if tool_contents:
+                        final_output = "\n".join(tool_contents)
                         conversation["final_result"] = final_output
                         return final_output
 
