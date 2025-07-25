@@ -127,8 +127,8 @@ class ConversationManager:
         conversation["global_outputs"][node_name].append(output)
         logger.info(f"已添加节点 '{node_name}' 的全局输出，当前共 {len(conversation['global_outputs'][node_name])} 条")
 
-    def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all", n: int = 1) -> List[str]:
-        """全局输出获取函数，确保在all模式下返回完整数据"""
+    def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all") -> List[str]:
+        """全局输出获取函数，支持新的context_mode格式"""
         conversation = self.get_conversation(conversation_id)
         if not conversation or "global_outputs" not in conversation or node_name not in conversation["global_outputs"]:
             logger.debug(f"找不到节点 '{node_name}' 的全局输出内容")
@@ -138,18 +138,27 @@ class ConversationManager:
 
         # 记录调试信息
         logger.debug(f"节点 '{node_name}' 的全局输出内容数量: {len(outputs)}")
-        logger.debug(f"请求模式: {mode}, n={n}")
+        logger.debug(f"请求模式: {mode}")
 
-        if mode == "latest":
-            # 获取最新一条
-            return [outputs[-1]] if outputs else []
-        elif mode == "latest_n":
-            # 获取最新n条
-            return outputs[-n:] if outputs else []
-        else:  # all 模式
-            # 确保返回所有内容的副本
+        if mode == "all":
+            # 获取全部内容
             logger.debug(f"返回全部 {len(outputs)} 条记录")
             return outputs.copy()
+        else:
+            # 尝试解析为数字
+            try:
+                n = int(mode)
+                if n <= 0:
+                    logger.error(f"无效的context_mode数值: {mode}，必须大于0")
+                    return []
+
+                # 获取最新n条
+                result = outputs[-n:] if outputs else []
+                logger.debug(f"返回最新 {len(result)} 条记录（请求{n}条）")
+                return result
+            except ValueError:
+                logger.error(f"无效的context_mode格式: {mode}，必须是'all'或正整数字符串")
+                return []
 
     def update_conversation_file(self, conversation_id: str) -> bool:
         """更新会话文件"""
@@ -427,16 +436,15 @@ class ConversationManager:
 
             for placeholder in placeholders:
                 # 解析占位符
-                node_name, mode, n = _parse_placeholder(placeholder)
+                node_name, mode = _parse_placeholder(placeholder)
 
                 # 如果是需要历史数据的模式，则总是从全局变量获取
-                if mode in ["all", "latest_n"]:
+                if mode != "1":  # 非单条结果模式
                     # 从全局变量获取多条结果
                     global_outputs = self._get_global_outputs(
                         conversation["conversation_id"],
                         node_name,
-                        mode,
-                        n
+                        mode
                     )
 
                     if global_outputs:
@@ -456,8 +464,7 @@ class ConversationManager:
                         global_outputs = self._get_global_outputs(
                             conversation["conversation_id"],
                             node_name,
-                            "latest",
-                            1
+                            "1"
                         )
 
                         if global_outputs:
@@ -467,49 +474,6 @@ class ConversationManager:
                             output = output.replace(f"{{{placeholder}}}", "")
 
             return output
-
-        if not results:
-            return ""
-
-        # 找出所有的终止节点
-        end_nodes = []
-        for node in graph_config["nodes"]:
-            if node.get("is_end", False) or "end" in node.get("output_nodes", []):
-                end_nodes.append(node["name"])
-
-        # 收集所有终止节点的输出
-        end_outputs = []
-        for result in results:
-            if not result.get("is_start_input", False) and result.get("node_name") in end_nodes:
-                end_outputs.append(result["output"])
-
-        # 如果找到了终止节点输出，返回它们的组合
-        if end_outputs:
-            return "\n\n".join(end_outputs)
-
-        # 首先按照层级排序所有节点，如果没有找到终止节点输出，使用最后一个执行的节点
-        executed_nodes = []
-        for result in results:
-            if not result.get("is_start_input", False):
-                node_name = result.get("node_name")
-                for node in graph_config["nodes"]:
-                    if node["name"] == node_name:
-                        level = node.get("level", 0)
-                        executed_nodes.append((result, level))
-                        break
-
-        # 找出最高层级的节点
-        if executed_nodes:
-            executed_nodes.sort(key=lambda x: x[1], reverse=True)
-            return executed_nodes[0][0]["output"]
-
-        # 如果上述都失败，返回最后一个结果
-        for result in reversed(results):
-            if not result.get("is_start_input", False):
-                return result["output"]
-
-        # 如果没有任何非输入结果，返回空字符串
-        return ""
 
     def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含层次结构的会话详情"""

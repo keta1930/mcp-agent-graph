@@ -198,14 +198,29 @@ class AgentNode(BaseModel):
     handoffs: Optional[int] = Field(default=None, description="节点可以执行的选择次数，用于支持循环流程")
     global_output: bool = Field(default=False, description="是否全局管理此节点的输出")
     context: List[str] = Field(default_factory=list, description="需要引用的全局管理节点列表")
-    context_mode: str = Field(default="all", description="全局内容获取模式，可选值：all, latest, latest_n")
-    context_n: int = Field(default=1, description="获取最新的n次输出，当context_mode为latest_n时有效")
+    context_mode: str = Field(default="all", description="全局内容获取模式，可选值：all（获取全部）, 数字（获取最新n次输出，如'1','2','3'等）")
     output_enabled: bool = Field(default=True, description="是否输出回复")
     is_subgraph: bool = Field(default=False, description="是否为子图节点")
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
     position: Optional[Dict[str, float]] = Field(default=None, description="节点在画布中的位置")
     level: Optional[int] = Field(default=None, description="节点在图中的层级，用于确定执行顺序")
     save: Optional[str] = Field(default=None, description="输出保存的文件扩展名，如md、html、py、txt等")
+
+    @validator('context_mode')
+    def validate_context_mode(cls, v):
+        """验证context_mode格式"""
+        if v == "all":
+            return v
+        # 检查是否为数字字符串
+        try:
+            n = int(v)
+            if n <= 0:
+                raise ValueError('context_mode数字值必须大于0')
+            return v
+        except ValueError:
+            if 'context_mode数字值必须大于0' in str(ValueError):
+                raise
+            raise ValueError('context_mode必须是"all"或正整数字符串（如"1","2","3"等）')
 
     @validator('name')
     def name_must_be_valid(cls, v):

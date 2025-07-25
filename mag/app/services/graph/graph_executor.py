@@ -864,14 +864,12 @@ class GraphExecutor:
         context_nodes = node.get("context", [])
         if context_nodes:
             context_mode = node.get("context_mode", "all")
-            context_n = node.get("context_n", 1)
 
             for context_node_name in context_nodes:
                 global_outputs = self.conversation_manager._get_global_outputs(
                     conversation["conversation_id"],
                     context_node_name,
-                    context_mode,
-                    context_n
+                    context_mode
                 )
 
                 if global_outputs:

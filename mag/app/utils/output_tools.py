@@ -1,17 +1,16 @@
 def _parse_placeholder(placeholder: str) -> tuple:
     """
-    占位符解析函数，支持三种基本模式
+    占位符解析函数，支持新的context_mode格式
 
     Args:
         placeholder: 占位符字符串，不含括号
 
     Returns:
-        元组：(节点名称, 获取模式, 参数n)
+        元组：(节点名称, 获取模式)
     """
     # 默认值
     node_name = placeholder
-    mode = "latest"
-    n = 1
+    mode = "1"  # 默认获取最新1条
 
     # 检查是否有模式指定
     if ":" in placeholder:
@@ -22,16 +21,20 @@ def _parse_placeholder(placeholder: str) -> tuple:
         # 处理模式
         if mode_part == "all":
             mode = "all"
-        elif mode_part == "latest":
-            mode = "latest"
-        elif mode_part.startswith("latest_"):
-            mode = "latest_n"
+        else:
+            # 尝试解析为数字
             try:
-                n = int(mode_part[7:])
-            except (ValueError, IndexError):
-                # 如果格式不正确，使用默认值
-                n = 1
-    return node_name, mode, n
+                n = int(mode_part)
+                if n <= 0:
+                    # 如果数字无效，使用默认值
+                    mode = "1"
+                else:
+                    mode = str(n)
+            except ValueError:
+                # 如果不是数字，使用默认值
+                mode = "1"
+
+    return node_name, mode
 
 
 def _format_content_with_default_style(outputs: list) -> str:
