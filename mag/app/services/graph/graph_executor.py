@@ -153,7 +153,6 @@ class GraphExecutor:
                             original_config: Dict[str, Any],
                             flattened_config: Dict[str, Any],
                             input_text: str,
-                            parallel: bool = False,
                             model_service=None) -> Dict[str, Any]:
         """执行整个图并返回结果 - 基于层级的简化执行方式"""
         # 创建会话
@@ -162,17 +161,12 @@ class GraphExecutor:
         # 初始化会话状态
         conversation = self.conversation_manager.get_conversation(conversation_id)
         conversation["original_config"] = original_config
-        conversation["parallel"] = parallel
         conversation["graph_name"] = graph_name  # 保存图名称，用于文件替换
 
         # 记录用户输入
         self._record_user_input(conversation_id, input_text)
 
-        # 执行图
-        if parallel:
-            await self._execute_graph_by_level_parallel(conversation_id, model_service)
-        else:
-            await self._execute_graph_by_level_sequential(conversation_id, model_service)
+        await self._execute_graph_by_level_sequential(conversation_id, model_service)
 
         # 获取最终输出
         conversation = self.conversation_manager.get_conversation(conversation_id)
@@ -195,7 +189,6 @@ class GraphExecutor:
     async def continue_conversation(self,
                                     conversation_id: str,
                                     input_text: str = None,
-                                    parallel: bool = False,
                                     model_service=None,
                                     continue_from_checkpoint: bool = False) -> Dict[str, Any]:
         """继续现有会话 - 基于层级的简化执行方式"""
@@ -230,12 +223,8 @@ class GraphExecutor:
                 if restart_node_obj:
                     current_level = restart_node_obj.get("level", 0)
 
-                    # 使用相应的执行方法继续执行
-                    if parallel:
-                        await self._continue_graph_by_level_parallel(conversation_id, current_level, restart_node,
-                                                                     model_service)
-                    else:
-                        await self._continue_graph_by_level_sequential(conversation_id, current_level, restart_node,
+
+                    await self._continue_graph_by_level_sequential(conversation_id, current_level, restart_node,
                                                                        model_service)
                 else:
                     logger.error(f"找不到重启节点: {restart_node}")
@@ -243,16 +232,10 @@ class GraphExecutor:
                 # 找出上次执行到的最大层级
                 max_executed_level = self._get_max_executed_level(conversation)
 
-                # 继续执行下一层级
-                if parallel:
-                    await self._continue_graph_by_level_parallel(conversation_id, max_executed_level + 1, None,
-                                                                 model_service)
-                else:
-                    await self._continue_graph_by_level_sequential(conversation_id, max_executed_level + 1, None,
+                await self._continue_graph_by_level_sequential(conversation_id, max_executed_level + 1, None,
                                                                    model_service)
         else:
             # 提供了新输入，重新开始执行
-            # 保留以前的结果，但重新执行图
             previous_results = [r for r in conversation.get("results", []) if r.get("is_start_input", False)]
 
             # 更新会话，重置状态但保留历史输入
@@ -262,11 +245,7 @@ class GraphExecutor:
             if input_text:
                 self._record_user_input(conversation_id, input_text)
 
-            # 重新执行图
-            if parallel:
-                await self._execute_graph_by_level_parallel(conversation_id, model_service)
-            else:
-                await self._execute_graph_by_level_sequential(conversation_id, model_service)
+            await self._execute_graph_by_level_sequential(conversation_id, model_service)
 
         # 获取最终输出
         conversation = self.conversation_manager.get_conversation(conversation_id)
@@ -294,14 +273,11 @@ class GraphExecutor:
             conversation: 会话对象
 
         Returns:
-            并行模式: List[List[str]] - 二维列表，每个子列表代表一个层级的节点
             顺序模式: List[str] - 一维列表，按执行顺序排列的节点名称
         """
         results = conversation.get("results", [])
         graph_config = conversation.get("graph_config", {})
-        is_parallel = conversation.get("parallel", False)
 
-        # 获取所有执行的节点（排除start输入节点）
         executed_nodes = []
         start_inputs = []
 
@@ -317,57 +293,15 @@ class GraphExecutor:
                     })
         print("executed_nodes", executed_nodes)
 
-        if is_parallel:
-            # 并行执行：按执行顺序构造，但保持level结构
-            execution_chain = []
-
-            # 添加start节点（如果有）
-            if start_inputs:
-                execution_chain.append(["start"])
-
-            # 为每个执行的节点找到对应的level，按执行顺序处理
-            current_level_group = []
-            current_level = None
-
-            for executed_node in executed_nodes:
-                node_name = executed_node["name"]
-                # 在graph_config中找到对应节点的level
-                node_level = 0  # 默认level
-                for config_node in graph_config.get("nodes", []):
-                    if config_node["name"] == node_name:
-                        node_level = config_node.get("level", 0)
-                        break
-
-                # 如果是新的level，保存上一个level的组并开始新组
-                if current_level is not None and node_level != current_level:
-                    if current_level_group:
-                        execution_chain.append(current_level_group)
-                    current_level_group = []
-
-                # 将当前节点添加到当前level组
-                current_level_group.append(node_name)
-                current_level = node_level
-
-            # 添加最后一个level组
-            if current_level_group:
-                execution_chain.append(current_level_group)
-
-            print("execution_chain", execution_chain)
-            return execution_chain
-
-        else:
-            # 顺序执行：按执行顺序排列
-            execution_chain = []
-
-            # 添加start节点（如果有）
-            if start_inputs:
-                execution_chain.append("start")
+        execution_chain = []
+        if start_inputs:
+            execution_chain.append("start")
 
             # 按执行顺序添加节点
-            for executed_node in executed_nodes:
-                execution_chain.append(executed_node["name"])
-            print("execution_chain", execution_chain)
-            return execution_chain
+        for executed_node in executed_nodes:
+            execution_chain.append(executed_node["name"])
+        print("execution_chain", execution_chain)
+        return execution_chain
 
     def _record_user_input(self, conversation_id: str, input_text: str):
         """记录用户输入，并将其添加到全局管理内容中"""
@@ -542,72 +476,6 @@ class GraphExecutor:
             if not restart_from_node:
                 current_level += 1
 
-    async def _execute_graph_by_level_parallel(self, conversation_id: str, model_service=None):
-        """基于层级的并行执行方法"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        graph_config = conversation["graph_config"]
-
-        # 找出所有层级
-        max_level = self._get_max_level(graph_config)
-
-        # 指示是否需要重新从特定节点开始执行
-        restart_from_node = None
-
-        # 从层级0开始并行执行
-        current_level = 0
-
-        while current_level <= max_level:
-            logger.info(f"开始并行执行层级 {current_level}")
-
-            # 如果有重启点，则只处理该节点和后续节点
-            if restart_from_node:
-                nodes_to_execute = self._get_nodes_starting_from(graph_config, restart_from_node)
-                restart_from_node = None  # 重置重启点
-            else:
-                # 获取当前层级的所有节点
-                nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
-
-            # 为每个节点创建任务
-            tasks = []
-            for node in nodes_to_execute:
-                # 获取节点输入
-                node_input = self._get_node_input_simple(node, conversation)
-
-                # 创建执行任务
-                tasks.append(self._execute_node(node, node_input, conversation_id, model_service))
-
-            # 并行执行所有任务
-            if tasks:
-                results = await asyncio.gather(*tasks)
-
-                # 保存会话状态
-                self.conversation_manager.update_conversation_file(conversation_id)
-
-                # 检查是否有handoffs选择
-                handoff_selection = None
-                for result in results:
-                    if result.get("_selected_handoff"):
-                        handoff_selection = result
-                        break
-
-                # 处理handoffs选择
-                if handoff_selection:
-                    selected_node_name = handoff_selection["_selected_handoff"]
-                    selected_node = self._find_node_by_name(graph_config, selected_node_name)
-
-                    if selected_node:
-                        logger.info(f"检测到handoffs选择: {selected_node_name}，重新开始执行")
-                        # 清除选择标记
-                        handoff_selection["_selected_handoff"] = None
-                        # 设置重启点
-                        restart_from_node = selected_node_name
-                        # 从选择的节点所在层级重新开始
-                        current_level = selected_node.get("level", 0)
-                        continue
-
-            # 进入下一层级
-            current_level += 1
-
     async def _continue_graph_by_level_sequential(self,
                                                   conversation_id: str,
                                                   start_level: int,
@@ -679,92 +547,6 @@ class GraphExecutor:
 
             # 进入下一层级
             current_level += 1
-
-    async def _continue_graph_by_level_parallel(self,
-                                                conversation_id: str,
-                                                start_level: int,
-                                                restart_node: Optional[str],
-                                                model_service=None):
-        """从指定层级继续并行执行图"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        graph_config = conversation["graph_config"]
-
-        # 获取最大层级
-        max_level = self._get_max_level(graph_config)
-
-        # 当前层级
-        current_level = start_level
-
-        # 优先处理重启节点
-        if restart_node:
-            restart_node_obj = self._find_node_by_name(graph_config, restart_node)
-            if restart_node_obj:
-                # 重设当前层级
-                current_level = restart_node_obj.get("level", 0)
-
-                # 执行重启节点
-                node_input = self._get_node_input_simple(restart_node_obj, conversation)
-                result = await self._execute_node(restart_node_obj, node_input, conversation_id, model_service)
-
-                # 保存会话状态
-                self.conversation_manager.update_conversation_file(conversation_id)
-
-                # 检查是否有新的handoffs选择
-                if result.get("_selected_handoff"):
-                    # 递归处理
-                    await self._continue_graph_by_level_parallel(
-                        conversation_id,
-                        current_level,
-                        result["_selected_handoff"],
-                        model_service
-                    )
-                    return
-
-                # 继续执行下一层级
-                current_level += 1
-
-        # 继续执行剩余层级
-        while current_level <= max_level:
-            # 当前层级的所有节点
-            nodes = self._get_nodes_at_level(graph_config, current_level)
-
-            # 创建并行任务
-            tasks = []
-            for node in nodes:
-                # 获取节点输入
-                node_input = self._get_node_input_simple(node, conversation)
-
-                # 创建任务
-                tasks.append(self._execute_node(node, node_input, conversation_id, model_service))
-
-            # 并行执行任务
-            if tasks:
-                results = await asyncio.gather(*tasks)
-
-                # 保存会话状态
-                self.conversation_manager.update_conversation_file(conversation_id)
-
-                # 检查是否有handoffs选择
-                handoff_selection = None
-                for result in results:
-                    if result.get("_selected_handoff"):
-                        handoff_selection = result
-                        break
-
-                # 处理handoffs选择
-                if handoff_selection:
-                    # 递归处理
-                    await self._continue_graph_by_level_parallel(
-                        conversation_id,
-                        current_level,
-                        handoff_selection["_selected_handoff"],
-                        model_service
-                    )
-                    return
-
-            # 进入下一层级
-            current_level += 1
-
     def _create_agent_messages(self,
                                node: Dict[str, Any],
                                input_text: str,

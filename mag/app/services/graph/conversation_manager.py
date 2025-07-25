@@ -65,7 +65,6 @@ class ConversationManager:
                 "graph_config": graph_config,
                 "node_states": {},
                 "results": [],
-                "parallel": False,
                 "start_time": start_time,
                 "conversation_id": conversation_id,
                 "handoffs_counters": {},
@@ -536,7 +535,6 @@ class ConversationManager:
             "node_states": conversation.get("node_states", {}),
             "handoffs_counters": conversation.get("handoffs_counters", {}),
             "global_outputs": conversation.get("global_outputs", {}),
-            "parallel": conversation.get("parallel", False)
         }
 
         return result

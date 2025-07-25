@@ -2079,14 +2079,12 @@ async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTask
             result = await graph_service.continue_conversation(
                 input_data.conversation_id,
                 input_data.input_text,
-                input_data.parallel
             )
         else:
             # 创建新会话
             result = await graph_service.execute_graph(
                 input_data.graph_name,
                 input_data.input_text,
-                input_data.parallel
             )
 
         return result
@@ -2186,7 +2184,6 @@ async def continue_graph_execution(input_data: GraphInput):
         result = await graph_service.continue_conversation(
             conversation_id,
             input_data.input_text,
-            input_data.parallel,
             continue_from_checkpoint
         )
 

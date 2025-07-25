@@ -146,7 +146,7 @@ class GraphService:
         """删除会话"""
         return self.conversation_manager.delete_conversation(conversation_id)
 
-    async def execute_graph(self, graph_name: str, input_text: str, parallel: bool = False) -> Dict[str, Any]:
+    async def execute_graph(self, graph_name: str, input_text: str) -> Dict[str, Any]:
         """执行整个图并返回结果 - 使用基于层级的新方法"""
         # 加载原始图配置
         original_config = self.get_graph(graph_name)
@@ -167,14 +167,12 @@ class GraphService:
             original_config,
             flattened_config,
             input_text,
-            parallel,
             model_service
         )
 
     async def continue_conversation(self,
                                     conversation_id: str,
                                     input_text: str = None,
-                                    parallel: bool = False,
                                     continue_from_checkpoint: bool = False) -> Dict[str, Any]:
         """继续现有会话 - 使用基于层级的新方法"""
         conversation = self.conversation_manager.get_conversation(conversation_id)
@@ -185,7 +183,6 @@ class GraphService:
         result = await self.executor.continue_conversation(
             conversation_id,
             input_text,
-            parallel,
             model_service,
             continue_from_checkpoint
         )
@@ -224,13 +221,10 @@ class GraphService:
 
         # 获取模板文件路径
         template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
-        parallel_template_path = os.path.join(template_dir, "mcp_parallel_template.py")
         sequential_template_path = os.path.join(template_dir, "mcp_sequential_template.py")
 
         # 读取模板文件
         try:
-            with open(parallel_template_path, 'r', encoding='utf-8') as f:
-                parallel_template = f.read()
 
             with open(sequential_template_path, 'r', encoding='utf-8') as f:
                 sequential_template = f.read()
@@ -251,13 +245,11 @@ class GraphService:
             "host_url": host_url
         }
 
-        parallel_script = parallel_template.format(**format_values)
         sequential_script = sequential_template.format(**format_values)
 
         # 返回脚本内容
         return {
             "graph_name": graph_name,
-            "parallel_script": parallel_script,
             "sequential_script": sequential_script,
             "default_script": sequential_script
         }
