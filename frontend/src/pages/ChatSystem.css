@@ -1,0 +1,192 @@
+/* src/pages/ChatSystem.css */
+.chat-system-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-system-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20,20 Q50,5 80,20 Q95,50 80,80 Q50,95 20,80 Q5,50 20,20" fill="rgba(255,255,255,0.05)"/><circle cx="30" cy="30" r="5" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="70" r="5" fill="rgba(255,255,255,0.1)"/></svg>');
+  animation: floatPattern 25s ease-in-out infinite;
+}
+
+@keyframes floatPattern {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(180deg); }
+}
+
+.chat-system-content {
+  max-width: 600px;
+  width: 100%;
+  z-index: 1;
+  position: relative;
+  animation: slideInUp 0.8s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.development-card {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+  border: none;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.development-card .ant-card-body {
+  padding: 3rem 2rem;
+}
+
+.development-icon {
+  font-size: 4rem;
+  color: #43e97b;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.ant-result-title {
+  font-size: 1.8rem !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  margin-bottom: 1rem !important;
+}
+
+.ant-result-subtitle {
+  font-size: 1.1rem !important;
+  color: #666 !important;
+  margin-bottom: 2rem !important;
+}
+
+.development-actions {
+  margin-top: 2rem;
+}
+
+.back-home-button {
+  height: 50px;
+  padding: 0 2rem;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.back-home-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(67, 233, 123, 0.3);
+  background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
+}
+
+.development-info {
+  margin-top: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(67, 233, 123, 0.1) 0%, rgba(56, 249, 215, 0.1) 100%);
+  border-radius: 15px;
+  border: 1px solid rgba(67, 233, 123, 0.2);
+}
+
+.development-info h3 {
+  color: #333;
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.development-info h3 .anticon {
+  color: #43e97b;
+}
+
+.development-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.development-info li {
+  padding: 0.8rem 0;
+  color: #555;
+  font-size: 1rem;
+  position: relative;
+  padding-left: 2rem;
+  transition: all 0.3s ease;
+}
+
+.development-info li::before {
+  content: '✨';
+  position: absolute;
+  left: 0;
+  top: 0.8rem;
+  font-size: 1rem;
+}
+
+.development-info li:hover {
+  color: #333;
+  transform: translateX(10px);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .chat-system-container {
+    padding: 1rem;
+  }
+  
+  .development-card .ant-card-body {
+    padding: 2rem 1.5rem;
+  }
+  
+  .development-icon {
+    font-size: 3rem;
+  }
+  
+  .ant-result-title {
+    font-size: 1.5rem !important;
+  }
+  
+  .ant-result-subtitle {
+    font-size: 1rem !important;
+  }
+  
+  .development-info {
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .development-info h3 {
+    font-size: 1.1rem;
+  }
+}

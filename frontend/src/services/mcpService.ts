@@ -46,19 +46,6 @@ export const getMCPTools = async () => {
   return response.data;
 };
 
-export const getMCPGeneratorTemplate = async () => {
-  const response = await api.get('/mcp/ai-generator-template');
-  return response.data;
-};
-
-export const generateMCPTool = async (requirement: string, modelName: string) => {
-  const response = await api.post('/mcp/generate', {
-    requirement,
-    model_name: modelName
-  });
-  return response.data;
-};
-
 export const registerMCPTool = async (toolData: {
   folder_name: string;
   script_files: Record<string, string>;
@@ -76,10 +63,5 @@ export const testMCPTool = async (serverName: string, toolName: string, params: 
     tool_name: toolName,
     params
   });
-  return response.data;
-};
-
-export const listAIMCPTools = async () => {
-  const response = await api.get('/mcp/ai-tools');
   return response.data;
 };

@@ -103,10 +103,10 @@ const GraphEditor: React.FC = () => {
               <p>有三种方式创建新图：</p>
               <ol>
                 <li><strong>手动创建</strong>：点击"+"按钮 → "新建图"</li>
-                <li><strong>AI生成</strong>：点击"+"按钮 → "AI生成图"，描述您的需求</li>
                 <li><strong>导入现有</strong>：点击"导入/导出"按钮导入图配置</li>
+                <li><strong>使用提示词</strong>：查看"AI生成提示词"获取创建指导</li>
               </ol>
-              <p>💡 推荐新手使用"AI生成图"功能快速开始！</p>
+              <p>💡 推荐新手先手动创建简单图，然后参考提示词模板！</p>
             </div>
           ),
           target: () => graphControlsRef.current?.querySelector('.ant-row .ant-col:first-child'),
@@ -142,7 +142,7 @@ const GraphEditor: React.FC = () => {
                 <p style={{ margin: 0, fontWeight: 'bold' }}>🎯 推荐流程：</p>
                 <ol style={{ margin: '8px 0 0 16px', padding: 0 }}>
                   <li>点击下方的"创建新图"按钮</li>
-                  <li>或尝试使用"AI生成图"功能</li>
+                  <li>或查看"AI生成提示词"获取指导</li>
                   <li>创建图后再次点击引导按钮查看更多功能</li>
                 </ol>
               </div>
@@ -173,7 +173,7 @@ const GraphEditor: React.FC = () => {
         description: (
           <div>
             <p><strong>图选择</strong>：在下拉菜单中选择已有的图配置</p>
-            <p><strong>快速操作</strong>：点击"+"按钮可以创建新图、AI生成图等</p>
+            <p><strong>快速操作</strong>：点击"+"按钮可以创建新图、查看提示词等</p>
             <p><strong>服务器状态</strong>：显示MCP服务器连接状态</p>
           </div>
         ),
@@ -276,7 +276,7 @@ const GraphEditor: React.FC = () => {
           <div>
             <p><strong>探索更多功能：</strong></p>
             <ul>
-              <li><strong>AI优化图</strong>：让AI帮您优化现有图结构</li>
+              <li><strong>提示词模板</strong>：获取AI生成和优化的提示词模板</li>
               <li><strong>导出MCP脚本</strong>：生成可执行的命令行脚本</li>
               <li><strong>图包导出</strong>：打包图及相关配置便于分享</li>
               <li><strong>README生成</strong>：自动生成图的说明文档</li>
@@ -471,7 +471,7 @@ const GraphEditor: React.FC = () => {
                     创建新图
                   </Button>
                   <Text type="secondary">
-                    您也可以使用AI生成功能或导入现有图配置
+                    您也可以查看提示词模板或导入现有图配置
                   </Text>
                 </Space>
               </Empty>

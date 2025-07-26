@@ -7,17 +7,13 @@ import {
   CodeOutlined,
   AppstoreOutlined,
   PlayCircleOutlined,
-  RobotOutlined,
-  ToolOutlined,
-  BulbOutlined
+  ToolOutlined
 } from '@ant-design/icons';
 import { useMCPStore } from '../store/mcpStore';
-import { useModelStore } from '../store/modelStore';
 import MCPServerForm from '../components/mcp-manager/MCPServerForm';
 import MCPServerCard from '../components/mcp-manager/MCPServerCard';
 import MCPToolsViewer from '../components/mcp-manager/MCPToolsViewer';
 import MCPJsonEditor from '../components/mcp-manager/MCPJsonEditor';
-import MarkdownRenderer from '../components/common/MarkdownRenderer';
 import { MCPServerConfig } from '../types/mcp';
 
 const MCPManager: React.FC = () => {
@@ -35,26 +31,16 @@ const MCPManager: React.FC = () => {
     connectServer,
     disconnectServer,
     connectAllServers,
-    fetchGeneratorTemplate,
-    generateMCPTool,
     registerMCPTool,
-    generatorTemplate,
     getUsedPorts
   } = useMCPStore();
-
-  const { models, fetchModels } = useModelStore();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [toolsModalVisible, setToolsModalVisible] = useState(false);
   const [selectedServer, setSelectedServer] = useState('');
   const [initialValues, setInitialValues] = useState<MCPServerConfig | undefined>();
   const [modalTitle, setModalTitle] = useState('添加MCP服务器');
-  const [activeTab, setActiveTab] = useState('visual');
-
-  // AI生成工具相关状态
-  const [aiGeneratorVisible, setAiGeneratorVisible] = useState(false);
-  const [aiRequirement, setAiRequirement] = useState('');
-  const [selectedModel, setSelectedModel] = useState('');
+  const [, setActiveTab] = useState('visual');
 
   // 工具注册相关状态
   const [toolRegistrationVisible, setToolRegistrationVisible] = useState(false);
@@ -67,17 +53,13 @@ const MCPManager: React.FC = () => {
     readme: ''
   });
 
-  // 提示词模板显示
-  const [templateVisible, setTemplateVisible] = useState(false);
-
   useEffect(() => {
     // Load initial data
     fetchConfig();
     fetchStatus();
-    fetchModels();
   
     // 删除定时器部分，不再自动轮询状态
-  }, [fetchConfig, fetchStatus, fetchModels]);
+  }, [fetchConfig, fetchStatus]);
 
   const showAddModal = () => {
     setSelectedServer('');
@@ -98,10 +80,6 @@ const MCPManager: React.FC = () => {
     setToolsModalVisible(true);
   };
 
-  const showAIGenerator = () => {
-    setAiGeneratorVisible(true);
-  };
-
   const showToolRegistration = () => {
     const usedPorts = getUsedPorts();
     // 找到下一个可用端口
@@ -115,13 +93,6 @@ const MCPManager: React.FC = () => {
       port: nextPort <= 9099 ? nextPort : 8001
     }));
     setToolRegistrationVisible(true);
-  };
-
-  const showTemplateModal = async () => {
-    if (!generatorTemplate) {
-      await fetchGeneratorTemplate();
-    }
-    setTemplateVisible(true);
   };
 
   const handleFormSubmit = async (serverName: string, serverConfig: MCPServerConfig) => {
@@ -211,33 +182,6 @@ const MCPManager: React.FC = () => {
     }
   };
 
-  // AI工具生成处理
-  const handleAIGenerate = async () => {
-    if (!aiRequirement.trim()) {
-      message.error('请输入工具需求描述');
-      return;
-    }
-    if (!selectedModel) {
-      message.error('请选择模型');
-      return;
-    }
-
-    try {
-      const result = await generateMCPTool(aiRequirement, selectedModel);
-      
-      if (result.status === 'success') {
-        message.success(`AI工具 "${result.tool_name}" 生成成功！`);
-        setAiGeneratorVisible(false);
-        setAiRequirement('');
-        setSelectedModel('');
-      } else {
-        message.error(result.error || '生成失败');
-      }
-    } catch (error) {
-      message.error('生成工具时出错: ' + (error instanceof Error ? error.message : String(error)));
-    }
-  };
-
   // 工具注册处理
   const handleToolRegister = async () => {
     if (!toolFormData.folderName.trim()) {
@@ -306,24 +250,10 @@ const MCPManager: React.FC = () => {
                 添加服务器
               </Button>
               <Button
-                type="primary"
-                ghost
-                icon={<RobotOutlined />}
-                onClick={showAIGenerator}
-              >
-                AI生成工具
-              </Button>
-              <Button
                 icon={<ToolOutlined />}
                 onClick={showToolRegistration}
               >
                 注册工具
-              </Button>
-              <Button
-                icon={<BulbOutlined />}
-                onClick={showTemplateModal}
-              >
-                查看提示词
               </Button>
               <Button
                 icon={<ReloadOutlined />}
@@ -422,84 +352,6 @@ const MCPManager: React.FC = () => {
         onClose={() => setToolsModalVisible(false)}
         serverName={selectedServer}
       />
-
-      {/* AI工具生成模态框 */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <RobotOutlined style={{ marginRight: '8px', color: '#1677ff' }} />
-            AI生成MCP工具
-          </div>
-        }
-        open={aiGeneratorVisible}
-        onCancel={() => setAiGeneratorVisible(false)}
-        footer={[
-          <Button key="template" icon={<BulbOutlined />} onClick={showTemplateModal}>
-            查看提示词模板
-          </Button>,
-          <Button key="cancel" onClick={() => setAiGeneratorVisible(false)}>
-            取消
-          </Button>,
-          <Button key="submit" type="primary" onClick={handleAIGenerate} loading={loading}>
-            生成工具
-          </Button>,
-        ]}
-        width={600}
-      >
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            选择模型:
-          </label>
-          <select
-            value={selectedModel}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #d9d9d9',
-              borderRadius: '6px'
-            }}
-          >
-            <option value="">请选择模型</option>
-            {models.map(model => (
-              <option key={model.name} value={model.name}>
-                {model.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-            工具需求描述:
-          </label>
-          <textarea
-            value={aiRequirement}
-            onChange={(e) => setAiRequirement(e.target.value)}
-            rows={6}
-            placeholder="请详细描述您需要的MCP工具功能，例如：&#10;- 创建一个可以查询天气信息的工具&#10;- 需要支持城市名称查询&#10;- 返回温度、湿度、天气状况等信息"
-            style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #d9d9d9',
-              borderRadius: '6px',
-              resize: 'vertical'
-            }}
-          />
-        </div>
-
-        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px' }}>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            <p><strong>提示：</strong></p>
-            <ul style={{ margin: 0, paddingLeft: '20px' }}>
-              <li>请详细描述工具的功能和用途</li>
-              <li>说明需要的输入参数和输出格式</li>
-              <li>AI将自动生成完整的MCP服务器代码</li>
-              <li>生成后工具将自动注册并可立即使用</li>
-            </ul>
-          </div>
-        </div>
-      </Modal>
 
       {/* 工具注册模态框 */}
       <Modal
@@ -656,24 +508,6 @@ const MCPManager: React.FC = () => {
         </div>
       </Modal>
 
-      {/* 提示词模板显示模态框 */}
-      <Modal
-        title="MCP生成提示词模板"
-        open={templateVisible}
-        onCancel={() => setTemplateVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setTemplateVisible(false)}>
-            关闭
-          </Button>
-        ]}
-        width={1000}
-      >
-        <MarkdownRenderer
-          content={generatorTemplate}
-          title="MCP生成提示词模板"
-          showCopyButton={true}
-        />
-      </Modal>
     </div>
   );
 };

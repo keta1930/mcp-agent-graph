@@ -9,8 +9,6 @@ interface MCPState {
   tools: Record<string, any[]>;
   loading: boolean;
   error?: string;
-  generatorTemplate: string;
-  aiTools: string[];
 
   fetchConfig: () => Promise<void>;
   updateConfig: (config: MCPConfig) => Promise<void>;
@@ -25,12 +23,9 @@ interface MCPState {
   updateServer: (serverName: string, serverConfig: MCPServerConfig) => Promise<void>;
   deleteServer: (serverName: string) => Promise<void>;
 
-  // AI and tool-related methods
-  fetchGeneratorTemplate: () => Promise<void>;
-  generateMCPTool: (requirement: string, modelName: string) => Promise<any>;
+  // Tool-related methods
   registerMCPTool: (toolData: any) => Promise<void>;
   testTool: (serverName: string, toolName: string, params: Record<string, any>) => Promise<any>;
-  fetchAITools: () => Promise<void>;
   getUsedPorts: () => number[];
 }
 
@@ -40,8 +35,6 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   tools: {},
   loading: false,
   error: undefined,
-  generatorTemplate: '',
-  aiTools: [],
 
   fetchConfig: async () => {
     try {
@@ -186,36 +179,6 @@ export const useMCPStore = create<MCPState>((set, get) => ({
     await get().fetchConfig();
   },
 
-  fetchGeneratorTemplate: async () => {
-    try {
-      set({ loading: true, error: undefined });
-      const response = await mcpService.getMCPGeneratorTemplate();
-      set({ generatorTemplate: response.template, loading: false });
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch generator template'
-      });
-    }
-  },
-
-  generateMCPTool: async (requirement, modelName) => {
-    try {
-      set({ loading: true, error: undefined });
-      const result = await mcpService.generateMCPTool(requirement, modelName);
-      await get().fetchConfig(); // 刷新配置
-      await get().fetchStatus(); // 刷新状态
-      set({ loading: false });
-      return result;
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to generate MCP tool'
-      });
-      throw error;
-    }
-  },
-
   registerMCPTool: async (toolData) => {
     try {
       set({ loading: true, error: undefined });
@@ -237,15 +200,6 @@ export const useMCPStore = create<MCPState>((set, get) => ({
       return await mcpService.testMCPTool(serverName, toolName, params);
     } catch (error) {
       throw error;
-    }
-  },
-
-  fetchAITools: async () => {
-    try {
-      const tools = await mcpService.listAIMCPTools();
-      set({ aiTools: tools });
-    } catch (error) {
-      console.error('Failed to fetch AI tools:', error);
     }
   },
 

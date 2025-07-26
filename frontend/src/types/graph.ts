@@ -34,37 +34,6 @@ export interface BackendGraphConfig {
   end_template?: string;
 }
 
-export interface GraphInput {
-  graph_name: string;
-  input_text: string;
-  conversation_id?: string;
-  parallel?: boolean;
-}
-
-export interface NodeResult {
-  node_name: string;
-  input: string;
-  output: string;
-  tool_calls: any[];
-  tool_results: any[];
-  is_subgraph?: boolean;
-  subgraph_name?: string;
-  subgraph_conversation_id?: string;
-  subgraph_results?: any[];
-  error?: string;
-  is_start_input?: boolean;
-  level?: number;
-}
-
-export interface GraphResult {
-  graph_name: string;
-  conversation_id: string;
-  input: string;
-  output: string;
-  node_results: NodeResult[];
-  completed: boolean;
-  error?: string;
-}
 
 export interface GraphCardResponse {
   graph_name: string;
@@ -83,16 +52,6 @@ export interface MCPScriptResponse {
   default_script?: string;
 }
 
-export interface GraphGenerationRequest {
-  requirement: string;
-  model_name: string;
-}
-
-export interface GraphOptimizationRequest {
-  graph_name: string;
-  optimization_requirement: string;
-  model_name: string;
-}
 
 export interface OptimizePromptTemplateRequest {
   graph_name?: string;
@@ -135,15 +94,6 @@ export interface OptimizePromptTemplateResponse {
   message?: string;
 }
 
-export interface OptimizeGraphResponse {
-  status: string;
-  message: string;
-  original_graph_name?: string;
-  optimized_graph_name?: string;
-  analysis?: string;
-  model_output?: string;
-  create_result?: any;
-}
 
 export const SAVE_FORMAT_OPTIONS = [
   { label: 'Markdown (.md)', value: 'md' },

@@ -4,16 +4,12 @@ import {
   BackendGraphConfig, 
   GraphCardResponse, 
   MCPScriptResponse,
-  GraphGenerationRequest,
-  GraphOptimizationRequest,
   OptimizePromptTemplateRequest,
-  GraphFilePath,
   ImportResult,
   ExportResult,
   GraphReadmeResponse,
   PromptTemplateResponse,
-  OptimizePromptTemplateResponse,
-  OptimizeGraphResponse
+  OptimizePromptTemplateResponse
 } from '../types/graph';
 
 // Clean special characters, comments, etc. from JSON
@@ -144,52 +140,6 @@ export const renameGraph = async (oldName: string, newName: string): Promise<any
   return response.data;
 };
 
-// Execute a graph
-export const executeGraph = async (input: {
-  graph_name: string;
-  input_text: string;
-  conversation_id?: string;
-  parallel?: boolean;
-}): Promise<any> => {
-  const response = await api.post('/graphs/execute', input);
-  return response.data;
-};
-
-// Continue conversation
-export const continueConversation = async (input: {
-  graph_name: string;
-  input_text: string;
-  conversation_id: string;
-  parallel?: boolean;
-  continue_from_checkpoint?: boolean;
-}): Promise<any> => {
-  const response = await api.post('/graphs/continue', input);
-  return response.data;
-};
-
-// Get conversation list
-export const getConversationList = async (): Promise<string[]> => {
-  const response = await api.get('/conversations');
-  return response.data;
-};
-
-// Get a conversation (basic info)
-export const getConversation = async (conversationId: string): Promise<any> => {
-  const response = await api.get(`/conversations/${conversationId}`);
-  return response.data;
-};
-
-// Delete a conversation
-export const deleteConversation = async (conversationId: string): Promise<any> => {
-  const response = await api.delete(`/conversations/${conversationId}`);
-  return response.data;
-};
-
-// Get conversation hierarchy (detailed info)
-export const getConversationHierarchy = async (conversationId: string): Promise<any> => {
-  const response = await api.get(`/conversations/${conversationId}/hierarchy`);
-  return response.data;
-};
 
 // Get graph card
 export const getGraphCard = async (graphName: string): Promise<GraphCardResponse> => {
@@ -249,7 +199,7 @@ export const importGraphPackageFromFile = async (file: File): Promise<ImportResu
   return response.data;
 };
 
-// ======= AI图生成功能 =======
+// ======= AI提示词模板功能 =======
 
 // Get prompt template for graph generation
 export const getPromptTemplate = async (): Promise<PromptTemplateResponse> => {
@@ -261,21 +211,6 @@ export const getPromptTemplate = async (): Promise<PromptTemplateResponse> => {
 export const getOptimizePromptTemplate = async (request?: OptimizePromptTemplateRequest): Promise<OptimizePromptTemplateResponse> => {
   const params = request?.graph_name ? { graph_name: request.graph_name } : {};
   const response = await api.get('/optimize-prompt-template', { params });
-  return response.data;
-};
-
-// Generate graph using AI
-export const generateGraph = async (requirement: string, modelName: string): Promise<any> => {
-  const response = await api.post('/graphs/generate', {
-    requirement,
-    model_name: modelName
-  });
-  return response.data;
-};
-
-// Optimize graph using AI
-export const optimizeGraph = async (request: GraphOptimizationRequest): Promise<OptimizeGraphResponse> => {
-  const response = await api.post('/graphs/optimize', request);
   return response.data;
 };
 

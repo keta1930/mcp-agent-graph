@@ -1,56 +1,64 @@
 // src/App.tsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
+import WorkspaceLayout from './layouts/WorkspaceLayout';
 
 // Import pages
+import Home from './pages/Home';
+import Workspace from './pages/Workspace';
+import ChatSystem from './pages/ChatSystem';
 import GraphEditor from './pages/GraphEditor';
 import ModelManager from './pages/ModelManager';
 import MCPManager from './pages/MCPManager';
-import GraphRunner from './pages/GraphRunner';
 
 const App: React.FC = () => {
   useEffect(() => {
     // 设置页面标题
-    document.title = "AgentGraph";
+    document.title = "MCP Agent Graph";
   }, []);
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/graph-editor" replace />} />
+        {/* 主入口页面 */}
+        <Route path="/" element={<Home />} />
+        
+        {/* 对话系统 */}
+        <Route path="/chat" element={<ChatSystem />} />
+        
+        {/* 工作台入口 */}
+        <Route path="/workspace" element={<Workspace />} />
+        
+        {/* 工作台子页面 */}
         <Route
-          path="/graph-editor"
+          path="/workspace/graph-editor"
           element={
-            <MainLayout>
+            <WorkspaceLayout>
               <GraphEditor />
-            </MainLayout>
+            </WorkspaceLayout>
           }
         />
         <Route
-          path="/model-manager"
+          path="/workspace/model-manager"
           element={
-            <MainLayout>
+            <WorkspaceLayout>
               <ModelManager />
-            </MainLayout>
+            </WorkspaceLayout>
           }
         />
         <Route
-          path="/mcp-manager"
+          path="/workspace/mcp-manager"
           element={
-            <MainLayout>
+            <WorkspaceLayout>
               <MCPManager />
-            </MainLayout>
+            </WorkspaceLayout>
           }
         />
-        <Route
-          path="/graph-runner"
-          element={
-            <MainLayout>
-              <GraphRunner />
-            </MainLayout>
-          }
-        />
+        
+        {/* 重定向旧路由到新的工作台路由 */}
+        <Route path="/graph-editor" element={<Navigate to="/workspace/graph-editor" replace />} />
+        <Route path="/model-manager" element={<Navigate to="/workspace/model-manager" replace />} />
+        <Route path="/mcp-manager" element={<Navigate to="/workspace/mcp-manager" replace />} />
       </Routes>
     </Router>
   );

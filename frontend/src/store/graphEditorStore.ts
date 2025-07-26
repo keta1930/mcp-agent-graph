@@ -52,8 +52,6 @@ interface GraphEditorState {
   importGraphPackage: (filePath: string) => Promise<any>;
   importGraphPackageFromFile: (file: File) => Promise<any>;
 
-  // 新增：AI生成功能
-  generateGraph: (requirement: string, modelName: string) => Promise<any>;
 
   // 新增：README功能
   getGraphReadme: (graphName: string) => Promise<any>;
@@ -670,21 +668,6 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
     }
   },
 
-  generateGraph: async (requirement, modelName) => {
-    try {
-      set({ loading: true, error: undefined });
-      const result = await graphService.generateGraph(requirement, modelName);
-      set({ loading: false });
-      await get().fetchGraphs();
-      return result;
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Graph generation failed'
-      });
-      throw error;
-    }
-  },
 
   getGraphReadme: async (graphName) => {
     try {

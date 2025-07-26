@@ -46,7 +46,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
     exportGraph,
     importGraphPackage,
     importGraphPackageFromFile,
-    generateGraph,
     getGraphReadme,
     updateGraphProperties,
     autoLayout
@@ -59,8 +58,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   const [newGraphModalVisible, setNewGraphModalVisible] = useState(false);
   const [mcpScriptModalVisible, setMcpScriptModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [aiGenerateModalVisible, setAiGenerateModalVisible] = useState(false);
-  const [aiOptimizeModalVisible, setAiOptimizeModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [readmeModalVisible, setReadmeModalVisible] = useState(false);
   const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
@@ -80,8 +77,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [form] = Form.useForm();
-  const [aiForm] = Form.useForm();
-  const [aiOptimizeForm] = Form.useForm();
   const [importForm] = Form.useForm();
   const [settingsForm] = Form.useForm();
 
@@ -237,60 +232,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
     });
   };
 
-  // AI生成图功能
-  const handleAiGenerate = async () => {
-    try {
-      const values = await aiForm.validateFields();
-      setLoading(true);
-      
-      const result = await generateGraph(values.requirement, values.model_name);
-      setAiGenerateModalVisible(false);
-      aiForm.resetFields();
-      
-      messageApi.success(`图 "${result.graph_name}" 生成成功`);
-      
-      // 加载生成的图
-      if (result.graph_name) {
-        loadGraph(result.graph_name);
-      }
-    } catch (error) {
-      messageApi.error(`生成失败: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // AI优化图功能
-  const handleAiOptimize = async () => {
-    try {
-      const values = await aiOptimizeForm.validateFields();
-      setLoading(true);
-      
-      const result = await graphService.optimizeGraph({
-        graph_name: currentGraph!.name,
-        optimization_requirement: values.optimization_requirement,
-        model_name: values.model_name
-      });
-      
-      setAiOptimizeModalVisible(false);
-      aiOptimizeForm.resetFields();
-      
-      if (result.status === 'success') {
-        messageApi.success(`图优化成功！新图名称: "${result.optimized_graph_name}"`);
-        
-        // 加载优化后的图
-        if (result.optimized_graph_name) {
-          loadGraph(result.optimized_graph_name);
-        }
-      } else {
-        messageApi.error(`优化失败: ${result.message}`);
-      }
-    } catch (error) {
-      messageApi.error(`优化失败: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 导入功能
   const handleImport = async () => {
@@ -476,9 +417,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       <Menu.Item key="new" icon={<PlusOutlined />} onClick={handleCreateNewGraph}>
         新建图
       </Menu.Item>
-      <Menu.Item key="ai-generate" icon={<ThunderboltOutlined />} onClick={() => setAiGenerateModalVisible(true)}>
-        AI生成图
-      </Menu.Item>
       <Menu.Item key="ai-generate-prompt" icon={<BulbOutlined />} onClick={handleGetPromptTemplate}>
         AI生成提示词
       </Menu.Item>
@@ -536,15 +474,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
         自动布局
       </Menu.Item>
       <Menu.Item 
-        key="ai-optimize" 
-        icon={<RocketOutlined />} 
-        onClick={() => setAiOptimizeModalVisible(true)}
-        disabled={!currentGraph?.name}
-      >
-        AI优化图
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item 
         key="readme" 
         icon={<FileTextOutlined />} 
         onClick={handleViewReadme}
@@ -583,10 +512,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
 
   return (
     <div style={{ 
-      padding: '1px 1px 1px 1px', 
       background: '#fafafa',
-      borderBottom: '1px solid #e8e8e8',
-      marginBottom: '16px'
     }}>
       {contextHolder}
       
@@ -710,115 +636,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
         </Form>
       </Modal>
 
-      {/* AI Generate modal */}
-      <Modal
-        title="AI生成图"
-        open={aiGenerateModalVisible}
-        onOk={handleAiGenerate}
-        onCancel={() => setAiGenerateModalVisible(false)}
-        width={600}
-        confirmLoading={loading}
-      >
-        <Form form={aiForm} layout="vertical">
-          <Form.Item
-            name="requirement"
-            label="需求描述"
-            rules={[{ required: true, message: '请描述您的需求' }]}
-          >
-            <TextArea 
-              rows={6} 
-              placeholder="详细描述您希望创建的图的功能和需求..."
-              showCount
-              maxLength={1000}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="model_name"
-            label="生成模型"
-            rules={[{ required: true, message: '请选择生成用的模型' }]}
-          >
-            <Select placeholder="选择模型" loading={!models || models.length === 0}>
-              {models.map(model => (
-                <Option key={model.name} value={model.name}>{model.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          
-          {/* 添加模型状态提示 */}
-          {(!models || models.length === 0) && (
-            <div style={{ 
-              padding: '8px 12px', 
-              backgroundColor: '#fff7e6', 
-              border: '1px solid #ffd591',
-              borderRadius: '4px',
-              fontSize: '12px',
-              color: '#ad6800'
-            }}>
-              <InfoCircleOutlined style={{ marginRight: '4px' }} />
-              暂无可用模型，请先在"模型管理"页面添加模型配置
-            </div>
-          )}
-        </Form>
-      </Modal>
-
-      {/* AI Optimize modal */}
-      <Modal
-        title="AI优化图"
-        open={aiOptimizeModalVisible}
-        onOk={handleAiOptimize}
-        onCancel={() => setAiOptimizeModalVisible(false)}
-        width={600}
-        confirmLoading={loading}
-      >
-        <Form form={aiOptimizeForm} layout="vertical">
-          <Form.Item
-            label="当前图"
-          >
-            <Input value={currentGraph?.name} disabled />
-          </Form.Item>
-
-          <Form.Item
-            name="optimization_requirement"
-            label="优化需求"
-            rules={[{ required: true, message: '请描述您的优化需求' }]}
-          >
-            <TextArea 
-              rows={6} 
-              placeholder="描述您希望如何优化这个图，例如：提高性能、改进可读性、优化流程等..."
-              showCount
-              maxLength={1000}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="model_name"
-            label="优化模型"
-            rules={[{ required: true, message: '请选择优化用的模型' }]}
-          >
-            <Select placeholder="选择模型" loading={!models || models.length === 0}>
-              {models.map(model => (
-                <Option key={model.name} value={model.name}>{model.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          
-          {/* 添加模型状态提示 */}
-          {(!models || models.length === 0) && (
-            <div style={{ 
-              padding: '8px 12px', 
-              backgroundColor: '#fff7e6', 
-              border: '1px solid #ffd591',
-              borderRadius: '4px',
-              fontSize: '12px',
-              color: '#ad6800'
-            }}>
-              <InfoCircleOutlined style={{ marginRight: '4px' }} />
-              暂无可用模型，请先在"模型管理"页面添加模型配置
-            </div>
-          )}
-        </Form>
-      </Modal>
 
       {/* Import modal */}
       <Modal

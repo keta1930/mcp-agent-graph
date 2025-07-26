@@ -6,7 +6,6 @@ import {
   EditOutlined,
   ApiOutlined,
   SettingOutlined,
-  PlayCircleOutlined,
   PoweroffOutlined
 } from '@ant-design/icons';
 import { shutdownSystem } from '../services/systemService';
@@ -37,11 +36,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: '/mcp-manager',
       icon: <SettingOutlined />,
       label: <Link to="/mcp-manager">MCP管理</Link>,
-    },
-    {
-      key: '/graph-runner',
-      icon: <PlayCircleOutlined />,
-      label: <Link to="/graph-runner">图形运行器</Link>,
     },
   ];
 
