@@ -7,10 +7,12 @@ from .conversation_manager import ConversationManager
 from .chat_manager import ChatManager
 from .graph_manager import GraphManager
 from .mcp_manager import MCPManager
+from .graph_run_manager import GraphRunManager
 
 __all__ = [
     'ConversationManager',
     'ChatManager',
     'GraphManager',
-    'MCPManager'
+    'MCPManager',
+    'GraphRunManager'
 ]

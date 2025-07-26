@@ -478,30 +478,6 @@ class FileManager:
             return False
 
     @staticmethod
-    def load_conversation_json(conversation_id: str) -> Optional[Dict[str, Any]]:
-        """加载会话JSON内容"""
-        try:
-            json_path = FileManager.get_conversation_json_path(conversation_id)
-            if not json_path.exists():
-                return None
-            return FileManager.load_json(json_path)
-        except Exception as e:
-            logger.error(f"加载会话JSON {conversation_id} 时出错: {str(e)}")
-            return None
-
-    @staticmethod
-    def list_conversations() -> List[str]:
-        """列出所有会话"""
-        try:
-            # 列出会话目录中的所有子目录
-            conversation_dirs = [d.name for d in settings.CONVERSATION_DIR.iterdir()
-                                 if d.is_dir() and (d / f"{d.name}.json").exists()]
-            return conversation_dirs
-        except Exception as e:
-            logger.error(f"列出会话时出错: {str(e)}")
-            return []
-
-    @staticmethod
     def extract_prompt_file_paths(prompt: str) -> List[str]:
         """从提示词中提取文件路径"""
         if not prompt:

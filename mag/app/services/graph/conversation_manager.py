@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConversationManager:
-    """会话管理服务 - 处理会话状态和结果处理"""
+    """会话管理服务 - 处理会话状态和结果处理（图运行专用，使用MongoDB存储）"""
 
     def __init__(self):
         self.active_conversations: Dict[str, Dict[str, Any]] = {}
@@ -26,11 +26,9 @@ class ConversationManager:
 
             with self._conversation_lock:
                 if candidate_id not in self._active_conversation_ids:
-                    conversation_dir = FileManager.get_conversation_dir(candidate_id)
-                    if not conversation_dir.exists():
-                        self._active_conversation_ids.add(candidate_id)
-                        logger.info(f"生成唯一会话ID: {candidate_id} (尝试 {attempt + 1})")
-                        return candidate_id
+                    self._active_conversation_ids.add(candidate_id)
+                    logger.info(f"生成唯一会话ID: {candidate_id} (尝试 {attempt + 1})")
+                    return candidate_id
 
             time.sleep(0.001 * (attempt + 1))
             logger.warning(f"会话ID冲突，重试生成: {candidate_id} (尝试 {attempt + 1})")
@@ -43,8 +41,8 @@ class ConversationManager:
 
         return fallback_id
 
-    def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
-        """创建新的会话"""
+    async def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
+        """创建新的会话，使用MongoDB存储"""
         conversation_id = self._generate_unique_conversation_id(graph_name)
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
@@ -64,14 +62,14 @@ class ConversationManager:
                 "_current_round": 0
             }
 
-            json_content = self._prepare_json_content(self.active_conversations[conversation_id])
-            success = FileManager.save_conversation_atomic(
-                conversation_id, graph_name, start_time, json_content
+            from app.services.mongodb_service import mongodb_service
+            success = await mongodb_service.create_graph_run_conversation(
+                conversation_id, graph_name, graph_config, "default_user"
             )
 
             if not success:
                 self._cleanup_failed_conversation(conversation_id)
-                raise RuntimeError(f"无法创建会话文件: {conversation_id}")
+                raise RuntimeError(f"无法创建会话到MongoDB: {conversation_id}")
 
             logger.info(f"成功创建会话: {conversation_id}")
             return conversation_id
@@ -80,44 +78,30 @@ class ConversationManager:
             self._cleanup_failed_conversation(conversation_id)
             raise
 
-    def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
+    async def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """使用指定配置创建新的会话"""
-        return self.create_conversation(graph_name, graph_config)
+        return await self.create_conversation(graph_name, graph_config)
 
-    def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取会话状态"""
+    async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取会话状态，优先从内存获取，否则从MongoDB恢复"""
         if conversation_id in self.active_conversations:
             return self.active_conversations[conversation_id]
 
-        conversation_json = FileManager.load_conversation_json(conversation_id)
-        if conversation_json:
-            logger.info(f"从JSON文件恢复会话 {conversation_id}")
-            conversation = self._restore_conversation_from_json(conversation_json)
+        from app.services.mongodb_service import mongodb_service
+        conversation_data = await mongodb_service.get_graph_run_conversation(conversation_id)
+
+        if conversation_data:
+            logger.info(f"从MongoDB恢复会话 {conversation_id}")
+            conversation = self._restore_conversation_from_mongodb(conversation_data)
             if conversation:
                 self.active_conversations[conversation_id] = conversation
                 return conversation
             else:
-                logger.error(f"无法从JSON恢复会话 {conversation_id}")
+                logger.error(f"无法从MongoDB恢复会话 {conversation_id}")
 
         return None
-
-    def delete_conversation(self, conversation_id: str) -> bool:
-        """删除会话"""
-        try:
-            if conversation_id in self.active_conversations:
-                del self.active_conversations[conversation_id]
-
-            with self._conversation_lock:
-                self._active_conversation_ids.discard(conversation_id)
-
-            return FileManager.delete_conversation(conversation_id)
-
-        except Exception as e:
-            logger.error(f"删除会话时出错: {str(e)}")
-            return False
-
-    def update_conversation_file(self, conversation_id: str) -> bool:
-        """更新会话文件"""
+    async def update_conversation_file(self, conversation_id: str) -> bool:
+        """更新会话到MongoDB"""
         if conversation_id not in self.active_conversations:
             logger.error(f"尝试更新不存在的会话: {conversation_id}")
             return False
@@ -125,42 +109,19 @@ class ConversationManager:
         conversation = self.active_conversations[conversation_id]
 
         try:
-            json_content = self._prepare_json_content(conversation)
-            return FileManager.update_conversation(conversation_id, json_content)
+            update_data = self._prepare_mongodb_data(conversation)
+
+            from app.services.mongodb_service import mongodb_service
+            success = await mongodb_service.update_graph_run_data(conversation_id, update_data)
+
+            return success
         except Exception as e:
-            logger.error(f"更新会话文件 {conversation_id} 时出错: {str(e)}")
+            logger.error(f"更新会话到MongoDB {conversation_id} 时出错: {str(e)}")
             return False
 
-    def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取包含层次结构的会话详情 - 直接返回JSON格式"""
-        conversation = self.get_conversation(conversation_id)
-        if not conversation:
-            return None
-
-        attachments = FileManager.get_conversation_attachments(conversation_id)
-        final_output = self._get_final_output(conversation)
-
-        result = {
-            "_id": conversation_id,
-            "conversation_id": conversation_id,
-            "graph_name": conversation.get("graph_name", ""),
-            "rounds": conversation.get("rounds", []),
-            "graph_config": conversation.get("graph_config", {}),
-            "input": conversation.get("input", ""),
-            "global_outputs": conversation.get("global_outputs", {}),
-            "final_result": final_output,
-            "execution_chain": conversation.get("execution_chain", []),
-            "handoffs_status": conversation.get("handoffs_status", {}),
-            "completed": self.is_graph_execution_complete(conversation),
-            "start_time": conversation.get("start_time", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
-            "attachments": attachments
-        }
-
-        return result
-
-    def _add_global_output(self, conversation_id: str, node_name: str, output: str) -> None:
+    async def _add_global_output(self, conversation_id: str, node_name: str, output: str) -> None:
         """添加全局输出内容"""
-        conversation = self.get_conversation(conversation_id)
+        conversation = await self.get_conversation(conversation_id)
         if not conversation:
             logger.error(f"尝试添加全局输出到不存在的会话: {conversation_id}")
             return
@@ -174,9 +135,12 @@ class ConversationManager:
         conversation["global_outputs"][node_name].append(output)
         logger.info(f"已添加节点 '{node_name}' 的全局输出，当前共 {len(conversation['global_outputs'][node_name])} 条")
 
-    def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all") -> List[str]:
+        from app.services.mongodb_service import mongodb_service
+        await mongodb_service.update_graph_run_global_outputs(conversation_id, node_name, output)
+
+    async def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all") -> List[str]:
         """全局输出获取函数，支持新的context_mode格式"""
-        conversation = self.get_conversation(conversation_id)
+        conversation = await self.get_conversation(conversation_id)
         if not conversation or "global_outputs" not in conversation or node_name not in conversation["global_outputs"]:
             logger.debug(f"找不到节点 '{node_name}' 的全局输出内容")
             return []
@@ -203,35 +167,40 @@ class ConversationManager:
                 logger.error(f"无效的context_mode格式: {mode}，必须是'all'或正整数字符串")
                 return []
 
-    def update_handoffs_status(self, conversation_id: str, node_name: str,
-                               total_limit: int, used_count: int, last_selection: str = None) -> None:
+    async def update_handoffs_status(self, conversation_id: str, node_name: str,
+                                     total_limit: int, used_count: int, last_selection: str = None) -> None:
         """更新handoffs状态"""
-        conversation = self.get_conversation(conversation_id)
+        conversation = await self.get_conversation(conversation_id)
         if not conversation:
             return
 
         if "handoffs_status" not in conversation:
             conversation["handoffs_status"] = {}
 
-        conversation["handoffs_status"][node_name] = {
+        handoffs_data = {
             "total_limit": total_limit,
             "used_count": used_count,
             "last_selection": last_selection
         }
 
+        conversation["handoffs_status"][node_name] = handoffs_data
+
         logger.info(f"更新节点 '{node_name}' 的handoffs状态: {used_count}/{total_limit}")
 
-    def get_handoffs_status(self, conversation_id: str, node_name: str) -> Dict[str, Any]:
+        from app.services.mongodb_service import mongodb_service
+        await mongodb_service.update_graph_run_handoffs_status(conversation_id, node_name, handoffs_data)
+
+    async def get_handoffs_status(self, conversation_id: str, node_name: str) -> Dict[str, Any]:
         """获取handoffs状态"""
-        conversation = self.get_conversation(conversation_id)
+        conversation = await self.get_conversation(conversation_id)
         if not conversation or "handoffs_status" not in conversation:
             return {}
 
         return conversation["handoffs_status"].get(node_name, {})
 
-    def check_execution_resumption_point(self, conversation_id: str) -> Dict[str, Any]:
+    async def check_execution_resumption_point(self, conversation_id: str) -> Dict[str, Any]:
         """检查执行恢复点，用于断点传续"""
-        conversation = self.get_conversation(conversation_id)
+        conversation = await self.get_conversation(conversation_id)
         if not conversation:
             return {"action": "error", "message": "会话不存在"}
 
@@ -255,7 +224,7 @@ class ConversationManager:
         if not last_node:
             return {"action": "error", "message": f"找不到节点配置: {last_node_name}"}
 
-        handoffs_status = self.get_handoffs_status(conversation_id, last_node_name)
+        handoffs_status = await self.get_handoffs_status(conversation_id, last_node_name)
         has_handoffs = last_node.get("handoffs") is not None
 
         if has_handoffs and handoffs_status:
@@ -263,7 +232,7 @@ class ConversationManager:
             total_limit = handoffs_status.get("total_limit", 0)
             last_selection = handoffs_status.get("last_selection")
 
-            if used_count < total_limit and last_selection:
+            if used_count <= total_limit and last_selection:
                 return {
                     "action": "handoffs_continue",
                     "target_node": last_selection,
@@ -283,7 +252,7 @@ class ConversationManager:
             "message": f"从层级 {next_level} 继续执行"
         }
 
-    def _get_final_output(self, conversation: Dict[str, Any]) -> str:
+    async def _get_final_output(self, conversation: Dict[str, Any]) -> str:
         """获取图的最终输出 - 支持output_enabled的占位符替换"""
         graph_config = conversation["graph_config"]
         rounds = conversation.get("rounds", [])
@@ -303,17 +272,14 @@ class ConversationManager:
                             node_outputs["start"] = msg.get("content", "")
                             break
                 else:
-                    # 根据output_enabled获取正确的输出
                     output_enabled = round_data.get("output_enabled", True)
 
                     if output_enabled:
-                        # 获取assistant的最终输出
                         for msg in reversed(messages):
                             if msg.get("role") == "assistant":
                                 node_outputs[node_name] = msg.get("content", "")
                                 break
                     else:
-                        # 获取工具结果
                         tool_contents = []
                         for msg in messages:
                             if msg.get("role") == "tool":
@@ -330,7 +296,7 @@ class ConversationManager:
                 node_name, mode = _parse_placeholder(placeholder)
 
                 if mode != "1":
-                    global_outputs = self._get_global_outputs(
+                    global_outputs = await self._get_global_outputs(
                         conversation["conversation_id"],
                         node_name,
                         mode
@@ -344,7 +310,7 @@ class ConversationManager:
                     if node_name in node_outputs:
                         output = output.replace(f"{{{placeholder}}}", node_outputs[node_name])
                     else:
-                        global_outputs = self._get_global_outputs(
+                        global_outputs = await self._get_global_outputs(
                             conversation["conversation_id"],
                             node_name,
                             "1"
@@ -355,9 +321,12 @@ class ConversationManager:
                             output = output.replace(f"{{{placeholder}}}", "")
 
             conversation["final_result"] = output
+
+            from app.services.mongodb_service import mongodb_service
+            await mongodb_service.update_graph_run_final_result(conversation["conversation_id"], output)
+
             return output
 
-        # 如果没有模板，使用最后一个非start节点的输出
         if not rounds:
             return ""
 
@@ -368,14 +337,12 @@ class ConversationManager:
                 output_enabled = round_data.get("output_enabled", True)
 
                 if output_enabled:
-                    # 获取assistant输出
                     for msg in reversed(messages):
                         if msg.get("role") == "assistant":
                             final_output = msg.get("content", "")
                             conversation["final_result"] = final_output
                             return final_output
                 else:
-                    # 获取工具结果
                     tool_contents = []
                     for msg in messages:
                         if msg.get("role") == "tool":
@@ -424,15 +391,13 @@ class ConversationManager:
             with self._conversation_lock:
                 self._active_conversation_ids.discard(conversation_id)
 
-            FileManager.cleanup_conversation_files(conversation_id)
-
         except Exception as e:
             logger.error(f"清理失败会话时出错: {str(e)}")
 
-    def _restore_conversation_from_json(self, json_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """从JSON数据恢复会话状态"""
+    def _restore_conversation_from_mongodb(self, mongodb_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """从MongoDB数据恢复会话状态"""
         try:
-            conversation = copy.deepcopy(json_data)
+            conversation = copy.deepcopy(mongodb_data)
 
             if "global_outputs" not in conversation:
                 conversation["global_outputs"] = {}
@@ -447,22 +412,14 @@ class ConversationManager:
 
             return conversation
         except Exception as e:
-            logger.error(f"从JSON恢复会话状态时出错: {str(e)}")
+            logger.error(f"从MongoDB恢复会话状态时出错: {str(e)}")
             return None
 
-    def _prepare_json_content(self, conversation: Dict[str, Any]) -> Dict[str, Any]:
-        """准备可序列化的JSON内容"""
-        json_content = copy.deepcopy(conversation)
+    def _prepare_mongodb_data(self, conversation: Dict[str, Any]) -> Dict[str, Any]:
+        """准备用于MongoDB更新的数据"""
+        update_data = copy.deepcopy(conversation)
 
-        json_content.pop("_current_round", None)
+        update_data.pop("_current_round", None)
+        update_data.pop("_id", None)
 
-        if "global_outputs" not in json_content:
-            json_content["global_outputs"] = {}
-        if "rounds" not in json_content:
-            json_content["rounds"] = []
-        if "execution_chain" not in json_content:
-            json_content["execution_chain"] = []
-        if "handoffs_status" not in json_content:
-            json_content["handoffs_status"] = {}
-
-        return json_content
+        return update_data

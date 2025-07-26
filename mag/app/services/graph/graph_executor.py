@@ -24,25 +24,22 @@ class GraphExecutor:
                                    model_service=None) -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果 - 混合方案"""
         try:
-            conversation_id = self.conversation_manager.create_conversation_with_config(graph_name, flattened_config)
+            conversation_id = await self.conversation_manager.create_conversation_with_config(graph_name, flattened_config)
 
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             conversation["graph_name"] = graph_name
 
-            self._record_user_input(conversation_id, input_text)
+            await self._record_user_input(conversation_id, input_text)
 
             async for sse_data in self._execute_graph_by_level_sequential_stream(conversation_id, model_service):
                 yield sse_data
 
-            # 获取最终输出
-            conversation = self.conversation_manager.get_conversation(conversation_id)
-            final_output = self.conversation_manager._get_final_output(conversation)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
+            final_output = await self.conversation_manager._get_final_output(conversation)
             execution_chain = conversation.get("execution_chain", [])
 
-            # 保存会话文件
-            self.conversation_manager.update_conversation_file(conversation_id)
+            await self.conversation_manager.update_conversation_file(conversation_id)
 
-            # 发送图完成事件
             yield SSEHelper.send_graph_complete(final_output, execution_chain)
 
         except Exception as e:
@@ -56,13 +53,13 @@ class GraphExecutor:
                                            continue_from_checkpoint: bool = False) -> AsyncGenerator[str, None]:
         """继续现有会话并返回流式结果 - 混合方案"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
                 return
 
             if continue_from_checkpoint or not input_text:
-                resumption_info = self.conversation_manager.check_execution_resumption_point(conversation_id)
+                resumption_info = await self.conversation_manager.check_execution_resumption_point(conversation_id)
                 action = resumption_info.get("action")
 
                 if action == "error":
@@ -92,20 +89,17 @@ class GraphExecutor:
                 conversation["handoffs_status"] = {}
 
                 if input_text:
-                    self._record_user_input(conversation_id, input_text)
+                    await self._record_user_input(conversation_id, input_text)
 
                 async for sse_data in self._execute_graph_by_level_sequential_stream(conversation_id, model_service):
                     yield sse_data
 
-            # 获取最终输出
-            conversation = self.conversation_manager.get_conversation(conversation_id)
-            final_output = self.conversation_manager._get_final_output(conversation)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
+            final_output = await self.conversation_manager._get_final_output(conversation)
             execution_chain = conversation.get("execution_chain", [])
 
-            # 保存会话文件
-            self.conversation_manager.update_conversation_file(conversation_id)
+            await self.conversation_manager.update_conversation_file(conversation_id)
 
-            # 发送图完成事件
             yield SSEHelper.send_graph_complete(final_output, execution_chain)
 
         except Exception as e:
@@ -116,7 +110,7 @@ class GraphExecutor:
     AsyncGenerator[str, None]:
         """基于层级的顺序执行方法 - 混合方案流式版本（更新版）"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
             max_level = self._get_max_level(graph_config)
@@ -128,13 +122,12 @@ class GraphExecutor:
                 nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes_to_execute:
-                    node_input = self._get_node_input_from_rounds(node, conversation)
+                    node_input = await self._get_node_input_from_rounds(node, conversation)
 
                     async for sse_data in self._execute_node_stream(node, node_input, conversation_id, model_service):
                         yield sse_data
 
-                    # 检查是否有handoffs选择
-                    conversation = self.conversation_manager.get_conversation(conversation_id)
+                    conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
                     if self._check_handoffs_in_round(last_round, node):
@@ -143,14 +136,13 @@ class GraphExecutor:
                             selected_node = self._find_node_by_name(graph_config, selected_node_name)
                             if selected_node:
                                 logger.info(f"检测到handoffs选择: {selected_node_name}，跳转执行")
-                                # 使用专门的handoffs继续方法
                                 async for sse_data in self._continue_from_handoffs_selection_stream(
                                         conversation_id,
                                         selected_node_name,
                                         model_service
                                 ):
                                     yield sse_data
-                                return  # 跳转执行后直接返回
+                                return
 
                 current_level += 1
 
@@ -165,7 +157,7 @@ class GraphExecutor:
                                                          model_service=None) -> AsyncGenerator[str, None]:
         """从指定层级继续顺序执行图 - 混合方案流式版本"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
             max_level = self._get_max_level(graph_config)
@@ -175,14 +167,13 @@ class GraphExecutor:
                 restart_node_obj = self._find_node_by_name(graph_config, restart_node)
                 if restart_node_obj:
                     current_level = restart_node_obj.get("level", 0)
-                    node_input = self._get_node_input_from_rounds(restart_node_obj, conversation)
+                    node_input = await self._get_node_input_from_rounds(restart_node_obj, conversation)
 
                     async for sse_data in self._execute_node_stream(restart_node_obj, node_input, conversation_id,
                                                                     model_service):
                         yield sse_data
 
-                    # 检查handoffs
-                    conversation = self.conversation_manager.get_conversation(conversation_id)
+                    conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
                     if self._check_handoffs_in_round(last_round, restart_node_obj):
@@ -203,13 +194,12 @@ class GraphExecutor:
                 nodes = self._get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes:
-                    node_input = self._get_node_input_from_rounds(node, conversation)
+                    node_input = await self._get_node_input_from_rounds(node, conversation)
 
                     async for sse_data in self._execute_node_stream(node, node_input, conversation_id, model_service):
                         yield sse_data
 
-                    # 检查handoffs
-                    conversation = self.conversation_manager.get_conversation(conversation_id)
+                    conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
                     if self._check_handoffs_in_round(last_round, node):
@@ -230,55 +220,13 @@ class GraphExecutor:
             logger.error(f"继续执行图层级流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"继续执行图时出错: {str(e)}")
 
-    async def _execute_handoffs_jump(self,
-                                     conversation_id: str,
-                                     target_node_name: str,
-                                     model_service) -> Dict[str, Any]:
-        """执行handoffs跳转到指定节点"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        graph_config = conversation["graph_config"]
-
-        target_node = self._find_node_by_name(graph_config, target_node_name)
-        if not target_node:
-            logger.error(f"handoffs目标节点不存在: {target_node_name}")
-            return {"error": f"目标节点不存在: {target_node_name}"}
-
-        logger.info(f"执行handoffs跳转: {target_node_name} (level {target_node.get('level', 0)})")
-
-        # 执行目标节点
-        node_input = self._get_node_input_from_rounds(target_node, conversation)
-        result = await self._execute_node(target_node, node_input, conversation_id, model_service)
-
-        self.conversation_manager.update_conversation_file(conversation_id)
-
-        return result
-
-    def _log_handoffs_execution(self, from_node: str, to_node: str, conversation_id: str):
-        """记录handoffs执行信息"""
-        logger.info(f"Handoffs跳转: {from_node} -> {to_node} (会话: {conversation_id})")
-
-        # 可以在这里添加更详细的执行链条记录
-        conversation = self.conversation_manager.get_conversation(conversation_id)
-        if conversation and "execution_chain" in conversation:
-            # 记录handoffs跳转信息
-            if not conversation["execution_chain"]:
-                conversation["execution_chain"] = []
-
-            # 在执行链中标记handoffs跳转
-            last_chain = conversation["execution_chain"][-1] if conversation["execution_chain"] else []
-            if isinstance(last_chain, list) and from_node in last_chain:
-                # 在同一level中添加handoffs标记
-                handoffs_marker = f"{from_node}→{to_node}"
-                if handoffs_marker not in last_chain:
-                    last_chain.append(handoffs_marker)
-
     async def _continue_from_handoffs_selection_stream(self,
                                                        conversation_id: str,
                                                        target_node: str,
                                                        model_service=None) -> AsyncGenerator[str, None]:
         """从handoffs选择继续执行 - 混合方案流式版本"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
             target_node_obj = self._find_node_by_name(graph_config, target_node)
@@ -307,7 +255,7 @@ class GraphExecutor:
                                                 model_service=None) -> AsyncGenerator[str, None]:
         """继续等待handoffs的节点 - 混合方案流式版本"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
             current_node_obj = self._find_node_by_name(graph_config, current_node)
@@ -317,14 +265,13 @@ class GraphExecutor:
 
             logger.info(f"继续等待handoffs的节点: {current_node}")
 
-            node_input = self._get_node_input_from_rounds(current_node_obj, conversation)
+            node_input = await self._get_node_input_from_rounds(current_node_obj, conversation)
 
             async for sse_data in self._execute_node_stream(current_node_obj, node_input, conversation_id,
                                                             model_service):
                 yield sse_data
 
-            # 检查handoffs
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
             if self._check_handoffs_in_round(last_round, current_node_obj):
@@ -340,7 +287,6 @@ class GraphExecutor:
                 else:
                     logger.warning("handoffs节点完成但未找到选择的目标节点")
             else:
-                # 如果没有handoffs选择，继续正常的层级执行
                 current_level = current_node_obj.get("level", 0) + 1
                 max_level = self._get_max_level(graph_config)
 
@@ -358,8 +304,6 @@ class GraphExecutor:
             logger.error(f"继续等待handoffs流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"继续等待handoffs时出错: {str(e)}")
 
-    # ============= 1. graph_executor.py - _execute_node方法修复 =============
-
     async def _execute_node_stream(self,
                                    node: Dict[str, Any],
                                    input_text: str,
@@ -367,7 +311,7 @@ class GraphExecutor:
                                    model_service) -> AsyncGenerator[str, None]:
         """执行单个节点 - 混合方案流式版本"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
                 return
@@ -375,7 +319,6 @@ class GraphExecutor:
             node_name = node["name"]
             node_level = node.get("level", 0)
 
-            # 发送节点开始事件 - 自定义事件
             yield SSEHelper.send_node_start(node_name, node_level)
 
             conversation["_current_round"] += 1
@@ -385,14 +328,14 @@ class GraphExecutor:
             mcp_servers = node.get("mcp_servers", [])
             output_enabled = node.get("output_enabled", True)
 
-            node_outputs = self._get_node_outputs_for_inputs(node, conversation)
+            node_outputs = await self._get_node_outputs_for_inputs(node, conversation)
             node_copy = copy.deepcopy(node)
             node_copy["_conversation_id"] = conversation_id
 
-            conversation_messages = self._create_agent_messages(node_copy, input_text, node_outputs)
+            conversation_messages = await self._create_agent_messages(node_copy, input_text, node_outputs)
 
             handoffs_limit = node.get("handoffs")
-            handoffs_status = self.conversation_manager.get_handoffs_status(conversation_id, node_name)
+            handoffs_status = await self.conversation_manager.get_handoffs_status(conversation_id, node_name)
             current_handoffs_count = handoffs_status.get("used_count", 0)
 
             handoffs_enabled = handoffs_limit is not None and current_handoffs_count < handoffs_limit
@@ -418,7 +361,6 @@ class GraphExecutor:
             for iteration in range(max_iterations):
                 logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
 
-                # 获取模型配置和客户端
                 model_config = model_service.get_model(model_name)
                 if not model_config:
                     yield SSEHelper.send_error(f"找不到模型配置: {model_name}")
@@ -429,7 +371,6 @@ class GraphExecutor:
                     yield SSEHelper.send_error(f"模型客户端未初始化: {model_name}")
                     return
 
-                # 准备流式调用参数 - 借鉴chat_service的方式
                 base_params = {
                     "model": model_config["model"],
                     "messages": current_messages,
@@ -439,18 +380,14 @@ class GraphExecutor:
                 if all_tools:
                     base_params["tools"] = all_tools
 
-                # 准备参数
                 params, extra_kwargs = model_service.prepare_api_params(base_params, model_config)
 
-                # 流式调用模型
                 stream = await client.chat.completions.create(**params, **extra_kwargs)
 
-                # 收集响应数据
                 accumulated_content = ""
                 current_tool_calls = []
                 tool_calls_dict = {}
 
-                # 处理流式响应 - 发送OpenAI标准格式
                 async for chunk in stream:
                     chunk_dict = chunk.model_dump()
                     yield SSEHelper.send_openai_chunk(chunk_dict)
@@ -489,7 +426,6 @@ class GraphExecutor:
                         current_tool_calls = list(tool_calls_dict.values())
                         break
 
-                # 构建assistant消息
                 assistant_msg = {
                     "role": "assistant",
                     "content": accumulated_content or ""
@@ -505,7 +441,6 @@ class GraphExecutor:
                     assistant_final_output = accumulated_content
                     break
 
-                # 执行工具调用
                 has_handoffs = False
 
                 for tool_call in current_tool_calls:
@@ -518,14 +453,13 @@ class GraphExecutor:
                             has_handoffs = True
 
                             if handoffs_limit is not None:
-                                self.conversation_manager.update_handoffs_status(
+                                await self.conversation_manager.update_handoffs_status(
                                     conversation_id, node_name, handoffs_limit, current_handoffs_count + 1,
                                     selected_handoff
                                 )
 
                             tool_content = f"已选择节点: {selected_node}"
 
-                            # 发送工具结果 - OpenAI标准格式
                             yield SSEHelper.send_tool_message(tool_call["id"], tool_content)
 
                             tool_result_msg = {
@@ -545,7 +479,6 @@ class GraphExecutor:
                         tool_result = await self._execute_single_tool(tool_name, tool_args, mcp_servers)
                         tool_content = tool_result.get("content", "")
 
-                        # 发送工具结果 - OpenAI标准格式
                         yield SSEHelper.send_tool_message(tool_call["id"], tool_content)
 
                         if tool_content and not tool_name.startswith("transfer_to_"):
@@ -563,13 +496,11 @@ class GraphExecutor:
                     assistant_final_output = accumulated_content
                     break
 
-            # 根据output_enabled决定最终输出内容
             if output_enabled:
                 final_output = assistant_final_output
             else:
                 final_output = "\n".join(tool_results_content) if tool_results_content else ""
 
-            # 创建round数据
             round_data = {
                 "round": current_round,
                 "node_name": node_name,
@@ -583,11 +514,13 @@ class GraphExecutor:
 
             conversation["rounds"].append(round_data)
 
-            # 处理全局输出存储
+            from app.services.mongodb_service import mongodb_service
+            await mongodb_service.add_round_to_graph_run(conversation_id, round_data)
+
             if node.get("global_output", False):
                 if output_enabled:
                     if final_output:
-                        self.conversation_manager._add_global_output(
+                        await self.conversation_manager._add_global_output(
                             conversation_id,
                             node_name,
                             final_output
@@ -595,13 +528,12 @@ class GraphExecutor:
                 else:
                     if tool_results_content:
                         tool_output = "\n".join(tool_results_content)
-                        self.conversation_manager._add_global_output(
+                        await self.conversation_manager._add_global_output(
                             conversation_id,
                             node_name,
                             tool_output
                         )
 
-            # 保存文件
             save_ext = node.get("save")
             if save_ext and final_output.strip():
                 FileManager.save_node_output_to_file(
@@ -611,12 +543,10 @@ class GraphExecutor:
                     save_ext
                 )
 
-            self._update_execution_chain(conversation)
+            await self._update_execution_chain(conversation)
 
-            # 保存会话状态
-            self.conversation_manager.update_conversation_file(conversation_id)
+            await self.conversation_manager.update_conversation_file(conversation_id)
 
-            # 发送节点结束事件 - 自定义事件
             yield SSEHelper.send_node_end(node_name)
 
         except Exception as e:
@@ -712,7 +642,7 @@ class GraphExecutor:
 
         return tools
 
-    def _create_agent_messages(self,
+    async def _create_agent_messages(self,
                                node: Dict[str, Any],
                                input_text: str,
                                node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
@@ -726,7 +656,7 @@ class GraphExecutor:
         conversation = None
         graph_name = ""
         if conversation_id:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             if conversation:
                 graph_name = conversation.get("graph_name", "")
 
@@ -772,9 +702,9 @@ class GraphExecutor:
 
         return messages
 
-    def _record_user_input(self, conversation_id: str, input_text: str):
+    async def _record_user_input(self, conversation_id: str, input_text: str):
         """记录用户输入为round格式"""
-        conversation = self.conversation_manager.get_conversation(conversation_id)
+        conversation = await self.conversation_manager.get_conversation(conversation_id)
 
         conversation["_current_round"] += 1
         current_round = conversation["_current_round"]
@@ -794,6 +724,10 @@ class GraphExecutor:
         }
         conversation["rounds"].append(start_round)
 
+        from app.services.mongodb_service import mongodb_service
+        await mongodb_service.add_round_to_graph_run(conversation_id, start_round)
+        await mongodb_service.update_graph_run_global_outputs(conversation_id, "start", input_text)
+
         if "global_outputs" not in conversation:
             conversation["global_outputs"] = {}
 
@@ -804,7 +738,7 @@ class GraphExecutor:
 
         logger.info(f"已记录用户输入为round {current_round}")
 
-    def _update_execution_chain(self, conversation: Dict[str, Any]):
+    async def _update_execution_chain(self, conversation: Dict[str, Any]):
         """更新execution_chain - 按level合并相邻节点"""
         rounds = conversation.get("rounds", [])
 
@@ -837,7 +771,12 @@ class GraphExecutor:
 
         conversation["execution_chain"] = execution_chain
 
-    def _get_node_outputs_for_inputs(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> Dict[str, str]:
+        from app.services.mongodb_service import mongodb_service
+        await mongodb_service.update_graph_run_execution_chain(
+            conversation["conversation_id"], execution_chain
+        )
+
+    async def _get_node_outputs_for_inputs(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> Dict[str, str]:
         """获取节点输入所需的所有输出结果 - 支持output_enabled"""
         node_outputs = {}
 
@@ -847,7 +786,6 @@ class GraphExecutor:
                 if user_input:
                     node_outputs["start"] = user_input
             else:
-                # 使用更新后的方法获取节点输出
                 node_output = self._get_node_output_from_rounds(conversation, input_node_name)
                 if node_output:
                     node_outputs[input_node_name] = node_output
@@ -857,7 +795,7 @@ class GraphExecutor:
             context_mode = node.get("context_mode", "all")
 
             for context_node_name in context_nodes:
-                global_outputs = self.conversation_manager._get_global_outputs(
+                global_outputs = await self.conversation_manager._get_global_outputs(
                     conversation["conversation_id"],
                     context_node_name,
                     context_mode
@@ -868,7 +806,7 @@ class GraphExecutor:
 
         return node_outputs
 
-    def _get_node_input_from_rounds(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
+    async def _get_node_input_from_rounds(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
         """从rounds中获取节点输入 - 支持output_enabled"""
         input_nodes = node.get("input_nodes", [])
         inputs = []
@@ -879,7 +817,6 @@ class GraphExecutor:
                 if user_input:
                     inputs.append(user_input)
             else:
-                # 使用更新后的方法获取节点输出
                 node_output = self._get_node_output_from_rounds(conversation, input_node_name)
                 if node_output:
                     inputs.append(node_output)
@@ -889,7 +826,7 @@ class GraphExecutor:
             context_mode = node.get("context_mode", "all")
 
             for context_node_name in context_nodes:
-                global_outputs = self.conversation_manager._get_global_outputs(
+                global_outputs = await self.conversation_manager._get_global_outputs(
                     conversation["conversation_id"],
                     context_node_name,
                     context_mode
@@ -918,38 +855,31 @@ class GraphExecutor:
         rounds = conversation.get("rounds", [])
         graph_config = conversation.get("graph_config", {})
 
-        # 查找节点配置以获取output_enabled设置
         node_config = None
         for node in graph_config.get("nodes", []):
             if node["name"] == node_name:
                 node_config = node
                 break
 
-        # 从最新的对应节点round中获取输出
         for round_data in reversed(rounds):
             if round_data.get("node_name") == node_name:
                 messages = round_data.get("messages", [])
 
-                # 检查round中存储的output_enabled设置（优先）
                 round_output_enabled = round_data.get("output_enabled")
                 if round_output_enabled is None and node_config:
-                    # 如果round中没有，使用节点配置
                     round_output_enabled = node_config.get("output_enabled", True)
                 else:
-                    round_output_enabled = True  # 默认值
+                    round_output_enabled = True
 
                 if round_output_enabled:
-                    # 获取assistant的最终输出
                     for message in reversed(messages):
                         if message.get("role") == "assistant":
                             return message.get("content", "")
                 else:
-                    # 获取所有工具结果并拼接
                     tool_contents = []
                     for message in messages:
                         if message.get("role") == "tool":
                             content = message.get("content", "")
-                            # 排除handoffs相关的工具结果
                             if content and not content.startswith("已选择节点:"):
                                 tool_contents.append(content)
 
@@ -966,7 +896,6 @@ class GraphExecutor:
         if handoffs_limit is None:
             return False
 
-        # 检查是否有transfer_to_开头的工具调用
         for message in round_data["messages"]:
             if message.get("role") == "assistant" and message.get("tool_calls"):
                 for tool_call in message["tool_calls"]:
@@ -990,6 +919,7 @@ class GraphExecutor:
                         return selected_node
 
         return None
+
     def _get_max_level(self, graph_config: Dict[str, Any]) -> int:
         """获取图中的最大层级"""
         max_level = 0

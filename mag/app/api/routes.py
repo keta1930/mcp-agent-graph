@@ -1962,10 +1962,9 @@ async def export_graph(graph_name: str):
         )
 
 # ======= 图执行 =======
-
 @router.post("/graphs/execute")
-async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTasks):
-    """执行图并返回流式结果 - 混合方案"""
+async def execute_graph(input_data: GraphInput):
+    """执行图并返回流式结果"""
     try:
         # 检查图是否存在
         graph_config = graph_service.get_graph(input_data.graph_name)
@@ -2023,129 +2022,7 @@ async def execute_graph(input_data: GraphInput, background_tasks: BackgroundTask
             detail=f"初始化执行图时出错: {str(e)}"
         )
 
-
-@router.get("/conversations/{conversation_id}", response_model=Dict[str, Any])
-async def get_conversation(conversation_id: str):
-    """获取会话状态"""
-    try:
-        conversation = graph_service.get_conversation(conversation_id)
-        if not conversation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到会话 '{conversation_id}'"
-            )
-        return {
-            "conversation_id": conversation_id,
-            "graph_name": conversation["graph_name"],
-            "results": conversation["results"],
-            "completed_nodes": list(conversation["completed_nodes"]),
-            "pending_nodes": list(conversation["pending_nodes"])
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取会话时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取会话时出错: {str(e)}"
-        )
-
-
-@router.delete("/conversations/{conversation_id}", response_model=Dict[str, Any])
-async def delete_conversation(conversation_id: str):
-    """删除会话"""
-    try:
-        success = graph_service.delete_conversation(conversation_id)
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到会话 '{conversation_id}'"
-            )
-        return {"status": "success", "message": f"会话 '{conversation_id}' 删除成功"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"删除会话时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除会话时出错: {str(e)}"
-        )
-
-@router.get("/conversations", response_model=List[str])
-async def list_conversations():
-    """列出所有会话"""
-    try:
-        return FileManager.list_conversations()
-    except Exception as e:
-        logger.error(f"列出会话时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"列出会话时出错: {str(e)}"
-        )
-
-
-@router.post("/graphs/continue")
-async def continue_graph_execution(input_data: GraphInput):
-    """从文件恢复并继续执行会话"""
-    try:
-        conversation_id = input_data.conversation_id
-        if not conversation_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须提供会话ID以继续执行"
-            )
-
-        # 检查会话是否存在
-        if not FileManager.load_conversation_json(conversation_id):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到会话 '{conversation_id}'"
-            )
-
-        # 如果是从断点继续，设置标志位并传递到continue_conversation
-        continue_from_checkpoint = input_data.continue_from_checkpoint or not input_data.input_text
-
-        # 继续执行会话
-        result = await graph_service.continue_conversation(
-            conversation_id,
-            input_data.input_text,
-            continue_from_checkpoint
-        )
-
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"继续执行会话时出错: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"继续执行会话时出错: {str(e)}"
-        )
-
-@router.get("/conversations/{conversation_id}/hierarchy", response_model=Dict[str, Any])
-async def get_conversation_hierarchy(conversation_id: str):
-    """获取会话层次结构"""
-    try:
-        hierarchy = graph_service.get_conversation_with_hierarchy(conversation_id)
-        if not hierarchy:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到会话 '{conversation_id}'"
-            )
-        return hierarchy
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取会话层次结构时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取会话层次结构时出错: {str(e)}"
-        )
-
 # ======= Chat模式API接口=======
-
 @router.post("/chat/completions")
 async def chat_completions(request: ChatCompletionRequest):
     """Chat completions接口 - 支持流式响应"""
@@ -2599,27 +2476,13 @@ async def _perform_shutdown():
     logger.info("开始执行关闭流程")
 
     try:
-        # 1. 清理所有会话
-        for conv_id in list(graph_service.active_conversations.keys()):
-            try:
-                graph_service.delete_conversation(conv_id)
-                logger.info(f"已清理会话: {conv_id}")
-            except Exception as e:
-                logger.error(f"清理会话 {conv_id} 时出错: {str(e)}")
-
-        # 2. 首先尝试优雅关闭
         client_notified = await mcp_service.notify_client_shutdown()
-
-        # 3. 如果优雅关闭失败，使用强制方式
         if not client_notified:
             await mcp_service.cleanup(force=True)
         else:
-            # 即使优雅关闭成功，也执行cleanup以重置状态，但不强制终止
             await mcp_service.cleanup(force=False)
 
         logger.info("MCP服务已清理")
-
-        # 4. 关闭Host服务
         logger.info("即将关闭Host服务...")
         import signal
         import os

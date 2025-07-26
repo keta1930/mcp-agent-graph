@@ -23,7 +23,6 @@ class GraphService:
     """图执行服务"""
 
     def __init__(self):
-        # 初始化子服务
         self.processor = GraphProcessor(self.get_graph)
         self.conversation_manager = ConversationManager()
         self.executor = GraphExecutor(self.conversation_manager, mcp_service)
@@ -32,7 +31,6 @@ class GraphService:
 
     async def initialize(self) -> None:
         """初始化图服务"""
-        # 确保目录存在
         FileManager.initialize()
 
     def list_graphs(self) -> List[str]:
@@ -47,10 +45,7 @@ class GraphService:
         """保存图配置"""
         print("save_graph", graph_name, config)
 
-        # 先展开所有子图到扁平结构
         flattened_config = self.processor._flatten_all_subgraphs(config)
-
-        # 对扁平化后的图计算一次层级
         config_with_levels = self.processor._calculate_node_levels(flattened_config)
 
         return FileManager.save_agent(graph_name, config_with_levels)
@@ -91,81 +86,49 @@ class GraphService:
             mcp_service.get_server_status_sync
         )
 
-    def create_conversation(self, graph_name: str) -> str:
-        """创建新的会话 - 确保唯一性"""
-        # 加载图配置
+    async def create_conversation(self, graph_name: str) -> str:
+        """创建新的会话"""
         graph_config = self.get_graph(graph_name)
         if not graph_config:
             raise ValueError(f"找不到图 '{graph_name}'")
 
-        # 使用会话管理器创建会话（内置唯一性保证）
         try:
-            conversation_id = self.conversation_manager.create_conversation(graph_name, graph_config)
+            conversation_id = await self.conversation_manager.create_conversation(graph_name, graph_config)
             logger.info(f"成功创建会话: {conversation_id}")
             return conversation_id
         except Exception as e:
             logger.error(f"创建会话失败: {str(e)}")
             raise ValueError(f"创建会话失败: {str(e)}")
 
-    def _load_existing_conversations(self) -> None:
-        """加载已有的会话文件"""
-        try:
-            conversation_ids = FileManager.list_conversations()
-            logger.info(f"找到 {len(conversation_ids)} 个现有会话文件")
-
-            # 尝试加载部分会话信息，但不放入内存
-            for conversation_id in conversation_ids[:5]:
-                json_data = FileManager.load_conversation_json(conversation_id)
-                if json_data:
-                    graph_name = json_data.get("graph_name", "未知图")
-                    start_time = json_data.get("start_time", "未知时间")
-                    completed = json_data.get("completed", False)
-                    status = "已完成" if completed else "未完成"
-                    logger.info(f"会话: {conversation_id}, 图: {graph_name}, 开始时间: {start_time}, 状态: {status}")
-                else:
-                    logger.warning(f"会话 {conversation_id} 的JSON文件不存在或无法解析")
-        except Exception as e:
-            logger.error(f"加载现有会话时出错: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-
-    def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
+    async def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """使用指定配置创建新的会话"""
         try:
-            conversation_id = self.conversation_manager.create_conversation(graph_name, graph_config)
+            conversation_id = await self.conversation_manager.create_conversation(graph_name, graph_config)
             logger.info(f"成功创建会话（指定配置）: {conversation_id}")
             return conversation_id
         except Exception as e:
             logger.error(f"创建会话失败（指定配置）: {str(e)}")
             raise ValueError(f"创建会话失败: {str(e)}")
 
-    def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+    async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取会话状态"""
-        return self.conversation_manager.get_conversation(conversation_id)
-
-    def delete_conversation(self, conversation_id: str) -> bool:
-        """删除会话"""
-        return self.conversation_manager.delete_conversation(conversation_id)
+        return await self.conversation_manager.get_conversation(conversation_id)
 
     async def execute_graph_stream(self, graph_name: str, input_text: str) -> AsyncGenerator[str, None]:
-        """执行整个图并返回流式结果 - 混合方案"""
+        """执行整个图并返回流式结果"""
         try:
-            # 加载原始图配置
             original_config = self.get_graph(graph_name)
             if not original_config:
                 yield SSEHelper.send_error(f"找不到图 '{graph_name}'")
                 return
 
-            # 检查循环引用
             cycle = self.detect_graph_cycles(graph_name)
             if cycle:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
                 return
 
-            # 展开图配置，处理所有子图
             flattened_config = self.preprocess_graph(original_config)
 
-            # 使用新的流式执行器执行图
             async for sse_data in self.executor.execute_graph_stream(
                     graph_name,
                     original_config,
@@ -183,14 +146,13 @@ class GraphService:
                                            conversation_id: str,
                                            input_text: str = None,
                                            continue_from_checkpoint: bool = False) -> AsyncGenerator[str, None]:
-        """继续现有会话并返回流式结果 - 混合方案"""
+        """继续现有会话并返回流式结果"""
         try:
-            conversation = self.conversation_manager.get_conversation(conversation_id)
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
                 return
 
-            # 使用流式执行器继续会话
             async for sse_data in self.executor.continue_conversation_stream(
                     conversation_id,
                     input_text,
@@ -199,16 +161,11 @@ class GraphService:
             ):
                 yield sse_data
 
-            # 确保更新后的结果被保存到文件
-            self.conversation_manager.update_conversation_file(conversation_id)
+            await self.conversation_manager.update_conversation_file(conversation_id)
 
         except Exception as e:
             logger.error(f"继续会话流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"继续会话时出错: {str(e)}")
-
-    def get_conversation_with_hierarchy(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取包含层次结构的会话详情"""
-        return self.conversation_manager.get_conversation_with_hierarchy(conversation_id)
 
     async def ai_generate_graph(self,
                                 requirement: str,
@@ -228,22 +185,16 @@ class GraphService:
 
     def generate_mcp_script(self, graph_name: str, graph_config: Dict[str, Any], host_url: str) -> Dict[str, Any]:
         """生成MCP服务器脚本"""
-
-        # 获取图的描述
         description = graph_config.get("description", "")
         sanitized_graph_name = graph_name.replace(" ", "_").replace("-", "_")
 
-        # 获取模板文件路径
         template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
         sequential_template_path = os.path.join(template_dir, "mcp_sequential_template.py")
 
-        # 读取模板文件
         try:
-
             with open(sequential_template_path, 'r', encoding='utf-8') as f:
                 sequential_template = f.read()
         except FileNotFoundError:
-            # 如果模板文件不存在，返回错误
             logger.error(f"找不到MCP脚本模板文件")
             return {
                 "graph_name": graph_name,
@@ -251,7 +202,6 @@ class GraphService:
                 "script": ""
             }
 
-        # 替换模板中的变量
         format_values = {
             "graph_name": graph_name,
             "sanitized_graph_name": sanitized_graph_name,
@@ -261,7 +211,6 @@ class GraphService:
 
         sequential_script = sequential_template.format(**format_values)
 
-        # 返回脚本内容
         return {
             "graph_name": graph_name,
             "sequential_script": sequential_script,
@@ -269,5 +218,4 @@ class GraphService:
         }
 
 
-# 创建全局图服务实例
 graph_service = GraphService()

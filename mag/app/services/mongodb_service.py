@@ -6,9 +6,8 @@ from pymongo.errors import DuplicateKeyError, PyMongoError
 import time
 from datetime import datetime
 from bson import ObjectId
-
-# 导入重构后的管理器
-from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager
+from app.core.file_manager import FileManager
+from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager
 
 logger = logging.getLogger(__name__)
 
@@ -20,24 +19,23 @@ class MongoDBService:
         self.client: Optional[AsyncIOMotorClient] = None
         self.db = None
 
-        # 更新后的集合引用
-        self.conversations_collection = None  # 统一对话基本信息
-        self.chat_messages_collection = None  # 聊天详细消息
-        self.graph_messages_collection = None  # 图生成详细消息
-        self.mcp_messages_collection = None  # MCP生成详细消息
+        self.conversations_collection = None
+        self.chat_messages_collection = None
+        self.graph_messages_collection = None
+        self.mcp_messages_collection = None
+        self.graph_run_messages_collection = None
 
         self.is_connected = False
 
-        # 管理器实例
         self.conversation_manager = None
         self.chat_manager = None
         self.graph_manager = None
         self.mcp_manager = None
+        self.graph_run_manager = None
 
     async def initialize(self, connection_string: str = "mongodb://admin:securepassword123@localhost:27017/"):
         """初始化MongoDB连接"""
         try:
-            # 创建异步MongoDB客户端
             self.client = AsyncIOMotorClient(
                 connection_string,
                 serverSelectionTimeoutMS=5000,
@@ -45,22 +43,18 @@ class MongoDBService:
                 socketTimeoutMS=5000
             )
 
-            # 选择数据库
             self.db = self.client.conversationdb
 
-            # 获取集合引用
-            self.conversations_collection = self.db.conversations  # 统一基本信息
-            self.chat_messages_collection = self.db.chat_messages  # 聊天详细消息
-            self.graph_messages_collection = self.db.graph_messages  # 图生成详细消息
-            self.mcp_messages_collection = self.db.mcp_messages  # MCP生成详细消息
+            self.conversations_collection = self.db.conversations
+            self.chat_messages_collection = self.db.chat_messages
+            self.graph_messages_collection = self.db.graph_messages
+            self.mcp_messages_collection = self.db.mcp_messages
+            self.graph_run_messages_collection = self.db["mcp-agent-graph-messages"]
 
-            # 测试连接
             await self.client.admin.command('ping')
 
-            # 创建索引
             await self._create_indexes()
 
-            # 初始化管理器
             self._initialize_managers()
 
             self.is_connected = True
@@ -73,48 +67,49 @@ class MongoDBService:
 
     def _initialize_managers(self):
         """初始化各个功能管理器"""
-        # 基础对话管理器
         self.conversation_manager = ConversationManager(
             self.db,
             self.conversations_collection
         )
 
-        # 聊天管理器
         self.chat_manager = ChatManager(
             self.db,
             self.chat_messages_collection
         )
 
-        # 图生成管理器
         self.graph_manager = GraphManager(
             self.db,
             self.graph_messages_collection,
             self.conversation_manager
         )
 
-        # MCP生成管理器
         self.mcp_manager = MCPManager(
             self.db,
             self.mcp_messages_collection,
             self.conversation_manager
         )
 
+        self.graph_run_manager = GraphRunManager(
+            self.db,
+            self.graph_run_messages_collection,
+            self.conversation_manager
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
-            # 为conversations集合创建索引
             await self.conversations_collection.create_index([("user_id", 1), ("type", 1), ("created_at", -1)])
             await self.conversations_collection.create_index([("status", 1)])
             await self.conversations_collection.create_index([("updated_at", -1)])
 
-            # 为chat_messages集合创建索引
             await self.chat_messages_collection.create_index([("conversation_id", 1)])
 
-            # 为graph_messages集合创建索引
             await self.graph_messages_collection.create_index([("conversation_id", 1)])
 
-            # 为mcp_messages集合创建索引
             await self.mcp_messages_collection.create_index([("conversation_id", 1)])
+
+            await self.graph_run_messages_collection.create_index([("conversation_id", 1)])
+            await self.graph_run_messages_collection.create_index([("graph_name", 1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -127,6 +122,44 @@ class MongoDBService:
             self.client.close()
             self.is_connected = False
             logger.info("MongoDB连接已断开")
+
+    # === 图运行管理方法 ===
+
+    async def create_graph_run_conversation(self, conversation_id: str, graph_name: str,
+                                          graph_config: Dict[str, Any], user_id: str = "default_user") -> bool:
+        """创建新的图运行对话"""
+        return await self.graph_run_manager.create_graph_run_conversation(
+            conversation_id, graph_name, graph_config, user_id
+        )
+
+    async def get_graph_run_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取图运行对话"""
+        return await self.graph_run_manager.get_graph_run_conversation(conversation_id)
+
+    async def update_graph_run_data(self, conversation_id: str, update_data: Dict[str, Any]) -> bool:
+        """更新图运行数据"""
+        return await self.graph_run_manager.update_graph_run_data(conversation_id, update_data)
+
+    async def add_round_to_graph_run(self, conversation_id: str, round_data: Dict[str, Any]) -> bool:
+        """向图运行对话添加新的轮次"""
+        return await self.graph_run_manager.add_round_to_graph_run(conversation_id, round_data)
+
+    async def update_graph_run_global_outputs(self, conversation_id: str, node_name: str, output: str) -> bool:
+        """更新图运行全局输出"""
+        return await self.graph_run_manager.update_global_outputs(conversation_id, node_name, output)
+
+    async def update_graph_run_handoffs_status(self, conversation_id: str, node_name: str,
+                                             handoffs_data: Dict[str, Any]) -> bool:
+        """更新图运行handoffs状态"""
+        return await self.graph_run_manager.update_handoffs_status(conversation_id, node_name, handoffs_data)
+
+    async def update_graph_run_execution_chain(self, conversation_id: str, execution_chain: List[Any]) -> bool:
+        """更新图运行执行链"""
+        return await self.graph_run_manager.update_execution_chain(conversation_id, execution_chain)
+
+    async def update_graph_run_final_result(self, conversation_id: str, final_result: str) -> bool:
+        """更新图运行最终结果"""
+        return await self.graph_run_manager.update_final_result(conversation_id, final_result)
 
     # === 图生成管理方法===
 
@@ -196,7 +229,6 @@ class MongoDBService:
     async def create_conversation(self, conversation_id: str, user_id: str = "default_user",
                                   title: str = "", tags: List[str] = None) -> bool:
         """创建新聊天对话"""
-        # 1. 创建基本对话信息
         conversation_success = await self.conversation_manager.create_conversation(
             conversation_id=conversation_id,
             conversation_type="chat",
@@ -208,7 +240,6 @@ class MongoDBService:
         if not conversation_success:
             return False
 
-        # 2. 创建聊天消息文档
         return await self.chat_manager.create_chat_messages_document(conversation_id)
 
     async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
@@ -218,16 +249,13 @@ class MongoDBService:
     async def get_conversation_with_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取包含消息的完整对话数据（支持所有类型）"""
         try:
-            # 获取基本信息
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 return None
 
-            # 根据类型获取详细消息
             conversation_type = conversation.get("type", "chat")
 
             if conversation_type == "chat":
-                # chat类型：从chat_messages集合获取
                 messages_doc = await self.chat_manager.get_chat_messages(conversation_id)
                 if messages_doc:
                     conversation["rounds"] = messages_doc.get("rounds", [])
@@ -235,8 +263,24 @@ class MongoDBService:
                 else:
                     conversation["rounds"] = []
 
+            elif conversation_type == "graph":
+                # 图运行类型
+                run_doc = await self.graph_run_manager.get_graph_run_messages_only(conversation_id)
+                if run_doc and run_doc.get("rounds"):
+                    conversation["rounds"] = run_doc.get("rounds", [])
+                    conversation["generation_type"] = "graph_run"
+                    conversation["graph_name"] = run_doc.get("graph_name")
+                    conversation["graph_config"] = run_doc.get("graph_config")
+                    conversation["global_outputs"] = run_doc.get("global_outputs", {})
+                    conversation["final_result"] = run_doc.get("final_result", "")
+                    conversation["execution_chain"] = run_doc.get("execution_chain", [])
+                    conversation["handoffs_status"] = run_doc.get("handoffs_status", {})
+                    conversation["completed"] = run_doc.get("completed", False)
+                else:
+                    conversation["rounds"] = []
+                    conversation["generation_type"] = "graph_run"
+
             elif conversation_type == "agent":
-                # agent类型：需要判断是graph还是mcp对话
                 graph_messages_doc = await self.graph_manager.get_graph_generation_messages_only(conversation_id)
 
                 if graph_messages_doc and graph_messages_doc.get("rounds"):
@@ -245,7 +289,6 @@ class MongoDBService:
                     conversation["final_graph_config"] = graph_messages_doc.get("final_graph_config")
                     conversation["generation_type"] = "graph"
                 else:
-                    # 尝试从mcp_messages获取
                     mcp_messages_doc = await self.mcp_manager.get_mcp_generation_messages_only(conversation_id)
 
                     if mcp_messages_doc and mcp_messages_doc.get("rounds"):
@@ -256,7 +299,6 @@ class MongoDBService:
                         conversation["rounds"] = []
                         conversation["generation_type"] = "unknown"
             else:
-                # 未知类型，返回空rounds
                 conversation["rounds"] = []
 
             return conversation
@@ -264,16 +306,14 @@ class MongoDBService:
         except Exception as e:
             logger.error(f"获取完整对话数据失败: {str(e)}")
             return None
+
     async def ensure_conversation_exists(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """确保聊天对话存在，不存在则创建"""
-        # 先检查对话是否存在
         conversation = await self.conversation_manager.get_conversation(conversation_id)
         if conversation:
-            # 确保消息文档也存在
             await self.chat_manager.create_chat_messages_document(conversation_id)
             return True
 
-        # 创建新的聊天对话
         return await self.create_conversation(
             conversation_id=conversation_id,
             user_id=user_id,
@@ -284,10 +324,8 @@ class MongoDBService:
     async def add_round_to_conversation(self, conversation_id: str, round_number: int,
                                         messages: List[Dict[str, Any]]) -> bool:
         """向聊天对话添加新的轮次"""
-        # 1. 添加消息到chat_messages
         success = await self.chat_manager.add_round_to_chat(conversation_id, round_number, messages)
 
-        # 2. 更新对话基本信息
         if success:
             await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
 
@@ -328,22 +366,23 @@ class MongoDBService:
     async def permanently_delete_conversation(self, conversation_id: str) -> bool:
         """永久删除对话和相关消息"""
         try:
-            # 获取对话信息以确定类型
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 return False
 
             conversation_type = conversation.get("type", "chat")
 
-            # 根据类型删除对应的消息
             if conversation_type == "chat":
                 await self.chat_manager.delete_chat_messages(conversation_id)
+            elif conversation_type == "graph":
+                # 图运行类型
+                await self.graph_run_manager.delete_graph_run_messages(conversation_id)
+                # 删除本地attachment目录
+                FileManager.delete_conversation(conversation_id)
             elif conversation_type == "agent":
-                # 尝试删除图生成和MCP生成消息
                 await self.graph_manager.delete_graph_generation_messages(conversation_id)
                 await self.mcp_manager.delete_mcp_generation_messages(conversation_id)
 
-            # 删除对话基本信息
             return await self.conversation_manager.permanently_delete_conversation(conversation_id)
 
         except Exception as e:
@@ -358,7 +397,6 @@ class MongoDBService:
                                    user_id: str = "default_user") -> Dict[str, Any]:
         """压缩对话内容（只支持聊天对话）"""
         try:
-            # 检查对话类型
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 return {"status": "error", "error": "对话不存在"}
@@ -366,11 +404,9 @@ class MongoDBService:
             if conversation.get("type") != "chat":
                 return {"status": "error", "error": "暂时只支持聊天对话的压缩"}
 
-            # 验证对话所有权
             if conversation.get("user_id") != user_id:
                 return {"status": "error", "error": "无权限访问此对话"}
 
-            # chat_manager处理
             return await self.chat_manager.compact_chat_messages(
                 conversation_id, compact_type, compact_threshold, summarize_callback
             )
@@ -384,5 +420,4 @@ class MongoDBService:
         return await self.conversation_manager.get_conversation_stats(user_id)
 
 
-# 创建全局MongoDB服务实例
 mongodb_service = MongoDBService()
