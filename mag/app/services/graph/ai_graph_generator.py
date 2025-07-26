@@ -6,13 +6,14 @@ from typing import Dict, List, Any, Optional, AsyncGenerator
 from datetime import datetime
 import os
 
-from app.core.file_manager import FileManager
 from app.services.mongodb_service import mongodb_service
-from app.services.model_service import model_service
 from app.services.mcp_service import mcp_service
 from app.utils.text_parser import parse_ai_generation_response
 from app.models.schema import GraphConfig, AgentNode
-
+from app.core.file_manager import FileManager
+from app.services.model_service import model_service
+from app.templates.flow_diagram import FlowDiagram
+from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
@@ -488,7 +489,55 @@ class AIGraphGenerator:
             if not save_success:
                 return {"success": False, "error": "保存图配置到文件系统失败"}
 
-            # 更新数据库中的最终配置
+            # 生成README文件
+            try:
+                agent_dir = settings.get_agent_dir(validated_config.name)
+                agent_dir.mkdir(parents=True, exist_ok=True)
+
+                # 获取MCP配置
+                mcp_config = FileManager.load_mcp_config()
+                filtered_mcp_config = {"mcpServers": {}}
+
+                # 获取使用的服务器
+                used_servers = set()
+                for node in validated_config.dict().get("nodes", []):
+                    for server in node.get("mcp_servers", []):
+                        used_servers.add(server)
+
+                # 过滤MCP配置
+                for server_name in used_servers:
+                    if server_name in mcp_config.get("mcpServers", {}):
+                        filtered_mcp_config["mcpServers"][server_name] = mcp_config["mcpServers"][server_name]
+
+                # 获取使用的模型
+                used_models = set()
+                for node in validated_config.dict().get("nodes", []):
+                    if node.get("model_name"):
+                        used_models.add(node.get("model_name"))
+
+                # 获取模型配置
+                model_configs = []
+                all_models = model_service.get_all_models()
+
+                for model in all_models:
+                    if model["name"] in used_models:
+                        model_configs.append(model)
+
+                # 生成README内容
+                readme_content = FlowDiagram.generate_graph_readme(
+                    validated_config.dict(), filtered_mcp_config, model_configs
+                )
+
+                # 保存README文件
+                readme_path = agent_dir / "readme.md"
+                with open(readme_path, 'w', encoding='utf-8') as f:
+                    f.write(readme_content)
+
+                logger.info(f"已为AI生成的图 '{validated_config.name}' 生成README文件")
+
+            except Exception as e:
+                logger.error(f"生成README文件时出错: {str(e)}")
+
             await mongodb_service.update_graph_generation_final_config(
                 conversation_id, validated_config.dict()
             )
