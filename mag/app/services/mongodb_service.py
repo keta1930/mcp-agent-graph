@@ -139,9 +139,12 @@ class MongoDBService:
         return await self.graph_manager.get_graph_generation_conversation(conversation_id)
 
     async def add_message_to_graph_generation(self, conversation_id: str,
-                                              message: Dict[str, Any]) -> bool:
+                                              message: Dict[str, Any],
+                                              model_name: str = None) -> bool:
         """向图生成对话添加消息"""
-        return await self.graph_manager.add_message_to_graph_generation(conversation_id, message)
+        return await self.graph_manager.add_message_to_graph_generation(
+            conversation_id, message, model_name
+        )
 
     async def update_graph_generation_parsed_results(self, conversation_id: str,
                                                      parsed_results: Dict[str, Any]) -> bool:

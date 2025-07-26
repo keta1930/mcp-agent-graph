@@ -91,7 +91,8 @@ class GraphManager:
             return None
 
     async def add_message_to_graph_generation(self, conversation_id: str,
-                                              message: Dict[str, Any]) -> bool:
+                                              message: Dict[str, Any],
+                                              model_name: str = None) -> bool:
         """向图生成对话添加消息（自动管理rounds）"""
         try:
             # 获取当前rounds数量来确定是否需要创建新round
@@ -105,36 +106,30 @@ class GraphManager:
                 return False
 
             current_rounds = messages_doc.get("rounds", [])
-            current_round_number = len(current_rounds)
+            message_role = message.get("role")
 
-            # 判断是否需要创建新的round
-            if message.get("role") == "user":
-                # 用户消息总是开启新round
-                new_round_number = current_round_number + 1
-                round_data = {
-                    "round": new_round_number,
-                    "messages": [message]
-                }
-
-                # 添加新round
-                result = await self.graph_messages_collection.update_one(
-                    {"conversation_id": conversation_id},
-                    {"$push": {"rounds": round_data}}
-                )
-
-                # 更新对话基本信息
-                if result.modified_count > 0:
-                    await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
-
-            else:
-                # assistant消息添加到当前round
-                if current_rounds:
+            if message_role == "system":
+                # System消息
+                if not current_rounds:
+                    # 创建第一个round，包含system消息
+                    round_data = {
+                        "round": 1,
+                        "messages": [message]
+                    }
                     result = await self.graph_messages_collection.update_one(
                         {"conversation_id": conversation_id},
-                        {"$push": {f"rounds.{current_round_number - 1}.messages": message}}
+                        {"$push": {"rounds": round_data}}
                     )
                 else:
-                    # 如果没有rounds，创建第一个round
+                    # 添加到第一个round的开头
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {"rounds.0.messages": {"$each": [message], "$position": 0}}}
+                    )
+
+            elif message_role == "user":
+                # User消息处理逻辑
+                if not current_rounds:
                     round_data = {
                         "round": 1,
                         "messages": [message]
@@ -145,62 +140,147 @@ class GraphManager:
                     )
                     await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
 
-            if result.modified_count > 0:
-                logger.info(f"向图生成对话 {conversation_id} 添加消息成功")
+                elif len(current_rounds) == 1:
+                    # 将user消息添加到第一个round
+                    first_round = current_rounds[0]
+                    first_round_messages = first_round.get("messages", [])
 
-                # 检查是否需要生成title和tags（第一轮完成时）
-                await self._check_and_generate_title_tags(conversation_id)
+                    has_user_message = any(msg.get("role") == "user" for msg in first_round_messages)
+
+                    if not has_user_message:
+                        result = await self.graph_messages_collection.update_one(
+                            {"conversation_id": conversation_id},
+                            {"$push": {"rounds.0.messages": message}}
+                        )
+                    else:
+                        new_round_number = len(current_rounds) + 1
+                        round_data = {
+                            "round": new_round_number,
+                            "messages": [message]
+                        }
+                        result = await self.graph_messages_collection.update_one(
+                            {"conversation_id": conversation_id},
+                            {"$push": {"rounds": round_data}}
+                        )
+                        await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
+                else:
+                    new_round_number = len(current_rounds) + 1
+                    round_data = {
+                        "round": new_round_number,
+                        "messages": [message]
+                    }
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {"rounds": round_data}}
+                    )
+                    await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
+
+            elif message_role == "assistant":
+                # Assistant消息
+                if not current_rounds:
+                    round_data = {
+                        "round": 1,
+                        "messages": [message]
+                    }
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {"rounds": round_data}}
+                    )
+                    await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
+                else:
+                    # 添加到最后一个round
+                    last_round_index = len(current_rounds) - 1
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {f"rounds.{last_round_index}.messages": message}}
+                    )
+
+            else:
+                # 其他类型消息，添加到最后一个round
+                if not current_rounds:
+                    round_data = {
+                        "round": 1,
+                        "messages": [message]
+                    }
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {"rounds": round_data}}
+                    )
+                    await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
+                else:
+                    last_round_index = len(current_rounds) - 1
+                    result = await self.graph_messages_collection.update_one(
+                        {"conversation_id": conversation_id},
+                        {"$push": {f"rounds.{last_round_index}.messages": message}}
+                    )
+
+            if result.modified_count > 0:
+                logger.info(f"向图生成对话 {conversation_id} 添加 {message_role} 消息成功")
+
+                # 只在添加assistant消息时检查是否需要生成title和tags
+                if message_role == "assistant":
+                    await self._check_and_generate_title_tags(conversation_id, model_name)
 
                 return True
             else:
-                logger.error(f"向图生成对话 {conversation_id} 添加消息失败")
+                logger.error(f"向图生成对话 {conversation_id} 添加 {message_role} 消息失败")
                 return False
 
         except Exception as e:
             logger.error(f"添加图生成对话消息失败: {str(e)}")
             return False
 
-    async def _check_and_generate_title_tags(self, conversation_id: str):
-        """检查并生成标题和标签（第一轮完成后）"""
+    async def _check_and_generate_title_tags(self, conversation_id: str, model_name: str = None):
+        """检查并生成标题和标签（当标题为默认标题时）"""
         try:
-            # 获取当前round数量
+            # 获取当前对话基本信息
             conversation_info = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation_info:
                 return
 
-            round_count = conversation_info.get("round_count", 0)
+            current_title = conversation_info.get("title", "")
 
-            # 只在第一轮完成时生成
-            if round_count == 1:
-                # 获取第一轮消息
+            # 只在标题为默认标题时生成新标题和标签
+            if current_title == "AI图生成":
+                # 获取消息进行标题生成
                 messages_doc = await self.graph_messages_collection.find_one(
                     {"conversation_id": conversation_id},
-                    {"rounds": {"$slice": 1}}
+                    {"rounds": 1}
                 )
 
                 if messages_doc and messages_doc.get("rounds"):
-                    first_round = messages_doc["rounds"][0]
-                    messages = first_round.get("messages", [])
+                    # 收集所有消息用于标题生成
+                    all_messages = []
+                    for round_data in messages_doc["rounds"]:
+                        all_messages.extend(round_data.get("messages", []))
 
-                    # 获取第一个可用模型配置
-                    from app.services.model_service import model_service
-                    available_models = list(model_service.clients.keys())
-                    if not available_models:
-                        logger.warning("没有可用的模型进行标题生成")
-                        return
+                    # 使用指定的模型或回退到第一个可用模型
+                    model_config = None
+                    if model_name:
+                        from app.services.model_service import model_service
+                        model_config = model_service.get_model(model_name)
 
-                    model_config = model_service.get_model(available_models[0])
+                    if not model_config:
+                        # 回退到第一个可用模型
+                        from app.services.model_service import model_service
+                        available_models = list(model_service.clients.keys())
+                        if not available_models:
+                            logger.warning("没有可用的模型进行标题生成")
+                            return
+                        model_config = model_service.get_model(available_models[0])
+
                     if not model_config:
                         return
 
                     # 调用统一的标题和标签生成方法
                     await self.conversation_manager.generate_conversation_title_and_tags(
                         conversation_id=conversation_id,
-                        messages=messages,
+                        messages=all_messages,
                         model_config=model_config
                     )
 
-                    logger.info(f"为图生成对话 {conversation_id} 生成标题和标签")
+                    logger.info(
+                        f"为图生成对话 {conversation_id} 生成标题和标签，使用模型: {model_config.get('name', 'unknown')}")
 
         except Exception as e:
             logger.error(f"生成图生成对话标题和标签时出错: {str(e)}")
