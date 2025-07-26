@@ -170,9 +170,12 @@ class MongoDBService:
         return await self.mcp_manager.get_mcp_generation_conversation(conversation_id)
 
     async def add_message_to_mcp_generation(self, conversation_id: str,
-                                            message: Dict[str, Any]) -> bool:
+                                            message: Dict[str, Any],
+                                            model_name: str = None) -> bool:
         """向MCP生成对话添加消息"""
-        return await self.mcp_manager.add_message_to_mcp_generation(conversation_id, message)
+        return await self.mcp_manager.add_message_to_mcp_generation(
+            conversation_id, message, model_name
+        )
 
     async def update_mcp_generation_parsed_results(self, conversation_id: str,
                                                    parsed_results: Dict[str, Any]) -> bool:

@@ -163,7 +163,11 @@ class AIMCPGenerator:
             }
 
             # 添加assistant消息到数据库
-            await mongodb_service.add_message_to_mcp_generation(conversation_id, assistant_message)
+            await mongodb_service.add_message_to_mcp_generation(
+                conversation_id,
+                assistant_message,
+                model_name=model_name
+            )
 
             # 更新token使用量
             if api_usage:
