@@ -583,26 +583,6 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
             detail=f"处理AI MCP生成请求时出错: {str(e)}"
         )
 
-@router.get("/mcp/generate/{conversation_id}")
-async def get_mcp_generation_conversation(conversation_id: str):
-    """获取MCP生成对话详情"""
-    try:
-        conversation = await mcp_service.get_mcp_generation_conversation(conversation_id)
-        if not conversation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到对话 '{conversation_id}'"
-            )
-        return conversation
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"获取MCP生成对话时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取MCP生成对话时出错: {str(e)}"
-        )
-
 # todo 更新为stdio
 @router.post("/mcp/register-tool", response_model=Dict[str, Any])
 async def register_mcp_tool(request: MCPToolRegistration):
