@@ -2130,6 +2130,7 @@ async def get_conversations_list(user_id: str = "default_user"):
             detail=f"获取对话列表出错: {str(e)}"
         )
 
+
 @router.get("/chat/conversations/{conversation_id}", response_model=ConversationDetailResponse)
 async def get_conversation_detail(conversation_id: str):
     """获取对话完整内容（支持所有类型的对话）"""
@@ -2143,36 +2144,29 @@ async def get_conversation_detail(conversation_id: str):
                 detail=f"找不到对话 '{conversation_id}'"
             )
 
-        # 处理时间格式
-        created_at = conversation.get("created_at", "")
-        updated_at = conversation.get("updated_at", "")
-
-        if isinstance(created_at, datetime):
-            created_at = created_at.isoformat()
-        elif created_at:
-            created_at = str(created_at)
-
-        if isinstance(updated_at, datetime):
-            updated_at = updated_at.isoformat()
-        elif updated_at:
-            updated_at = str(updated_at)
-
         # 处理轮次数据 - 转换为OpenAI格式
         rounds = conversation.get("rounds", [])
+        generation_type = conversation.get("generation_type")
 
-        return ConversationDetailResponse(
-            _id=conversation["_id"],
-            title=conversation.get("title", "新对话"),
-            created_at=created_at,
-            updated_at=updated_at,
-            round_count=conversation.get("round_count", 0),
-            tags=conversation.get("tags", []),
-            user_id=conversation.get("user_id", "default_user"),
-            type=conversation.get("type", "chat"),
-            status=conversation.get("status", "active"),
-            rounds=rounds,
-            generation_type=conversation.get("generation_type"),
-        )
+        # 准备响应数据
+        response_data = {
+            "_id": conversation["_id"],
+            "title": conversation.get("title", "新对话"),
+            "rounds": rounds,
+            "generation_type": generation_type,
+        }
+
+        # 根据generation_type添加相应的扩展字段
+        if generation_type in ["graph", "mcp"]:
+            # AI生成对话，添加parsed_results
+            response_data["parsed_results"] = conversation.get("parsed_results")
+
+        elif generation_type == "graph_run":
+            # 图执行对话，添加execution_chain和final_result
+            response_data["execution_chain"] = conversation.get("execution_chain")
+            response_data["final_result"] = conversation.get("final_result")
+
+        return ConversationDetailResponse(**response_data)
 
     except HTTPException:
         raise

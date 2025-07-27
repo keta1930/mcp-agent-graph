@@ -337,15 +337,15 @@ class ConversationDetailResponse(BaseModel):
     """对话详情响应（完整内容，支持所有类型）"""
     conversation_id: str = Field(..., description="对话ID", alias="_id")
     title: str = Field(..., description="对话标题")
-    created_at: str = Field(..., description="创建时间")
-    updated_at: str = Field(..., description="更新时间")
-    round_count: int = Field(..., description="轮次数")
-    tags: List[str] = Field(default_factory=list, description="标签列表")
-    user_id: str = Field(..., description="用户ID")
-    type: str = Field(..., description="对话类型：chat（聊天）/ agent（AI生成）")
-    status: str = Field(..., description="对话状态：active（活跃）/ deleted（已删除）/ favorite（收藏）")
     rounds: List[Dict[str, Any]] = Field(default_factory=list, description="完整消息轮次（原始OpenAI格式）")
     generation_type: Optional[str] = Field(None, description="生成类型：graph（图生成）/ mcp（工具生成）/ chat")
+
+    # AI生成对话的解析结果
+    parsed_results: Optional[Dict[str, Any]] = Field(None, description="AI生成的解析结果（graph/mcp生成时）")
+
+    # 图执行对话的扩展字段
+    execution_chain: Optional[List[List[str]]] = Field(None, description="图执行链（graph运行时）")
+    final_result: Optional[str] = Field(None, description="最终执行结果（graph运行时）")
 
     class Config:
         allow_population_by_field_name = True

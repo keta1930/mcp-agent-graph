@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import datetime
 from typing import Dict, List, Any, Optional, AsyncGenerator
-
+import traceback
 from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service
 from app.services.mcp_service import mcp_service
@@ -169,17 +169,31 @@ class ChatService:
                                         tool_calls_dict[index]["function"][
                                             "arguments"] += tool_call_delta.function.arguments
 
-                    if hasattr(chunk, 'usage') and chunk.usage:
-                        api_usage = {
-                            "total_tokens": chunk.usage.total_tokens,
-                            "prompt_tokens": chunk.usage.prompt_tokens,
-                            "completion_tokens": chunk.usage.completion_tokens
-                        }
-                        logger.info(f"第 {iteration} 轮API调用token使用量: {api_usage}")
-
+                    # 检查finish_reason和usage
                     if chunk.choices and chunk.choices[0].finish_reason:
                         current_tool_calls = list(tool_calls_dict.values())
                         logger.info(f"第 {iteration} 轮完成，finish_reason: {chunk.choices[0].finish_reason}")
+
+                        # 收集token使用量
+                        if chunk.usage is not None:
+                            api_usage = {
+                                "total_tokens": chunk.usage.total_tokens,
+                                "prompt_tokens": chunk.usage.prompt_tokens,
+                                "completion_tokens": chunk.usage.completion_tokens
+                            }
+                            reasoning_tokens = 0
+                            if (chunk.usage.completion_tokens_details is not None and
+                                    chunk.usage.completion_tokens_details.reasoning_tokens is not None):
+                                reasoning_tokens = chunk.usage.completion_tokens_details.reasoning_tokens
+
+                            if reasoning_tokens > 0:
+                                logger.info(
+                                    f"第 {iteration} 轮API调用token使用量: {api_usage} (包含reasoning_tokens: {reasoning_tokens})")
+                            else:
+                                logger.info(f"第 {iteration} 轮API调用token使用量: {api_usage}")
+                        else:
+                            logger.warning(f"第 {iteration} 轮在finish_reason时chunk.usage为None")
+
                         break
 
                 if api_usage:
@@ -245,7 +259,6 @@ class ChatService:
 
         except Exception as e:
             logger.error(f"执行完整流程时出错: {str(e)}")
-            import traceback
             logger.error(traceback.format_exc())
             raise
 
