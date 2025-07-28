@@ -51,15 +51,14 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px var(--shadow-light);
   transition: all 0.3s ease;
 }
 
 /* 移除折叠栏的悬停效果 */
 .tool-call-container.glass-card:hover,
 .reasoning-container.glass-card:hover {
-  box-shadow: 0 8px 32px var(--shadow-light); /* 保持原始阴影 */
-  transform: none; /* 不移动 */
+  box-shadow: none;
+  transform: none;
 }
 
 /* 主布局 */
@@ -821,8 +820,12 @@
   background: var(--glass-bg);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: none; /* 移除阴影 */
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.tool-call-container:hover {
+  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .tool-call-header {
@@ -873,8 +876,12 @@
   background: var(--glass-bg);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: none; /* 移除阴影 */
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.reasoning-container:hover {
+  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .reasoning-header {
@@ -1327,6 +1334,15 @@
 .xml-tag-container {
   margin-bottom: 12px;
   border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.xml-tag-container:hover {
+  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .xml-tag-header {
@@ -1354,6 +1370,7 @@
   border-top: 1px solid var(--glass-border);
   max-height: 400px;
   overflow: auto;
+  background: transparent;
 }
 
 .xml-tag-content .ant-typography {
@@ -1566,12 +1583,36 @@
   padding: 12px 16px !important;
   border-radius: 0 !important;
   font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, monospace !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
 }
 
 .glass-code-block code {
   background: transparent !important;
   color: var(--text-primary) !important;
   font-family: inherit !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+}
+
+.glass-code-block .react-syntax-highlighter {
+  background: transparent !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.glass-code-block .react-syntax-highlighter code {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
 }
 
 /* 深色模式下代码块的特殊处理 */
@@ -1600,6 +1641,7 @@
 .streaming-content-block table,
 .ant-card-body table {
   width: 100%;
+  max-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   margin: 16px 0;
@@ -1610,6 +1652,41 @@
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s ease;
+  table-layout: fixed;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* 表格容器包装，处理水平滚动 */
+.message-text,
+.message-content-body,
+.reasoning-content,
+.xml-tag-content,
+.streaming-content-block,
+.ant-card-body {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* 多列表格的特殊处理 */
+.message-text table:has(th:nth-child(6)),
+.message-content-body table:has(th:nth-child(6)),
+.reasoning-content table:has(th:nth-child(6)),
+.xml-tag-content table:has(th:nth-child(6)),
+.streaming-content-block table:has(th:nth-child(6)),
+.ant-card-body table:has(th:nth-child(6)) {
+  min-width: 600px;
+  font-size: 12px;
+}
+
+.message-text table:has(th:nth-child(8)),
+.message-content-body table:has(th:nth-child(8)),
+.reasoning-content table:has(th:nth-child(8)),
+.xml-tag-content table:has(th:nth-child(8)),
+.streaming-content-block table:has(th:nth-child(8)),
+.ant-card-body table:has(th:nth-child(8)) {
+  min-width: 800px;
+  font-size: 11px;
 }
 
 .message-text table:hover,
@@ -1648,6 +1725,11 @@
   font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   letter-spacing: 0.5px;
   position: relative;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+  max-width: 80px;
 }
 
 .message-text th:first-child,
@@ -1683,6 +1765,11 @@
   line-height: 1.6;
   background: rgba(255, 255, 255, 0.02);
   transition: all 0.2s ease;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+  min-width: 80px;
 }
 
 .message-text tbody tr:last-child td,
