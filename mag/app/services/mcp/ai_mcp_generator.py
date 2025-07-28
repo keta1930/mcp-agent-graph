@@ -106,6 +106,7 @@ class AIMCPGenerator:
                 return
 
             messages = conversation_data.get("messages", [])
+            messages = self._filter_reasoning_content(messages)
 
             # 获取模型客户端
             client = model_service.clients.get(model_name)
@@ -132,8 +133,8 @@ class AIMCPGenerator:
             # 调用模型进行流式生成
             stream = await client.chat.completions.create(**params, **extra_kwargs)
 
-            # 收集响应数据
             accumulated_content = ""
+            accumulated_reasoning = ""
             api_usage = None
 
             # 处理流式响应
@@ -145,22 +146,43 @@ class AIMCPGenerator:
                     delta = chunk.choices[0].delta
                     if delta.content:
                         accumulated_content += delta.content
+                    if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                        accumulated_reasoning += delta.reasoning_content
 
-                if hasattr(chunk, 'usage') and chunk.usage:
-                    api_usage = {
-                        "total_tokens": chunk.usage.total_tokens,
-                        "prompt_tokens": chunk.usage.prompt_tokens,
-                        "completion_tokens": chunk.usage.completion_tokens
-                    }
-
+                # 检查finish_reason和usage
                 if chunk.choices and chunk.choices[0].finish_reason:
+                    logger.info(f"API调用完成，finish_reason: {chunk.choices[0].finish_reason}")
+
+                    # 收集token使用量
+                    if chunk.usage is not None:
+                        api_usage = {
+                            "total_tokens": chunk.usage.total_tokens,
+                            "prompt_tokens": chunk.usage.prompt_tokens,
+                            "completion_tokens": chunk.usage.completion_tokens
+                        }
+                        reasoning_tokens = 0
+                        if (chunk.usage.completion_tokens_details is not None and
+                                chunk.usage.completion_tokens_details.reasoning_tokens is not None):
+                            reasoning_tokens = chunk.usage.completion_tokens_details.reasoning_tokens
+
+                        if reasoning_tokens > 0:
+                            logger.info(f"API调用token使用量: {api_usage} (包含reasoning_tokens: {reasoning_tokens})")
+                        else:
+                            logger.info(f"API调用token使用量: {api_usage}")
+                    else:
+                        logger.warning("在finish_reason时chunk.usage为None")
+
                     break
 
             # 构建assistant消息
             assistant_message = {
-                "role": "assistant",
-                "content": accumulated_content or ""
+                "role": "assistant"
             }
+
+            if accumulated_reasoning:
+                assistant_message["reasoning_content"] = accumulated_reasoning
+
+            assistant_message["content"] = accumulated_content or ""
 
             # 添加assistant消息到数据库
             await mongodb_service.add_message_to_mcp_generation(
@@ -193,6 +215,14 @@ class AIMCPGenerator:
             }
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
+
+    def _filter_reasoning_content(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """过滤掉消息中的reasoning_content字段"""
+        filtered_messages = []
+        for msg in messages:
+            clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
+            filtered_messages.append(clean_msg)
+        return filtered_messages
 
     async def _handle_end_instruction(self, conversation_id: Optional[str]) -> AsyncGenerator[str, None]:
         """处理结束指令"""

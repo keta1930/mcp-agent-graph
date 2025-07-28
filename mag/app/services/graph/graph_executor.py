@@ -371,6 +371,11 @@ class GraphExecutor:
                     yield SSEHelper.send_error(f"模型客户端未初始化: {model_name}")
                     return
 
+                filtered_messages = []
+                for msg in current_messages:
+                    clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
+                    filtered_messages.append(clean_msg)
+
                 base_params = {
                     "model": model_config["model"],
                     "messages": current_messages,
@@ -385,6 +390,7 @@ class GraphExecutor:
                 stream = await client.chat.completions.create(**params, **extra_kwargs)
 
                 accumulated_content = ""
+                accumulated_reasoning = ""
                 current_tool_calls = []
                 tool_calls_dict = {}
 
@@ -397,6 +403,9 @@ class GraphExecutor:
 
                         if delta.content:
                             accumulated_content += delta.content
+
+                        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                            accumulated_reasoning += delta.reasoning_content
 
                         if delta.tool_calls:
                             for tool_call_delta in delta.tool_calls:
@@ -428,8 +437,12 @@ class GraphExecutor:
 
                 assistant_msg = {
                     "role": "assistant",
-                    "content": accumulated_content or ""
                 }
+
+                if accumulated_reasoning:
+                    assistant_msg["reasoning_content"] = accumulated_reasoning
+
+                assistant_msg["content"] = accumulated_content or ""
 
                 if current_tool_calls:
                     assistant_msg["tool_calls"] = current_tool_calls

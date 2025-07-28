@@ -111,11 +111,14 @@ class ChatService:
             while iteration < max_iterations:
                 iteration += 1
                 logger.info(f"开始第 {iteration} 轮模型调用")
-
+                filtered_messages = []
+                for msg in current_messages:
+                    clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
+                    filtered_messages.append(clean_msg)
                 # 准备基本API调用参数
                 base_params = {
                     "model": model_config["model"],
-                    "messages": current_messages,
+                    "messages": filtered_messages,
                     "stream": True
                 }
 
@@ -130,6 +133,7 @@ class ChatService:
 
                 # 收集响应数据
                 accumulated_content = ""
+                accumulated_reasoning = ""
                 current_tool_calls = []
                 tool_calls_dict = {}
                 api_usage = None
@@ -144,7 +148,8 @@ class ChatService:
 
                         if delta.content:
                             accumulated_content += delta.content
-
+                        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                            accumulated_reasoning += delta.reasoning_content
                         if delta.tool_calls:
                             for tool_call_delta in delta.tool_calls:
                                 index = tool_call_delta.index
@@ -206,9 +211,13 @@ class ChatService:
 
                 # 构建assistant消息
                 assistant_message = {
-                    "role": "assistant",
-                    "content": accumulated_content or ""
+                    "role": "assistant"
                 }
+
+                if accumulated_reasoning:
+                    assistant_message["reasoning_content"] = accumulated_reasoning
+
+                assistant_message["content"] = accumulated_content or ""
 
                 # 如果有工具调用，添加tool_calls字段
                 if current_tool_calls:
