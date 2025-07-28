@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { 
   DesktopOutlined, 
   MessageOutlined, 
-  RocketOutlined,
   ApiOutlined,
   SettingOutlined,
   EditOutlined,
@@ -31,9 +30,6 @@ const Home: React.FC = () => {
       <div className="home-header">
         <div className="header-content">
           <div className="logo-section">
-            <div className="logo-icon">
-              <RocketOutlined className="main-logo" />
-            </div>
             <h1 className="main-title">MCP Agent Graph</h1>
             <p className="subtitle">高效、轻量、易上手的 Agent 开发框架</p>
           </div>
@@ -74,7 +70,7 @@ const Home: React.FC = () => {
               <p>图形编辑器 • 模型管理 • MCP 管理</p>
             </div>
             <div className="bar-arrow">
-              <RocketOutlined />
+              <DesktopOutlined />
             </div>
           </div>
 

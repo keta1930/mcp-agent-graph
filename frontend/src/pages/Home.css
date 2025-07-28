@@ -35,7 +35,7 @@
 }
 
 .header-content {
-  animation: fadeInUp 1s ease-out;
+  animation: fadeInUp 0.6s ease-out;
 }
 
 @keyframes fadeInUp {
@@ -74,7 +74,7 @@
   color: #fff;
   margin: 0 0 1rem 0;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-  animation: slideInLeft 1s ease-out 0.2s both;
+  animation: slideInLeft 0.6s ease-out 0.1s both;
 }
 
 @keyframes slideInLeft {
@@ -93,7 +93,7 @@
   color: rgba(255, 255, 255, 0.9);
   margin: 0;
   font-weight: 300;
-  animation: slideInRight 1s ease-out 0.4s both;
+  animation: slideInRight 0.6s ease-out 0.2s both;
 }
 
 @keyframes slideInRight {
@@ -111,7 +111,7 @@
   margin-bottom: 3rem;
   z-index: 1;
   position: relative;
-  animation: fadeIn 1s ease-out 0.6s both;
+  animation: fadeIn 0.6s ease-out 0.3s both;
 }
 
 @keyframes fadeIn {
@@ -138,10 +138,10 @@
   transition: all 0.3s ease;
 }
 
-.feature-item:nth-child(1) { animation-delay: 0.8s; }
-.feature-item:nth-child(2) { animation-delay: 1s; }
-.feature-item:nth-child(3) { animation-delay: 1.2s; }
-.feature-item:nth-child(4) { animation-delay: 1.4s; }
+.feature-item:nth-child(1) { animation-delay: 0.4s; }
+.feature-item:nth-child(2) { animation-delay: 0.5s; }
+.feature-item:nth-child(3) { animation-delay: 0.6s; }
+.feature-item:nth-child(4) { animation-delay: 0.7s; }
 
 @keyframes slideInUp {
   from {
@@ -173,7 +173,7 @@
 .main-actions {
   z-index: 1;
   position: relative;
-  animation: fadeInUp 1s ease-out 1.6s both;
+  animation: fadeInUp 0.6s ease-out 0.8s both;
 }
 
 .actions-horizontal {
@@ -276,7 +276,7 @@
   text-align: center;
   z-index: 1;
   position: relative;
-  animation: fadeIn 1s ease-out 2s both;
+  animation: fadeIn 0.6s ease-out 1s both;
 }
 
 .home-footer p {
