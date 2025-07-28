@@ -1505,13 +1505,13 @@
   background: transparent;
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(24, 144, 255, 0.3);
   overflow: hidden;
   transition: all 0.2s ease;
 }
 
 .glass-code-block:hover {
-  border-color: rgba(24, 144, 255, 0.3);
+  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .glass-code-block .code-header {
@@ -1606,7 +1606,7 @@
   background: transparent;
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(24, 144, 255, 0.3);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -1618,7 +1618,7 @@
 .xml-tag-content table:hover,
 .streaming-content-block table:hover,
 .ant-card-body table:hover {
-  border-color: rgba(24, 144, 255, 0.3);
+  border-color: rgba(24, 144, 255, 0.5);
 }
 
 .message-text thead,

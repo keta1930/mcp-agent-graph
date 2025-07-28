@@ -65,16 +65,13 @@ const ChatSystem: React.FC = () => {
     // 清除待发送消息状态
     setPendingUserMessage(null);
     
-    // 清除当前对话
-    clearCurrentConversation();
-    
-    // 加载新对话
+    // 先设置新的活跃对话ID并加载新对话，不清除当前对话以避免闪烁
     setActiveConversationId(conversationId);
     await loadConversationDetail(conversationId);
     
     // 需要等待对话加载完成后根据对话类型设置模式
     // 这个逻辑应该在对话加载完成后的useEffect中处理
-  }, [activeConversationId, closeConnection, clearCurrentConversation, loadConversationDetail]);
+  }, [activeConversationId, closeConnection, loadConversationDetail]);
 
   // 当对话加载完成后，根据对话类型设置正确的模式和agentType（不可变）
   useEffect(() => {
@@ -104,6 +101,17 @@ const ChatSystem: React.FC = () => {
           }
           break;
       }
+
+      // 对话加载完成后，平滑滚动到底部
+      setTimeout(() => {
+        const messageDisplay = document.querySelector('.message-display');
+        if (messageDisplay) {
+          messageDisplay.scrollTo({
+            top: messageDisplay.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
     }
   }, [currentConversation, setCurrentMode, currentMode, agentType]);
 
