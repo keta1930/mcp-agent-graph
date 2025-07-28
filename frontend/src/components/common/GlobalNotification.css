@@ -108,9 +108,6 @@
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-[data-theme="dark"] .notification-close:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
 
 /* 动画效果 */
 @keyframes slideInRight {
@@ -162,23 +159,3 @@
   }
 }
 
-/* 深色主题适配 */
-[data-theme="dark"] .notification-success {
-  background: rgba(82, 196, 26, 0.2);
-  border-color: rgba(82, 196, 26, 0.4);
-}
-
-[data-theme="dark"] .notification-info {
-  background: rgba(24, 144, 255, 0.2);
-  border-color: rgba(24, 144, 255, 0.4);
-}
-
-[data-theme="dark"] .notification-warning {
-  background: rgba(250, 173, 20, 0.2);
-  border-color: rgba(250, 173, 20, 0.4);
-}
-
-[data-theme="dark"] .notification-error {
-  background: rgba(255, 77, 79, 0.2);
-  border-color: rgba(255, 77, 79, 0.4);
-}

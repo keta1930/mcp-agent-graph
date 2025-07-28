@@ -36,7 +36,6 @@ interface ConversationState {
   
   // UI状态
   sidebarCollapsed: boolean;
-  theme: 'light' | 'dark';
   
   // 操作
   loadConversations: (forceRefresh?: boolean) => Promise<void>;
@@ -65,7 +64,6 @@ interface ConversationState {
   
   // UI操作
   toggleSidebar: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
   
   // 通知
   showNotification: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -87,7 +85,6 @@ export const useConversationStore = create<ConversationState>()(
     currentSSE: null,
     isStreaming: false,
     sidebarCollapsed: localStorage.getItem('sidebar_collapsed') === 'true',
-    theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'light',
 
     // 加载对话列表
     loadConversations: async (forceRefresh = false) => {
@@ -348,13 +345,6 @@ export const useConversationStore = create<ConversationState>()(
       set({ sidebarCollapsed: collapsed });
     },
 
-    // 设置主题
-    setTheme: (theme: 'light' | 'dark') => {
-      localStorage.setItem('theme', theme);
-      set({ theme });
-      document.documentElement.setAttribute('data-theme', theme);
-    },
-
     // 显示通知
     showNotification: (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
       // 使用 antd 的 message 组件
@@ -373,14 +363,3 @@ export const useConversationStore = create<ConversationState>()(
     }
   }))
 );
-
-// 订阅主题变化，自动应用到DOM
-useConversationStore.subscribe(
-  (state) => state.theme,
-  (theme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }
-);
-
-// 应用初始主题
-document.documentElement.setAttribute('data-theme', useConversationStore.getState().theme);

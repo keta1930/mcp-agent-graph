@@ -1,7 +1,7 @@
 /* src/styles/chat-system.css */
 
 /* 主题变量 */
-:root[data-theme="light"] {
+:root {
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
   --bg-tertiary: #fafafa;
@@ -17,22 +17,6 @@
   --backdrop-blur: blur(10px);
 }
 
-:root[data-theme="dark"] {
-  --bg-primary: #141414;
-  --bg-secondary: #1f1f1f;
-  --bg-tertiary: #262626;
-  --text-primary: #ffffff;
-  --text-secondary: #d9d9d9;
-  --text-tertiary: #8c8c8c;
-  --border-color: #434343;
-  --shadow-light: rgba(0, 0, 0, 0.3);
-  --shadow-medium: rgba(0, 0, 0, 0.4);
-  --shadow-heavy: rgba(0, 0, 0, 0.5);
-  --glass-bg: rgba(0, 0, 0, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --backdrop-blur: blur(10px);
-}
-
 /* 全局样式重置 */
 .chat-system-page {
   background: transparent;
@@ -40,9 +24,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-[data-theme="dark"] .chat-system-page {
-  background: transparent;
-}
 
 /* 玻璃拟态基础样式 */
 .glass-card {
@@ -257,9 +238,6 @@
   background-color: #d9d9d9;
 }
 
-[data-theme="dark"] .mcp-connection-indicator.disconnected {
-  background-color: #8c8c8c;
-}
 
 .mcp-tool-name {
   font-size: 13px;
@@ -517,15 +495,15 @@
   padding: 12px;
 }
 
-/* 亮色模式下的tooltip样式 */
-:root[data-theme="light"] .conversation-hover-tooltip .ant-tooltip-inner {
+/* tooltip样式 */
+.conversation-hover-tooltip .ant-tooltip-inner {
   background-color: #ffffff;
   color: #000000;
   border: 1px solid #d9d9d9;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-:root[data-theme="light"] .conversation-hover-tooltip .ant-tooltip-arrow::before {
+.conversation-hover-tooltip .ant-tooltip-arrow::before {
   background-color: #ffffff;
   border: 1px solid #d9d9d9;
 }
@@ -534,16 +512,16 @@
   color: var(--text-primary);
 }
 
-/* 亮色模式下的悬停详情文字颜色 */
-:root[data-theme="light"] .conversation-hover-tooltip .conversation-hover-details {
+/* 悬停详情文字颜色 */
+.conversation-hover-tooltip .conversation-hover-details {
   color: #000000;
 }
 
-:root[data-theme="light"] .conversation-hover-tooltip .hover-meta > div {
+.conversation-hover-tooltip .hover-meta > div {
   color: #000000;
 }
 
-:root[data-theme="light"] .conversation-hover-tooltip .hover-tags > div:first-child {
+.conversation-hover-tooltip .hover-tags > div:first-child {
   color: #000000;
 }
 
@@ -1615,21 +1593,12 @@
   overflow-wrap: break-word !important;
 }
 
-/* 深色模式下代码块的特殊处理 */
-[data-theme="dark"] .glass-code-block {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .glass-code-block .code-header {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-/* 亮色模式下代码块的特殊处理 */
-[data-theme="light"] .glass-code-block {
+/* 代码块样式 */
+.glass-code-block {
   background: rgba(255, 255, 255, 0.3);
 }
 
-[data-theme="light"] .glass-code-block .code-header {
+.glass-code-block .code-header {
   background: rgba(255, 255, 255, 0.5);
 }
 
@@ -1818,32 +1787,4 @@
   color: var(--text-primary);
 }
 
-/* 深色模式下表格的特殊处理 */
-[data-theme="dark"] .message-text table,
-[data-theme="dark"] .message-content-body table,
-[data-theme="dark"] .reasoning-content table,
-[data-theme="dark"] .xml-tag-content table,
-[data-theme="dark"] .streaming-content-block table,
-[data-theme="dark"] .ant-card-body table {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .message-text tbody tr:hover td,
-[data-theme="dark"] .message-content-body tbody tr:hover td,
-[data-theme="dark"] .reasoning-content tbody tr:hover td,
-[data-theme="dark"] .xml-tag-content tbody tr:hover td,
-[data-theme="dark"] .streaming-content-block tbody tr:hover td,
-[data-theme="dark"] .ant-card-body tbody tr:hover td {
-  background: rgba(24, 144, 255, 0.12);
-}
-
-/* 亮色模式下表格的特殊处理 */
-[data-theme="light"] .message-text table,
-[data-theme="light"] .message-content-body table,
-[data-theme="light"] .reasoning-content table,
-[data-theme="light"] .xml-tag-content table,
-[data-theme="light"] .streaming-content-block table,
-[data-theme="light"] .ant-card-body table {
-  background: rgba(255, 255, 255, 0.1);
-}
 

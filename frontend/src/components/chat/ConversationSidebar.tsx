@@ -23,8 +23,6 @@ import {
   HomeOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  SunOutlined,
-  MoonOutlined,
   UserOutlined,
   PlusOutlined
 } from '@ant-design/icons';
@@ -314,12 +312,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     statusFilter,
     typeFilter,
     sidebarCollapsed,
-    theme,
     setSearchQuery,
     setStatusFilter,
     setTypeFilter,
     toggleSidebar,
-    setTheme,
     loadConversations,
     silentUpdateConversations,
     showNotification
@@ -543,14 +539,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         </div>
         
         <div className="footer-actions">
-          <Tooltip title={`切换到${theme === 'light' ? '暗色' : '亮色'}模式`}>
-            <Button
-              type="text"
-              icon={theme === 'light' ? <MoonOutlined /> : <SunOutlined />}
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            />
-          </Tooltip>
-          
           <Tooltip title="返回主页">
             <Button
               type="text"
