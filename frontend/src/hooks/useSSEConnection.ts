@@ -62,10 +62,6 @@ export function useSSEConnection() {
     setEnhancedStreamingState(prev => ({ ...prev, isStreaming: false }));
   }, []);
 
-  // 深度比较函数，用于防止不必要的重新渲染
-  const deepEqual = useCallback((obj1: any, obj2: any): boolean => {
-    return JSON.stringify(obj1) === JSON.stringify(obj2);
-  }, []);
 
   // 生成唯一的块ID
   const generateBlockId = useCallback(() => {
@@ -126,7 +122,7 @@ export function useSSEConnection() {
           const newState = { ...prev };
           let blocks = [...prev.blocks]; // 浅拷贝数组
           
-          // 可选的调试日志（生产环境中可移除）
+          // 调试日志（生产环境中可移除）
           // console.log('[SSE] Processing message:', {
           //   type: message.role || message.type || 'openai',
           //   hasContent: !!message.choices?.[0]?.delta?.content,
@@ -308,11 +304,6 @@ export function useSSEConnection() {
 
           const finalState = { ...newState, blocks };
           
-          // 检查状态是否真正发生了变化（可选优化）
-          if (deepEqual(prev, finalState)) {
-            return prev;
-          }
-          
           return finalState;
         });
 
@@ -324,7 +315,7 @@ export function useSSEConnection() {
         }));
       }
     }
-  }, [closeConnection, showNotification]);
+  }, [closeConnection, showNotification, createStreamingBlock]);
 
   const startConnection = useCallback(async (
     inputText: string,

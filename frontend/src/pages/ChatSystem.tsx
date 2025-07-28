@@ -26,8 +26,6 @@ const ChatSystem: React.FC = () => {
   const [selectedCompactType, setSelectedCompactType] = useState<'brutal' | 'precise'>('precise');
   // 使用Set来跟踪正在压缩的对话ID，这样每个对话都有独立的压缩状态
   const [compactingConversations, setCompactingConversations] = useState<Set<string>>(new Set());
-  // 用于强制重新渲染MessageDisplay组件当用户名更新时
-  const [userNameUpdateTrigger, setUserNameUpdateTrigger] = useState(0);
   
   const {
     currentConversation,
@@ -256,10 +254,6 @@ const ChatSystem: React.FC = () => {
     return 'main-conversation-area';
   };
 
-  // 处理用户名更新
-  const handleUserNameUpdate = useCallback(() => {
-    setUserNameUpdateTrigger(prev => prev + 1);
-  }, []);
 
   return (
     <div className="chat-system-page">
@@ -268,7 +262,6 @@ const ChatSystem: React.FC = () => {
         <ConversationSidebar
           onConversationSelect={handleConversationSelect}
           activeConversationId={activeConversationId}
-          onUserNameUpdate={handleUserNameUpdate}
         />
 
         {/* 主对话区域 */}
@@ -339,7 +332,7 @@ const ChatSystem: React.FC = () => {
 
               {/* 消息显示区域 */}
               <MessageDisplay
-                key={userNameUpdateTrigger} 
+                key={currentConversation?._id || 'new'}
                 conversation={currentConversation}
                 enhancedStreamingState={enhancedStreamingState}
                 pendingUserMessage={pendingUserMessage}

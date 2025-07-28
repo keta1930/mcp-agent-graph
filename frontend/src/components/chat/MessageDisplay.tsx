@@ -1,6 +1,6 @@
 // src/components/chat/MessageDisplay.tsx
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Tag, Collapse, Button, Space, Tooltip } from 'antd';
+import { Typography, Tag, Button, Space, Tooltip, message } from 'antd';
 import { 
   UserOutlined, 
   RobotOutlined, 
@@ -9,7 +9,9 @@ import {
   RightOutlined,
   PlayCircleOutlined,
   CheckCircleOutlined,
-  LoadingOutlined
+  LoadingOutlined,
+  CopyOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18,10 +20,8 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock } from '../../types/conversation';
 import { getCurrentUserDisplayName } from '../../config/user';
 import AgentXMLRenderer from './AgentXMLRenderer';
-import mermaid from 'mermaid';
 
 const { Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 
 interface TypewriterTextProps {
   text: string;
@@ -52,82 +52,142 @@ const TypewriterText: React.FC<TypewriterTextProps> = ({
   return <span>{displayedText}</span>;
 };
 
-// Mermaid图表组件
-interface MermaidChartProps {
-  chart: string;
+// 代码块复制功能组件
+interface CodeBlockProps {
+  language?: string;
+  children: string;
+  className?: string;
 }
 
-const MermaidChart: React.FC<MermaidChartProps> = ({ chart }) => {
-  const [svg, setSvg] = useState<string>('');
-  const [error, setError] = useState<string>('');
-
-  useEffect(() => {
-    const renderMermaid = async () => {
-      try {
-        // 初始化mermaid
-        mermaid.initialize({ 
-          startOnLoad: false,
-          theme: 'default',
-          securityLevel: 'loose',
-        });
-        
-        // 生成唯一ID
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // 渲染图表
-        const { svg } = await mermaid.render(id, chart);
-        setSvg(svg);
-        setError('');
-      } catch (err) {
-        console.error('Mermaid渲染错误:', err);
-        setError('图表渲染失败');
-        setSvg('');
-      }
-    };
-
-    if (chart.trim()) {
-      renderMermaid();
+const GlassCodeBlock: React.FC<CodeBlockProps> = ({ language, children, className }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(children);
+      setCopied(true);
+      message.success('代码已复制到剪贴板');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      message.error('复制失败');
     }
-  }, [chart]);
-
-  if (error) {
-    return (
-      <div className="mermaid-error" style={{ 
-        background: '#fff2f0', 
-        border: '1px solid #ffccc7', 
-        borderRadius: '6px', 
-        padding: '12px',
-        color: '#cf1322'
-      }}>
-        {error}
-      </div>
-    );
-  }
-
-  if (!svg) {
-    return (
-      <div className="mermaid-loading" style={{ 
-        padding: '20px', 
-        textAlign: 'center', 
-        color: '#666' 
-      }}>
-        渲染图表中...
-      </div>
-    );
-  }
+  };
 
   return (
-    <div 
-      className="mermaid-chart" 
-      style={{ 
-        textAlign: 'center', 
-        background: '#fafafa', 
-        borderRadius: '6px', 
-        padding: '16px',
-        overflow: 'auto'
+    <div className="glass-code-block">
+      <div className="code-header">
+        <span className="code-language">{language || 'text'}</span>
+        <Button
+          type="text"
+          size="small"
+          icon={copied ? <CheckOutlined /> : <CopyOutlined />}
+          onClick={handleCopy}
+          className="copy-button"
+        />
+      </div>
+      <SyntaxHighlighter
+        language={language || 'text'}
+        style={tomorrow as any}
+        PreTag="div"
+        customStyle={{
+          background: 'transparent',
+          margin: 0,
+          padding: '12px 16px',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        } as any}
+      >
+        {children}
+      </SyntaxHighlighter>
+    </div>
+  );
+};
+
+
+// 智能Markdown渲染器
+interface SmartMarkdownProps {
+  content: string;
+  isStreaming?: boolean;
+}
+
+const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = false }) => {
+  // 解析内容中的代码块状态
+  const parseCodeBlocks = (text: string) => {
+    const codeBlocks: { type: string; content: string; isComplete: boolean; startIndex: number; endIndex: number }[] = [];
+    const lines = text.split('\n');
+    let currentBlock: { type: string; content: string; startIndex: number } | null = null;
+    let currentLineIndex = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const currentPos = currentLineIndex;
+      currentLineIndex += line.length + 1; // +1 for newline
+      
+      if (line.startsWith('```')) {
+        if (currentBlock) {
+          // 结束当前代码块
+          codeBlocks.push({
+            type: currentBlock.type,
+            content: currentBlock.content,
+            isComplete: true,
+            startIndex: currentBlock.startIndex,
+            endIndex: currentPos + line.length
+          });
+          currentBlock = null;
+        } else {
+          // 开始新代码块
+          const type = line.slice(3).trim() || 'text';
+          currentBlock = {
+            type,
+            content: '',
+            startIndex: currentPos
+          };
+        }
+      } else if (currentBlock) {
+        // 添加到当前代码块
+        currentBlock.content += (currentBlock.content ? '\n' : '') + line;
+      }
+    }
+    
+    // 如果有未完成的代码块（流式输出中）
+    if (currentBlock) {
+      codeBlocks.push({
+        type: currentBlock.type,
+        content: currentBlock.content,
+        isComplete: false,
+        startIndex: currentBlock.startIndex,
+        endIndex: text.length
+      });
+    }
+    
+    return codeBlocks;
+  };
+
+
+  // 使用常规渲染
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        code({ node, inline, className, children, ...props }) {
+          const match = /language-(\w+)/.exec(className || '');
+          const language = match ? match[1] : '';
+          
+          
+          return !inline && match ? (
+            <GlassCodeBlock language={language} className={className}>
+              {String(children).replace(/\n$/, '')}
+            </GlassCodeBlock>
+          ) : (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        }
       }}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    >
+      {content}
+    </ReactMarkdown>
   );
 };
 
@@ -148,7 +208,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
         <div className="tool-call-info">
           <ToolOutlined className="tool-icon" />
           <Text strong>{toolCall.function?.name}</Text>
-          <Tag color="blue" size="small">工具调用</Tag>
+          <Tag color="blue">工具调用</Tag>
         </div>
         <Button
           type="text"
@@ -208,7 +268,7 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
         <div className="reasoning-info">
           <RobotOutlined className="reasoning-icon" />
           <Text strong>AI思考过程</Text>
-          <Tag color="purple" size="small">推理</Tag>
+          <Tag color="purple">推理</Tag>
         </div>
         <Button
           type="text"
@@ -226,21 +286,11 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
                 const match = /language-(\w+)/.exec(className || '');
                 const language = match ? match[1] : '';
                 
-                // 处理Mermaid图表
-                if (language === 'mermaid') {
-                  return <MermaidChart chart={String(children)} />;
-                }
-                
+                    
                 return !inline && match ? (
-                  <SyntaxHighlighter
-                    style={tomorrow}
-                    language={language}
-                    PreTag="div"
-                    customStyle={{ background: 'transparent' }}
-                    {...props}
-                  >
+                  <GlassCodeBlock language={language} className={className}>
                     {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
+                  </GlassCodeBlock>
                 ) : (
                   <code className={className} {...props}>
                     {children}
@@ -316,11 +366,11 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
       
       <div className="node-meta">
         {outputEnabled && (
-          <Tag size="small">输出: {outputEnabled}</Tag>
+          <Tag>输出: {outputEnabled}</Tag>
         )}
         {mcpServers && mcpServers.length > 0 && (
           <Tooltip title={mcpServers.join(', ')}>
-            <Tag size="small" color="blue">
+            <Tag color="blue">
               MCP工具: {mcpServers.length}个
             </Tag>
           </Tooltip>
@@ -362,7 +412,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   const isTool = message.role === 'tool';
   
   // 优先使用消息自带的reasoning_content，其次使用流式传入的reasoningContent
-  const effectiveReasoningContent = message.reasoning_content || reasoningContent;
+  const effectiveReasoningContent = (message as any).reasoning_content || reasoningContent;
   
   // 基础过滤：不显示系统消息和工具结果消息
   if (isSystem || isTool) {
@@ -416,38 +466,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                           generationType={generationType as 'mcp' | 'graph'} 
                         />
                       ) : (
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            code({ node, inline, className, children, ...props }) {
-                              const match = /language-(\w+)/.exec(className || '');
-                              const language = match ? match[1] : '';
-                              
-                              // 处理Mermaid图表
-                              if (language === 'mermaid') {
-                                return <MermaidChart chart={String(children)} />;
-                              }
-                              
-                              return !inline && match ? (
-                                <SyntaxHighlighter
-                                  style={tomorrow}
-                                  language={language}
-                                  PreTag="div"
-                                  customStyle={{ background: 'rgba(0,0,0,0.1)' }}
-                                  {...props}
-                                >
-                                  {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
-                              ) : (
-                                <code className={className} {...props}>
-                                  {children}
-                                </code>
-                              );
-                            }
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
+                        <SmartMarkdown content={message.content} isStreaming={true} />
                       )}
                     </div>
                   ) : (
@@ -470,21 +489,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
                             const match = /language-(\w+)/.exec(className || '');
                             const language = match ? match[1] : '';
                             
-                            // 处理Mermaid图表
-                            if (language === 'mermaid') {
-                              return <MermaidChart chart={String(children)} />;
-                            }
-                            
+                                            
                             return !inline && match ? (
-                              <SyntaxHighlighter
-                                style={tomorrow}
-                                language={language}
-                                PreTag="div"
-                                customStyle={{ background: 'rgba(0,0,0,0.1)' }}
-                                {...props}
-                              >
+                              <GlassCodeBlock language={language} className={className}>
                                 {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
+                              </GlassCodeBlock>
                             ) : (
                               <code className={className} {...props}>
                                 {children}
@@ -541,38 +550,7 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, ge
               generationType={generationType as 'mcp' | 'graph'} 
             />
           ) : (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                code({ node, inline, className, children, ...props }: any) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  const language = match ? match[1] : '';
-                  
-                  // 处理Mermaid图表
-                  if (language === 'mermaid') {
-                    return <MermaidChart chart={String(children)} />;
-                  }
-                  
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      style={tomorrow as any}
-                      language={language}
-                      PreTag="div"
-                      customStyle={{ background: 'rgba(0,0,0,0.1)' } as any}
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  );
-                }
-              }}
-            >
-              {block.content}
-            </ReactMarkdown>
+            <SmartMarkdown content={block.content} isStreaming={!block.isComplete} />
           )}
         </div>
       );
@@ -617,7 +595,7 @@ interface MessageDisplayProps {
   agentType?: string;
 }
 
-const MessageDisplay: React.FC<MessageDisplayProps> = ({ 
+const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({ 
   conversation,
   enhancedStreamingState,
   pendingUserMessage,
@@ -792,6 +770,65 @@ const MessageDisplay: React.FC<MessageDisplayProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 如果对话ID不同，需要重新渲染
+  if (prevProps.conversation?.conversation_id !== nextProps.conversation?.conversation_id) {
+    return false;
+  }
+  
+  // 如果流式状态发生变化，需要重新渲染
+  const prevStreamingState = prevProps.enhancedStreamingState;
+  const nextStreamingState = nextProps.enhancedStreamingState;
+  
+  if (prevStreamingState?.isStreaming !== nextStreamingState?.isStreaming) {
+    return false;
+  }
+  
+  // 检查流式blocks是否发生变化
+  if (prevStreamingState?.blocks?.length !== nextStreamingState?.blocks?.length) {
+    return false;
+  }
+  
+  // 如果有任何流式blocks，检查它们的内容是否发生变化
+  if (prevStreamingState?.blocks && nextStreamingState?.blocks) {
+    for (let i = 0; i < prevStreamingState.blocks.length; i++) {
+      const prevBlock = prevStreamingState.blocks[i];
+      const nextBlock = nextStreamingState.blocks[i];
+      
+      if (prevBlock?.content !== nextBlock?.content || 
+          prevBlock?.isComplete !== nextBlock?.isComplete ||
+          prevBlock?.id !== nextBlock?.id) {
+        return false;
+      }
+    }
+  }
+  
+  // 检查其他关键属性
+  if (prevProps.pendingUserMessage !== nextProps.pendingUserMessage ||
+      prevProps.currentMode !== nextProps.currentMode ||
+      prevProps.agentType !== nextProps.agentType) {
+    return false;
+  }
+  
+  // 简化对话内容比较 - 只比较rounds长度和最后一轮
+  const prevRounds = prevProps.conversation?.rounds || [];
+  const nextRounds = nextProps.conversation?.rounds || [];
+  
+  if (prevRounds.length !== nextRounds.length) {
+    return false;
+  }
+  
+  if (prevRounds.length > 0 && nextRounds.length > 0) {
+    const prevLastRound = prevRounds[prevRounds.length - 1];
+    const nextLastRound = nextRounds[nextRounds.length - 1];
+    
+    if (JSON.stringify(prevLastRound) !== JSON.stringify(nextLastRound)) {
+      return false;
+    }
+  }
+  
+  // 所有检查都通过，不需要重新渲染
+  return true;
+});
 
 export default MessageDisplay;
