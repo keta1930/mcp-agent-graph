@@ -16,7 +16,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock } from '../../types/conversation';
 import { getCurrentUserDisplayName } from '../../config/user';
 import AgentXMLRenderer from './AgentXMLRenderer';
@@ -87,7 +87,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({ language, children, classNam
       </div>
       <SyntaxHighlighter
         language={language || 'text'}
-        style={tomorrow as any}
+        style={oneLight as any}
         PreTag="div"
         customStyle={{
           background: 'transparent',
@@ -224,7 +224,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
             <div className="tool-call-arguments">
               <SyntaxHighlighter
                 language="json"
-                style={tomorrow}
+                style={oneLight}
                 customStyle={{
                   background: 'transparent',
                   padding: '8px',

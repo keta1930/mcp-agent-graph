@@ -15,7 +15,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { prism } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -306,7 +306,7 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => 
         <div className={`code-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
           <SyntaxHighlighter
             language="python"
-            style={tomorrow}
+            style={prism}
             customStyle={{
               background: 'transparent',
               padding: '12px',
@@ -337,7 +337,7 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => 
           <div className={`json-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
             <SyntaxHighlighter
               language="json"
-              style={tomorrow}
+              style={prism}
               customStyle={{
                 background: 'transparent',
                 padding: '12px',
@@ -364,7 +364,7 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => 
           <div className={`json-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
             <SyntaxHighlighter
               language="json"
-              style={tomorrow}
+              style={prism}
               customStyle={{
                 background: 'transparent',
                 padding: '12px',
@@ -399,7 +399,7 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => 
                 const match = /language-(\w+)/.exec(className || '');
                 return !inline && match ? (
                   <SyntaxHighlighter
-                    style={tomorrow}
+                    style={prism}
                     language={match[1]}
                     PreTag="div"
                     customStyle={{
@@ -503,7 +503,7 @@ const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generation
             const match = /language-(\w+)/.exec(className || '');
             return !inline && match ? (
               <SyntaxHighlighter
-                style={tomorrow}
+                style={prism}
                 language={match[1]}
                 PreTag="div"
                 customStyle={{
