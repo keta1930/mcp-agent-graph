@@ -1,7 +1,7 @@
 // src/components/chat/AgentXMLRenderer.tsx
 import React, { useState } from 'react';
 import { Typography, Tag, Button } from 'antd';
-import { 
+import {
   FileTextOutlined,
   CodeOutlined,
   DeleteOutlined,
@@ -25,12 +25,12 @@ const { Text, Paragraph } = Typography;
 const formatJSONForDisplay = (jsonString: string, maxLineLength: number = 70): string => {
   try {
     const parsed = JSON.parse(jsonString);
-    
+
     // 自定义格式化函数
     const formatValue = (value: any, indent: number = 0): string => {
       const spaces = '  '.repeat(indent);
       const nextSpaces = '  '.repeat(indent + 1);
-      
+
       if (value === null) return 'null';
       if (typeof value === 'boolean') return value.toString();
       if (typeof value === 'number') return value.toString();
@@ -42,31 +42,31 @@ const formatJSONForDisplay = (jsonString: string, maxLineLength: number = 70): s
         }
         return `"${value}"`;
       }
-      
+
       if (Array.isArray(value)) {
         if (value.length === 0) return '[]';
-        
+
         // 检查数组是否可以放在一行
         const oneLineArray = `[${value.map(v => formatValue(v, 0)).join(', ')}]`;
         if (oneLineArray.length <= maxLineLength - indent * 2) {
           return oneLineArray;
         }
-        
+
         // 多行格式
         const items = value.map(v => `${nextSpaces}${formatValue(v, indent + 1)}`);
         return `[\n${items.join(',\n')}\n${spaces}]`;
       }
-      
+
       if (typeof value === 'object') {
         const keys = Object.keys(value);
         if (keys.length === 0) return '{}';
-        
+
         // 检查对象是否可以放在一行
         const oneLineObj = `{${keys.map(k => `"${k}": ${formatValue(value[k], 0)}`).join(', ')}}`;
         if (oneLineObj.length <= maxLineLength - indent * 2) {
           return oneLineObj;
         }
-        
+
         // 多行格式
         const items = keys.map(key => {
           const formattedValue = formatValue(value[key], indent + 1);
@@ -74,10 +74,10 @@ const formatJSONForDisplay = (jsonString: string, maxLineLength: number = 70): s
         });
         return `{\n${items.join(',\n')}\n${spaces}}`;
       }
-      
+
       return String(value);
     };
-    
+
     return formatValue(parsed);
   } catch (error) {
     // 如果解析失败，返回原始字符串
@@ -89,24 +89,34 @@ interface XMLTag {
   tagName: string;
   content: string;
   attributes?: Record<string, string>;
+  isIncomplete?: boolean;
 }
 
 interface AgentXMLRendererProps {
   content: string;
-  generationType: 'mcp' | 'graph';
+  generationType?: 'mcp' | 'graph'; // 可选的generationType，用于优化显示
+  isStreaming?: boolean;
 }
 
-// 解析XML标签
-const parseXMLTags = (content: string): XMLTag[] => {
+// 更智能的XML流式解析器
+const parseXMLTags = (content: string, isStreaming: boolean = false): XMLTag[] => {
   const xmlTags: XMLTag[] = [];
-  
-  // 匹配XML标签的正则表达式
-  const xmlRegex = /<(\w+)([^>]*)>([\s\S]*?)<\/\1>/g;
-  
+  const processedPositions = new Set<number>();
+
+  // 1. 首先处理所有完整的XML标签
+  const completeTagRegex = /<(\w+)([^>]*?)>([\s\S]*?)<\/\1>/g;
   let match;
-  while ((match = xmlRegex.exec(content)) !== null) {
-    const [, tagName, attributesStr, tagContent] = match;
-    
+
+  while ((match = completeTagRegex.exec(content)) !== null) {
+    const [fullMatch, tagName, attributesStr, tagContent] = match;
+    const startPos = match.index;
+    const endPos = match.index + fullMatch.length;
+
+    // 记录已处理的位置
+    for (let i = startPos; i < endPos; i++) {
+      processedPositions.add(i);
+    }
+
     // 解析属性
     const attributes: Record<string, string> = {};
     const attrRegex = /(\w+)=["']([^"']*)["']/g;
@@ -114,26 +124,109 @@ const parseXMLTags = (content: string): XMLTag[] => {
     while ((attrMatch = attrRegex.exec(attributesStr)) !== null) {
       attributes[attrMatch[1]] = attrMatch[2];
     }
-    
+
     xmlTags.push({
       tagName,
       content: tagContent.trim(),
-      attributes
+      attributes,
+      isIncomplete: false
     });
   }
-  
-  return xmlTags;
+
+  // 2. 如果是流式模式，处理未完成的XML标签
+  if (isStreaming) {
+    // 查找未处理的开始标签
+    const openTagRegex = /<(\w+)([^>]*?)>/g;
+    let openMatch;
+
+    while ((openMatch = openTagRegex.exec(content)) !== null) {
+      const [fullOpenTag, tagName, attributesStr] = openMatch;
+      const openTagStart = openMatch.index;
+      const openTagEnd = openMatch.index + fullOpenTag.length;
+
+      // 如果这个开始标签已经被处理过（属于完整标签），跳过
+      if (processedPositions.has(openTagStart)) {
+        continue;
+      }
+
+      // 查找对应的结束标签
+      const remainingContent = content.slice(openTagEnd);
+      const closeTagRegex = new RegExp(`<\\/${tagName}>`, 'i');
+      const closeMatch = remainingContent.match(closeTagRegex);
+
+      if (!closeMatch) {
+        // 没有找到结束标签，这是一个未完成的标签
+        const tagContent = remainingContent;
+
+        // 解析属性
+        const attributes: Record<string, string> = {};
+        const attrRegex = /(\w+)=["']([^"']*)["']/g;
+        let attrMatch;
+        while ((attrMatch = attrRegex.exec(attributesStr)) !== null) {
+          attributes[attrMatch[1]] = attrMatch[2];
+        }
+
+        xmlTags.push({
+          tagName,
+          content: tagContent.trim(),
+          attributes,
+          isIncomplete: true
+        });
+      }
+    }
+  }
+
+  // 3. 按出现顺序排序
+  return xmlTags.sort((a, b) => {
+    const aIndex = content.indexOf(`<${a.tagName}`);
+    const bIndex = content.indexOf(`<${b.tagName}`);
+    return aIndex - bIndex;
+  });
+};
+
+// 智能检测内容类型（MCP或Graph）
+const detectContentType = (xmlTags: XMLTag[]): 'mcp' | 'graph' | 'unknown' => {
+  // MCP相关的标签
+  const mcpTags = ['folder_name', 'script_file', 'delete_script_file', 'dependencies', 'readme'];
+  // Graph相关的标签
+  const graphTags = ['graph_name', 'graph_description', 'node', 'delete_node', 'end_template'];
+
+  const tagNames = xmlTags.map(tag => tag.tagName);
+
+  const hasMcpTags = mcpTags.some(tag => tagNames.includes(tag));
+  const hasGraphTags = graphTags.some(tag => tagNames.includes(tag));
+
+  if (hasMcpTags && !hasGraphTags) {
+    return 'mcp';
+  } else if (hasGraphTags && !hasMcpTags) {
+    return 'graph';
+  } else if (hasMcpTags && hasGraphTags) {
+    // 如果两种都有，根据数量判断
+    const mcpCount = mcpTags.filter(tag => tagNames.includes(tag)).length;
+    const graphCount = graphTags.filter(tag => tagNames.includes(tag)).length;
+    return mcpCount >= graphCount ? 'mcp' : 'graph';
+  }
+
+  return 'unknown';
 };
 
 // XML标签渲染组件
 interface XMLTagRendererProps {
   tag: XMLTag;
-  generationType: 'mcp' | 'graph';
+  contentType: 'mcp' | 'graph' | 'unknown';
 }
 
-const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) => {
-  const [expanded, setExpanded] = useState(false);
-  
+const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => {
+  // 未完成的标签自动展开，完成的标签默认折叠
+  const [expanded, setExpanded] = useState(tag.isIncomplete || false);
+
+  // 监听标签完成状态的变化
+  React.useEffect(() => {
+    if (tag.isIncomplete) {
+      setExpanded(true); // 未完成的标签保持展开
+    }
+  }, [tag.isIncomplete]);
+
   const getTagIcon = () => {
     switch (tag.tagName) {
       case 'analysis':
@@ -164,15 +257,17 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
         return <FileTextOutlined className="tag-icon" />;
     }
   };
-  
+
   const getTagColor = () => {
+    // 未完成的标签使用特殊颜色
+    if (tag.isIncomplete) return 'processing';
     if (tag.tagName.includes('delete')) return 'red';
     if (tag.tagName === 'script_file' || tag.tagName === 'node') return 'blue';
     if (tag.tagName === 'analysis') return 'purple';
     if (tag.tagName === 'todo') return 'orange';
     return 'default';
   };
-  
+
   const getTagTitle = () => {
     switch (tag.tagName) {
       case 'analysis':
@@ -203,42 +298,47 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
         return tag.tagName;
     }
   };
-  
+
   const renderContent = () => {
     // Python代码文件
     if (tag.tagName === 'script_file') {
       return (
-        <SyntaxHighlighter
-          language="python"
-          style={tomorrow}
-          customStyle={{ 
-            background: 'transparent',
-            padding: '12px',
-            fontSize: '13px',
-            borderRadius: '4px',
-            maxWidth: '100%',
-            width: '100%',
-            margin: '0',
-            boxSizing: 'border-box',
-            overflowX: 'auto'
-          }}
-        >
-          {tag.content}
-        </SyntaxHighlighter>
+        <div className={`code-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
+          <SyntaxHighlighter
+            language="python"
+            style={tomorrow}
+            customStyle={{
+              background: 'transparent',
+              padding: '12px',
+              fontSize: '13px',
+              borderRadius: '4px',
+              maxWidth: '100%',
+              width: '100%',
+              margin: '0',
+              boxSizing: 'border-box',
+              overflowX: 'auto'
+            }}
+          >
+            {tag.content}
+          </SyntaxHighlighter>
+          {tag.isIncomplete && (
+            <div className="streaming-cursor">|</div>
+          )}
+        </div>
       );
     }
-    
+
     // JSON节点配置
     if (tag.tagName === 'node') {
       try {
         // 使用智能格式化
         const formatted = formatJSONForDisplay(tag.content, 70);
         return (
-          <div className="json-content-wrapper">
+          <div className={`json-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
             <SyntaxHighlighter
               language="json"
               style={tomorrow}
-              customStyle={{ 
+              customStyle={{
                 background: 'transparent',
                 padding: '12px',
                 fontSize: '13px',
@@ -253,16 +353,19 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
             >
               {formatted}
             </SyntaxHighlighter>
+            {tag.isIncomplete && (
+              <div className="streaming-cursor">|</div>
+            )}
           </div>
         );
       } catch (e) {
         // 如果不是有效JSON，直接显示
         return (
-          <div className="json-content-wrapper">
+          <div className={`json-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
             <SyntaxHighlighter
               language="json"
               style={tomorrow}
-              customStyle={{ 
+              customStyle={{
                 background: 'transparent',
                 padding: '12px',
                 fontSize: '13px',
@@ -277,60 +380,73 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
             >
               {tag.content}
             </SyntaxHighlighter>
+            {tag.isIncomplete && (
+              <div className="streaming-cursor">|</div>
+            )}
           </div>
         );
       }
     }
-    
+
     // Markdown内容
     if (tag.tagName === 'analysis' || tag.tagName === 'todo' || tag.tagName === 'readme') {
       return (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            code({ node, inline, className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  style={tomorrow}
-                  language={match[1]}
-                  PreTag="div"
-                  customStyle={{ 
-                    background: 'transparent',
-                    maxWidth: '100%',
-                    width: '100%',
-                    margin: '0',
-                    boxSizing: 'border-box',
-                    overflowX: 'auto'
-                  }}
-                  {...props}
-                >
-                  {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-              ) : (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              );
-            }
-          }}
-        >
-          {tag.content}
-        </ReactMarkdown>
+        <div className={`markdown-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ node, inline, className, children, ...props }) {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    style={tomorrow}
+                    language={match[1]}
+                    PreTag="div"
+                    customStyle={{
+                      background: 'transparent',
+                      maxWidth: '100%',
+                      width: '100%',
+                      margin: '0',
+                      boxSizing: 'border-box',
+                      overflowX: 'auto'
+                    }}
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              }
+            }}
+          >
+            {tag.content}
+          </ReactMarkdown>
+          {tag.isIncomplete && (
+            <div className="streaming-cursor">|</div>
+          )}
+        </div>
       );
     }
-    
+
     // 普通文本内容
     return (
-      <Paragraph>
-        <Text>{tag.content}</Text>
-      </Paragraph>
+      <div className={`text-content-wrapper ${tag.isIncomplete ? 'streaming' : ''}`}>
+        <Paragraph>
+          <Text>{tag.content}</Text>
+        </Paragraph>
+        {tag.isIncomplete && (
+          <div className="streaming-cursor">|</div>
+        )}
+      </div>
     );
   };
-  
+
   return (
-    <div className="xml-tag-container glass-card" data-tag={tag.tagName}>
-      <div 
+    <div className={`xml-tag-container glass-card ${tag.isIncomplete ? 'incomplete' : ''}`} data-tag={tag.tagName}>
+      <div
         className="xml-tag-header"
         onClick={() => setExpanded(!expanded)}
       >
@@ -338,6 +454,11 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
           {getTagIcon()}
           <Text strong>{getTagTitle()}</Text>
           <Tag color={getTagColor()} size="small">{tag.tagName}</Tag>
+          {tag.isIncomplete && (
+            <Tag color="processing" size="small" className="streaming-tag">
+              <span className="streaming-dots">实时生成中</span>
+            </Tag>
+          )}
         </div>
         <Button
           type="text"
@@ -345,7 +466,7 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
           icon={expanded ? <DownOutlined /> : <RightOutlined />}
         />
       </div>
-      
+
       {expanded && (
         <div className="xml-tag-content">
           {renderContent()}
@@ -355,11 +476,23 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, generationType }) 
   );
 };
 
-const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generationType }) => {
-  const xmlTags = parseXMLTags(content);
-  
-  console.log('AgentXMLRenderer:', { content, generationType, xmlTagsCount: xmlTags.length, xmlTags });
-  
+const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generationType, isStreaming = false }) => {
+  const xmlTags = parseXMLTags(content, isStreaming);
+
+  // 智能检测内容类型，优先使用传入的generationType
+  const detectedContentType = detectContentType(xmlTags);
+  const effectiveContentType = generationType || detectedContentType;
+
+  console.log('AgentXMLRenderer:', {
+    content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+    generationType,
+    detectedContentType,
+    effectiveContentType,
+    isStreaming,
+    xmlTagsCount: xmlTags.length,
+    xmlTags: xmlTags.map(tag => ({ tagName: tag.tagName, isIncomplete: tag.isIncomplete }))
+  });
+
   if (xmlTags.length === 0) {
     // 如果没有XML标签，显示普通内容
     return (
@@ -373,7 +506,7 @@ const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generation
                 style={tomorrow}
                 language={match[1]}
                 PreTag="div"
-                customStyle={{ 
+                customStyle={{
                   background: 'rgba(0,0,0,0.1)',
                   maxWidth: '100%',
                   width: '100%',
@@ -397,14 +530,14 @@ const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generation
       </ReactMarkdown>
     );
   }
-  
+
   return (
     <div className="agent-xml-renderer">
       {xmlTags.map((tag, index) => (
         <XMLTagRenderer
           key={`${tag.tagName}-${index}`}
           tag={tag}
-          generationType={generationType}
+          contentType={effectiveContentType}
         />
       ))}
     </div>

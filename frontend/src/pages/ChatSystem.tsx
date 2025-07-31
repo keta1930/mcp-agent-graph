@@ -12,8 +12,8 @@ import { useConversationStore } from '../store/conversationStore';
 import { useSSEConnection } from '../hooks/useSSEConnection';
 import { useModelStore } from '../store/modelStore';
 import { useGlobalNotification } from '../hooks/useGlobalNotification';
-import { ConversationService } from '../services/conversationService';
-import { ConversationMode } from '../types/conversation';
+import { ConversationService, generateMongoId } from '../services/conversationService';
+import { ConversationMode, ConversationDetail } from '../types/conversation';
 import { getCurrentUserId } from '../config/user';
 import '../styles/chat-system.css';
 
@@ -21,12 +21,14 @@ const ChatSystem: React.FC = () => {
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   // 用于处理正在进行的对话，避免全局状态泄露
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
+  // 临时对话数据，用于新建对话时的数据管理
+  const [temporaryConversation, setTemporaryConversation] = useState<ConversationDetail | null>(null);
   // 压缩相关状态
   const [compactConfigVisible, setCompactConfigVisible] = useState(false);
   const [selectedCompactType, setSelectedCompactType] = useState<'brutal' | 'precise'>('precise');
   // 使用Set来跟踪正在压缩的对话ID，这样每个对话都有独立的压缩状态
   const [compactingConversations, setCompactingConversations] = useState<Set<string>>(new Set());
-  
+
   const {
     currentConversation,
     currentMode,
@@ -35,7 +37,7 @@ const ChatSystem: React.FC = () => {
     loadConversationDetail,
     clearCurrentConversation,
     setCurrentMode,
-    updateCurrentConversationTemporarily
+    silentUpdateConversations
   } = useConversationStore();
 
   const {
@@ -46,36 +48,86 @@ const ChatSystem: React.FC = () => {
   } = useSSEConnection();
 
   const { models: availableModels } = useModelStore();
-  
+
   // 全局通知管理
-  const { 
-    notifications, 
-    removeNotification, 
+  const {
+    notifications,
+    removeNotification,
     success: showSuccessNotification,
-    info: showInfoNotification 
+    info: showInfoNotification
   } = useGlobalNotification();
+
+  // 获取当前显示的对话（优先临时对话，其次当前对话）
+  const getDisplayConversation = useCallback((): ConversationDetail | null => {
+    if (temporaryConversation && temporaryConversation.conversation_id === activeConversationId) {
+      return temporaryConversation;
+    }
+    return currentConversation;
+  }, [temporaryConversation, currentConversation, activeConversationId]);
+
+  // 创建临时对话数据结构
+  const createTemporaryConversation = useCallback((conversationId: string, title: string, mode: ConversationMode, agentType?: string): ConversationDetail => {
+    // 根据模式确定generation_type
+    let generationType: string;
+    if (mode === 'chat') {
+      generationType = 'chat';
+    } else if (mode === 'agent') {
+      generationType = agentType === 'graph' ? 'graph' : 'mcp';
+    } else if (mode === 'graph') {
+      generationType = 'graph_run';
+    } else {
+      generationType = 'chat';
+    }
+
+    return {
+      conversation_id: conversationId,
+      title,
+      rounds: [],
+      generation_type: generationType as any,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }, []);
 
   // 处理对话选择
   const handleConversationSelect = useCallback(async (conversationId: string) => {
     if (conversationId === activeConversationId) return;
-    
+
     // 停止当前的SSE连接
     closeConnection();
-    
-    // 清除待发送消息状态
+
+    // 清除待发送消息状态和临时对话
     setPendingUserMessage(null);
-    
+    setTemporaryConversation(null);
+
     // 先设置新的活跃对话ID并加载新对话，不清除当前对话以避免闪烁
     setActiveConversationId(conversationId);
     await loadConversationDetail(conversationId);
-    
+
     // 需要等待对话加载完成后根据对话类型设置模式
     // 这个逻辑应该在对话加载完成后的useEffect中处理
   }, [activeConversationId, closeConnection, loadConversationDetail]);
 
+  // 处理新建对话
+  const handleNewConversation = useCallback(() => {
+    // 停止当前的SSE连接
+    closeConnection();
+
+    // 清除待发送消息状态和临时对话
+    setPendingUserMessage(null);
+    setTemporaryConversation(null);
+
+    // 清除当前对话
+    clearCurrentConversation();
+    setActiveConversationId(undefined);
+
+    // 重置为默认模式
+    setCurrentMode('chat');
+  }, [closeConnection, clearCurrentConversation, setCurrentMode]);
+
   // 当对话加载完成后，根据对话类型设置正确的模式和agentType（不可变）
   useEffect(() => {
-    if (currentConversation) {
+    if (currentConversation && !temporaryConversation) {
       // 根据对话的generation_type设置模式，Agent模式的类型不可变
       switch (currentConversation.generation_type) {
         case 'chat':
@@ -113,13 +165,14 @@ const ChatSystem: React.FC = () => {
         }
       }, 100);
     }
-  }, [currentConversation, setCurrentMode, currentMode, agentType]);
+  }, [currentConversation, setCurrentMode, currentMode, agentType, temporaryConversation]);
 
   // 处理模式选择
   const handleModeSelect = useCallback((mode: ConversationMode) => {
     setCurrentMode(mode);
-    // 清除当前对话，准备开始新对话
+    // 清除当前对话和临时对话，准备开始新对话
     clearCurrentConversation();
+    setTemporaryConversation(null);
     setActiveConversationId(undefined);
     // 清除待发送消息状态
     setPendingUserMessage(null);
@@ -128,35 +181,90 @@ const ChatSystem: React.FC = () => {
   // 开始新对话
   const handleStartConversation = useCallback(async (inputText: string, options: any = {}) => {
     try {
-      const conversationId = await startConnection(inputText, {
-        mode: options.mode || currentMode,
-        agentType: currentMode === 'agent' ? agentType : undefined,
+      // 立即生成对话ID和确定模式
+      const conversationId = generateMongoId();
+      const conversationMode = options.mode || currentMode;
+      const conversationAgentType = options.agentType || (conversationMode === 'agent' ? agentType : undefined);
+      const isGraphMode = conversationMode === 'graph';
+
+      // 立即设置活跃对话ID，界面立即切换到对话模式
+      setActiveConversationId(conversationId);
+
+      // 创建临时对话数据结构
+      const tempConversation = createTemporaryConversation(
+        conversationId,
+        '新对话',
+        conversationMode,
+        conversationAgentType
+      );
+      setTemporaryConversation(tempConversation);
+
+      // 只设置待发送的用户消息，不创建临时对话
+      // 这样可以避免重复显示用户消息
+      setPendingUserMessage(inputText);
+
+      // 用于保存实际的对话ID（Graph模式时由后端生成）
+      let actualConversationId = conversationId;
+
+      // 异步启动SSE连接（不等待完成）
+      startConnection(inputText, {
+        // Graph模式新对话时不传递conversationId，让后端创建新的
+        conversationId: isGraphMode ? undefined : conversationId,
+        mode: conversationMode,
+        agentType: conversationAgentType,
         model_name: options.selectedModel || 'gpt-4',
         graph_name: options.selectedGraph,
         mcp_servers: options.selectedMCPServers || [],
         system_prompt: options.systemPrompt,
         user_prompt: options.userPrompt,
-        onComplete: () => {
-          // 对话完成后重新加载对话列表
+        onConversationCreated: (backendConversationId: string) => {
+          // Graph模式时更新实际的对话ID
+          if (isGraphMode) {
+            actualConversationId = backendConversationId;
+            setActiveConversationId(backendConversationId);
+            // 更新临时对话的ID
+            setTemporaryConversation(prev => prev ? {
+              ...prev,
+              conversation_id: backendConversationId
+            } : null);
+          }
+        },
+        onComplete: async () => {
+          // 重新加载对话详情以获取最新内容，确保消息不会消失
+          await loadConversationDetail(actualConversationId);
+          // 清除待发送消息状态和临时对话
+          setPendingUserMessage(null);
+          setTemporaryConversation(null);
+          // 静默更新对话列表以显示新对话
+          silentUpdateConversations();
           message.success('对话完成');
         },
         onError: (error) => {
+          // 清除待发送消息状态和临时对话
+          setPendingUserMessage(null);
+          setTemporaryConversation(null);
           message.error(`连接错误: ${error}`);
         }
+      }).catch(error => {
+        console.error('启动SSE连接失败:', error);
+        setPendingUserMessage(null);
+        setTemporaryConversation(null);
+        message.error('启动对话失败');
       });
-      
-      setActiveConversationId(conversationId);
+
     } catch (error) {
       console.error('启动对话失败:', error);
       message.error('启动对话失败');
+      setPendingUserMessage(null);
+      setTemporaryConversation(null);
     }
-  }, [currentMode, agentType, startConnection]);
+  }, [currentMode, agentType, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation]);
 
   // 发送消息
   const handleSendMessage = useCallback(async (messageText: string, options: any = {}) => {
     if (!activeConversationId) {
       // 如果没有活跃对话，开始新对话
-      await handleStartConversation(messageText);
+      await handleStartConversation(messageText, options);
       return;
     }
 
@@ -169,22 +277,20 @@ const ChatSystem: React.FC = () => {
         agentType: currentMode === 'agent' ? agentType : undefined,
         conversationId: activeConversationId,
         ...options,
-        onComplete: () => {
-          // 清除待发送消息状态
+        onComplete: async () => {
+          // 重新加载对话详情以获取最新内容，确保消息不会消失
+          await loadConversationDetail(activeConversationId);
+          // 清除待发送消息状态和临时对话
           setPendingUserMessage(null);
-          // 消息发送完成，重新加载对话详情以获取最新数据
-          if (activeConversationId) {
-            loadConversationDetail(activeConversationId);
-          }
+          setTemporaryConversation(null);
+          // 静默更新对话列表以反映最新状态
+          silentUpdateConversations();
         },
         onError: (error) => {
           message.error(`发送失败: ${error}`);
           // 清除待发送消息状态
           setPendingUserMessage(null);
-          // 出错时也重新加载对话以恢复正确状态
-          if (activeConversationId) {
-            loadConversationDetail(activeConversationId);
-          }
+          // 出错时保持当前状态，不重新加载对话以避免打断用户体验
         }
       });
     } catch (error) {
@@ -193,33 +299,35 @@ const ChatSystem: React.FC = () => {
       // 清除待发送消息状态
       setPendingUserMessage(null);
     }
-  }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail]);
+  }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail, silentUpdateConversations]);
 
   // 处理压缩类型选择
   const handleCompactTypeSelect = useCallback((compactType: 'brutal' | 'precise') => {
-    if (!activeConversationId || !currentConversation) {
+    const displayConversation = getDisplayConversation();
+    if (!activeConversationId || !displayConversation) {
       message.error('没有选中的对话');
       return;
     }
 
-    if (currentConversation.generation_type !== 'chat') {
+    if (displayConversation.generation_type !== 'chat') {
       message.error('只有Chat模式的对话支持压缩');
       return;
     }
 
     setSelectedCompactType(compactType);
     setCompactConfigVisible(true);
-  }, [activeConversationId, currentConversation]);
+  }, [activeConversationId, getDisplayConversation]);
 
   // 执行对话压缩
   const handleCompactConfirm = useCallback(async (config: { modelName: string; compactType: 'brutal' | 'precise'; threshold: number }) => {
-    if (!activeConversationId || !currentConversation) {
+    const displayConversation = getDisplayConversation();
+    if (!activeConversationId || !displayConversation) {
       message.error('没有选中的对话');
       return;
     }
 
     setCompactConfigVisible(false);
-    
+
     // 将当前对话ID添加到压缩中的对话集合
     setCompactingConversations(prev => new Set(prev).add(activeConversationId));
 
@@ -235,12 +343,14 @@ const ChatSystem: React.FC = () => {
       if (result.status === 'success') {
         // 显示全局玻璃拟态通知
         showSuccessNotification(
-          `"${currentConversation.title}" 压缩完成`,
+          `"${displayConversation.title}" 压缩完成`,
           undefined, // 不显示详细信息
           4000
         );
         // 重新加载对话详情以获取压缩后的内容
         await loadConversationDetail(activeConversationId);
+        // 清除临时对话
+        setTemporaryConversation(null);
       } else {
         message.error(result.message || '压缩失败');
       }
@@ -255,13 +365,15 @@ const ChatSystem: React.FC = () => {
         return newSet;
       });
     }
-  }, [activeConversationId, currentConversation, loadConversationDetail]);
+  }, [activeConversationId, getDisplayConversation, loadConversationDetail]);
 
   // 获取主对话区域的样式
   const getMainAreaStyle = () => {
     return 'main-conversation-area';
   };
 
+  // 获取当前显示的对话
+  const displayConversation = getDisplayConversation();
 
   return (
     <div className="chat-system-page">
@@ -269,13 +381,14 @@ const ChatSystem: React.FC = () => {
         {/* 左侧边栏 */}
         <ConversationSidebar
           onConversationSelect={handleConversationSelect}
+          onNewConversation={handleNewConversation}
           activeConversationId={activeConversationId}
         />
 
         {/* 主对话区域 */}
         <div className={getMainAreaStyle()}>
-          {!currentConversation ? (
-            /* 无对话时显示模式选择器 */
+          {!displayConversation && !pendingUserMessage ? (
+            /* 无对话且无待发送消息时显示模式选择器 */
             <ModeSelector
               onModeSelect={handleModeSelect}
               onStartConversation={handleStartConversation}
@@ -286,11 +399,11 @@ const ChatSystem: React.FC = () => {
               {/* 对话头部 */}
               <div className="conversation-header-bar">
                 <div className="conversation-title-display">
-                  {currentConversation.title}
+                  {displayConversation?.title || (pendingUserMessage ? '新对话' : '')}
                 </div>
                 <div className="conversation-actions">
                   {/* Chat模式的压缩按钮 */}
-                  {currentConversation.generation_type === 'chat' && (() => {
+                  {displayConversation?.generation_type === 'chat' && (() => {
                     const isCurrentConversationCompacting = activeConversationId ? compactingConversations.has(activeConversationId) : false;
                     // 调试信息（可选，生产环境可移除）
                     // console.log('Compact button state:', { activeConversationId, isCurrentConversationCompacting, compactingConversations: Array.from(compactingConversations) });
@@ -321,9 +434,9 @@ const ChatSystem: React.FC = () => {
                         disabled={isCurrentConversationCompacting}
                       >
                         <Tooltip title={isCurrentConversationCompacting ? "正在压缩中..." : "压缩对话内容"}>
-                          <Button 
-                            type="text" 
-                            icon={<CompressOutlined />} 
+                          <Button
+                            type="text"
+                            icon={<CompressOutlined />}
                             size="small"
                             className="compact-button"
                             loading={isCurrentConversationCompacting}
@@ -340,8 +453,15 @@ const ChatSystem: React.FC = () => {
 
               {/* 消息显示区域 */}
               <MessageDisplay
-                key={currentConversation?._id || 'new'}
-                conversation={currentConversation}
+                key={displayConversation?._id || displayConversation?.conversation_id || 'new'}
+                conversation={displayConversation || {
+                  conversation_id: activeConversationId || '',
+                  title: '新对话',
+                  rounds: [],
+                  generation_type: currentMode === 'chat' ? 'chat' : currentMode === 'agent' ? (agentType === 'graph' ? 'graph' : 'mcp') : 'graph_run',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                }}
                 enhancedStreamingState={enhancedStreamingState}
                 pendingUserMessage={pendingUserMessage}
                 currentMode={currentMode}

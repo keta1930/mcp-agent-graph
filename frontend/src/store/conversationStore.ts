@@ -133,13 +133,13 @@ export const useConversationStore = create<ConversationState>()(
           return newConv || conv; // 如果找到新数据则使用，否则保持原有数据
         });
         
-        // 添加新的对话（如果有的话）
+        // 添加新的对话到列表开头（如果有的话）
         const existingIds = new Set(currentConversations.map(conv => conv._id));
         const newlyAddedConversations = newConversations.filter(
           conv => !existingIds.has(conv._id)
         );
         
-        const finalConversations = [...updatedConversations, ...newlyAddedConversations];
+        const finalConversations = [...newlyAddedConversations, ...updatedConversations];
         
         set({ 
           conversations: finalConversations, 

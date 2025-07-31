@@ -6,7 +6,10 @@ import {
   RobotOutlined, 
   ShareAltOutlined,
   ToolOutlined,
-  NodeIndexOutlined
+  NodeIndexOutlined,
+  DownOutlined,
+  ArrowUpOutlined,
+  SwapOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import { useModelStore } from '../../store/modelStore';
@@ -52,6 +55,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [systemPrompt, setSystemPrompt] = React.useState('');
   const [userPrompt, setUserPrompt] = React.useState('');
   const [inputText, setInputText] = React.useState('');
+  const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
 
   const handleModeChange = (mode: ConversationMode) => {
     setCurrentMode(mode);
@@ -63,6 +67,11 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setSystemPrompt('');
     setUserPrompt('');
     setInputText('');
+    setPromptMode('user'); // 重置为用户提示词模式
+    // 设置Agent模式的默认类型
+    if (mode === 'agent') {
+      setAgentType('mcp');
+    }
   };
 
   // 组件挂载时加载数据
@@ -79,6 +88,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       // 将选择的配置传递给父组件
       onStartConversation(content, {
         mode: currentMode,
+        agentType: currentMode === 'agent' ? agentType : undefined,
         selectedModel,
         selectedGraph,
         selectedMCPServers,
@@ -96,7 +106,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       case 'chat':
         return !!selectedModel;
       case 'agent':
-        return !!selectedModel;
+        return !!selectedModel && !!agentType;
       case 'graph':
         return !!selectedGraph;
       default:
@@ -131,12 +141,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   return (
     <div className="mode-selector-container">
       <div className="mode-selector-content">
-        <div className="welcome-header">
-          <Title level={2}>选择对话模式</Title>
-          <Text type="secondary">
-            选择一种模式开始您的AI对话体验
-          </Text>
-        </div>
 
         {/* 模式选择卡片 */}
         <Row gutter={[24, 24]} className="mode-cards">
@@ -163,155 +167,178 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
           ))}
         </Row>
 
-        {/* 配置区域 */}
+        {/* 输入区域 */}
         {currentMode && (
-          <Card className="mode-config-card">
-            <div className="mode-config-header">
-              <Title level={4}>配置选项</Title>
-            </div>
-
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              {/* Chat模式和Agent模式的模型选择 */}
-              {(currentMode === 'chat' || currentMode === 'agent') && (
-                <div className="config-section">
-                  <Text strong>选择模型:</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: 8 }}
-                    placeholder="请选择模型"
-                    value={selectedModel}
-                    onChange={setSelectedModel}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.children as string)
-                        ?.toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
+          <div className="input-area">
+            <div className="input-container-new">
+              <div className="message-input-wrapper">
+                <textarea
+                  className="message-input-new"
+                  value={currentMode === 'chat' ? 
+                    (promptMode === 'user' ? userPrompt : systemPrompt) : 
+                    inputText}
+                  onChange={(e) => {
+                    if (currentMode === 'chat') {
+                      if (promptMode === 'user') {
+                        setUserPrompt(e.target.value);
+                      } else {
+                        setSystemPrompt(e.target.value);
+                      }
+                    } else {
+                      setInputText(e.target.value);
                     }
-                  >
-                    {availableModels && availableModels.length > 0 ? (
-                      availableModels.map(model => (
-                        <Option key={model.name} value={model.name}>
-                          {model.alias || model.name}
+                  }}
+                  placeholder={
+                    currentMode === 'chat' ? 
+                      (promptMode === 'user' ? '输入您想说的话...' : '输入系统提示词（可选）...') :
+                    currentMode === 'agent' ? 
+                      (agentType === 'mcp' ? 
+                        '描述您希望AI生成的MCP工具功能...' :
+                        '描述您希望AI生成的Graph工作流...') :
+                    '输入要传递给Graph的内容...'
+                  }
+                  rows={4}
+                />
+                
+                {/* 左下角控件 */}
+                <div className="input-bottom-left">
+                  {/* Chat模式的提示词类型切换 */}
+                  {currentMode === 'chat' && (
+                    <Button
+                      type="text"
+                      icon={<SwapOutlined />}
+                      onClick={() => setPromptMode(promptMode === 'user' ? 'system' : 'user')}
+                      size="small"
+                      className="prompt-switch-button"
+                    >
+                      {promptMode === 'user' ? '用户提示词' : '系统提示词'}
+                    </Button>
+                  )}
+                  
+                  {/* Agent模式的类型选择 */}
+                  {currentMode === 'agent' && (
+                    <Button.Group size="small">
+                      <Button 
+                        type={agentType === 'mcp' ? 'primary' : 'default'}
+                        onClick={() => setAgentType('mcp')}
+                        icon={<ToolOutlined />}
+                      >
+                        MCP
+                      </Button>
+                      <Button 
+                        type={agentType === 'graph' ? 'primary' : 'default'}
+                        onClick={() => setAgentType('graph')}
+                        icon={<NodeIndexOutlined />}
+                      >
+                        Graph
+                      </Button>
+                    </Button.Group>
+                  )}
+                  
+                  {/* Chat模式的MCP工具选择 */}
+                  {currentMode === 'chat' && (
+                    <Select
+                      mode="multiple"
+                      value={selectedMCPServers}
+                      onChange={setSelectedMCPServers}
+                      placeholder="MCP工具"
+                      size="small"
+                      bordered={false}
+                      className="mcp-select-dropdown"
+                      style={{ minWidth: 80 }}
+                      allowClear
+                    >
+                      {availableMCPServers.map(serverName => (
+                        <Option key={serverName} value={serverName}>
+                          {serverName}
                         </Option>
-                      ))
-                    ) : (
-                      <Option value="" disabled>
-                        暂无可用模型
-                      </Option>
-                    )}
-                  </Select>
+                      ))}
+                    </Select>
+                  )}
                 </div>
-              )}
-
-              {/* Agent模式不再显示类型选择，由系统根据生成类型确定 */}
-
-              {/* Graph模式的图选择 */}
-              {currentMode === 'graph' && (
-                <div className="config-section">
-                  <Text strong>选择Graph:</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: 8 }}
-                    placeholder="请选择要执行的Graph"
-                    value={selectedGraph}
-                    onChange={setSelectedGraph}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.children as string)
-                        ?.toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    }
-                  >
-                    {availableGraphs && availableGraphs.length > 0 ? (
-                      availableGraphs.map(graph => (
-                        <Option key={graph} value={graph}>
-                          {graph}
-                        </Option>
-                      ))
-                    ) : (
-                      <Option value="" disabled>
-                        暂无可用图配置
-                      </Option>
-                    )}
-                  </Select>
-                </div>
-              )}
-
-              {/* Chat模式的MCP工具选择 */}
-              {currentMode === 'chat' && (
-                <div className="config-section">
-                  <Text strong>选择MCP工具:</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: 8 }}
-                    placeholder="请选择MCP工具（可多选）"
-                    mode="multiple"
-                    value={selectedMCPServers}
-                    onChange={setSelectedMCPServers}
-                    allowClear
-                  >
-                    {availableMCPServers.map(serverName => (
-                      <Option key={serverName} value={serverName}>
-                        {serverName}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-              )}
-
-              {/* Chat模式的系统提示词 */}
-              {currentMode === 'chat' && (
-                <div className="config-section">
-                  <Text strong>系统提示词:</Text>
-                  <div className="input-container">
-                    <textarea
-                      className="mode-input"
-                      placeholder="输入系统提示词（可选）..."
-                      value={systemPrompt}
-                      onChange={(e) => setSystemPrompt(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* 输入区域 */}
-              <div className="config-section">
-                <Text strong>
-                  {currentMode === 'chat' ? '用户提示词:' :
-                   currentMode === 'agent' ? '描述需求:' :
-                   '输入内容:'}
-                </Text>
-                <div className="input-container">
-                  <textarea
-                    className="mode-input"
-                    placeholder={
-                      currentMode === 'chat' ? '输入您想说的话...' :
-                      currentMode === 'agent' ? 
-                        agentType === 'mcp' ? 
-                          '描述您希望AI生成的MCP工具功能...' :
-                          '描述您希望AI生成的Graph工作流...' :
-                      '输入要传递给Graph的内容...'
-                    }
-                    value={currentMode === 'chat' ? userPrompt : inputText}
-                    onChange={(e) => currentMode === 'chat' ? setUserPrompt(e.target.value) : setInputText(e.target.value)}
-                    rows={4}
+                
+                {/* 右下角控件 */}
+                <div className="input-bottom-right">
+                  {/* 模型选择器 (Chat和Agent模式) */}
+                  {(currentMode === 'chat' || currentMode === 'agent') && (
+                    <div className="model-selector-new">
+                      <Select
+                        value={selectedModel}
+                        onChange={setSelectedModel}
+                        placeholder="选择模型"
+                        size="small"
+                        bordered={false}
+                        className="model-select-dropdown"
+                        suffixIcon={<DownOutlined />}
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.children as string)
+                            ?.toLowerCase()
+                            .indexOf(input.toLowerCase()) >= 0
+                        }
+                      >
+                        {availableModels && availableModels.length > 0 ? (
+                          availableModels.map(model => (
+                            <Option key={model.name} value={model.name}>
+                              {model.alias || model.name}
+                            </Option>
+                          ))
+                        ) : (
+                          <Option value="" disabled>
+                            暂无可用模型
+                          </Option>
+                        )}
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {/* Graph选择器 (Graph模式) */}
+                  {currentMode === 'graph' && (
+                    <div className="graph-selector-new">
+                      <Select
+                        value={selectedGraph}
+                        onChange={setSelectedGraph}
+                        placeholder="选择Graph"
+                        size="small"
+                        bordered={false}
+                        className="graph-select-dropdown"
+                        suffixIcon={<DownOutlined />}
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.children as string)
+                            ?.toLowerCase()
+                            .indexOf(input.toLowerCase()) >= 0
+                        }
+                      >
+                        {availableGraphs && availableGraphs.length > 0 ? (
+                          availableGraphs.map(graph => (
+                            <Option key={graph} value={graph}>
+                              {graph}
+                            </Option>
+                          ))
+                        ) : (
+                          <Option value="" disabled>
+                            暂无可用图配置
+                          </Option>
+                        )}
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {/* 开始按钮 */}
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<ArrowUpOutlined />}
+                    onClick={handleStart}
+                    disabled={!canStart()}
+                    className="send-button-new"
+                    size="small"
                   />
                 </div>
               </div>
-
-              {/* 开始按钮 */}
-              <div className="start-button-container">
-                <Button
-                  type="primary"
-                  size="large"
-                  disabled={!canStart()}
-                  onClick={handleStart}
-                  className="start-button"
-                >
-                  开始{currentMode === 'chat' ? '对话' : 
-                         currentMode === 'agent' ? '生成' : '执行'}
-                </Button>
-              </div>
-            </Space>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
     </div>

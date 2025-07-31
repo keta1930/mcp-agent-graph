@@ -1,14 +1,14 @@
 // src/hooks/useSSEConnection.ts
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { 
-  ConversationService, 
-  generateMongoId 
+import {
+  ConversationService,
+  generateMongoId
 } from '../services/conversationService';
 import { getCurrentUserId } from '../config/user';
-import { 
-  ChatRequest, 
-  AgentRequest, 
-  GraphExecuteRequest, 
+import {
+  ChatRequest,
+  AgentRequest,
+  GraphExecuteRequest,
   SSEMessage,
   ConversationMode,
   AgentType,
@@ -25,6 +25,7 @@ interface SSEConnectionOptions {
   onMessage?: (message: SSEMessage) => void;
   onComplete?: () => void;
   onError?: (error: string) => void;
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 
@@ -70,7 +71,7 @@ export function useSSEConnection() {
 
   // 创建新的流式块
   const createStreamingBlock = useCallback((type: StreamingBlockType, content: string = '', toolCalls?: any[], toolCallId?: string): StreamingBlock => {
-    return {
+    const block: StreamingBlock = {
       id: generateBlockId(),
       type,
       content,
@@ -79,11 +80,28 @@ export function useSSEConnection() {
       isComplete: false,
       timestamp: Date.now()
     };
+
+    // 如果是节点块类型，添加默认的节点信息结构
+    if (type === 'node_start') {
+      block.nodeInfo = {
+        nodeName: '',
+        level: 0,
+        status: 'pending'
+      };
+    }
+
+    return block;
   }, [generateBlockId]);
 
   // 处理SSE数据流
   const processSSEData = useCallback((data: string, options: SSEConnectionOptions & Record<string, any>) => {
     if (data.trim() === 'data: [DONE]') {
+      // 流结束时，标记所有未完成的块为完成状态
+      setEnhancedStreamingState(prev => ({
+        ...prev,
+        blocks: prev.blocks.map(block => ({ ...block, isComplete: true })),
+        isStreaming: false
+      }));
       closeConnection();
       options.onComplete?.();
       return;
@@ -93,16 +111,22 @@ export function useSSEConnection() {
       try {
         const jsonData = data.slice(6); // 移除 'data: ' 前缀
         if (jsonData.trim() === '[DONE]') {
+          // 流结束时，标记所有未完成的块为完成状态
+          setEnhancedStreamingState(prev => ({
+            ...prev,
+            blocks: prev.blocks.map(block => ({ ...block, isComplete: true })),
+            isStreaming: false
+          }));
           closeConnection();
           options.onComplete?.();
           return;
         }
 
         const message: SSEMessage = JSON.parse(jsonData);
-        
+
         // 调用外部回调
         options.onMessage?.(message);
-        
+
         // 处理通知消息
         if (message.error) {
           showNotification(message.error.message, 'error');
@@ -121,7 +145,7 @@ export function useSSEConnection() {
         setEnhancedStreamingState(prev => {
           const newState = { ...prev };
           let blocks = [...prev.blocks]; // 浅拷贝数组
-          
+
           // 调试日志（生产环境中可移除）
           // console.log('[SSE] Processing message:', {
           //   type: message.role || message.type || 'openai',
@@ -129,7 +153,8 @@ export function useSSEConnection() {
           //   hasReasoning: !!message.choices?.[0]?.delta?.reasoning_content,
           //   hasToolCalls: !!message.choices?.[0]?.delta?.tool_calls,
           //   isToolResult: message.role === 'tool',
-          //   currentBlocksCount: blocks.length
+          //   currentBlocksCount: blocks.length,
+          //   currentMode: options.mode
           // });
 
           // 处理错误消息
@@ -138,8 +163,25 @@ export function useSSEConnection() {
             return newState;
           }
 
-          // 处理节点事件（Graph模式）
+          // 处理graph对话创建事件
+          if (message.type === 'conversation_created') {
+            // 通过options回调通知外部更新conversationId
+            options.onConversationCreated?.(message.conversation_id);
+            return { ...newState, blocks };
+          }
+
+          // 处理节点事件（Graph执行模式）
           if (message.type === 'node_start') {
+            // 创建新的节点块
+            const nodeBlock = createStreamingBlock('node_start', '', [], undefined);
+            if (nodeBlock.nodeInfo) {
+              nodeBlock.nodeInfo.nodeName = message.node_name || '';
+              nodeBlock.nodeInfo.level = message.level || 0;
+              nodeBlock.nodeInfo.status = 'running';
+            }
+            blocks = [...blocks, nodeBlock];
+
+            // 同时更新全局节点信息用于兼容
             newState.nodeInfo = {
               nodeName: message.node_name,
               level: message.level,
@@ -149,6 +191,22 @@ export function useSSEConnection() {
           }
 
           if (message.type === 'node_end') {
+            // 更新最后一个节点块的状态
+            blocks = blocks.map(block => {
+              if (block.type === 'node_start' && block.nodeInfo && !block.isComplete) {
+                return {
+                  ...block,
+                  isComplete: true,
+                  nodeInfo: {
+                    ...block.nodeInfo,
+                    status: 'completed'
+                  }
+                };
+              }
+              return block;
+            });
+
+            // 同时更新全局节点信息用于兼容
             if (newState.nodeInfo) {
               newState.nodeInfo.status = 'completed';
             }
@@ -162,69 +220,69 @@ export function useSSEConnection() {
           // 处理OpenAI格式的流式消息 - 分块处理
           if (message.choices && message.choices[0]) {
             const delta = message.choices[0].delta;
-            
+
             // 处理reasoning_content（推理内容）
             if (delta?.reasoning_content) {
-              const currentReasoningBlockIndex = blocks.findIndex(block => 
+              const currentReasoningBlockIndex = blocks.findIndex(block =>
                 block.type === 'reasoning' && !block.isComplete
               );
-              
+
               if (currentReasoningBlockIndex === -1) {
                 // 创建新的推理块
                 const newReasoningBlock = createStreamingBlock('reasoning', delta.reasoning_content);
                 blocks = [...blocks, newReasoningBlock];
               } else {
                 // 更新现有推理块
-                blocks = blocks.map((block, index) => 
-                  index === currentReasoningBlockIndex 
+                blocks = blocks.map((block, index) =>
+                  index === currentReasoningBlockIndex
                     ? { ...block, content: block.content + delta.reasoning_content }
                     : block
                 );
               }
             }
-            
+
             // 处理content（普通内容）
             if (delta?.content) {
               // 如果有推理块正在进行，先完成它
-              blocks = blocks.map(block => 
+              blocks = blocks.map(block =>
                 block.type === 'reasoning' && !block.isComplete
                   ? { ...block, isComplete: true }
                   : block
               );
-              
-              const currentContentBlockIndex = blocks.findIndex(block => 
+
+              const currentContentBlockIndex = blocks.findIndex(block =>
                 block.type === 'content' && !block.isComplete
               );
-              
+
               if (currentContentBlockIndex === -1) {
                 // 创建新的内容块
                 const newContentBlock = createStreamingBlock('content', delta.content);
                 blocks = [...blocks, newContentBlock];
               } else {
                 // 更新现有内容块
-                blocks = blocks.map((block, index) => 
-                  index === currentContentBlockIndex 
+                blocks = blocks.map((block, index) =>
+                  index === currentContentBlockIndex
                     ? { ...block, content: block.content + delta.content }
                     : block
                 );
               }
             }
-            
+
             // 处理tool_calls（工具调用）
             if (delta?.tool_calls) {
               // 如果有其他类型的块正在进行，先完成它们
-              blocks = blocks.map(block => 
+              blocks = blocks.map(block =>
                 !block.isComplete && (block.type === 'reasoning' || block.type === 'content')
                   ? { ...block, isComplete: true }
                   : block
               );
-              
+
               // 处理工具调用增量
               delta.tool_calls.forEach(toolCall => {
-                const currentToolCallBlockIndex = blocks.findIndex(block => 
+                const currentToolCallBlockIndex = blocks.findIndex(block =>
                   block.type === 'tool_calls' && !block.isComplete
                 );
-                
+
                 if (currentToolCallBlockIndex === -1) {
                   // 创建新的工具调用块
                   const newToolCallBlock = createStreamingBlock('tool_calls', '', [toolCall]);
@@ -233,12 +291,12 @@ export function useSSEConnection() {
                   // 更新现有工具调用块
                   blocks = blocks.map((block, index) => {
                     if (index !== currentToolCallBlockIndex) return block;
-                    
+
                     const toolCalls = block.toolCalls || [];
                     const existingIndex = toolCalls.findIndex(
                       tc => tc.index === toolCall.index
                     );
-                    
+
                     let updatedToolCalls;
                     if (existingIndex >= 0) {
                       // 更新现有工具调用
@@ -257,13 +315,14 @@ export function useSSEConnection() {
                       updatedToolCalls = [...toolCalls, {
                         index: toolCall.index,
                         id: toolCall.id,
+                        type: 'function' as const,
                         function: {
                           name: toolCall.function?.name || '',
                           arguments: toolCall.function?.arguments || ''
                         }
                       }];
                     }
-                    
+
                     return { ...block, toolCalls: updatedToolCalls };
                   });
                 }
@@ -274,15 +333,15 @@ export function useSSEConnection() {
           // 处理工具执行结果 - 不创建独立的块，而是更新工具调用块的结果
           if (message.role === 'tool' && message.tool_call_id) {
             // 找到对应的工具调用块并添加结果
-            const toolCallBlockIndex = blocks.findIndex(block => 
-              block.type === 'tool_calls' && 
+            const toolCallBlockIndex = blocks.findIndex(block =>
+              block.type === 'tool_calls' &&
               block.toolCalls?.some((tc: any) => tc.id === message.tool_call_id)
             );
-            
+
             if (toolCallBlockIndex !== -1) {
               blocks = blocks.map((block, index) => {
                 if (index !== toolCallBlockIndex) return block;
-                
+
                 // 将工具结果存储到块的数据中，供 ToolCallDisplay 使用
                 let results = {};
                 try {
@@ -290,9 +349,11 @@ export function useSSEConnection() {
                 } catch {
                   results = {};
                 }
-                
-                results[message.tool_call_id] = message.content || '';
-                
+
+                if (message.tool_call_id) {
+                  results[message.tool_call_id] = message.content || '';
+                }
+
                 return {
                   ...block,
                   content: JSON.stringify(results),
@@ -303,15 +364,15 @@ export function useSSEConnection() {
           }
 
           const finalState = { ...newState, blocks };
-          
+
           return finalState;
         });
 
       } catch (error) {
         console.error('解析SSE消息失败:', error);
-        setEnhancedStreamingState((prev: EnhancedStreamingState) => ({ 
-          ...prev, 
-          error: '消息解析失败' 
+        setEnhancedStreamingState((prev: EnhancedStreamingState) => ({
+          ...prev,
+          error: '消息解析失败'
         }));
       }
     }
@@ -323,18 +384,18 @@ export function useSSEConnection() {
   ) => {
     // 关闭之前的连接
     closeConnection();
-    
+
     // 重置状态
     resetStreamingState();
-    
+
     const conversationId = options.conversationId || generateMongoId();
-    
+
     try {
       let reader: ReadableStreamDefaultReader<Uint8Array>;
 
       // 根据模式创建不同的SSE连接
       console.log('SSE Connection - Mode:', options.mode, 'AgentType:', options.agentType, 'ConversationId:', conversationId);
-      
+
       switch (options.mode) {
         case 'chat': {
           console.log('Creating Chat SSE connection');
@@ -349,7 +410,7 @@ export function useSSEConnection() {
           reader = await ConversationService.createChatSSE(request);
           break;
         }
-        
+
         case 'agent': {
           const request: AgentRequest = {
             requirement: inputText,
@@ -357,7 +418,7 @@ export function useSSEConnection() {
             conversation_id: conversationId,
             user_id: getCurrentUserId()
           };
-          
+
           if (options.agentType === 'graph') {
             console.log('Creating Graph Generate SSE connection');
             reader = await ConversationService.createGraphGenerateSSE(request);
@@ -367,19 +428,20 @@ export function useSSEConnection() {
           }
           break;
         }
-        
+
         case 'graph': {
           console.log('Creating Graph Execute SSE connection');
           const request: GraphExecuteRequest = {
             graph_name: options.graph_name,
             input_text: inputText,
-            conversation_id: conversationId,
-            continue_from_checkpoint: false
+            // 只有继续现有对话时才传递conversation_id
+            conversation_id: options.conversationId, // 使用传入的conversationId，新对话时为undefined
+            continue_from_checkpoint: options.continue_from_checkpoint || false
           };
           reader = await ConversationService.createGraphSSE(request);
           break;
         }
-        
+
         default:
           throw new Error(`不支持的模式: ${options.mode}`);
       }
@@ -398,7 +460,7 @@ export function useSSEConnection() {
       try {
         while (true) {
           const { done, value } = await reader.read();
-          
+
           if (done || abortController.signal.aborted) {
             break;
           }
@@ -421,10 +483,10 @@ export function useSSEConnection() {
         if (!abortController.signal.aborted) {
           console.error('读取流数据失败:', readError);
           const errorMessage = '数据流读取失败';
-          setEnhancedStreamingState((prev: EnhancedStreamingState) => ({ 
-            ...prev, 
+          setEnhancedStreamingState((prev: EnhancedStreamingState) => ({
+            ...prev,
             error: errorMessage,
-            isStreaming: false 
+            isStreaming: false
           }));
           options.onError?.(errorMessage);
         }
@@ -435,9 +497,9 @@ export function useSSEConnection() {
     } catch (error) {
       console.error('创建SSE连接失败:', error);
       const errorMessage = error instanceof Error ? error.message : '连接失败';
-      setEnhancedStreamingState((prev: EnhancedStreamingState) => ({ 
-        ...prev, 
-        error: errorMessage 
+      setEnhancedStreamingState((prev: EnhancedStreamingState) => ({
+        ...prev,
+        error: errorMessage
       }));
       options.onError?.(errorMessage);
       throw error;

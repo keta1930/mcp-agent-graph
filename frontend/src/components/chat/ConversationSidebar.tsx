@@ -21,8 +21,6 @@ import {
   EditOutlined,
   TagOutlined,
   HomeOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   UserOutlined,
   PlusOutlined
 } from '@ant-design/icons';
@@ -422,10 +420,11 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       <div className="conversation-sidebar collapsed">
         <Button
           type="text"
-          icon={<MenuUnfoldOutlined />}
           onClick={toggleSidebar}
           className="sidebar-toggle"
-        />
+        >
+          <img src="/starstar.png" alt="展开" style={{ width: 16, height: 16 }} />
+        </Button>
       </div>
     );
   }
@@ -434,8 +433,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     <div className="conversation-sidebar">
       {/* 侧边栏头部 */}
       <div className="sidebar-header">
-        <div className="sidebar-title">
-          <h3>对话列表</h3>
+        <div className="search-and-actions">
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder="搜索对话..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            style={{ flex: 1 }}
+          />
           <div className="header-actions">
             {onNewConversation && (
               <Tooltip title="新建对话">
@@ -449,21 +455,12 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             )}
             <Button
               type="text"
-              icon={<MenuFoldOutlined />}
               onClick={toggleSidebar}
               className="sidebar-toggle"
-            />
+            >
+              <img src="/starstar.png" alt="折叠" style={{ width: 16, height: 16 }} />
+            </Button>
           </div>
-        </div>
-        
-        <div className="search-section">
-          <Input
-            prefix={<SearchOutlined />}
-            placeholder="搜索对话..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            allowClear
-          />
         </div>
       </div>
 

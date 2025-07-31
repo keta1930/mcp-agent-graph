@@ -26,10 +26,22 @@ class GraphExecutor:
         try:
             conversation_id = await self.conversation_manager.create_conversation_with_config(graph_name, flattened_config)
 
+            # 立即发送对话ID给前端
+            yield SSEHelper.send_json({
+                "type": "conversation_created",
+                "conversation_id": conversation_id
+            })
+
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             conversation["graph_name"] = graph_name
 
+            # 发送start节点开始事件
+            yield SSEHelper.send_node_start("start", 0)
+            
             await self._record_user_input(conversation_id, input_text)
+            
+            # 发送start节点结束事件
+            yield SSEHelper.send_node_end("start")
 
             async for sse_data in self._execute_graph_by_level_sequential_stream(conversation_id, model_service):
                 yield sse_data
@@ -378,7 +390,7 @@ class GraphExecutor:
 
                 base_params = {
                     "model": model_config["model"],
-                    "messages": current_messages,
+                    "messages": filtered_messages,
                     "stream": True
                 }
 

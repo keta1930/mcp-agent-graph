@@ -63,6 +63,18 @@
 
 .conversation-sidebar.collapsed {
   width: 60px;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 16px; /* 与 conversation-header-bar 的 padding-top 对齐 */
+  justify-content: center;
+}
+
+.conversation-sidebar.collapsed .sidebar-toggle {
+  height: 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-header {
@@ -70,17 +82,68 @@
   border-bottom: 1px solid var(--glass-border);
 }
 
-.sidebar-title {
+.search-and-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 12px;
+  height: 40px; /* 确保有固定高度 */
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
+  height: 100%; /* 占满父容器高度 */
+}
+
+.header-actions .ant-btn {
+  height: 32px; /* 确保按钮有统一高度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 确保输入框与按钮对齐 */
+.search-and-actions .ant-input-affix-wrapper {
+  height: 32px; /* 与按钮高度保持一致 */
+}
+
+/* ModeSelector中的新样式 */
+.prompt-switch-button {
+  color: var(--text-secondary);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.prompt-switch-button:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.mcp-select-dropdown {
+  font-size: 12px;
+}
+
+.mcp-select-dropdown .ant-select-selector {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text-secondary) !important;
+  padding: 4px 8px !important;
+  height: auto !important;
+}
+
+.mcp-select-dropdown .ant-select-selection-item {
+  color: var(--text-secondary) !important;
+  font-size: 11px;
+  background: rgba(24, 144, 255, 0.1) !important;
+  border-radius: 4px !important;
+}
+
+.mcp-select-dropdown:hover .ant-select-selector {
+  color: var(--text-primary) !important;
 }
 
 /* 新的输入框样式 */
@@ -351,9 +414,6 @@
   color: var(--text-secondary);
 }
 
-.search-section {
-  margin-top: 16px;
-}
 
 .filter-section {
   padding: 16px 20px;
@@ -919,9 +979,50 @@
   animation: breathing 2s ease-in-out infinite;
 }
 
+.breathing-indicator.running {
+  background-color: #1890ff;
+  animation: runningBreathing 2s ease-in-out infinite;
+}
+
+.breathing-indicator.completed {
+  background-color: #52c41a;
+  animation: completedBreathing 2s ease-in-out infinite;
+}
+
+.breathing-indicator.pending {
+  background-color: #faad14;
+  animation: breathing 2s ease-in-out infinite;
+}
+
 @keyframes breathing {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@keyframes runningBreathing {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7);
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.3);
+    box-shadow: 0 0 0 8px rgba(24, 144, 255, 0);
+  }
+}
+
+@keyframes completedBreathing {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.3);
+    box-shadow: 0 0 0 8px rgba(82, 196, 26, 0);
+  }
 }
 
 .status-icon {
@@ -1207,13 +1308,16 @@
 }
 
 
-/* 流式块样式 */
+/* 流式块样式 - 现代 OpenAI 风格 */
 .enhanced-streaming-message {
   margin: 0;
+  animation: streamingFadeIn 0.3s ease-out;
 }
 
 .streaming-block {
-  margin: 12px 0;
+  margin: 16px 0;
+  animation: blockSlideIn 0.2s ease-out;
+  transform-origin: left top;
 }
 
 .streaming-block:first-child {
@@ -1224,8 +1328,36 @@
   margin-bottom: 0;
 }
 
+/* 节点块特殊样式 */
+.streaming-block.node_start-block {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 20px 0;
+  position: relative;
+  overflow: visible;
+}
+
+.streaming-block.node_start-block::before {
+  display: none;
+}
+
+.streaming-block.node_start-block .node-execution-info {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
 /* 流式块内容样式 */
-.streaming-content-block,
+.streaming-content-block {
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
 .tool-calls-block,
 .tool-result-block {
   background: var(--glass-bg);
@@ -1233,13 +1365,58 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
-  box-shadow: none; /* 移除阴影 */
+  box-shadow: none;
   padding: 12px;
 }
 
 .reasoning-block .reasoning-container,
 .tool_calls-block .tool-call-container {
-  margin: 0; /* 重置内部组件的边距，由外层统一控制 */
+  margin: 0;
+}
+
+/* 打字机效果增强 */
+.streaming-content-block .message-content-body {
+  position: relative;
+}
+
+.streaming-content-block .message-content-body::after {
+  content: '▋';
+  animation: typingCursor 1s infinite;
+  color: #1890ff;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+.streaming-content-block .message-content-body.completed::after {
+  display: none;
+}
+
+/* 流入动画 */
+@keyframes streamingFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blockSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes typingCursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 @keyframes messageBreathing {

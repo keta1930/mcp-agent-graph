@@ -9,8 +9,9 @@ export interface ConversationMessage {
 }
 
 export interface ToolCall {
-  id: string;
-  type: 'function';
+  id?: string;
+  type?: 'function';
+  index?: number;  // 用于流式工具调用的索引
   function: {
     name: string;
     arguments: string;
@@ -143,7 +144,7 @@ export type ConversationMode = 'chat' | 'agent' | 'graph';
 export type AgentType = 'mcp' | 'graph';
 
 // 流式输出块类型
-export type StreamingBlockType = 'reasoning' | 'content' | 'tool_calls';
+export type StreamingBlockType = 'reasoning' | 'content' | 'tool_calls' | 'node_start';
 
 // 流式输出块
 export interface StreamingBlock {
@@ -154,6 +155,11 @@ export interface StreamingBlock {
   toolCallId?: string;
   isComplete: boolean;
   timestamp: number;
+  nodeInfo?: {
+    nodeName: string;
+    level: number;
+    status: 'running' | 'completed' | 'pending';
+  };
 }
 
 // 增强的流式状态，支持分块渲染

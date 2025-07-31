@@ -1,9 +1,9 @@
 // src/components/chat/MessageDisplay.tsx
 import React, { useState, useEffect } from 'react';
 import { Typography, Tag, Button, Space, Tooltip, message } from 'antd';
-import { 
-  UserOutlined, 
-  RobotOutlined, 
+import {
+  UserOutlined,
+  RobotOutlined,
   ToolOutlined,
   DownOutlined,
   RightOutlined,
@@ -29,10 +29,10 @@ interface TypewriterTextProps {
   onComplete?: () => void;
 }
 
-const TypewriterText: React.FC<TypewriterTextProps> = ({ 
-  text, 
-  speed = 20, 
-  onComplete 
+const TypewriterText: React.FC<TypewriterTextProps> = ({
+  text,
+  speed = 20,
+  onComplete
 }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -61,7 +61,7 @@ interface CodeBlockProps {
 
 const GlassCodeBlock: React.FC<CodeBlockProps> = ({ language, children, className }) => {
   const [copied, setCopied] = useState(false);
-  
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(children);
@@ -117,12 +117,12 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = fa
     const lines = text.split('\n');
     let currentBlock: { type: string; content: string; startIndex: number } | null = null;
     let currentLineIndex = 0;
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const currentPos = currentLineIndex;
       currentLineIndex += line.length + 1; // +1 for newline
-      
+
       if (line.startsWith('```')) {
         if (currentBlock) {
           // 结束当前代码块
@@ -148,7 +148,7 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = fa
         currentBlock.content += (currentBlock.content ? '\n' : '') + line;
       }
     }
-    
+
     // 如果有未完成的代码块（流式输出中）
     if (currentBlock) {
       codeBlocks.push({
@@ -159,7 +159,7 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = fa
         endIndex: text.length
       });
     }
-    
+
     return codeBlocks;
   };
 
@@ -172,8 +172,8 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = fa
         code({ node, inline, className, children, ...props }) {
           const match = /language-(\w+)/.exec(className || '');
           const language = match ? match[1] : '';
-          
-          
+
+
           return !inline && match ? (
             <GlassCodeBlock language={language} className={className}>
               {String(children).replace(/\n$/, '')}
@@ -201,7 +201,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
 
   return (
     <div className="tool-call-container glass-card">
-      <div 
+      <div
         className="tool-call-header"
         onClick={() => setExpanded(!expanded)}
       >
@@ -216,7 +216,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
           icon={expanded ? <DownOutlined /> : <RightOutlined />}
         />
       </div>
-      
+
       {expanded && (
         <div className="tool-call-details">
           <div className="tool-call-section">
@@ -225,7 +225,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
               <SyntaxHighlighter
                 language="json"
                 style={tomorrow}
-                customStyle={{ 
+                customStyle={{
                   background: 'transparent',
                   padding: '8px',
                   fontSize: '12px'
@@ -235,7 +235,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
               </SyntaxHighlighter>
             </div>
           </div>
-          
+
           {result && (
             <div className="tool-call-section">
               <Text type="secondary">结果:</Text>
@@ -261,7 +261,7 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
 
   return (
     <div className="reasoning-container glass-card">
-      <div 
+      <div
         className="reasoning-header"
         onClick={() => setExpanded(!expanded)}
       >
@@ -276,7 +276,7 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
           icon={expanded ? <DownOutlined /> : <RightOutlined />}
         />
       </div>
-      
+
       {expanded && (
         <div className="reasoning-content">
           <ReactMarkdown
@@ -285,8 +285,8 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
               code({ node, inline, className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '');
                 const language = match ? match[1] : '';
-                
-                    
+
+
                 return !inline && match ? (
                   <GlassCodeBlock language={language} className={className}>
                     {String(children).replace(/\n$/, '')}
@@ -352,9 +352,8 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
     <div className="node-execution-info">
       <div className="node-header">
         <div className="node-status">
-          <div 
-            className="breathing-indicator"
-            style={{ backgroundColor: getStatusColor() }}
+          <div
+            className={`breathing-indicator ${status}`}
           />
           {getStatusIcon()}
         </div>
@@ -363,11 +362,8 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
           <Text type="secondary"> (Level {level})</Text>
         </div>
       </div>
-      
+
       <div className="node-meta">
-        {outputEnabled && (
-          <Tag>输出: {outputEnabled}</Tag>
-        )}
         {mcpServers && mcpServers.length > 0 && (
           <Tooltip title={mcpServers.join(', ')}>
             <Tag color="blue">
@@ -394,57 +390,58 @@ interface MessageItemProps {
   reasoningContent?: string;
   isGraphMode?: boolean;
   isFirstMessageInRound?: boolean;
-  generationType?: string;
+  renderingMode: 'chat' | 'agent' | 'graph_run'; // 新增：明确的渲染模式
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ 
-  message, 
+const MessageItem: React.FC<MessageItemProps> = ({
+  message,
   showTyping = false,
   toolResults = {},
   nodeInfo,
   reasoningContent,
   isGraphMode = false,
   isFirstMessageInRound = false,
-  generationType
+  renderingMode
 }) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isTool = message.role === 'tool';
-  
+
   // 优先使用消息自带的reasoning_content，其次使用流式传入的reasoningContent
   const effectiveReasoningContent = (message as any).reasoning_content || reasoningContent;
-  
+
   // 基础过滤：不显示系统消息和工具结果消息
   if (isSystem || isTool) {
     return null;
   }
 
-  // Graph模式下的特殊处理：如果是用户消息且没有节点信息，则不显示
-  if (isGraphMode && isUser && !nodeInfo) {
+  // Graph执行模式下的特殊处理：如果是用户消息且没有节点信息，则不显示
+  if (renderingMode === 'graph_run' && isUser && !nodeInfo) {
     return null;
   }
 
   return (
     <div className={`message-item ${isUser ? 'user-message' : 'assistant-message'}`}>
       {/* 呼吸灯指示器 - 在每个round的第一条消息时显示在消息块上方左对齐 */}
-      {isFirstMessageInRound && (
+      {/* Graph执行模式不显示呼吸灯，因为有独立的节点信息显示 */}
+      {isFirstMessageInRound && renderingMode !== 'graph_run' && (
         <div className="message-breathing-indicator">
-          <div 
+          <div
             className={`breathing-dot ${isUser ? 'user-indicator' : 'assistant-indicator'}`}
           />
           <span className="breathing-label">
-            {isUser ? getCurrentUserDisplayName() : (generationType === 'mcp' || generationType === 'graph' ? 'Agent' : 'Assistant')}
+            {isUser ? getCurrentUserDisplayName() : (renderingMode === 'agent' ? 'Agent' : 'Assistant')}
           </span>
         </div>
       )}
 
-      {/* Graph模式的节点信息 */}
+      {/* Graph执行模式的节点信息 */}
       {nodeInfo && (
         <NodeExecutionInfo {...nodeInfo} />
       )}
 
-      {/* Graph模式下用户消息只显示节点信息，不显示消息内容 */}
-      {!(isGraphMode && isUser) && (
+      {/* Graph执行模式下用户消息：只有start节点显示消息内容，其他节点不显示 */}
+      {!(renderingMode === 'graph_run' && isUser && nodeInfo?.nodeName !== 'start') && (
         <div className="message-content">
           <div className="message-body">
             {/* AI思考过程优先显示 */}
@@ -455,32 +452,28 @@ const MessageItem: React.FC<MessageItemProps> = ({
             {/* 主要消息内容 */}
             {message.content && (
               <div className="message-text">
-                
+
                 <div className="message-content-body">
                   {showTyping ? (
                     <div className="streaming-content">
-                      {/* 流式消息也需要根据generationType选择渲染器 */}
-                      {!isUser && (generationType === 'mcp' || generationType === 'graph') ? (
-                        <AgentXMLRenderer 
-                          content={message.content} 
-                          generationType={generationType as 'mcp' | 'graph'} 
+                      {/* 流式消息根据渲染模式选择渲染器 */}
+                      {!isUser && renderingMode === 'agent' ? (
+                        <AgentXMLRenderer
+                          content={message.content}
+                          generationType="mcp" // Agent模式统一使用mcp类型，具体类型由内容决定
+                          isStreaming={true}
                         />
                       ) : (
                         <SmartMarkdown content={message.content} isStreaming={true} />
                       )}
                     </div>
                   ) : (
-                    // Agent模式的特殊渲染
-                    !isUser && (generationType === 'mcp' || generationType === 'graph') ? (
-                      (() => {
-                        console.log('Using AgentXMLRenderer:', { isUser, generationType, messageContent: message.content });
-                        return (
-                          <AgentXMLRenderer 
-                            content={message.content} 
-                            generationType={generationType as 'mcp' | 'graph'} 
-                          />
-                        );
-                      })()
+                    // 根据渲染模式选择渲染器
+                    !isUser && renderingMode === 'agent' ? (
+                      <AgentXMLRenderer
+                        content={message.content}
+                        generationType="mcp" // Agent模式统一使用mcp类型，具体类型由内容决定
+                      />
                     ) : (
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
@@ -488,8 +481,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
                           code({ node, inline, className, children, ...props }) {
                             const match = /language-(\w+)/.exec(className || '');
                             const language = match ? match[1] : '';
-                            
-                                            
+
+
                             return !inline && match ? (
                               <GlassCodeBlock language={language} className={className}>
                                 {String(children).replace(/\n$/, '')}
@@ -532,29 +525,32 @@ const MessageItem: React.FC<MessageItemProps> = ({
 // 流式块渲染组件
 interface StreamingBlockDisplayProps {
   block: StreamingBlock;
-  generationType?: string;
+  renderingMode: 'chat' | 'agent' | 'graph_run'; // 新增：明确的渲染模式
   toolResults?: Record<string, string>;
 }
 
-const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, generationType, toolResults = {} }) => {
+const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, renderingMode, toolResults = {} }) => {
   switch (block.type) {
     case 'reasoning':
       return <ReasoningDisplay content={block.content} />;
-      
+
     case 'content':
       return (
         <div className="streaming-content-block">
-          {generationType === 'mcp' || generationType === 'graph' ? (
-            <AgentXMLRenderer 
-              content={block.content} 
-              generationType={generationType as 'mcp' | 'graph'} 
-            />
-          ) : (
-            <SmartMarkdown content={block.content} isStreaming={!block.isComplete} />
-          )}
+          <div className={`message-content-body ${block.isComplete ? 'completed' : ''}`}>
+            {renderingMode === 'agent' ? (
+              <AgentXMLRenderer
+                content={block.content}
+                generationType="mcp" // Agent模式统一使用mcp类型
+                isStreaming={!block.isComplete}
+              />
+            ) : (
+              <SmartMarkdown content={block.content} isStreaming={!block.isComplete} />
+            )}
+          </div>
         </div>
       );
-      
+
     case 'tool_calls':
       // 从块内容中解析工具结果
       let blockToolResults: Record<string, string> = {};
@@ -565,10 +561,10 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, ge
       } catch {
         // 解析失败时使用空对象
       }
-      
+
       // 合并外部传入的工具结果和块内部的工具结果
       const combinedToolResults = { ...toolResults, ...blockToolResults };
-      
+
       return (
         <div className="tool-calls-block">
           {block.toolCalls?.map((toolCall: any, index: number) => (
@@ -580,8 +576,20 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, ge
           ))}
         </div>
       );
-      
-      
+
+    case 'node_start':
+      // 渲染节点信息
+      if (block.nodeInfo) {
+        return (
+          <NodeExecutionInfo
+            nodeName={block.nodeInfo.nodeName}
+            level={block.nodeInfo.level}
+            status={block.nodeInfo.status}
+          />
+        );
+      }
+      return null;
+
     default:
       return null;
   }
@@ -595,57 +603,87 @@ interface MessageDisplayProps {
   agentType?: string;
 }
 
-const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({ 
+const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
   conversation,
   enhancedStreamingState,
   pendingUserMessage,
   currentMode,
   agentType
 }) => {
-  // 根据generation_type决定消息显示方式
-  const isGraphExecution = conversation.generation_type === 'graph_run';
-  
-  // 为流式消息推断generationType
-  const getEffectiveGenerationType = () => {
-    // 如果对话有generation_type，优先使用
-    if (conversation.generation_type) {
-      return conversation.generation_type;
+  // 容错处理：确保conversation存在
+  if (!conversation) {
+    return <div className="message-display">
+      <div className="messages-container">
+        {pendingUserMessage && (
+          <div className="pending-user-message">
+            <MessageItem
+              message={{
+                role: 'user',
+                content: pendingUserMessage
+              }}
+              isFirstMessageInRound={true}
+              renderingMode={getRenderingMode()}
+            />
+          </div>
+        )}
+      </div>
+    </div>;
+  }
+
+  // 根据前端当前模式确定渲染模式，不依赖后端数据
+  const getRenderingMode = (): 'chat' | 'agent' | 'graph_run' => {
+    // 优先使用当前对话模式
+    if (currentMode === 'chat') {
+      return 'chat';
+    } else if (currentMode === 'agent') {
+      return 'agent';
+    } else if (currentMode === 'graph') {
+      return 'graph_run';
     }
-    
-    // 如果是新对话，根据当前模式和agentType推断
-    if (currentMode === 'agent') {
-      return agentType; // 'mcp' 或 'graph'
+
+    // 备用：根据后端数据推断（向后兼容）
+    if (conversation.generation_type === 'chat') {
+      return 'chat';
+    } else if (conversation.generation_type === 'mcp' || conversation.generation_type === 'graph') {
+      return 'agent';
+    } else if (conversation.generation_type === 'graph_run') {
+      return 'graph_run';
     }
-    
-    // 默认返回当前模式
-    return currentMode;
+
+    // 最终默认值
+    return 'chat';
   };
-  
-  const effectiveGenerationType = getEffectiveGenerationType();
-  
+
+  const renderingMode = getRenderingMode();
+
+  // 根据generation_type决定消息显示方式
+  const isGraphExecution = renderingMode === 'graph_run';
+
   // 构建工具调用结果映射
   const buildToolResultsMap = (rounds: any[]) => {
     const toolResults: Record<string, string> = {};
-    
-    rounds.forEach(round => {
-      if (round.messages) {
-        round.messages.forEach((msg: ConversationMessage) => {
-          if (msg.role === 'tool' && msg.tool_call_id) {
-            toolResults[msg.tool_call_id] = msg.content;
-          }
-        });
-      }
-    });
-    
+
+    if (Array.isArray(rounds)) {
+      rounds.forEach(round => {
+        if (round && round.messages && Array.isArray(round.messages)) {
+          round.messages.forEach((msg: ConversationMessage) => {
+            if (msg && msg.role === 'tool' && msg.tool_call_id) {
+              toolResults[msg.tool_call_id] = msg.content || '';
+            }
+          });
+        }
+      });
+    }
+
     return toolResults;
   };
 
-  const toolResults = buildToolResultsMap(conversation.rounds);
+  const toolResults = buildToolResultsMap(conversation.rounds || []);
 
   return (
     <div className="message-display">
       <div className="messages-container">
-        {conversation.rounds.map((round, roundIndex) => {
+        {(conversation.rounds || []).map((round, roundIndex) => {
           if (isGraphExecution) {
             // Graph执行模式：每个round是一个节点
             const nodeInfo = {
@@ -656,19 +694,40 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
               status: 'completed' as const
             };
 
+            // 特殊处理start节点：用户消息应该显示在节点信息内部
+            const isStartNode = nodeInfo.nodeName === 'start';
+            const userMessages = round.messages?.filter(msg => msg.role === 'user') || [];
+            const nonUserMessages = round.messages?.filter(msg => msg.role !== 'user') || [];
+
             return (
               <div key={roundIndex} className="node-round">
-                {/* 独立显示节点信息 */}
-                <NodeExecutionInfo {...nodeInfo} />
-                
-                {round.messages?.map((message, msgIndex) => (
+                {/* 节点信息显示 */}
+                {isStartNode && userMessages.length > 0 ? (
+                  // start节点：将用户消息与节点信息结合显示
+                  userMessages.map((message, msgIndex) => (
+                    <MessageItem
+                      key={`${roundIndex}-user-${msgIndex}`}
+                      message={message}
+                      toolResults={toolResults}
+                      nodeInfo={nodeInfo}  // start节点的用户消息显示节点信息
+                      isGraphMode={true}
+                      renderingMode={renderingMode}
+                    />
+                  ))
+                ) : (
+                  // 非start节点或没有用户消息：独立显示节点信息
+                  <NodeExecutionInfo {...nodeInfo} />
+                )}
+
+                {/* 显示非用户消息（assistant消息等） */}
+                {nonUserMessages.map((message, msgIndex) => (
                   <MessageItem
                     key={`${roundIndex}-${msgIndex}`}
                     message={message}
                     toolResults={toolResults}
-                    nodeInfo={undefined}  // 节点信息已独立显示，不再在消息中显示
+                    nodeInfo={undefined}  // 节点信息已处理，不再在这里显示
                     isGraphMode={true}
-                    generationType={conversation.generation_type}
+                    renderingMode={renderingMode}
                   />
                 ))}
               </div>
@@ -678,7 +737,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             return round.messages?.map((message, msgIndex) => {
               // 判断是否是该角色在这个round中的第一条消息
               const isFirstMessageOfRole = round.messages
-                ? round.messages.findIndex((msg: ConversationMessage) => 
+                ? round.messages.findIndex((msg: ConversationMessage) =>
                     msg.role === message.role && msg.role !== 'system' && msg.role !== 'tool'
                   ) === msgIndex
                 : false;
@@ -689,7 +748,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                   message={message}
                   toolResults={toolResults}
                   isFirstMessageInRound={isFirstMessageOfRole}
-                  generationType={conversation.generation_type}
+                  renderingMode={renderingMode}
                 />
               );
             });
@@ -697,7 +756,8 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
         })}
 
         {/* 待发送的用户消息显示 */}
-        {pendingUserMessage && (
+        {/* Graph执行模式下不显示待发送的用户消息，等待start节点来显示 */}
+        {pendingUserMessage && !isGraphExecution && (
           <div className="pending-user-message">
             <MessageItem
               message={{
@@ -705,7 +765,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                 content: pendingUserMessage
               }}
               isFirstMessageInRound={true}
-              generationType={effectiveGenerationType}
+              renderingMode={renderingMode}
             />
           </div>
         )}
@@ -714,19 +774,22 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
         {enhancedStreamingState && enhancedStreamingState.isStreaming && (
           <div className="enhanced-streaming-message">
             {/* 呼吸灯指示器 - 在流式消息上方左对齐 */}
-            <div className="message-breathing-indicator">
-              <div className="breathing-dot assistant-indicator" />
-              <span className="breathing-label">
-                {effectiveGenerationType === 'mcp' || effectiveGenerationType === 'graph' ? 'Agent' : 'Assistant'}
-              </span>
-            </div>
-            
+            {/* Graph执行模式不显示呼吸灯，因为有独立的节点信息显示 */}
+            {renderingMode !== 'graph_run' && (
+              <div className="message-breathing-indicator">
+                <div className="breathing-dot assistant-indicator" />
+                <span className="breathing-label">
+                  {renderingMode === 'agent' ? 'Agent' : 'Assistant'}
+                </span>
+              </div>
+            )}
+
             {/* 分块内容 */}
             {enhancedStreamingState.blocks.map((block: StreamingBlock) => (
               <div key={block.id} className={`streaming-block ${block.type}-block`}>
-                <StreamingBlockDisplay 
-                  block={block} 
-                  generationType={effectiveGenerationType}
+                <StreamingBlockDisplay
+                  block={block}
+                  renderingMode={renderingMode}
                   toolResults={toolResults}
                 />
               </div>
@@ -740,7 +803,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             <div className="summary-header">
               <Text strong>执行总结</Text>
             </div>
-            
+
             <div className="execution-chain">
               <Text type="secondary">执行链:</Text>
               <div className="chain-visualization">
@@ -775,58 +838,58 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
   if (prevProps.conversation?.conversation_id !== nextProps.conversation?.conversation_id) {
     return false;
   }
-  
+
   // 如果流式状态发生变化，需要重新渲染
   const prevStreamingState = prevProps.enhancedStreamingState;
   const nextStreamingState = nextProps.enhancedStreamingState;
-  
+
   if (prevStreamingState?.isStreaming !== nextStreamingState?.isStreaming) {
     return false;
   }
-  
+
   // 检查流式blocks是否发生变化
   if (prevStreamingState?.blocks?.length !== nextStreamingState?.blocks?.length) {
     return false;
   }
-  
+
   // 如果有任何流式blocks，检查它们的内容是否发生变化
   if (prevStreamingState?.blocks && nextStreamingState?.blocks) {
     for (let i = 0; i < prevStreamingState.blocks.length; i++) {
       const prevBlock = prevStreamingState.blocks[i];
       const nextBlock = nextStreamingState.blocks[i];
-      
-      if (prevBlock?.content !== nextBlock?.content || 
+
+      if (prevBlock?.content !== nextBlock?.content ||
           prevBlock?.isComplete !== nextBlock?.isComplete ||
           prevBlock?.id !== nextBlock?.id) {
         return false;
       }
     }
   }
-  
+
   // 检查其他关键属性
   if (prevProps.pendingUserMessage !== nextProps.pendingUserMessage ||
       prevProps.currentMode !== nextProps.currentMode ||
       prevProps.agentType !== nextProps.agentType) {
     return false;
   }
-  
+
   // 简化对话内容比较 - 只比较rounds长度和最后一轮
   const prevRounds = prevProps.conversation?.rounds || [];
   const nextRounds = nextProps.conversation?.rounds || [];
-  
+
   if (prevRounds.length !== nextRounds.length) {
     return false;
   }
-  
+
   if (prevRounds.length > 0 && nextRounds.length > 0) {
     const prevLastRound = prevRounds[prevRounds.length - 1];
     const nextLastRound = nextRounds[nextRounds.length - 1];
-    
+
     if (JSON.stringify(prevLastRound) !== JSON.stringify(nextLastRound)) {
       return false;
     }
   }
-  
+
   // 所有检查都通过，不需要重新渲染
   return true;
 });

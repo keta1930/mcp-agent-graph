@@ -71,3 +71,8 @@ class SSEHelper:
             "tool_call_id": tool_call_id,
             "content": content
         })
+
+    @staticmethod
+    def send_json(data: Dict[str, Any]) -> str:
+        """发送任意JSON数据 - 通用方法"""
+        return SSEHelper.format_sse_data(data)
