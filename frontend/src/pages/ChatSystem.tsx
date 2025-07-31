@@ -23,6 +23,8 @@ const ChatSystem: React.FC = () => {
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   // 临时对话数据，用于新建对话时的数据管理
   const [temporaryConversation, setTemporaryConversation] = useState<ConversationDetail | null>(null);
+  // 当前选择的图名称（用于Graph模式）
+  const [selectedGraphName, setSelectedGraphName] = useState<string>('');
   // 压缩相关状态
   const [compactConfigVisible, setCompactConfigVisible] = useState(false);
   const [selectedCompactType, setSelectedCompactType] = useState<'brutal' | 'precise'>('precise');
@@ -99,6 +101,7 @@ const ChatSystem: React.FC = () => {
     // 清除待发送消息状态和临时对话
     setPendingUserMessage(null);
     setTemporaryConversation(null);
+    setSelectedGraphName('');
 
     // 先设置新的活跃对话ID并加载新对话，不清除当前对话以避免闪烁
     setActiveConversationId(conversationId);
@@ -116,6 +119,7 @@ const ChatSystem: React.FC = () => {
     // 清除待发送消息状态和临时对话
     setPendingUserMessage(null);
     setTemporaryConversation(null);
+    setSelectedGraphName('');
 
     // 清除当前对话
     clearCurrentConversation();
@@ -173,6 +177,7 @@ const ChatSystem: React.FC = () => {
     // 清除当前对话和临时对话，准备开始新对话
     clearCurrentConversation();
     setTemporaryConversation(null);
+    setSelectedGraphName('');
     setActiveConversationId(undefined);
     // 清除待发送消息状态
     setPendingUserMessage(null);
@@ -186,6 +191,11 @@ const ChatSystem: React.FC = () => {
       const conversationMode = options.mode || currentMode;
       const conversationAgentType = options.agentType || (conversationMode === 'agent' ? agentType : undefined);
       const isGraphMode = conversationMode === 'graph';
+
+      // 记录选择的Graph名称
+      if (isGraphMode && options.selectedGraph) {
+        setSelectedGraphName(options.selectedGraph);
+      }
 
       // 立即设置活跃对话ID，界面立即切换到对话模式
       setActiveConversationId(conversationId);
@@ -218,14 +228,15 @@ const ChatSystem: React.FC = () => {
         system_prompt: options.systemPrompt,
         user_prompt: options.userPrompt,
         onConversationCreated: (backendConversationId: string) => {
-          // Graph模式时更新实际的对话ID
+          // Graph模式时更新实际的对话ID和标题
           if (isGraphMode) {
             actualConversationId = backendConversationId;
             setActiveConversationId(backendConversationId);
-            // 更新临时对话的ID
+            // 更新临时对话的ID和标题
             setTemporaryConversation(prev => prev ? {
               ...prev,
-              conversation_id: backendConversationId
+              conversation_id: backendConversationId,
+              title: backendConversationId // 使用conversation_id作为标题
             } : null);
           }
         },
@@ -244,6 +255,30 @@ const ChatSystem: React.FC = () => {
           setPendingUserMessage(null);
           setTemporaryConversation(null);
           message.error(`连接错误: ${error}`);
+        },
+        onAgentCompletion: (completionData: any) => {
+          // 处理Agent模式的完成事件
+          if (completionData.tool_name) {
+            showSuccessNotification(
+              `MCP工具生成完成`,
+              `工具 "${completionData.tool_name}" 已成功创建并注册到系统`,
+              5000
+            );
+          } else if (completionData.graph_name) {
+            showSuccessNotification(
+              `Graph配置生成完成`,
+              `图配置 "${completionData.graph_name}" 已成功创建并保存`,
+              5000
+            );
+          }
+        },
+        onAgentIncomplete: (incompleteData: any) => {
+          // 处理Agent模式的未完成事件
+          showInfoNotification(
+            `生成未完成`,
+            incompleteData.message,
+            4000
+          );
         }
       }).catch(error => {
         console.error('启动SSE连接失败:', error);
@@ -258,7 +293,7 @@ const ChatSystem: React.FC = () => {
       setPendingUserMessage(null);
       setTemporaryConversation(null);
     }
-  }, [currentMode, agentType, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation]);
+  }, [currentMode, agentType, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation, showSuccessNotification, showInfoNotification]);
 
   // 发送消息
   const handleSendMessage = useCallback(async (messageText: string, options: any = {}) => {
@@ -291,6 +326,30 @@ const ChatSystem: React.FC = () => {
           // 清除待发送消息状态
           setPendingUserMessage(null);
           // 出错时保持当前状态，不重新加载对话以避免打断用户体验
+        },
+        onAgentCompletion: (completionData: any) => {
+          // 处理Agent模式的完成事件
+          if (completionData.tool_name) {
+            showSuccessNotification(
+              `MCP工具生成完成`,
+              `工具 "${completionData.tool_name}" 已成功创建并注册到系统`,
+              5000
+            );
+          } else if (completionData.graph_name) {
+            showSuccessNotification(
+              `Graph配置生成完成`,
+              `图配置 "${completionData.graph_name}" 已成功创建并保存`,
+              5000
+            );
+          }
+        },
+        onAgentIncomplete: (incompleteData: any) => {
+          // 处理Agent模式的未完成事件
+          showInfoNotification(
+            `生成未完成`,
+            incompleteData.message,
+            4000
+          );
         }
       });
     } catch (error) {
@@ -299,7 +358,7 @@ const ChatSystem: React.FC = () => {
       // 清除待发送消息状态
       setPendingUserMessage(null);
     }
-  }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail, silentUpdateConversations]);
+  }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail, silentUpdateConversations, showSuccessNotification, showInfoNotification]);
 
   // 处理压缩类型选择
   const handleCompactTypeSelect = useCallback((compactType: 'brutal' | 'precise') => {
@@ -375,6 +434,17 @@ const ChatSystem: React.FC = () => {
   // 获取当前显示的对话
   const displayConversation = getDisplayConversation();
 
+  // 获取显示标题
+  const getDisplayTitle = () => {
+    if (displayConversation?.title) {
+      return displayConversation.title;
+    }
+    if (pendingUserMessage) {
+      return '新对话';
+    }
+    return '';
+  };
+
   return (
     <div className="chat-system-page">
       <div className="chat-system-layout">
@@ -399,7 +469,16 @@ const ChatSystem: React.FC = () => {
               {/* 对话头部 */}
               <div className="conversation-header-bar">
                 <div className="conversation-title-display">
-                  {displayConversation?.title || (pendingUserMessage ? '新对话' : '')}
+                  {getDisplayTitle()}
+                  {/* Graph模式显示选择的图名称 */}
+                  {currentMode === 'graph' && selectedGraphName && (
+                    <span className="graph-name-indicator">
+                      {' - '}
+                      <span style={{ color: '#1890ff', fontWeight: 'normal' }}>
+                        {selectedGraphName}
+                      </span>
+                    </span>
+                  )}
                 </div>
                 <div className="conversation-actions">
                   {/* Chat模式的压缩按钮 */}

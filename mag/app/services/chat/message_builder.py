@@ -64,6 +64,7 @@ class MessageBuilder:
             processed_messages.append(msg)
             
         logger.debug(f"验证消息完成，处理了 {len(processed_messages)} 条消息")
+        print("处理后的消息：", processed_messages)
         return processed_messages
 
     def format_tool_message(self, tool_call_id: str, content: str) -> Dict[str, Any]:

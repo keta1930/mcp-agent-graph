@@ -26,6 +26,8 @@ interface SSEConnectionOptions {
   onComplete?: () => void;
   onError?: (error: string) => void;
   onConversationCreated?: (conversationId: string) => void;
+  onAgentCompletion?: (completionData: any) => void;
+  onAgentIncomplete?: (incompleteData: any) => void;
 }
 
 
@@ -132,10 +134,12 @@ export function useSSEConnection() {
           showNotification(message.error.message, 'error');
         }
         if (message.completion) {
-          showNotification(message.completion.message, 'success');
+          // 处理Agent模式的完成事件
+          options.onAgentCompletion?.(message.completion);
         }
         if (message.incomplete) {
-          showNotification(message.incomplete.message, 'info');
+          // 处理Agent模式的未完成事件
+          options.onAgentIncomplete?.(message.incomplete);
         }
         if (message.type === 'graph_complete') {
           showNotification('Graph执行完成', 'success');
@@ -165,6 +169,7 @@ export function useSSEConnection() {
 
           // 处理graph对话创建事件
           if (message.type === 'conversation_created') {
+            console.log('Graph conversation created:', message.conversation_id);
             // 通过options回调通知外部更新conversationId
             options.onConversationCreated?.(message.conversation_id);
             return { ...newState, blocks };

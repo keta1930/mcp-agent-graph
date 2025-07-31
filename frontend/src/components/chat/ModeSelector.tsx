@@ -1,9 +1,9 @@
 // src/components/chat/ModeSelector.tsx
 import React from 'react';
-import { Card, Select, Button, Space, Typography, Row, Col } from 'antd';
-import { 
-  MessageOutlined, 
-  RobotOutlined, 
+import { Card, Select, Button, Space, Typography, Row, Col, Switch, Tooltip } from 'antd';
+import {
+  MessageOutlined,
+  RobotOutlined,
   ShareAltOutlined,
   ToolOutlined,
   NodeIndexOutlined,
@@ -25,37 +25,43 @@ interface ModeSelectorProps {
   onStartConversation: (inputText: string, options?: any) => void;
 }
 
-const ModeSelector: React.FC<ModeSelectorProps> = ({ 
-  onModeSelect, 
-  onStartConversation 
+const ModeSelector: React.FC<ModeSelectorProps> = ({
+  onModeSelect,
+  onStartConversation
 }) => {
-  const { 
-    currentMode, 
-    agentType, 
-    setCurrentMode, 
-    setAgentType 
+  const {
+    currentMode,
+    agentType,
+    setCurrentMode,
+    setAgentType
   } = useConversationStore();
 
   const { models: availableModels, fetchModels } = useModelStore();
   const { graphs: availableGraphs, fetchGraphs } = useGraphEditorStore();
   const { config: mcpConfig, status: mcpStatus, fetchConfig: fetchMCPConfig, fetchStatus: fetchMCPStatus } = useMCPStore();
 
-  // 获取可用的MCP服务器
+  // 获取所有MCP服务器（不论连接状态）
   const availableMCPServers = React.useMemo(() => {
     return Object.keys(mcpConfig.mcpServers || {}).filter(serverName => {
       const server = mcpConfig.mcpServers[serverName];
-      const status = mcpStatus[serverName];
-      return !server.disabled && status?.connected;
+      return !server.disabled; // 只过滤掉被禁用的服务器
     });
-  }, [mcpConfig, mcpStatus]);
+  }, [mcpConfig]);
+
+  // 获取服务器连接状态
+  const getServerConnectionStatus = React.useCallback((serverName: string) => {
+    const status = mcpStatus[serverName];
+    return status?.connected || false;
+  }, [mcpStatus]);
 
   const [selectedModel, setSelectedModel] = React.useState<string>('');
   const [selectedGraph, setSelectedGraph] = React.useState<string>('');
-  const [selectedMCPServers, setSelectedMCPServers] = React.useState<string[]>([]);
+  const [selectedMCPServers, setSelectedMCPServers] = React.useState<Record<string, boolean>>({});
   const [systemPrompt, setSystemPrompt] = React.useState('');
   const [userPrompt, setUserPrompt] = React.useState('');
   const [inputText, setInputText] = React.useState('');
   const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
+  const [showMcpTools, setShowMcpTools] = React.useState(false);
 
   const handleModeChange = (mode: ConversationMode) => {
     setCurrentMode(mode);
@@ -63,11 +69,12 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     // 重置选择状态
     setSelectedModel('');
     setSelectedGraph('');
-    setSelectedMCPServers([]);
+    setSelectedMCPServers({});
     setSystemPrompt('');
     setUserPrompt('');
     setInputText('');
     setPromptMode('user'); // 重置为用户提示词模式
+    setShowMcpTools(false);
     // 设置Agent模式的默认类型
     if (mode === 'agent') {
       setAgentType('mcp');
@@ -82,6 +89,15 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     fetchMCPStatus();
   }, [fetchModels, fetchGraphs, fetchMCPConfig, fetchMCPStatus]);
 
+  // 初始化MCP服务器状态
+  React.useEffect(() => {
+    const initialStates: Record<string, boolean> = {};
+    availableMCPServers.forEach(serverName => {
+      initialStates[serverName] = false;
+    });
+    setSelectedMCPServers(initialStates);
+  }, [availableMCPServers]);
+
   const handleStart = () => {
     const content = currentMode === 'chat' && userPrompt.trim() ? userPrompt.trim() : inputText.trim();
     if (content) {
@@ -91,7 +107,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
         agentType: currentMode === 'agent' ? agentType : undefined,
         selectedModel,
         selectedGraph,
-        selectedMCPServers,
+        selectedMCPServers: Object.entries(selectedMCPServers)
+          .filter(([_, enabled]) => enabled)
+          .map(([serverName]) => serverName),
         systemPrompt: systemPrompt.trim() || undefined,
         userPrompt: userPrompt.trim() || undefined
       });
@@ -101,7 +119,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const canStart = () => {
     const content = currentMode === 'chat' ? userPrompt.trim() : inputText.trim();
     if (!content) return false;
-    
+
     switch (currentMode) {
       case 'chat':
         return !!selectedModel;
@@ -114,6 +132,21 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      handleStart();
+    }
+  };
+
+  // 切换MCP服务器状态
+  const toggleMcpServer = (serverName: string, enabled: boolean) => {
+    setSelectedMCPServers(prev => ({
+      ...prev,
+      [serverName]: enabled
+    }));
+  };
+
   const modes = [
     {
       key: 'chat' as ConversationMode,
@@ -124,7 +157,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     },
     {
       key: 'agent' as ConversationMode,
-      title: 'Agent模式', 
+      title: 'Agent模式',
       description: 'AI生成MCP工具或Graph配置',
       icon: <RobotOutlined />,
       color: '#722ed1'
@@ -137,6 +170,38 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       color: '#13c2c2'
     }
   ];
+
+  const enabledMcpCount = Object.values(selectedMCPServers).filter(Boolean).length;
+
+  const getCurrentInputValue = () => {
+    if (currentMode === 'chat') {
+      return promptMode === 'user' ? userPrompt : systemPrompt;
+    }
+    return inputText;
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (currentMode === 'chat') {
+      if (promptMode === 'user') {
+        setUserPrompt(e.target.value);
+      } else {
+        setSystemPrompt(e.target.value);
+      }
+    } else {
+      setInputText(e.target.value);
+    }
+  };
+
+  const getInputPlaceholder = () => {
+    if (currentMode === 'chat') {
+      return promptMode === 'user' ? '输入您想说的话... (Ctrl+Enter发送)' : '输入系统提示词（可选）... (Ctrl+Enter发送)'
+    } else if (currentMode === 'agent') {
+      return agentType === 'mcp' ?
+        '描述您希望AI生成的MCP工具功能... (Ctrl+Enter发送)' :
+        '描述您希望AI生成的Graph工作流... (Ctrl+Enter发送)';
+    }
+    return '输入要传递给Graph的内容... (Ctrl+Enter发送)';
+  };
 
   return (
     <div className="mode-selector-container">
@@ -153,7 +218,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                 styles={{ body: { padding: '24px' } }}
               >
                 <div className="mode-card-content">
-                  <div 
+                  <div
                     className="mode-icon"
                     style={{ color: mode.color }}
                   >
@@ -167,65 +232,93 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
           ))}
         </Row>
 
-        {/* 输入区域 */}
+        {/* 输入区域 - 使用与InputArea一致的样式 */}
         {currentMode && (
           <div className="input-area">
             <div className="input-container-new">
               <div className="message-input-wrapper">
                 <textarea
                   className="message-input-new"
-                  value={currentMode === 'chat' ? 
-                    (promptMode === 'user' ? userPrompt : systemPrompt) : 
-                    inputText}
-                  onChange={(e) => {
-                    if (currentMode === 'chat') {
-                      if (promptMode === 'user') {
-                        setUserPrompt(e.target.value);
-                      } else {
-                        setSystemPrompt(e.target.value);
-                      }
-                    } else {
-                      setInputText(e.target.value);
-                    }
-                  }}
-                  placeholder={
-                    currentMode === 'chat' ? 
-                      (promptMode === 'user' ? '输入您想说的话...' : '输入系统提示词（可选）...') :
-                    currentMode === 'agent' ? 
-                      (agentType === 'mcp' ? 
-                        '描述您希望AI生成的MCP工具功能...' :
-                        '描述您希望AI生成的Graph工作流...') :
-                    '输入要传递给Graph的内容...'
-                  }
+                  value={getCurrentInputValue()}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={getInputPlaceholder()}
                   rows={4}
                 />
-                
+
                 {/* 左下角控件 */}
                 <div className="input-bottom-left">
-                  {/* Chat模式的提示词类型切换 */}
-                  {currentMode === 'chat' && (
-                    <Button
-                      type="text"
-                      icon={<SwapOutlined />}
-                      onClick={() => setPromptMode(promptMode === 'user' ? 'system' : 'user')}
-                      size="small"
-                      className="prompt-switch-button"
-                    >
-                      {promptMode === 'user' ? '用户提示词' : '系统提示词'}
-                    </Button>
+                  {/* Chat模式的MCP工具图标 */}
+                  {currentMode === 'chat' && availableMCPServers.length > 0 && (
+                    <div className="mcp-tools-container">
+                      <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
+                        <Button
+                          type="text"
+                          icon={<ToolOutlined />}
+                          className={`mcp-tools-button ${showMcpTools ? 'active' : ''} ${enabledMcpCount > 0 ? 'has-enabled' : ''}`}
+                          onClick={() => setShowMcpTools(!showMcpTools)}
+                          size="small"
+                        />
+                      </Tooltip>
+
+                      {/* MCP工具面板 */}
+                      {showMcpTools && (
+                        <div className="mcp-tools-panel">
+                          <div className="mcp-tools-header">
+                            <Text strong>MCP工具</Text>
+                          </div>
+                          <div className="mcp-tools-list">
+                            {availableMCPServers.map(serverName => {
+                              const isConnected = getServerConnectionStatus(serverName);
+                              return (
+                                <div key={serverName} className="mcp-tool-item">
+                                  <div className="mcp-tool-info">
+                                    <div
+                                      className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
+                                      title={isConnected ? '已连接' : '未连接'}
+                                    />
+                                    <span className="mcp-tool-name">{serverName}</span>
+                                  </div>
+                                  <Switch
+                                    size="small"
+                                    checked={selectedMCPServers[serverName] || false}
+                                    onChange={(checked) => toggleMcpServer(serverName, checked)}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
-                  
+
+                  {/* Chat模式的系统提示词切换按钮 */}
+                  {currentMode === 'chat' && (
+                    <Tooltip title={promptMode === 'user' ? "切换到系统提示词" : "切换到用户消息"}>
+                      <Button
+                        type="text"
+                        icon={<SwapOutlined />}
+                        className={`system-prompt-toggle ${promptMode === 'system' ? 'active' : ''}`}
+                        onClick={() => setPromptMode(promptMode === 'user' ? 'system' : 'user')}
+                        size="small"
+                      >
+                        {promptMode === 'system' ? '系统' : '用户'}
+                      </Button>
+                    </Tooltip>
+                  )}
+
                   {/* Agent模式的类型选择 */}
                   {currentMode === 'agent' && (
                     <Button.Group size="small">
-                      <Button 
+                      <Button
                         type={agentType === 'mcp' ? 'primary' : 'default'}
                         onClick={() => setAgentType('mcp')}
                         icon={<ToolOutlined />}
                       >
                         MCP
                       </Button>
-                      <Button 
+                      <Button
                         type={agentType === 'graph' ? 'primary' : 'default'}
                         onClick={() => setAgentType('graph')}
                         icon={<NodeIndexOutlined />}
@@ -234,29 +327,8 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                       </Button>
                     </Button.Group>
                   )}
-                  
-                  {/* Chat模式的MCP工具选择 */}
-                  {currentMode === 'chat' && (
-                    <Select
-                      mode="multiple"
-                      value={selectedMCPServers}
-                      onChange={setSelectedMCPServers}
-                      placeholder="MCP工具"
-                      size="small"
-                      bordered={false}
-                      className="mcp-select-dropdown"
-                      style={{ minWidth: 80 }}
-                      allowClear
-                    >
-                      {availableMCPServers.map(serverName => (
-                        <Option key={serverName} value={serverName}>
-                          {serverName}
-                        </Option>
-                      ))}
-                    </Select>
-                  )}
                 </div>
-                
+
                 {/* 右下角控件 */}
                 <div className="input-bottom-right">
                   {/* 模型选择器 (Chat和Agent模式) */}
@@ -291,7 +363,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                       </Select>
                     </div>
                   )}
-                  
+
                   {/* Graph选择器 (Graph模式) */}
                   {currentMode === 'graph' && (
                     <div className="graph-selector-new">
@@ -324,7 +396,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                       </Select>
                     </div>
                   )}
-                  
+
                   {/* 开始按钮 */}
                   <Button
                     type="primary"
