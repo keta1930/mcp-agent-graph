@@ -150,17 +150,6 @@ export function useSSEConnection() {
           const newState = { ...prev };
           let blocks = [...prev.blocks]; // 浅拷贝数组
 
-          // 调试日志（生产环境中可移除）
-          // console.log('[SSE] Processing message:', {
-          //   type: message.role || message.type || 'openai',
-          //   hasContent: !!message.choices?.[0]?.delta?.content,
-          //   hasReasoning: !!message.choices?.[0]?.delta?.reasoning_content,
-          //   hasToolCalls: !!message.choices?.[0]?.delta?.tool_calls,
-          //   isToolResult: message.role === 'tool',
-          //   currentBlocksCount: blocks.length,
-          //   currentMode: options.mode
-          // });
-
           // 处理错误消息
           if (message.error) {
             newState.error = message.error.message;
@@ -177,6 +166,11 @@ export function useSSEConnection() {
 
           // 处理节点事件（Graph执行模式）
           if (message.type === 'node_start') {
+            // 在开始新节点之前，确保所有之前的块都已完成
+            blocks = blocks.map(block =>
+              !block.isComplete ? { ...block, isComplete: true } : block
+            );
+
             // 创建新的节点块
             const nodeBlock = createStreamingBlock('node_start', '', [], undefined);
             if (nodeBlock.nodeInfo) {
@@ -196,17 +190,22 @@ export function useSSEConnection() {
           }
 
           if (message.type === 'node_end') {
-            // 更新最后一个节点块的状态
+            // 节点结束时，完成所有未完成的块
             blocks = blocks.map(block => {
-              if (block.type === 'node_start' && block.nodeInfo && !block.isComplete) {
-                return {
-                  ...block,
-                  isComplete: true,
-                  nodeInfo: {
-                    ...block.nodeInfo,
-                    status: 'completed'
-                  }
-                };
+              if (!block.isComplete) {
+                // 如果是节点块，更新状态为完成
+                if (block.type === 'node_start' && block.nodeInfo) {
+                  return {
+                    ...block,
+                    isComplete: true,
+                    nodeInfo: {
+                      ...block.nodeInfo,
+                      status: 'completed'
+                    }
+                  };
+                }
+                // 其他类型的块直接标记为完成
+                return { ...block, isComplete: true };
               }
               return block;
             });
