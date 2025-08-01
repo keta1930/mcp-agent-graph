@@ -337,28 +337,26 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                       <Select
                         value={selectedModel}
                         onChange={setSelectedModel}
-                        placeholder="选择模型"
+                        placeholder="点击选择AI模型"
                         size="small"
                         bordered={false}
                         className="model-select-dropdown"
                         suffixIcon={<DownOutlined />}
                         showSearch
+                        placement="topRight"
+                        dropdownStyle={{ minWidth: '220px' }}
                         filterOption={(input, option) =>
                           (option?.children as string)
                             ?.toLowerCase()
                             .indexOf(input.toLowerCase()) >= 0
                         }
                       >
-                        {availableModels && availableModels.length > 0 ? (
+                        {availableModels && availableModels.length > 0 && (
                           availableModels.map(model => (
                             <Option key={model.name} value={model.name}>
                               {model.alias || model.name}
                             </Option>
                           ))
-                        ) : (
-                          <Option value="" disabled>
-                            暂无可用模型
-                          </Option>
                         )}
                       </Select>
                     </div>
@@ -370,28 +368,26 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                       <Select
                         value={selectedGraph}
                         onChange={setSelectedGraph}
-                        placeholder="选择Graph"
+                        placeholder="点击选择Graph"
                         size="small"
                         bordered={false}
                         className="graph-select-dropdown"
                         suffixIcon={<DownOutlined />}
                         showSearch
+                        placement="topRight"
+                        dropdownStyle={{ minWidth: '220px' }}
                         filterOption={(input, option) =>
                           (option?.children as string)
                             ?.toLowerCase()
                             .indexOf(input.toLowerCase()) >= 0
                         }
                       >
-                        {availableGraphs && availableGraphs.length > 0 ? (
+                        {availableGraphs && availableGraphs.length > 0 && (
                           availableGraphs.map(graph => (
                             <Option key={graph} value={graph}>
                               {graph}
                             </Option>
                           ))
-                        ) : (
-                          <Option value="" disabled>
-                            暂无可用图配置
-                          </Option>
                         )}
                       </Select>
                     </div>
