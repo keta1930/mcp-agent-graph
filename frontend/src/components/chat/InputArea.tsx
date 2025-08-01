@@ -21,18 +21,25 @@ interface InputAreaProps {
   onSendMessage: (message: string, options?: any) => void;
   disabled?: boolean;
   mode: ConversationMode;
+  inheritedConfig?: {
+    selectedModel?: string;
+    selectedGraph?: string;
+    systemPrompt?: string;
+    selectedMCPServers?: string[];
+  };
 }
 
 const InputArea: React.FC<InputAreaProps> = ({
   onSendMessage,
   disabled = false,
-  mode
+  mode,
+  inheritedConfig = {}
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const [systemPrompt, setSystemPrompt] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState(inheritedConfig.systemPrompt || '');
   const [isSystemPromptMode, setIsSystemPromptMode] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [selectedGraph, setSelectedGraph] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>(inheritedConfig.selectedModel || '');
+  const [selectedGraph, setSelectedGraph] = useState<string>(inheritedConfig.selectedGraph || '');
   const [mcpServerStates, setMcpServerStates] = useState<Record<string, boolean>>({});
   const [showMcpTools, setShowMcpTools] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -61,23 +68,41 @@ const InputArea: React.FC<InputAreaProps> = ({
   useEffect(() => {
     const initialStates: Record<string, boolean> = {};
     availableMcpServers.forEach(serverName => {
-      initialStates[serverName] = false;
+      // 如果有继承的配置，则使用继承的配置
+      if (inheritedConfig.selectedMCPServers?.includes(serverName)) {
+        initialStates[serverName] = true;
+      } else {
+        initialStates[serverName] = false;
+      }
     });
     setMcpServerStates(initialStates);
-  }, [availableMcpServers]);
+  }, [availableMcpServers, inheritedConfig.selectedMCPServers]);
+
+  // 监听配置变化，更新本地状态（仅在初始化时应用一次）
+  useEffect(() => {
+    if (inheritedConfig.selectedModel && !selectedModel) {
+      setSelectedModel(inheritedConfig.selectedModel);
+    }
+    if (inheritedConfig.selectedGraph && !selectedGraph) {
+      setSelectedGraph(inheritedConfig.selectedGraph);
+    }
+    if (inheritedConfig.systemPrompt !== undefined && systemPrompt === '') {
+      setSystemPrompt(inheritedConfig.systemPrompt);
+    }
+  }, [inheritedConfig, selectedModel, selectedGraph, systemPrompt]);
 
   useEffect(() => {
-    // 自动选择第一个可用的模型或图
+    // 自动选择第一个可用的模型或图（如果没有继承的配置）
     if (mode === 'chat' || mode === 'agent') {
-      if (!selectedModel && availableModels.length > 0) {
+      if (!selectedModel && !inheritedConfig.selectedModel && availableModels.length > 0) {
         setSelectedModel(availableModels[0].name);
       }
     } else if (mode === 'graph') {
-      if (!selectedGraph && availableGraphs.length > 0) {
+      if (!selectedGraph && !inheritedConfig.selectedGraph && availableGraphs.length > 0) {
         setSelectedGraph(availableGraphs[0]);
       }
     }
-  }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph]);
+  }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph, inheritedConfig]);
 
   // 点击外部关闭MCP工具面板
   useEffect(() => {

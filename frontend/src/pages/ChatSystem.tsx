@@ -25,6 +25,13 @@ const ChatSystem: React.FC = () => {
   const [temporaryConversation, setTemporaryConversation] = useState<ConversationDetail | null>(null);
   // 当前选择的图名称（用于Graph模式）
   const [selectedGraphName, setSelectedGraphName] = useState<string>('');
+  // 从新建对话界面迁移的配置
+  const [inheritedConfig, setInheritedConfig] = useState<{
+    selectedModel?: string;
+    selectedGraph?: string;
+    systemPrompt?: string;
+    selectedMCPServers?: string[];
+  }>({});
   // 压缩相关状态
   const [compactConfigVisible, setCompactConfigVisible] = useState(false);
   const [selectedCompactType, setSelectedCompactType] = useState<'brutal' | 'precise'>('precise');
@@ -102,6 +109,7 @@ const ChatSystem: React.FC = () => {
     setPendingUserMessage(null);
     setTemporaryConversation(null);
     setSelectedGraphName('');
+    setInheritedConfig({}); // 清除继承的配置，切换到现有对话时不应保留新建对话的配置
 
     // 先设置新的活跃对话ID并加载新对话，不清除当前对话以避免闪烁
     setActiveConversationId(conversationId);
@@ -120,6 +128,7 @@ const ChatSystem: React.FC = () => {
     setPendingUserMessage(null);
     setTemporaryConversation(null);
     setSelectedGraphName('');
+    setInheritedConfig({}); // 清除继承的配置
 
     // 清除当前对话
     clearCurrentConversation();
@@ -178,6 +187,7 @@ const ChatSystem: React.FC = () => {
     clearCurrentConversation();
     setTemporaryConversation(null);
     setSelectedGraphName('');
+    setInheritedConfig({}); // 清除继承的配置
     setActiveConversationId(undefined);
     // 清除待发送消息状态
     setPendingUserMessage(null);
@@ -196,6 +206,14 @@ const ChatSystem: React.FC = () => {
       if (isGraphMode && options.selectedGraph) {
         setSelectedGraphName(options.selectedGraph);
       }
+
+      // 保存从新建对话界面继承的配置
+      setInheritedConfig({
+        selectedModel: options.selectedModel,
+        selectedGraph: options.selectedGraph,
+        systemPrompt: options.systemPrompt,
+        selectedMCPServers: options.selectedMCPServers || []
+      });
 
       // 立即设置活跃对话ID，界面立即切换到对话模式
       setActiveConversationId(conversationId);
@@ -318,6 +336,7 @@ const ChatSystem: React.FC = () => {
           // 清除待发送消息状态和临时对话
           setPendingUserMessage(null);
           setTemporaryConversation(null);
+          // 注意：不清除 inheritedConfig，保持配置在对话界面中可用
           // 静默更新对话列表以反映最新状态
           silentUpdateConversations();
         },
@@ -552,6 +571,7 @@ const ChatSystem: React.FC = () => {
                 onSendMessage={handleSendMessage}
                 disabled={streamingState.isStreaming || (activeConversationId ? compactingConversations.has(activeConversationId) : false)}
                 mode={currentMode}
+                inheritedConfig={inheritedConfig}
               />
             </>
           )}

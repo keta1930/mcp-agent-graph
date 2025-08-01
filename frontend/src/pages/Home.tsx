@@ -67,7 +67,7 @@ const Home: React.FC = () => {
             </div>
             <div className="bar-content">
               <h3>进入工作台</h3>
-              <p>图形编辑器 • 模型管理 • MCP 管理</p>
+              <p>GRAPH • MODEL • MCP 管理</p>
             </div>
             <div className="bar-arrow">
               <DesktopOutlined />
@@ -80,7 +80,7 @@ const Home: React.FC = () => {
             </div>
             <div className="bar-content">
               <h3>对话系统</h3>
-              <p>智能对话 • 实时协作 • 即将上线</p>
+              <p>CHAT • AGENT • GRAPH 运行</p>
             </div>
             <div className="bar-arrow">
               <StarOutlined />

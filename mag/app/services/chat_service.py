@@ -260,7 +260,8 @@ class ChatService:
                 conversation_id=conversation_id,
                 round_messages=all_round_messages,
                 token_usage=round_token_usage,
-                user_id=user_id
+                user_id=user_id,
+                model_config=model_config
             )
 
             # 发送完成信号
@@ -275,7 +276,8 @@ class ChatService:
                                    conversation_id: str,
                                    round_messages: List[Dict[str, Any]],
                                    token_usage: Dict[str, int],
-                                   user_id: str):
+                                   user_id: str,
+                                   model_config):
         """保存完整轮次到数据库"""
         try:
             # 获取轮次编号
@@ -298,7 +300,7 @@ class ChatService:
             # 生成标题和标签
             if round_number == 1:
                 await self._generate_title_and_tags(
-                    conversation_id, round_messages, model_service.get_model(list(model_service.clients.keys())[0])
+                    conversation_id, round_messages, model_config
                 )
 
         except Exception as e:
