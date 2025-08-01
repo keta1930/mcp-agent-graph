@@ -308,6 +308,24 @@
   flex: 1;
 }
 
+/* Agent模式类型切换按钮 */
+.agent-type-toggle {
+  color: var(--text-secondary);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.agent-type-toggle:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.agent-type-toggle.active {
+  color: #722ed1;
+  background: rgba(114, 46, 209, 0.1);
+}
+
 /* Agent模式完成创建按钮 */
 .complete-creation-button {
   color: var(--text-secondary);

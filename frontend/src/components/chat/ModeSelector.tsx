@@ -308,24 +308,19 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                     </Tooltip>
                   )}
 
-                  {/* Agent模式的类型选择 */}
+                  {/* Agent模式的类型切换按钮 */}
                   {currentMode === 'agent' && (
-                    <Button.Group size="small">
+                    <Tooltip title={agentType === 'mcp' ? "切换到Graph生成" : "切换到MCP工具生成"}>
                       <Button
-                        type={agentType === 'mcp' ? 'primary' : 'default'}
-                        onClick={() => setAgentType('mcp')}
-                        icon={<ToolOutlined />}
+                        type="text"
+                        icon={agentType === 'mcp' ? <ToolOutlined /> : <NodeIndexOutlined />}
+                        className={`agent-type-toggle ${agentType === 'graph' ? 'active' : ''}`}
+                        onClick={() => setAgentType(agentType === 'mcp' ? 'graph' : 'mcp')}
+                        size="small"
                       >
-                        MCP
+                        {agentType === 'mcp' ? 'MCP' : 'Graph'}
                       </Button>
-                      <Button
-                        type={agentType === 'graph' ? 'primary' : 'default'}
-                        onClick={() => setAgentType('graph')}
-                        icon={<NodeIndexOutlined />}
-                      >
-                        Graph
-                      </Button>
-                    </Button.Group>
+                    </Tooltip>
                   )}
                 </div>
 

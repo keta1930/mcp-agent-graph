@@ -6,7 +6,8 @@ import {
   ToolOutlined,
   DownOutlined,
   CheckOutlined,
-  SwapOutlined
+  SwapOutlined,
+  NodeIndexOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import { useModelStore } from '../../store/modelStore';
@@ -45,7 +46,7 @@ const InputArea: React.FC<InputAreaProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mcpDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { agentType } = useConversationStore();
+  const { agentType, setAgentType } = useConversationStore();
   const { models: availableModels } = useModelStore();
   const { graphs: availableGraphs } = useGraphEditorStore();
   const { config: mcpConfig, status: mcpStatus } = useMCPStore();
@@ -315,6 +316,21 @@ const InputArea: React.FC<InputAreaProps> = ({
                   size="small"
                 >
                   {isSystemPromptMode ? '系统' : '用户'}
+                </Button>
+              </Tooltip>
+            )}
+
+            {/* Agent模式的类型切换按钮 */}
+            {mode === 'agent' && (
+              <Tooltip title={agentType === 'mcp' ? "切换到Graph生成" : "切换到MCP工具生成"}>
+                <Button
+                  type="text"
+                  icon={agentType === 'mcp' ? <ToolOutlined /> : <NodeIndexOutlined />}
+                  className={`agent-type-toggle ${agentType === 'graph' ? 'active' : ''}`}
+                  onClick={() => setAgentType(agentType === 'mcp' ? 'graph' : 'mcp')}
+                  size="small"
+                >
+                  {agentType === 'mcp' ? 'MCP' : 'Graph'}
                 </Button>
               </Tooltip>
             )}

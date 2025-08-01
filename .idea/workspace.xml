@@ -23,11 +23,10 @@
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README_CN.md" beforeDir="false" afterPath="$PROJECT_DIR$/README_CN.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/chat/AgentXMLRenderer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/chat/AgentXMLRenderer.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/chat/InputArea.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/chat/InputArea.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/ChatSystem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/ChatSystem.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Home.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Home.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mag/app/services/chat_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/services/chat_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/chat/ModeSelector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/chat/ModeSelector.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/styles/chat-system.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/styles/chat-system.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" afterDir="false" />
