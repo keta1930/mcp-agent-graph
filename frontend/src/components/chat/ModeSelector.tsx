@@ -1,5 +1,5 @@
 // src/components/chat/ModeSelector.tsx
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Card, Select, Button, Space, Typography, Row, Col, Switch, Tooltip } from 'antd';
 import {
   MessageOutlined,
@@ -62,6 +62,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [inputText, setInputText] = React.useState('');
   const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
   const [showMcpTools, setShowMcpTools] = React.useState(false);
+  const mcpDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleModeChange = (mode: ConversationMode) => {
     setCurrentMode(mode);
@@ -97,6 +98,20 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     });
     setSelectedMCPServers(initialStates);
   }, [availableMCPServers]);
+
+  // 点击外部关闭MCP工具面板
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mcpDropdownRef.current && !mcpDropdownRef.current.contains(event.target as Node)) {
+        setShowMcpTools(false);
+      }
+    };
+
+    if (showMcpTools) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMcpTools]);
 
   const handleStart = () => {
     const content = currentMode === 'chat' && userPrompt.trim() ? userPrompt.trim() : inputText.trim();
@@ -250,7 +265,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                 <div className="input-bottom-left">
                   {/* Chat模式的MCP工具图标 */}
                   {currentMode === 'chat' && availableMCPServers.length > 0 && (
-                    <div className="mcp-tools-container">
+                    <div className="mcp-tools-container" ref={mcpDropdownRef}>
                       <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
                         <Button
                           type="text"
@@ -277,7 +292,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                                       className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
                                       title={isConnected ? '已连接' : '未连接'}
                                     />
-                                    <span className="mcp-tool-name">{serverName}</span>
+                                    <Tooltip title={serverName} placement="top">
+                                      <span className="mcp-tool-name">{serverName}</span>
+                                    </Tooltip>
                                   </div>
                                   <Switch
                                     size="small"

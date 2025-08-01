@@ -241,6 +241,8 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   animation: slideUp 0.2s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 @keyframes slideUp {
@@ -263,6 +265,7 @@
   padding: 8px;
   max-height: 200px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .mcp-tool-item {
@@ -283,6 +286,8 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .mcp-connection-indicator {
@@ -306,6 +311,17 @@
   font-size: 13px;
   color: var(--text-primary);
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+/* MCP工具名称悬停提示 */
+.mcp-tool-name:hover {
+  color: var(--text-primary);
 }
 
 /* Agent模式类型切换按钮 */

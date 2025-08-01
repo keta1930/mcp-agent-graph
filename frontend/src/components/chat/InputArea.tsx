@@ -289,7 +289,9 @@ const InputArea: React.FC<InputAreaProps> = ({
                                 className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
                                 title={isConnected ? '已连接' : '未连接'}
                               />
-                              <span className="mcp-tool-name">{serverName}</span>
+                              <Tooltip title={serverName} placement="top">
+                                <span className="mcp-tool-name">{serverName}</span>
+                              </Tooltip>
                             </div>
                             <Switch
                               size="small"
