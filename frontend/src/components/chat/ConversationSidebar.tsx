@@ -214,7 +214,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             
             <div className="conversation-info">
               <div className="conversation-title">{conversation.title}</div>
-              <div className="conversation-type-simple">{conversation.type}</div>
             </div>
 
             <Dropdown 
