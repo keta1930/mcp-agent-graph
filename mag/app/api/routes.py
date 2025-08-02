@@ -381,28 +381,6 @@ async def connect_server(server_name: str):
 async def test_mcp_tool(request: MCPToolTestRequest):
     """测试MCP工具调用"""
     try:
-        # 验证服务器是否存在且已连接
-        server_status = await mcp_service.get_server_status()
-        if request.server_name not in server_status:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到服务器 '{request.server_name}'"
-            )
-        
-        if not server_status[request.server_name].get("connected", False):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"服务器 '{request.server_name}' 未连接"
-            )
-        
-        # 验证工具是否存在
-        server_tools = server_status[request.server_name].get("tools", [])
-        if request.tool_name not in server_tools:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"服务器 '{request.server_name}' 中找不到工具 '{request.tool_name}'"
-            )
-        
         # 记录开始时间
         start_time = time.time()
         

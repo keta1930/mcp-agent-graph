@@ -1892,16 +1892,15 @@
   margin-bottom: 0 !important;
 }
 
-/* 玻璃拟态代码块样式 */
+/* 玻璃拟态代码块样式 - 更新为折叠模式 */
 .glass-code-block {
   position: relative;
   margin: 12px 0;
   border-radius: 8px;
-  background: transparent;
+  background: var(--glass-bg);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid rgba(24, 144, 255, 0.3);
-  overflow: hidden;
   transition: all 0.2s ease;
 }
 
@@ -1913,12 +1912,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border-bottom: 1px solid var(--glass-border);
-  font-size: 12px;
+  padding: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.glass-code-block .code-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .glass-code-block .code-language {
@@ -1926,6 +1928,13 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-size: 12px;
+}
+
+.glass-code-block .code-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .glass-code-block .copy-button {
@@ -1948,6 +1957,26 @@
 
 .glass-code-block .copy-button:active {
   transform: scale(0.95);
+}
+
+.glass-code-block .code-content {
+  border-top: 1px solid var(--glass-border);
+  max-height: 400px;
+  overflow: auto;
+}
+
+.glass-code-block .code-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.glass-code-block .code-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-code-block .code-content::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
 }
 
 .glass-code-block .react-syntax-highlighter {
