@@ -71,38 +71,6 @@ const CodeBlockPreview: React.FC<CodeBlockPreviewProps> = ({ language, content, 
         <html>
           <head>
             <title>SVG图像预览</title>
-            <style>
-              body { 
-                margin: 20px; 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #fff;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 90vh;
-              }
-              .svg-container {
-                max-width: 100%;
-                max-height: 100%;
-                text-align: center;
-                border: 1px solid #e1e4e8;
-                border-radius: 6px;
-                padding: 20px;
-                background: #fafafa;
-              }
-              svg {
-                max-width: 100%;
-                max-height: 80vh;
-                height: auto;
-              }
-              .error {
-                color: #ff4d4f;
-                padding: 20px;
-                border: 1px solid #ff4d4f;
-                border-radius: 4px;
-                background: #fff2f0;
-              }
-            </style>
           </head>
           <body>
             <div class="svg-container">
@@ -121,28 +89,6 @@ const CodeBlockPreview: React.FC<CodeBlockPreviewProps> = ({ language, content, 
           <head>
             <title>Mermaid图表预览</title>
             <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-            <style>
-              body { 
-                margin: 20px; 
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #fff;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 90vh;
-              }
-              .mermaid {
-                max-width: 100%;
-                text-align: center;
-              }
-              .error {
-                color: #ff4d4f;
-                padding: 20px;
-                border: 1px solid #ff4d4f;
-                border-radius: 4px;
-                background: #fff2f0;
-              }
-            </style>
           </head>
           <body>
             <div class="mermaid">

@@ -1,5 +1,5 @@
 // src/components/chat/MessageDisplay.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Typography, Tag, Button, Space, Tooltip, message } from 'antd';
 import {
   UserOutlined,
@@ -13,7 +13,6 @@ import {
   CopyOutlined,
   CheckOutlined
 } from '@ant-design/icons';
-import CodeBlockPreview from '../common/CodeBlockPreview';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -21,6 +20,7 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock } from '../../types/conversation';
 import { getCurrentUserDisplayName } from '../../config/user';
 import AgentXMLRenderer from './AgentXMLRenderer';
+import CodeBlockPreview from '../common/CodeBlockPreview';
 
 const { Text, Paragraph } = Typography;
 
@@ -62,31 +62,14 @@ interface CodeBlockProps {
   conversationId?: string;
 }
 
-const GlassCodeBlock: React.FC<CodeBlockProps> = ({ language, children, className, isStreaming = false, conversationId }) => {
+const GlassCodeBlock: React.FC<CodeBlockProps> = ({
+  language,
+  children,
+  className,
+  isStreaming = false,
+  conversationId
+}) => {
   const [copied, setCopied] = useState(false);
-  
-  // 使用localStorage持久化展开状态，避免重新渲染时重置
-  // 使用React的useRef来维护一个稳定的键，避免因内容变化导致键变化
-  const stableKeyRef = useRef<string>();
-  if (!stableKeyRef.current) {
-    // 首次渲染时生成稳定的键
-    const hash = Math.abs(JSON.stringify({conversationId, language, initialLength: children.length}).split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0));
-    stableKeyRef.current = `code_block_expanded_${hash}`;
-  }
-
-  const [expanded, setExpanded] = useState(() => {
-    return localStorage.getItem(stableKeyRef.current!) === 'true';
-  });
-
-  // 更新展开状态时同时更新localStorage
-  const toggleExpanded = () => {
-    const newExpanded = !expanded;
-    setExpanded(newExpanded);
-    localStorage.setItem(stableKeyRef.current!, newExpanded.toString());
-  };
 
   const handleCopy = async () => {
     try {
@@ -100,18 +83,12 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({ language, children, classNam
   };
 
   return (
-    <div className="glass-code-block glass-card">
-      <div 
-        className="code-header"
-        onClick={toggleExpanded}
-      >
-        <div className="code-info">
-          <span className="code-language">{language || 'text'}</span>
-          <Tag color="green">代码</Tag>
-        </div>
+    <div className="glass-code-block">
+      <div className="code-header">
+        <span className="code-language">{language || 'text'}</span>
         <div className="code-actions">
-          <CodeBlockPreview 
-            language={language || 'text'} 
+          <CodeBlockPreview
+            language={language || 'text'}
             content={children}
             isStreaming={isStreaming}
             conversationId={conversationId}
@@ -120,37 +97,25 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({ language, children, classNam
             type="text"
             size="small"
             icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCopy();
-            }}
+            onClick={handleCopy}
             className="copy-button"
-          />
-          <Button
-            type="text"
-            size="small"
-            icon={expanded ? <DownOutlined /> : <RightOutlined />}
           />
         </div>
       </div>
-
-      {expanded && (
-        <div className="code-content">
-          <SyntaxHighlighter
-            language={language || 'text'}
-            style={oneLight as any}
-            PreTag="div"
-            customStyle={{
-              background: 'transparent',
-              margin: 0,
-              padding: '12px 16px',
-              fontSize: '13px',
-            } as any}
-          >
-            {children}
-          </SyntaxHighlighter>
-        </div>
-      )}
+      <SyntaxHighlighter
+        language={language || 'text'}
+        style={oneLight as any}
+        PreTag="div"
+        customStyle={{
+          background: 'transparent',
+          margin: 0,
+          padding: '12px 16px',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        } as any}
+      >
+        {children}
+      </SyntaxHighlighter>
     </div>
   );
 };
@@ -163,7 +128,11 @@ interface SmartMarkdownProps {
   conversationId?: string;
 }
 
-const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = false, conversationId }) => {
+const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
+  content,
+  isStreaming = false,
+  conversationId
+}) => {
   // 解析内容中的代码块状态
   const parseCodeBlocks = (text: string) => {
     const codeBlocks: { type: string; content: string; isComplete: boolean; startIndex: number; endIndex: number }[] = [];
@@ -228,8 +197,8 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({ content, isStreaming = fa
 
 
           return !inline && match ? (
-            <GlassCodeBlock 
-              language={language} 
+            <GlassCodeBlock
+              language={language}
               className={className}
               isStreaming={isStreaming}
               conversationId={conversationId}
@@ -286,6 +255,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
                 customStyle={{
                   background: 'transparent',
                   padding: '8px',
+                  fontSize: '12px'
                 }}
               >
                 {toolCall.function?.arguments || '{}'}
@@ -311,10 +281,9 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
 
 interface ReasoningDisplayProps {
   content: string;
-  conversationId?: string;
 }
 
-const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content, conversationId }) => {
+const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -346,11 +315,7 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content, conversati
 
 
                 return !inline && match ? (
-                  <GlassCodeBlock 
-                    language={language} 
-                    className={className}
-                    conversationId={conversationId}
-                  >
+                  <GlassCodeBlock language={language} className={className}>
                     {String(children).replace(/\n$/, '')}
                   </GlassCodeBlock>
                 ) : (
@@ -453,7 +418,7 @@ interface MessageItemProps {
   isGraphMode?: boolean;
   isFirstMessageInRound?: boolean;
   renderingMode: 'chat' | 'agent' | 'graph_run'; // 新增：明确的渲染模式
-  conversationId?: string;
+  conversationId?: string; // 新增：对话ID
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({
@@ -510,7 +475,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
           <div className="message-body">
             {/* AI思考过程优先显示 */}
             {effectiveReasoningContent && (
-              <ReasoningDisplay content={effectiveReasoningContent} conversationId={conversationId} />
+              <ReasoningDisplay content={effectiveReasoningContent} />
             )}
 
             {/* 主要消息内容 */}
@@ -528,7 +493,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
                           isStreaming={true}
                         />
                       ) : (
-                        <SmartMarkdown content={message.content} isStreaming={true} conversationId={conversationId} />
+                        <SmartMarkdown
+                          content={message.content}
+                          isStreaming={true}
+                          conversationId={conversationId}
+                        />
                       )}
                     </div>
                   ) : (
@@ -548,9 +517,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
 
                             return !inline && match ? (
-                              <GlassCodeBlock 
-                                language={language} 
+                              <GlassCodeBlock
+                                language={language}
                                 className={className}
+                                conversationId={conversationId}
                               >
                                 {String(children).replace(/\n$/, '')}
                               </GlassCodeBlock>
@@ -594,13 +564,18 @@ interface StreamingBlockDisplayProps {
   block: StreamingBlock;
   renderingMode: 'chat' | 'agent' | 'graph_run'; // 新增：明确的渲染模式
   toolResults?: Record<string, string>;
-  conversationId?: string;
+  conversationId?: string; // 新增：对话ID
 }
 
-const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, renderingMode, toolResults = {}, conversationId }) => {
+const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
+  block,
+  renderingMode,
+  toolResults = {},
+  conversationId
+}) => {
   switch (block.type) {
     case 'reasoning':
-      return <ReasoningDisplay content={block.content} conversationId={conversationId} />;
+      return <ReasoningDisplay content={block.content} />;
 
     case 'content':
       return (
@@ -613,7 +588,11 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({ block, re
                 isStreaming={!block.isComplete}
               />
             ) : (
-              <SmartMarkdown content={block.content} isStreaming={!block.isComplete} conversationId={conversationId} />
+              <SmartMarkdown
+                content={block.content}
+                isStreaming={!block.isComplete}
+                conversationId={conversationId}
+              />
             )}
           </div>
         </div>
@@ -691,7 +670,6 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
               }}
               isFirstMessageInRound={true}
               renderingMode={getRenderingMode()}
-              conversationId={conversation?.conversation_id}
             />
           </div>
         )}
@@ -781,7 +759,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                       nodeInfo={nodeInfo}  // start节点的用户消息显示节点信息
                       isGraphMode={true}
                       renderingMode={renderingMode}
-                      conversationId={conversation.conversation_id}
+                      conversationId={conversation?.conversation_id}
                     />
                   ))
                 ) : (
@@ -798,7 +776,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                     nodeInfo={undefined}  // 节点信息已处理，不再在这里显示
                     isGraphMode={true}
                     renderingMode={renderingMode}
-                    conversationId={conversation.conversation_id}
+                    conversationId={conversation?.conversation_id}
                   />
                 ))}
               </div>
@@ -820,7 +798,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                   toolResults={toolResults}
                   isFirstMessageInRound={isFirstMessageOfRole}
                   renderingMode={renderingMode}
-                  conversationId={conversation.conversation_id}
+                  conversationId={conversation?.conversation_id}
                 />
               );
             });
@@ -838,7 +816,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
               }}
               isFirstMessageInRound={true}
               renderingMode={renderingMode}
-              conversationId={conversation.conversation_id}
+              conversationId={conversation?.conversation_id}
             />
           </div>
         )}
@@ -864,7 +842,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                   block={block}
                   renderingMode={renderingMode}
                   toolResults={toolResults}
-                  conversationId={conversation.conversation_id}
+                  conversationId={conversation?.conversation_id}
                 />
               </div>
             ))}
