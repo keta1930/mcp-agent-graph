@@ -7,5 +7,6 @@
     </content>
     <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at E:\AI-Instructions\AI-Instructions\MAG\mcp-agent-graph-p\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="human_vs_ai" />
   </component>
 </module>

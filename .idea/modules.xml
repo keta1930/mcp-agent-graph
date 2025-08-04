@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../../project/paper_code/human_vs_ai/.idea/human_vs_ai.iml" filepath="$PROJECT_DIR$/../../project/paper_code/human_vs_ai/.idea/human_vs_ai.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mcp-agent-graph.iml" filepath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" />
     </modules>
   </component>
