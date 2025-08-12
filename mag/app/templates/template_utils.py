@@ -17,7 +17,7 @@ def generate_conversation_filename(graph_name: str) -> str:
     # 获取高精度时间戳
     now = time.time()
     timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(now))
-    microseconds = int((now % 1) * 1000000)  # 微秒部分
+    microseconds = int((now % 1) * 1000000)
     
     # 获取进程ID和线程ID
     process_id = os.getpid()

@@ -9,7 +9,7 @@ import os
 from app.services.mongodb_service import mongodb_service
 from app.services.mcp_service import mcp_service
 from app.utils.text_parser import parse_ai_generation_response
-from app.models.schema import GraphConfig, AgentNode
+from app.models.graph_schema import GraphConfig, AgentNode
 from app.core.file_manager import FileManager
 from app.services.model_service import model_service
 from app.templates.flow_diagram import FlowDiagram

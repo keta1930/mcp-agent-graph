@@ -6,7 +6,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
 from app.core.file_manager import FileManager
-from app.models.schema import ModelConfig
+from app.models.model_schema import ModelConfig
 
 logger = logging.getLogger(__name__)
 
