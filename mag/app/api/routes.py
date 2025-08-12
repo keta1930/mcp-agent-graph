@@ -623,41 +623,6 @@ async def list_ai_mcp_tools():
             detail=f"列出AI生成的MCP工具时出错: {str(e)}"
         )
 
-# @router.delete("/mcp/ai-tools/{tool_name}", response_model=Dict[str, Any])
-# async def delete_ai_mcp_tool(tool_name: str):
-#     """删除AI生成的MCP工具"""
-#     try:
-#         # 检查工具是否存在
-#         if not FileManager.mcp_tool_exists(tool_name):
-#             raise HTTPException(
-#                 status_code=status.HTTP_404_NOT_FOUND,
-#                 detail=f"找不到MCP工具 '{tool_name}'"
-#             )
-        
-#         # 从配置中注销
-#         await mcp_service.unregister_ai_mcp_tool(tool_name)
-        
-#         # 删除工具文件
-#         success = FileManager.delete_mcp_tool(tool_name)
-#         if not success:
-#             raise HTTPException(
-#                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                 detail="删除MCP工具文件失败"
-#             )
-        
-#         return {
-#             "status": "success",
-#             "message": f"MCP工具 '{tool_name}' 删除成功"
-#         }
-        
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         logger.error(f"删除AI生成的MCP工具时出错: {str(e)}")
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"删除AI生成的MCP工具时出错: {str(e)}"
-#         )
 # ======= 模型管理 =======
 
 @router.get("/models", response_model=List[Dict[str, Any]])

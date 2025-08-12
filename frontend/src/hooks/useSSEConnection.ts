@@ -32,7 +32,7 @@ interface SSEConnectionOptions {
 
 
 export function useSSEConnection() {
-  // 增强流式状态，支持分块渲染
+  // 流式状态，支持分块渲染
   const [enhancedStreamingState, setEnhancedStreamingState] = useState<EnhancedStreamingState>({
     isStreaming: false,
     blocks: [],
@@ -145,7 +145,7 @@ export function useSSEConnection() {
           showNotification('Graph执行完成', 'success');
         }
 
-        // 更新增强流式状态，支持分块渲染
+        // 更新流式状态，支持分块渲染
         setEnhancedStreamingState(prev => {
           const newState = { ...prev };
           let blocks = [...prev.blocks]; // 浅拷贝数组
@@ -247,12 +247,8 @@ export function useSSEConnection() {
 
             // 处理content（普通内容）
             if (delta?.content) {
-              // 如果有推理块正在进行，先完成它
-              blocks = blocks.map(block =>
-                block.type === 'reasoning' && !block.isComplete
-                  ? { ...block, isComplete: true }
-                  : block
-              );
+              // 移除强制完成推理块的逻辑，允许reasoning和content块并行存在
+              // 这样可以保持SSE消息的原始顺序
 
               const currentContentBlockIndex = blocks.findIndex(block =>
                 block.type === 'content' && !block.isComplete

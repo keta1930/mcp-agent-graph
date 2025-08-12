@@ -3,7 +3,14 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="E:\AI-Instructions\AI-Instructions\project\paper_code\paper\layman\agent\final_MSC_2024_update.csv">
+        <entry key="E:\AI-Instructions\basic_llm\US_inflation_tweets.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="E:\AI-Instructions\basic_llm\US_unemployment_tweets.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
