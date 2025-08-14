@@ -15,18 +15,145 @@
       <change afterPath="$PROJECT_DIR$/../mcp-agent-graph/app/services/graph/scripts.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../mcp-agent-graph/app/services/graph/transformation.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/components/graph-editor/ImportGraphModal.tsx" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/corporate_ethics_dilemma/config.json" beforeDir="false" afterPath="$USER_HOME$/.mag/agent/corporate_ethics_dilemma/config.json" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/corporate_ethics_dilemma/readme.md" beforeDir="false" afterPath="$USER_HOME$/.mag/agent/corporate_ethics_dilemma/readme.md" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/corporate_ethics_dilemma_v3/config.json" beforeDir="false" afterPath="$USER_HOME$/.mag/agent/corporate_ethics_dilemma_v3/config.json" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/deepresearch/config.json" beforeDir="false" afterPath="$USER_HOME$/.mag/agent/deepresearch/config.json" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/deepresearch/readme.md" beforeDir="false" afterPath="$USER_HOME$/.mag/agent/deepresearch/readme.md" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/economic_causal_analysis/config.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/economic_causal_analysis/readme.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/economic_causal_analysis_v2/config.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/economic_causal_analysis_v2/prompts/config copy.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/economic_causal_analysis_v2/prompts/config.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/economic_causal_analysis_v2/readme.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/kamski_test_connor_perspective/config.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/kamski_test_connor_perspective/readme.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/search/config.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/search/readme.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/story_generator/config.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/agent/story_generator/readme.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1/attachment/result_consolidator_deepseek_210308_850739.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1/economic_causal_anal_20250610_205842_349041_13884_8884_1_f7691ca1.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_215822_703768_13884_8884_2_3ee521a5/economic_causal_anal_20250610_215822_703768_13884_8884_2_3ee521a5.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_215822_703768_13884_8884_2_3ee521a5/economic_causal_anal_20250610_215822_703768_13884_8884_2_3ee521a5.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_215822_703768_13884_8884_2_3ee521a5/economic_causal_anal_20250610_215822_703768_13884_8884_2_3ee521a5.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b/attachment/result_consolidator_deepseek_220312_702934.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b/attachment/result_consolidator_qwen_220328_186698.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b/economic_causal_anal_20250610_220039_325387_36260_6236_1_b41dfa3b.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_411919_18372_6468_1_75a432c8/attachment/a_152123_844257.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_411919_18372_6468_1_75a432c8/search_20250610_152027_411919_18372_6468_1_75a432c8.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_411919_18372_6468_1_75a432c8/search_20250610_152027_411919_18372_6468_1_75a432c8.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_411919_18372_6468_1_75a432c8/search_20250610_152027_411919_18372_6468_1_75a432c8.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_421708_18372_6468_2_ef817113/attachment/a_152101_262006.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_421708_18372_6468_2_ef817113/search_20250610_152027_421708_18372_6468_2_ef817113.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_421708_18372_6468_2_ef817113/search_20250610_152027_421708_18372_6468_2_ef817113.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_421708_18372_6468_2_ef817113/search_20250610_152027_421708_18372_6468_2_ef817113.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_426895_18372_6468_3_d977f3a4/attachment/a_152057_206130.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_426895_18372_6468_3_d977f3a4/search_20250610_152027_426895_18372_6468_3_d977f3a4.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_426895_18372_6468_3_d977f3a4/search_20250610_152027_426895_18372_6468_3_d977f3a4.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_426895_18372_6468_3_d977f3a4/search_20250610_152027_426895_18372_6468_3_d977f3a4.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_671180_18372_6468_4_509aab36/attachment/a_152117_520885.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_671180_18372_6468_4_509aab36/search_20250610_152027_671180_18372_6468_4_509aab36.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_671180_18372_6468_4_509aab36/search_20250610_152027_671180_18372_6468_4_509aab36.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152027_671180_18372_6468_4_509aab36/search_20250610_152027_671180_18372_6468_4_509aab36.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_199000_18372_6468_7_1c458de0/attachment/a_152751_427193.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_199000_18372_6468_7_1c458de0/attachment/b_152826_089893.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_199000_18372_6468_7_1c458de0/search_20250610_152607_199000_18372_6468_7_1c458de0.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_199000_18372_6468_7_1c458de0/search_20250610_152607_199000_18372_6468_7_1c458de0.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_199000_18372_6468_7_1c458de0/search_20250610_152607_199000_18372_6468_7_1c458de0.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_208088_18372_6468_8_b85faf25/attachment/a_152722_436942.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_208088_18372_6468_8_b85faf25/attachment/b_152647_483337.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_208088_18372_6468_8_b85faf25/search_20250610_152607_208088_18372_6468_8_b85faf25.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_208088_18372_6468_8_b85faf25/search_20250610_152607_208088_18372_6468_8_b85faf25.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_208088_18372_6468_8_b85faf25/search_20250610_152607_208088_18372_6468_8_b85faf25.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_457935_18372_6468_9_9abef531/attachment/a_152728_146948.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_457935_18372_6468_9_9abef531/attachment/b_152713_349778.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_457935_18372_6468_9_9abef531/search_20250610_152607_457935_18372_6468_9_9abef531.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_457935_18372_6468_9_9abef531/search_20250610_152607_457935_18372_6468_9_9abef531.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_457935_18372_6468_9_9abef531/search_20250610_152607_457935_18372_6468_9_9abef531.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_474944_18372_6468_10_c6890e0d/attachment/a_152719_145623.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_474944_18372_6468_10_c6890e0d/attachment/b_152817_561815.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_474944_18372_6468_10_c6890e0d/search_20250610_152607_474944_18372_6468_10_c6890e0d.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_474944_18372_6468_10_c6890e0d/search_20250610_152607_474944_18372_6468_10_c6890e0d.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_474944_18372_6468_10_c6890e0d/search_20250610_152607_474944_18372_6468_10_c6890e0d.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_486716_18372_6468_11_5b45e5fb/attachment/a_152740_369581.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_486716_18372_6468_11_5b45e5fb/attachment/b_152802_676653.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_486716_18372_6468_11_5b45e5fb/search_20250610_152607_486716_18372_6468_11_5b45e5fb.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_486716_18372_6468_11_5b45e5fb/search_20250610_152607_486716_18372_6468_11_5b45e5fb.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_152607_486716_18372_6468_11_5b45e5fb/search_20250610_152607_486716_18372_6468_11_5b45e5fb.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_430718_49044_4512_1_c02e336f/search_20250610_154326_430718_49044_4512_1_c02e336f.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_430718_49044_4512_1_c02e336f/search_20250610_154326_430718_49044_4512_1_c02e336f.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_430718_49044_4512_1_c02e336f/search_20250610_154326_430718_49044_4512_1_c02e336f.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_441126_49044_4512_2_ec013cf6/search_20250610_154326_441126_49044_4512_2_ec013cf6.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_441126_49044_4512_2_ec013cf6/search_20250610_154326_441126_49044_4512_2_ec013cf6.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_441126_49044_4512_2_ec013cf6/search_20250610_154326_441126_49044_4512_2_ec013cf6.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_691560_49044_4512_3_09840903/search_20250610_154326_691560_49044_4512_3_09840903.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_691560_49044_4512_3_09840903/search_20250610_154326_691560_49044_4512_3_09840903.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_691560_49044_4512_3_09840903/search_20250610_154326_691560_49044_4512_3_09840903.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_700644_49044_4512_4_dadd1913/search_20250610_154326_700644_49044_4512_4_dadd1913.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_700644_49044_4512_4_dadd1913/search_20250610_154326_700644_49044_4512_4_dadd1913.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_700644_49044_4512_4_dadd1913/search_20250610_154326_700644_49044_4512_4_dadd1913.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_707746_49044_4512_5_a876d7d3/search_20250610_154326_707746_49044_4512_5_a876d7d3.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_707746_49044_4512_5_a876d7d3/search_20250610_154326_707746_49044_4512_5_a876d7d3.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154326_707746_49044_4512_5_a876d7d3/search_20250610_154326_707746_49044_4512_5_a876d7d3.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_896276_44012_2864_1_269ea06b/attachment/a_154547_806623.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_896276_44012_2864_1_269ea06b/attachment/b_154605_545390.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_896276_44012_2864_1_269ea06b/search_20250610_154505_896276_44012_2864_1_269ea06b.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_896276_44012_2864_1_269ea06b/search_20250610_154505_896276_44012_2864_1_269ea06b.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_896276_44012_2864_1_269ea06b/search_20250610_154505_896276_44012_2864_1_269ea06b.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_906707_44012_2864_2_f6cdc342/attachment/a_154639_982127.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_906707_44012_2864_2_f6cdc342/attachment/b_154609_430501.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_906707_44012_2864_2_f6cdc342/search_20250610_154505_906707_44012_2864_2_f6cdc342.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_906707_44012_2864_2_f6cdc342/search_20250610_154505_906707_44012_2864_2_f6cdc342.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154505_906707_44012_2864_2_f6cdc342/search_20250610_154505_906707_44012_2864_2_f6cdc342.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_150831_44012_2864_3_4aeb6a0e/attachment/a_154639_451695.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_150831_44012_2864_3_4aeb6a0e/attachment/b_154633_127405.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_150831_44012_2864_3_4aeb6a0e/search_20250610_154506_150831_44012_2864_3_4aeb6a0e.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_150831_44012_2864_3_4aeb6a0e/search_20250610_154506_150831_44012_2864_3_4aeb6a0e.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_150831_44012_2864_3_4aeb6a0e/search_20250610_154506_150831_44012_2864_3_4aeb6a0e.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_159234_44012_2864_4_51e81468/attachment/a_154628_747438.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_159234_44012_2864_4_51e81468/attachment/b_154624_200761.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_159234_44012_2864_4_51e81468/search_20250610_154506_159234_44012_2864_4_51e81468.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_159234_44012_2864_4_51e81468/search_20250610_154506_159234_44012_2864_4_51e81468.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_159234_44012_2864_4_51e81468/search_20250610_154506_159234_44012_2864_4_51e81468.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_164660_44012_2864_5_ba64d340/attachment/a_154605_252635.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_164660_44012_2864_5_ba64d340/attachment/b_154655_832528.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_164660_44012_2864_5_ba64d340/search_20250610_154506_164660_44012_2864_5_ba64d340.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_164660_44012_2864_5_ba64d340/search_20250610_154506_164660_44012_2864_5_ba64d340.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154506_164660_44012_2864_5_ba64d340/search_20250610_154506_164660_44012_2864_5_ba64d340.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154753_240149_44012_2864_6_c20da279/attachment/a_154842_719597.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154753_240149_44012_2864_6_c20da279/attachment/b_154832_781937.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154753_240149_44012_2864_6_c20da279/search_20250610_154753_240149_44012_2864_6_c20da279.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154753_240149_44012_2864_6_c20da279/search_20250610_154753_240149_44012_2864_6_c20da279.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154753_240149_44012_2864_6_c20da279/search_20250610_154753_240149_44012_2864_6_c20da279.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_173339_44012_2864_7_196bc693/attachment/a_154950_325116.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_173339_44012_2864_7_196bc693/attachment/b_154945_160996.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_173339_44012_2864_7_196bc693/search_20250610_154853_173339_44012_2864_7_196bc693.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_173339_44012_2864_7_196bc693/search_20250610_154853_173339_44012_2864_7_196bc693.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_173339_44012_2864_7_196bc693/search_20250610_154853_173339_44012_2864_7_196bc693.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_429784_44012_2864_8_6f8380b3/attachment/a_155008_025444.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_429784_44012_2864_8_6f8380b3/attachment/b_155006_174561.txt" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_429784_44012_2864_8_6f8380b3/search_20250610_154853_429784_44012_2864_8_6f8380b3.html" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_429784_44012_2864_8_6f8380b3/search_20250610_154853_429784_44012_2864_8_6f8380b3.json" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/conversation/search_20250610_154853_429784_44012_2864_8_6f8380b3/search_20250610_154853_429784_44012_2864_8_6f8380b3.md" beforeDir="false" />
+      <change beforePath="$USER_HOME$/.mag/mcp.json" beforeDir="false" afterPath="$USER_HOME$/.mag/mcp.json" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/mcp_client_stderr.log" beforeDir="false" afterPath="$USER_HOME$/.mag/mcp_client_stderr.log" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/mcp_client_stdout.log" beforeDir="false" afterPath="$USER_HOME$/.mag/mcp_client_stdout.log" afterDir="false" />
+      <change beforePath="$USER_HOME$/.mag/model.json" beforeDir="false" afterPath="$USER_HOME$/.mag/model.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/components/graph-runner/GraphInputBar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph - 副本/frontend/src/styles/graph-runner.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mcp-agent-graph.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/hooks/useSSEConnection.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/hooks/useSSEConnection.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mag/app/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/api/routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mag/app/api/chat_routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/api/chat_routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mag/app/models/chat_schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/models/chat_schema.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mag/app/utils/sse_helper.py" beforeDir="false" afterPath="$PROJECT_DIR$/mag/app/utils/sse_helper.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/mcp-agent-graph.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph-v/.idea/workspace.xml" afterDir="false" />
@@ -43,6 +170,34 @@
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/services/graphService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/services/graphService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/store/graphEditorStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/store/graphEditorStore.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/styles/graph-runner.css" beforeDir="false" afterPath="$PROJECT_DIR$/../mcp-agent-graph/frontend/src/styles/graph-runner.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/.idea/MCP.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/.idea/MCP.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/inspector/command_history.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/inspector/image-1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/inspector/image.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/mcp_o/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/mcp_o/pyproject.toml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/mcp_o/server copy.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/mcp_o/server.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/pro.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/pro.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/re.json" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/re.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/anything_know/config.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/anything_know/framework_diagram.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/anything_know/jina_client.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/anything_know/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/anything_know/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/anything_know/milvus_manager.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/anything_know/minio_manager.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/arxiv_search/arxiv_mcpserver.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/arxiv_search/framework_diagram.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/arxiv_search/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/arxiv_search/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/arxiv_search/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/arxiv_search/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/fetch_github_trending/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/fetch_github_trending/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/pdf2md/framework_diagram.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/pdf2md/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/pdf2md/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/pdf_download/framework_diagram.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/pdf_download/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/pdf_download/pyproject.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/pdf_download/uv.lock" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/server/pdf_download/uv.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/server/user_profile/framework_diagram.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../MCP/streamable_http/excel_analytics_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../MCP/streamable_http/excel_analytics_server.py" afterDir="false" />
       <change beforePath="F:/model/bge-m3/.gitattributes" beforeDir="false" />
       <change beforePath="F:/model/bge-m3/1_Pooling/config.json" beforeDir="false" />
       <change beforePath="F:/model/bge-m3/README.md" beforeDir="false" />
@@ -143,68 +298,71 @@
     <option name="sortByType" value="true" />
     <option name="sortKey" value="BY_TYPE" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Python 测试.Python 测试 (x.py 内).executor": "Run",
-    "Python.01_model_loading.executor": "Run",
-    "Python.API调用共享状态问题与锁.executor": "Run",
-    "Python.api_server.executor": "Run",
-    "Python.app.executor": "Run",
-    "Python.check_query_overlap.executor": "Run",
-    "Python.combine.executor": "Run",
-    "Python.create_chunks.executor": "Run",
-    "Python.deepseek-r1-openrouter.executor": "Run",
-    "Python.delete.executor": "Run",
-    "Python.doc_load_app.executor": "Run",
-    "Python.expert_websearch.executor": "Run",
-    "Python.expert_websearch_query_gen.executor": "Run",
-    "Python.hash.executor": "Run",
-    "Python.hash_sim.executor": "Run",
-    "Python.household_experiment_runner.executor": "Run",
-    "Python.household_module_prompt.executor": "Run",
-    "Python.household_module_prompt_gen.executor": "Run",
-    "Python.household_param_combine.executor": "Run",
-    "Python.log_analyzer.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.mcp_service.executor": "Profiler",
-    "Python.model.executor": "Run",
-    "Python.model_param_generator.executor": "Run",
-    "Python.one.executor": "Run",
-    "Python.prompts2profile.executor": "Run",
-    "Python.pytes.executor": "Run",
-    "Python.query2urls.executor": "Run",
-    "Python.query_to_urls.py.executor": "Run",
-    "Python.re.executor": "Run",
-    "Python.red.executor": "Run",
-    "Python.search.executor": "Run",
-    "Python.tavily.executor": "Run",
-    "Python.tes.executor": "Run",
-    "Python.urls2content.executor": "Run",
-    "Python.user_manager.executor": "Run",
-    "Python.x.executor": "Run",
-    "Python.共享状态问题.executor": "Run",
-    "Python.线程.executor": "Run",
-    "Python.线程池-真实场景.executor": "Run",
-    "Python.线程池.executor": "Debug",
-    "Python.锁.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "ShowUsagesActions.previewPropertyKey": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "E:/AI-Instructions/basic_llm",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.editor",
-    "ts.external.directory.path": "E:\\AI-Instructions\\AI-Instructions\\MAG\\mcp-agent-graph-p\\frontend\\node_modules\\typescript\\lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;HTTP 请求.generated-requests | #1.executor&quot;: &quot;Run&quot;,
+    &quot;OpenAPI/Swagger 代码生成器.openapi_123.json.executor&quot;: &quot;Run&quot;,
+    &quot;Python 测试.Python 测试 (x.py 内).executor&quot;: &quot;Run&quot;,
+    &quot;Python.01_model_loading.executor&quot;: &quot;Run&quot;,
+    &quot;Python.API调用共享状态问题与锁.executor&quot;: &quot;Run&quot;,
+    &quot;Python.api_server.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.check_query_overlap.executor&quot;: &quot;Run&quot;,
+    &quot;Python.combine.executor&quot;: &quot;Run&quot;,
+    &quot;Python.create_chunks.executor&quot;: &quot;Run&quot;,
+    &quot;Python.deepseek-r1-openrouter.executor&quot;: &quot;Run&quot;,
+    &quot;Python.delete.executor&quot;: &quot;Run&quot;,
+    &quot;Python.doc_load_app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.expert_websearch.executor&quot;: &quot;Run&quot;,
+    &quot;Python.expert_websearch_query_gen.executor&quot;: &quot;Run&quot;,
+    &quot;Python.hash.executor&quot;: &quot;Run&quot;,
+    &quot;Python.hash_sim.executor&quot;: &quot;Run&quot;,
+    &quot;Python.household_experiment_runner.executor&quot;: &quot;Run&quot;,
+    &quot;Python.household_module_prompt.executor&quot;: &quot;Run&quot;,
+    &quot;Python.household_module_prompt_gen.executor&quot;: &quot;Run&quot;,
+    &quot;Python.household_param_combine.executor&quot;: &quot;Run&quot;,
+    &quot;Python.log_analyzer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.mcp_service.executor&quot;: &quot;Profiler&quot;,
+    &quot;Python.model.executor&quot;: &quot;Run&quot;,
+    &quot;Python.model_param_generator.executor&quot;: &quot;Run&quot;,
+    &quot;Python.one.executor&quot;: &quot;Run&quot;,
+    &quot;Python.openapi2mcp.executor&quot;: &quot;Run&quot;,
+    &quot;Python.prompts2profile.executor&quot;: &quot;Run&quot;,
+    &quot;Python.pytes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.query2urls.executor&quot;: &quot;Run&quot;,
+    &quot;Python.query_to_urls.py.executor&quot;: &quot;Run&quot;,
+    &quot;Python.re.executor&quot;: &quot;Run&quot;,
+    &quot;Python.red.executor&quot;: &quot;Run&quot;,
+    &quot;Python.search.executor&quot;: &quot;Run&quot;,
+    &quot;Python.tavily.executor&quot;: &quot;Run&quot;,
+    &quot;Python.tes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.urls2content.executor&quot;: &quot;Run&quot;,
+    &quot;Python.user_manager.executor&quot;: &quot;Run&quot;,
+    &quot;Python.x.executor&quot;: &quot;Run&quot;,
+    &quot;Python.共享状态问题.executor&quot;: &quot;Run&quot;,
+    &quot;Python.线程.executor&quot;: &quot;Run&quot;,
+    &quot;Python.线程池-真实场景.executor&quot;: &quot;Run&quot;,
+    &quot;Python.线程池.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.锁.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ShowUsagesActions.previewPropertyKey&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/AI-Instructions/basic_llm&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.editor&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;E:\\AI-Instructions\\AI-Instructions\\MAG\\mcp-agent-graph-p\\frontend\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
       <console-settings module-name="mcp-agent-graph" is-module-sdk="true">
@@ -438,6 +596,9 @@
       <workItem from="1754711531954" duration="41574000" />
       <workItem from="1754826573512" duration="12849000" />
       <workItem from="1754882707585" duration="977000" />
+      <workItem from="1754991078002" duration="4690000" />
+      <workItem from="1754996120778" duration="13682000" />
+      <workItem from="1755014313120" duration="137000" />
     </task>
     <task id="LOCAL-00001" summary="更新web search代码">
       <option name="closed" value="true" />
@@ -490,11 +651,6 @@
           <option name="timeStamp" value="12" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/mag/app/api/routes.py</url>
-          <line>584</line>
-          <option name="timeStamp" value="16" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mag/app/services/mcp/ai_mcp_generator.py</url>
           <line>187</line>
           <option name="timeStamp" value="17" />
@@ -536,12 +692,13 @@
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$prompts2profile.coverage" NAME="prompts2profile 覆盖结果" MODIFIED="1754397305716" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/paper_code/human_vs_ai0804/expert_data" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$query2urls.coverage" NAME="query2urls 覆盖结果" MODIFIED="1754581002537" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/paper_code/human_vs_ai0804" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$red.coverage" NAME="red 覆盖结果" MODIFIED="1753027133598" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../db" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_p$openapi2mcp.coverage" NAME="openapi2mcp 覆盖结果" MODIFIED="1754995826526" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../MCP/fast_mcp" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$_.coverage" NAME="线程池-真实场景 覆盖结果" MODIFIED="1753071115984" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Code/Py/awesome-python" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$API.coverage" NAME="API调用共享状态问题与锁 覆盖结果" MODIFIED="1753073892136" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../../Code/Py/awesome-python" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$one.coverage" NAME="one 覆盖结果" MODIFIED="1754545691184" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../basic_llm" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$delete.coverage" NAME="delete 覆盖结果" MODIFIED="1754555887485" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/paper_code/human_vs_ai0804" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$query_to_urls_py.coverage" NAME="query_to_urls.py 覆盖结果" MODIFIED="1754580127474" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/paper_code/human_vs_ai0804" />
-    <SUITE FILE_PATH="coverage/mcp_agent_graph_p$main.coverage" NAME="main 覆盖结果" MODIFIED="1754444552059" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/mag" />
+    <SUITE FILE_PATH="coverage/mcp_agent_graph_p$main.coverage" NAME="main 覆盖结果" MODIFIED="1755009980347" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/mag" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$.coverage" NAME=" 覆盖结果" MODIFIED="1754816722549" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../basic_llm" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$model.coverage" NAME="model 覆盖结果" MODIFIED="1754751972684" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../../basic_llm" />
     <SUITE FILE_PATH="coverage/mcp_agent_graph_p$search.coverage" NAME="search 覆盖结果" MODIFIED="1754568575956" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../../project/paper_code/human_vs_ai0804" />

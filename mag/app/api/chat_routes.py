@@ -3,11 +3,12 @@ import json
 import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse
-
+from fastapi.responses import StreamingResponse, JSONResponse
+from typing import Dict, List, Any
 from app.services.model_service import model_service
 from app.services.chat_service import chat_service
 from app.services.mongodb_service import mongodb_service
+from app.utils.sse_helper import SSEHelper,SSECollector
 from app.models.chat_schema import (
     ChatCompletionRequest, ChatMessage, ConversationListItem,
     ConversationListResponse, ConversationDetailResponse, ConversationRound,
@@ -23,7 +24,7 @@ router = APIRouter()
 # ======= Chat模式API接口=======
 @router.post("/chat/completions")
 async def chat_completions(request: ChatCompletionRequest):
-    """Chat completions接口 - 支持流式响应"""
+    """Chat completions接口 - 支持流式和非流式响应"""
     try:
         # 基本参数验证
         if not request.user_prompt.strip():
@@ -46,16 +47,16 @@ async def chat_completions(request: ChatCompletionRequest):
                 detail=f"找不到模型配置: {request.model_name}"
             )
 
-        # 生成流式响应
+        # 生成流式响应的生成器
         async def generate_stream():
             try:
                 async for chunk in chat_service.chat_completions_stream(
-                    conversation_id=request.conversation_id,
-                    user_prompt=request.user_prompt,
-                    system_prompt=request.system_prompt,
-                    mcp_servers=request.mcp_servers,
-                    model_name=request.model_name,
-                    user_id=request.user_id
+                        conversation_id=request.conversation_id,
+                        user_prompt=request.user_prompt,
+                        system_prompt=request.system_prompt,
+                        mcp_servers=request.mcp_servers,
+                        model_name=request.model_name,
+                        user_id=request.user_id
                 ):
                     yield chunk
             except Exception as e:
@@ -69,15 +70,28 @@ async def chat_completions(request: ChatCompletionRequest):
                 yield f"data: {json.dumps(error_chunk)}\n\n"
                 yield "data: [DONE]\n\n"
 
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
-            }
-        )
+        # 根据stream参数决定响应类型
+        if request.stream:
+            # 流式响应（原有逻辑）
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            # 非流式响应：收集所有数据后返回完整结果
+            collector = SSECollector()
+            complete_response = await collector.collect_stream_data(generate_stream())
+
+            # 添加模型信息
+            complete_response["model"] = request.model_name
+
+            return complete_response
+
     except HTTPException:
         raise
     except Exception as e:

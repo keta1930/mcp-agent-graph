@@ -10,6 +10,8 @@ class ChatCompletionRequest(BaseModel):
     model_name: str = Field(..., description="选择的模型名称")
     conversation_id: str = Field(..., description="对话ID")
     user_id: str = Field(default="default_user", description="用户ID")
+    stream: bool = Field(default=True, description="是否使用流式响应")
+
 
 class ChatMessage(BaseModel):
     """Chat消息模型 - OpenAI兼容"""
@@ -18,11 +20,13 @@ class ChatMessage(BaseModel):
     tool_calls: Optional[List[Dict[str, Any]]] = Field(None, description="工具调用列表")
     tool_call_id: Optional[str] = Field(None, description="工具调用ID（tool消息专用）")
 
+
 class TokenUsage(BaseModel):
     """Token使用量统计"""
     total_tokens: int = Field(..., description="总token数")
     prompt_tokens: int = Field(..., description="输入token数")
     completion_tokens: int = Field(..., description="输出token数")
+
 
 class ConversationListItem(BaseModel):
     """对话列表项（包含conversations集合的所有字段）"""
@@ -40,10 +44,12 @@ class ConversationListItem(BaseModel):
     class Config:
         allow_population_by_field_name = True
 
+
 class ConversationListResponse(BaseModel):
     """对话列表响应"""
     conversations: List[ConversationListItem] = Field(..., description="对话列表")
     total_count: int = Field(..., description="总数量")
+
 
 class ConversationRound(BaseModel):
     """对话轮次"""
@@ -68,6 +74,7 @@ class ConversationDetailResponse(BaseModel):
     class Config:
         allow_population_by_field_name = True
 
+
 class UpdateConversationTitleRequest(BaseModel):
     """更新对话标题请求"""
     title: str = Field(..., description="新的对话标题", max_length=100)
@@ -90,6 +97,7 @@ class UpdateConversationTagsRequest(BaseModel):
             if len(tag) > 20:  # 限制单个标签长度
                 raise ValueError('单个标签长度不能超过20个字符')
         return [tag.strip() for tag in v]  # 去除空格
+
 
 class ConversationCompactRequest(BaseModel):
     """对话压缩请求"""
@@ -138,6 +146,7 @@ class GraphGenerationSession(BaseModel):
     class Config:
         allow_population_by_field_name = True
 
+
 class MCPGenerationSession(BaseModel):
     """MCP生成会话模型"""
     conversation_id: str = Field(..., description="对话ID", alias="_id")
@@ -151,7 +160,8 @@ class MCPGenerationSession(BaseModel):
 
     class Config:
         allow_population_by_field_name = True
-        
+
+
 class UpdateConversationStatusRequest(BaseModel):
     """更新对话状态请求"""
     status: str = Field(..., description="新状态：active（活跃）/ deleted（软删除）/ favorite（收藏）")
@@ -163,4 +173,3 @@ class UpdateConversationStatusRequest(BaseModel):
         if v not in valid_statuses:
             raise ValueError(f'状态必须是以下值之一: {", ".join(valid_statuses)}')
         return v
-    

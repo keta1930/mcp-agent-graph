@@ -5,9 +5,12 @@
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/mag" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="expert" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at E:\AI-Instructions\AI-Instructions\MAG\mcp-agent-graph-p\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="human_vs_ai" />
     <orderEntry type="module" module-name="human_vs_ai0804" />
+    <orderEntry type="module" module-name="A2A" />
+    <orderEntry type="module" module-name="fast_mcp" />
+    <orderEntry type="module" module-name=".mag" />
   </component>
 </module>
