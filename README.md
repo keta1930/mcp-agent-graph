@@ -2,17 +2,6 @@
 
 English | [中文](README_CN.md)
 
-# 🚧 System Update Notice
-
-
-⚠️ **We are currently updating to the latest version:**
-
-The new version is divided into **Workspace**: keeping the original Graph Editor, Model Manager, and MCP Manager unchanged. The Graph Runner has been removed.
-
-And **Dialogue System**: three new modes have been added: chat/graph/agent modes.
-
-🚨 **The code is in the final development stage, and the system is currently unavailable! This notice will be removed once the update is completed!** 🚨
-
 > Preface: mcp-agent-graph is an efficient, lightweight, and easy-to-use Agent development framework. As an Agent developer, you might use visual workflow orchestration tools like Dify or Coze; you might prefer code development and have experience with langgraph, crewai, Google ADK, etc. How is mcp-agent-graph different from these frameworks? What makes it worth recommending? This article will introduce the project's design philosophy and functional features. We aim to help you understand this project in the shortest time possible - perhaps you'll find it perfectly matches your needs.
 
 > Core Project Philosophy: need -> agent
