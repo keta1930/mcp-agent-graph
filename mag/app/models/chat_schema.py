@@ -8,7 +8,7 @@ class ChatCompletionRequest(BaseModel):
     system_prompt: str = Field(default=None, description="系统提示词")
     mcp_servers: List[str] = Field(default_factory=list, description="选择的MCP服务器列表")
     model_name: str = Field(..., description="选择的模型名称")
-    conversation_id: str = Field(..., description="对话ID")
+    conversation_id: Optional[str] = Field(default=None, description="对话ID，为None时表示临时对话")
     user_id: str = Field(default="default_user", description="用户ID")
     stream: bool = Field(default=True, description="是否使用流式响应")
 

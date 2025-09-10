@@ -24,7 +24,7 @@ router = APIRouter()
 # ======= Chat模式API接口=======
 @router.post("/chat/completions")
 async def chat_completions(request: ChatCompletionRequest):
-    """Chat completions接口 - 支持流式和非流式响应"""
+    """Chat completions接口 - 支持流式和非流式响应，支持临时对话"""
     try:
         # 基本参数验证
         if not request.user_prompt.strip():
@@ -72,7 +72,7 @@ async def chat_completions(request: ChatCompletionRequest):
 
         # 根据stream参数决定响应类型
         if request.stream:
-            # 流式响应（原有逻辑）
+            # 流式响应
             return StreamingResponse(
                 generate_stream(),
                 media_type="text/event-stream",

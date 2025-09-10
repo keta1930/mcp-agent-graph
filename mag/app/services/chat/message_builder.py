@@ -46,6 +46,28 @@ class MessageBuilder:
             })
         
         return messages
+    def build_temporary_chat_messages(self,
+                                      user_prompt: str,
+                                      system_prompt: str = "") -> List[Dict[str, Any]]:
+        """构建临时对话消息（不包含历史消息）"""
+        messages = []
+
+        # 添加系统提示词（如果提供且不为空）
+        if system_prompt and system_prompt.strip():
+            messages.append({
+                "role": "system",
+                "content": system_prompt.strip()
+            })
+
+        # 添加当前用户消息
+        if user_prompt and user_prompt.strip():
+            messages.append({
+                "role": "user",
+                "content": user_prompt.strip()
+            })
+
+        logger.debug("构建临时对话消息完成，无历史消息")
+        return messages
 
     def validate_messages(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """验证和处理消息格式"""

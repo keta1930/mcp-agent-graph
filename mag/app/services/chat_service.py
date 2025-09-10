@@ -27,7 +27,7 @@ class ChatService:
         self.message_builder = MessageBuilder(mongodb_service)
 
     async def chat_completions_stream(self,
-                                      conversation_id: str,
+                                      conversation_id: Optional[str],
                                       user_prompt: str,
                                       system_prompt: str = "",
                                       mcp_servers: List[str] = None,
@@ -41,13 +41,21 @@ class ChatService:
             mcp_servers = []
 
         try:
-            # 确保对话存在
-            await mongodb_service.ensure_conversation_exists(conversation_id, user_id)
+            # 只有非临时对话才确保对话存在
+            if conversation_id is not None:
+                await mongodb_service.ensure_conversation_exists(conversation_id, user_id)
 
             # 构建消息上下文
-            messages = await self.message_builder.build_chat_messages(
-                conversation_id, user_prompt, system_prompt
-            )
+            if conversation_id is not None:
+                # 持久对话：获取历史消息
+                messages = await self.message_builder.build_chat_messages(
+                    conversation_id, user_prompt, system_prompt
+                )
+            else:
+                # 临时对话：只使用当前消息
+                messages = self.message_builder.build_temporary_chat_messages(
+                    user_prompt, system_prompt
+                )
 
             # 验证消息格式
             messages = self.message_builder.validate_messages(messages)
@@ -93,7 +101,7 @@ class ChatService:
                                      model_config: Dict[str, Any],
                                      messages: List[Dict[str, Any]],
                                      tools: List[Dict[str, Any]],
-                                     conversation_id: str,
+                                     conversation_id: Optional[str],
                                      mcp_servers: List[str],
                                      user_id: str) -> AsyncGenerator[str, None]:
 
@@ -107,14 +115,19 @@ class ChatService:
             "completion_tokens": 0
         }
 
+        # 日志标识
+        chat_type = "临时对话" if conversation_id is None else f"对话 {conversation_id}"
+
         try:
             while iteration < max_iterations:
                 iteration += 1
-                logger.info(f"开始第 {iteration} 轮模型调用")
+                logger.info(f"开始第 {iteration} 轮模型调用 ({chat_type})")
+
                 filtered_messages = []
                 for msg in current_messages:
                     clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
                     filtered_messages.append(clean_msg)
+
                 # 准备基本API调用参数
                 base_params = {
                     "model": model_config["model"],
@@ -177,7 +190,8 @@ class ChatService:
                     # 检查finish_reason和usage
                     if chunk.choices and chunk.choices[0].finish_reason:
                         current_tool_calls = list(tool_calls_dict.values())
-                        logger.info(f"第 {iteration} 轮完成，finish_reason: {chunk.choices[0].finish_reason}")
+                        logger.info(
+                            f"第 {iteration} 轮完成，finish_reason: {chunk.choices[0].finish_reason} ({chat_type})")
 
                         # 收集token使用量
                         if chunk.usage is not None:
@@ -193,11 +207,11 @@ class ChatService:
 
                             if reasoning_tokens > 0:
                                 logger.info(
-                                    f"第 {iteration} 轮API调用token使用量: {api_usage} (包含reasoning_tokens: {reasoning_tokens})")
+                                    f"第 {iteration} 轮API调用token使用量: {api_usage} (包含reasoning_tokens: {reasoning_tokens}) ({chat_type})")
                             else:
-                                logger.info(f"第 {iteration} 轮API调用token使用量: {api_usage}")
+                                logger.info(f"第 {iteration} 轮API调用token使用量: {api_usage} ({chat_type})")
                         else:
-                            logger.warning(f"第 {iteration} 轮在finish_reason时chunk.usage为None")
+                            logger.warning(f"第 {iteration} 轮在finish_reason时chunk.usage为None ({chat_type})")
 
                         break
 
@@ -205,9 +219,9 @@ class ChatService:
                     round_token_usage["total_tokens"] += api_usage["total_tokens"]
                     round_token_usage["prompt_tokens"] += api_usage["prompt_tokens"]
                     round_token_usage["completion_tokens"] += api_usage["completion_tokens"]
-                    logger.info(f"累积token使用量: {round_token_usage}")
+                    logger.info(f"累积token使用量: {round_token_usage} ({chat_type})")
                 else:
-                    logger.warning(f"第 {iteration} 轮未收集到token使用量信息")
+                    logger.warning(f"第 {iteration} 轮未收集到token使用量信息 ({chat_type})")
 
                 # 构建assistant消息
                 assistant_message = {
@@ -231,11 +245,11 @@ class ChatService:
 
                 # 如果没有工具调用，结束循环
                 if not current_tool_calls:
-                    logger.info(f"第 {iteration} 轮没有工具调用，对话完成")
+                    logger.info(f"第 {iteration} 轮没有工具调用，对话完成 ({chat_type})")
                     break
 
                 # 执行工具调用
-                logger.info(f"执行 {len(current_tool_calls)} 个工具调用")
+                logger.info(f"执行 {len(current_tool_calls)} 个工具调用 ({chat_type})")
                 tool_results = await self.tool_executor.execute_tools_batch(current_tool_calls, mcp_servers)
 
                 # 添加工具结果到消息列表并实时发送
@@ -250,25 +264,28 @@ class ChatService:
                     yield f"data: {json.dumps(tool_message)}\n\n"
 
                 # 继续下一轮循环
-                logger.info(f"工具执行完成，准备第 {iteration + 1} 轮模型调用")
+                logger.info(f"工具执行完成，准备第 {iteration + 1} 轮模型调用 ({chat_type})")
 
             if iteration >= max_iterations:
-                logger.warning(f"达到最大迭代次数 {max_iterations}")
+                logger.warning(f"达到最大迭代次数 {max_iterations} ({chat_type})")
 
-            # 保存到数据库，包含token统计
-            await self._save_complete_round(
-                conversation_id=conversation_id,
-                round_messages=all_round_messages,
-                token_usage=round_token_usage,
-                user_id=user_id,
-                model_config=model_config
-            )
+            # 只有持久对话才保存到数据库
+            if conversation_id is not None:
+                await self._save_complete_round(
+                    conversation_id=conversation_id,
+                    round_messages=all_round_messages,
+                    token_usage=round_token_usage,
+                    user_id=user_id,
+                    model_config=model_config
+                )
+            else:
+                logger.info(f"临时对话完成，跳过数据库保存。Token使用量: {round_token_usage}")
 
             # 发送完成信号
             yield "data: [DONE]\n\n"
 
         except Exception as e:
-            logger.error(f"执行完整流程时出错: {str(e)}")
+            logger.error(f"执行完整流程时出错 ({chat_type}): {str(e)}")
             logger.error(traceback.format_exc())
             raise
 
