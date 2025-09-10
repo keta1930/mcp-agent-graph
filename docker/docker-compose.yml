@@ -1,0 +1,83 @@
+services:
+  # MongoDB 服务配置
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongodb
+    restart: always
+    environment:
+      # 设置初始化的管理员账户
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: securepassword123
+      # 默认数据库名称
+      MONGO_INITDB_DATABASE: conversationdb
+    ports:
+      - "127.0.0.1:27017:27017"  # 关键修改：限制只有本机可访问
+    volumes:
+      # 数据持久化
+      - mongodb_data:/data/db
+      # 配置文件挂载
+      - mongodb_config:/data/configdb
+    networks:
+      - mongodb_network
+    command: ["--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"     # 单个日志文件最大尺寸
+        max-file: "10"      # 最多保留的日志文件数
+    deploy:
+      resources:
+        limits:
+          cpus: '4'         # 分配多达6个核心（约21%的CPU资源）
+          memory: 4G        # 内存上限8GB（约12.5%的系统内存）
+        reservations:
+          cpus: '2'         # 确保至少2个核心的处理能力
+          memory: 4G        # 保证至少4GB内存
+
+  # MongoDB Express Web 界面
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "127.0.0.1:8081:8081"  # 关键修改：限制只有本机可访问
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: securepassword123
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: expresspwd123
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_OPTIONS_EDITORTHEME: ambiance
+    depends_on:
+      - mongodb
+    networks:
+      - mongodb_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"     # 单个日志文件最大尺寸
+        max-file: "5"       # 最多保留的日志文件数
+    deploy:
+      resources:
+        limits:
+          cpus: '1'         # 限制使用1个CPU核心
+          memory: 512M      # 适度增加内存上限到512MB
+        reservations:
+          cpus: '0.5'       # 保证至少0.5个核心
+          memory: 256M      # 保证最少256MB内存
+
+
+networks:
+  mongodb_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_config:
