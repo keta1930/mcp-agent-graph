@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/mag" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="pachong" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="agent-graph" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="A2A" />
     <orderEntry type="module" module-name="fast_mcp" />

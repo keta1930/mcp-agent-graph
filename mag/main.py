@@ -26,13 +26,13 @@ logger = logging.getLogger("mag")
 app = FastAPI(
     title="MAG - MCP Agent Graph",
     description="通过MCP+Graph构建Agent系统的工具",
-    version="0.1.0",
+    version="2.0.0",
 )
 
 # 添加CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有来源，生产环境中应该限制
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
