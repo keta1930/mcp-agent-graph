@@ -1,14 +1,29 @@
-import os
 import platform
+import os
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from dotenv import load_dotenv
+
+project_root = Path(__file__).parent.parent.parent
+docker_env_path = project_root / "docker" / "mongo" / ".env"
+
+if docker_env_path.exists():
+    load_dotenv(docker_env_path)
 
 class Settings:
     """应用配置设置"""
 
     # 应用版本和名称
     APP_NAME: str = "MAG - MCP Agent Graph"
-    APP_VERSION: str = "1.5.0"
+    APP_VERSION: str = "2.0.0"
+
+    MONGODB_URL: str = os.getenv(
+        "MONGODB_URL",
+        f"mongodb://{os.getenv('MONGO_ROOT_USERNAME', 'admin')}:"
+        f"{os.getenv('MONGO_ROOT_PASSWORD', 'securepassword123')}@"
+        f"localhost:{os.getenv('MONGO_PORT', '27017')}/"
+    )
+
+    MONGODB_DB: str = os.getenv("MONGO_DATABASE", "mcp-agent-graph")
 
     # 根据操作系统确定配置目录
     @property

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, validator, root_validator
 class ChatCompletionRequest(BaseModel):
     """Chat完成请求"""
     user_prompt: str = Field(..., description="用户输入的消息内容")
-    system_prompt: str = Field(default="你是一个专业的AI助手。", description="系统提示词")
+    system_prompt: str = Field(default=None, description="系统提示词")
     mcp_servers: List[str] = Field(default_factory=list, description="选择的MCP服务器列表")
     model_name: str = Field(..., description="选择的模型名称")
     conversation_id: str = Field(..., description="对话ID")

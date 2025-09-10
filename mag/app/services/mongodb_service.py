@@ -3,8 +3,6 @@ import asyncio
 from typing import Dict, List, Any, Optional, Callable
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
-import time
-from datetime import datetime
 from bson import ObjectId
 from app.core.file_manager import FileManager
 from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager
@@ -33,7 +31,7 @@ class MongoDBService:
         self.mcp_manager = None
         self.graph_run_manager = None
 
-    async def initialize(self, connection_string: str = "mongodb://admin:securepassword123@localhost:27017/"):
+    async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
         try:
             self.client = AsyncIOMotorClient(
@@ -43,13 +41,13 @@ class MongoDBService:
                 socketTimeoutMS=5000
             )
 
-            self.db = self.client.conversationdb
+            self.db = self.client[database_name]
 
             self.conversations_collection = self.db.conversations
-            self.chat_messages_collection = self.db.chat_messages
-            self.graph_messages_collection = self.db.graph_messages
-            self.mcp_messages_collection = self.db.mcp_messages
-            self.graph_run_messages_collection = self.db["mcp-agent-graph-messages"]
+            self.chat_messages_collection = self.db.chat
+            self.graph_messages_collection = self.db.graph_gen
+            self.mcp_messages_collection = self.db.mcp_gen
+            self.graph_run_messages_collection = self.db.graph_run
 
             await self.client.admin.command('ping')
 

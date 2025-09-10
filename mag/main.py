@@ -80,7 +80,7 @@ async def startup_event():
         await mcp_service.initialize()
         logger.info("MCP服务初始化成功")
 
-        await mongodb_service.initialize()
+        await mongodb_service.initialize(settings.MONGODB_URL,settings.MONGODB_DB)
         logger.info("MongoDB服务初始化成功")
 
         logger.info("所有服务初始化完成")
