@@ -10,4 +10,5 @@ wheels/
 .venv
 .trae/
 
+.idea/
 version/
