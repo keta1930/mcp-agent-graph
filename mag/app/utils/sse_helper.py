@@ -225,8 +225,7 @@ class SSECollector:
             response["errors"] = self.errors
 
         return response
-
-
+    
 class TrajectoryCollector:
     """轨迹收集器 - 收集完整的消息轨迹用于非流式响应"""
 
@@ -385,7 +384,7 @@ class TrajectoryCollector:
             "id": f"chatcmpl-{int(datetime.now().timestamp())}",
             "object": "chat.completion",
             "created": int(datetime.now().timestamp()),
-            "model": "unknown",  # 将在外层设置
+            "model": "unknown",
             "messages": self.messages.copy(),
             "output": self.output
         }
