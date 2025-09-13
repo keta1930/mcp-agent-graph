@@ -123,9 +123,6 @@ def start():
         # 设置进程已启动标志
         _is_server_running = True
         
-        # 注册退出时的清理函数
-        atexit.register(_clean_shutdown)
-        
         return True
 
 def shutdown():
@@ -228,11 +225,18 @@ from .client.mcp import (
 
 # 会话管理
 from .client.conversation import (
-    list as list_conversations,
+    list_conversations as list_conversations,
     get as get_conversation,
-    delete as delete_conversation,
-    get_hierarchy as get_conversation_hierarchy
-    
+    get_hierarchy as get_conversation_hierarchy,
+    chat_completions,
+    chat_completions_stream,
+    list_conversations,
+    get_conversation_detail,
+    update_conversation_status,
+    permanently_delete_conversation,
+    update_conversation_title,
+    update_conversation_tags,
+    compact_conversation
 )
 
 

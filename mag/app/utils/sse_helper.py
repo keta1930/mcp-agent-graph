@@ -225,3 +225,177 @@ class SSECollector:
             response["errors"] = self.errors
 
         return response
+
+
+class TrajectoryCollector:
+    """轨迹收集器 - 收集完整的消息轨迹用于非流式响应"""
+
+    def __init__(self, user_prompt: str = "", system_prompt: str = ""):
+        self.messages = []
+        self.token_usage = None
+        self.errors = []
+        self.output = ""
+        self.user_prompt = user_prompt
+        self.system_prompt = system_prompt
+        self._initial_messages_added = False
+
+    def _add_initial_messages(self):
+        """添加初始消息（系统消息和用户消息）"""
+        if self._initial_messages_added:
+            return
+
+        # 添加系统消息（如果存在）
+        if self.system_prompt and self.system_prompt.strip():
+            self.messages.append({
+                "role": "system",
+                "content": self.system_prompt.strip()
+            })
+
+        # 添加用户消息
+        if self.user_prompt and self.user_prompt.strip():
+            self.messages.append({
+                "role": "user",
+                "content": self.user_prompt.strip()
+            })
+
+        self._initial_messages_added = True
+
+    async def collect_stream_data(self, stream_generator) -> Dict[str, Any]:
+        """收集流式数据并转换为轨迹响应"""
+        accumulated_content = ""
+        accumulated_reasoning = ""
+        current_tool_calls = []
+
+        # 添加初始消息（系统消息和用户消息）
+        self._add_initial_messages()
+
+        try:
+            async for chunk_raw in stream_generator:
+                # 解析SSE数据
+                if chunk_raw.startswith("data: "):
+                    data_part = chunk_raw[6:].strip()
+
+                    if data_part == "[DONE]":
+                        break
+
+                    try:
+                        chunk_data = json.loads(data_part)
+
+                        # 处理错误
+                        if "error" in chunk_data:
+                            self.errors.append(chunk_data["error"])
+                            continue
+
+                        # 处理工具结果消息
+                        if chunk_data.get("role") == "tool":
+                            tool_message = {
+                                "role": "tool",
+                                "tool_call_id": chunk_data.get("tool_call_id"),
+                                "content": chunk_data.get("content")
+                            }
+                            self.messages.append(tool_message)
+                            continue
+
+                        # 处理OpenAI格式的chunk
+                        if "choices" in chunk_data and chunk_data["choices"]:
+                            choice = chunk_data["choices"][0]
+                            delta = choice.get("delta", {})
+
+                            # 累积内容
+                            if delta.get("content"):
+                                accumulated_content += delta["content"]
+
+                            # 累积思考内容（如果有）
+                            if delta.get("reasoning_content"):
+                                accumulated_reasoning += delta["reasoning_content"]
+
+                            # 处理工具调用
+                            if delta.get("tool_calls"):
+                                for tool_call_delta in delta["tool_calls"]:
+                                    index = tool_call_delta.get("index", 0)
+
+                                    # 确保有足够的工具调用槽位
+                                    while len(current_tool_calls) <= index:
+                                        current_tool_calls.append({
+                                            "id": "",
+                                            "type": "function",
+                                            "function": {"name": "", "arguments": ""}
+                                        })
+
+                                    # 累积工具调用数据
+                                    if tool_call_delta.get("id"):
+                                        current_tool_calls[index]["id"] = tool_call_delta["id"]
+
+                                    if tool_call_delta.get("function"):
+                                        func = tool_call_delta["function"]
+                                        if func.get("name"):
+                                            current_tool_calls[index]["function"]["name"] += func["name"]
+                                        if func.get("arguments"):
+                                            current_tool_calls[index]["function"]["arguments"] += func["arguments"]
+
+                            # 检查是否完成一轮assistant响应
+                            if choice.get("finish_reason"):
+                                # 构建assistant消息
+                                if accumulated_content or current_tool_calls:
+                                    assistant_message = {"role": "assistant"}
+
+                                    if accumulated_reasoning:
+                                        assistant_message["reasoning_content"] = accumulated_reasoning
+
+                                    assistant_message["content"] = accumulated_content
+
+                                    if current_tool_calls:
+                                        # 清理工具调用数据
+                                        cleaned_tool_calls = []
+                                        for tool_call in current_tool_calls:
+                                            if tool_call["id"] and tool_call["function"]["name"]:
+                                                cleaned_tool_calls.append(tool_call)
+
+                                        if cleaned_tool_calls:
+                                            assistant_message["tool_calls"] = cleaned_tool_calls
+
+                                    self.messages.append(assistant_message)
+
+                                    # 如果没有工具调用，这是最终输出
+                                    if not current_tool_calls:
+                                        self.output = accumulated_content
+
+                                # 重置累积变量
+                                accumulated_content = ""
+                                accumulated_reasoning = ""
+                                current_tool_calls = []
+
+                        # 收集token使用量
+                        if "usage" in chunk_data:
+                            self.token_usage = chunk_data["usage"]
+
+                    except json.JSONDecodeError:
+                        continue
+
+        except Exception as e:
+            logger.error(f"收集轨迹数据时出错: {str(e)}")
+            self.errors.append({"message": str(e), "type": "collection_error"})
+
+        # 构建完整响应
+        return self._build_trajectory_response()
+
+    def _build_trajectory_response(self) -> Dict[str, Any]:
+        """构建轨迹响应"""
+        response = {
+            "id": f"chatcmpl-{int(datetime.now().timestamp())}",
+            "object": "chat.completion",
+            "created": int(datetime.now().timestamp()),
+            "model": "unknown",  # 将在外层设置
+            "messages": self.messages.copy(),
+            "output": self.output
+        }
+
+        # 添加token使用量
+        if self.token_usage:
+            response["usage"] = self.token_usage
+
+        # 添加错误信息（如果有）
+        if self.errors:
+            response["errors"] = self.errors
+
+        return response

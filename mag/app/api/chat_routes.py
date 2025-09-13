@@ -8,7 +8,7 @@ from typing import Dict, List, Any
 from app.services.model_service import model_service
 from app.services.chat_service import chat_service
 from app.services.mongodb_service import mongodb_service
-from app.utils.sse_helper import SSEHelper,SSECollector
+from app.utils.sse_helper import SSEHelper, TrajectoryCollector
 from app.models.chat_schema import (
     ChatCompletionRequest, ChatMessage, ConversationListItem,
     ConversationListResponse, ConversationDetailResponse, ConversationRound,
@@ -84,7 +84,10 @@ async def chat_completions(request: ChatCompletionRequest):
             )
         else:
             # 非流式响应：收集所有数据后返回完整结果
-            collector = SSECollector()
+            collector = TrajectoryCollector(
+                user_prompt=request.user_prompt,
+                system_prompt=request.system_prompt or ""
+            )
             complete_response = await collector.collect_stream_data(generate_stream())
 
             # 添加模型信息
