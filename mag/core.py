@@ -3,11 +3,21 @@ MCP Agent Graph (MAG) SDK - Agent Development Framework
 
 Simple Python interface for working with MAG agent system.
 """
-
-from .core import __version__, start, shutdown, is_running
-
 # 导入客户端API模块
 from .client import graph, model, mcp, conversation
+
+# 会话管理
+from .client.conversation import (
+    chat_completions,
+    list_conversations,
+    get_conversation_detail,
+    get_conversation_metadata,
+    update_conversation_status,
+    permanently_delete_conversation,
+    update_conversation_title,
+    update_conversation_tags,
+    compact_conversation
+)
 
 # 图管理
 from .client.graph import (
@@ -52,15 +62,6 @@ from .client.mcp import (
     generate_mcp_tool as generate_mcp,
     register_mcp_tool as register_mcp,
     list_ai_mcp_tools as list_ai_mcp
-)
-
-# 会话管理
-from .client.conversation import (
-    list as list_conversations,
-    get as get_conversation,
-    delete as delete_conversation,
-    get_hierarchy as get_conversation_hierarchy
-    
 )
 
 run_graph = run

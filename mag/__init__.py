@@ -178,6 +178,19 @@ def is_running():
     """
     return _is_server_running
 
+# 会话管理
+from .client.conversation import (
+    chat_completions,
+    list_conversations,
+    get_conversation_detail,
+    get_conversation_metadata,
+    update_conversation_status,
+    permanently_delete_conversation,
+    update_conversation_title,
+    update_conversation_tags,
+    compact_conversation
+)
+
 # 图管理
 from .client.graph import (
     list as list_graphs,
@@ -223,21 +236,7 @@ from .client.mcp import (
     list_ai_mcp_tools as list_ai_mcp
 )
 
-# 会话管理
-from .client.conversation import (
-    list_conversations as list_conversations,
-    get as get_conversation,
-    get_hierarchy as get_conversation_hierarchy,
-    chat_completions,
-    chat_completions_stream,
-    list_conversations,
-    get_conversation_detail,
-    update_conversation_status,
-    permanently_delete_conversation,
-    update_conversation_title,
-    update_conversation_tags,
-    compact_conversation
-)
+
 
 
 run_graph = run
