@@ -59,7 +59,7 @@ def conversation_management_demo():
             conversation_id=conversation_id,
             model_name="deepseek-chat",
             compact_type="simple",  # "simple": 简单压缩，保留每轮的系统提示词、用户消息和最后一个assistant消息
-                                   # "smart": 智能压缩，对长工具内容进行AI总结
+                                    # "smart": 智能压缩，对长工具内容进行AI总结
             compact_threshold=2000  # 压缩阈值，超过此长度的tool content将被总结（100-10000）
         )
         print(json.dumps(compact_result, ensure_ascii=False, indent=2))
