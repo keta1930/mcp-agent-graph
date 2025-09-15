@@ -16,7 +16,7 @@ def _ensure_server_running():
         if not start():
             raise RuntimeError("无法启动MAG服务器")
 
-def list() -> List[Dict[str, Any]]:
+def list_model() -> List[Dict[str, Any]]:
     """
     获取所有模型
     
@@ -28,31 +28,62 @@ def list() -> List[Dict[str, Any]]:
     response.raise_for_status()
     return response.json()
 
-def get(name: str) -> Optional[Dict[str, Any]]:
+
+def get_model(name: str, detail: bool = True) -> Optional[Dict[str, Any]]:
     """
     获取指定模型的配置
-    
+
     参数:
         name (str): 模型名称
-    
+        detail (bool): 是否返回详细配置，默认为True
+                      True - 返回完整的可编辑配置（从API获取）
+                      False - 返回基本配置（从本地缓存获取）
+
     返回:
         Optional[Dict[str, Any]]: 模型配置，如果不存在则返回None
     """
     _ensure_server_running()
-    try:
-        # 获取所有模型
-        models = list()
-        
-        # 找到匹配的模型
-        for model in models:
-            if model["name"] == name:
-                return model
-                
-        return None
-    except Exception as e:
-        raise RuntimeError(f"获取模型时出错: {str(e)}")
 
-def add(config: Dict[str, Any]) -> Dict[str, Any]:
+    if detail:
+        # 返回详细配置（用于编辑）
+        try:
+            from urllib.parse import quote
+            encoded_name = quote(name, safe='')
+            response = requests.get(f"{API_BASE}/models/{encoded_name}")
+
+            if response.status_code == 404:
+                return None
+
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") == "success":
+                return result.get("data")
+            else:
+                return None
+
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response') and e.response.status_code == 404:
+                return None
+            raise RuntimeError(f"获取模型详细配置时出错: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"获取模型详细配置时出错: {str(e)}")
+    else:
+        # 返回基本配置
+        try:
+            # 获取所有模型
+            models = list_model()
+
+            # 找到匹配的模型
+            for model in models:
+                if model["name"] == name:
+                    return model
+
+            return None
+        except Exception as e:
+            raise RuntimeError(f"获取模型时出错: {str(e)}")
+
+def add_model(config: Dict[str, Any]) -> Dict[str, Any]:
     """
     添加新模型
     
@@ -78,7 +109,7 @@ def add(config: Dict[str, Any]) -> Dict[str, Any]:
     response.raise_for_status()
     return response.json()
 
-def update(name: str, config: Dict[str, Any]) -> Dict[str, Any]:
+def update_model(name: str, config: Dict[str, Any]) -> Dict[str, Any]:
     """
     更新现有模型
     
@@ -101,7 +132,7 @@ def update(name: str, config: Dict[str, Any]) -> Dict[str, Any]:
     response.raise_for_status()
     return response.json()
 
-def delete(name: str) -> Dict[str, Any]:
+def delete_model(name: str) -> Dict[str, Any]:
     """
     删除模型
     

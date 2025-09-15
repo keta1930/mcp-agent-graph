@@ -191,6 +191,15 @@ from .client.conversation import (
     compact_conversation
 )
 
+# 模型管理
+from .client.model import (
+    list_model,
+    get_model,
+    add_model,
+    update_model,
+    delete_model
+)
+
 # 图管理
 from .client.graph import (
     list as list_graphs,
@@ -210,14 +219,7 @@ from .client.graph import (
     generate as generate_graph
 )
 
-# 模型管理
-from .client.model import (
-    list as list_models,
-    get as get_model,
-    add as add_model,
-    update as update_model,
-    delete as delete_model
-)
+
 
 # MCP服务器管理
 from .client.mcp import (
