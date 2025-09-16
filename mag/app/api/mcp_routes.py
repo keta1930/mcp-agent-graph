@@ -22,7 +22,7 @@ router = APIRouter()
 
 # ======= MCP服务器管理 =======
 
-@router.get("/mcp/config", response_model=MCPConfig)
+@router.get("/mcp/config")
 async def get_mcp_config():
     """获取MCP配置"""
     from app.core.file_manager import FileManager
@@ -456,14 +456,11 @@ async def get_mcp_tools():
 async def get_mcp_generator_template():
     """获取AI生成MCP的提示词模板"""
     try:
-        connect_result = await mcp_service.connect_all_servers()
-        logger.info(f"连接所有服务器结果: {connect_result}")
-        sample_requirement = "[在此处输入您的MCP工具需求描述]"
-        template = await mcp_service.get_mcp_generator_template(sample_requirement)
+        template = await mcp_service.get_mcp_generator_template()
         
         return {
             "template": template,
-            "note": "将模板中的需求描述替换为您的具体需求后使用"
+            "note": "模版可作为系统提示词使用，您的需求可作为用户输入"
         }
     except Exception as e:
         logger.error(f"获取MCP生成器模板时出错: {str(e)}")
@@ -472,9 +469,10 @@ async def get_mcp_generator_template():
             detail=f"获取MCP生成器模板时出错: {str(e)}"
         )
 
+
 @router.post("/mcp/generate")
 async def generate_mcp_tool(request: MCPGenerationRequest):
-    """AI生成MCP工具接口 - 流式SSE响应"""
+    """AI生成MCP工具接口 - 支持流式和非流式响应"""
     try:
         # 基本参数验证
         if not request.requirement.strip():
@@ -497,14 +495,14 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
                 detail=f"找不到模型 '{request.model_name}'"
             )
 
-        # 生成流式响应
+        # 生成流式响应的生成器
         async def generate_stream():
             try:
                 async for chunk in mcp_service.ai_generate_mcp_stream(
-                    requirement=request.requirement,
-                    model_name=request.model_name,
-                    conversation_id=request.conversation_id,
-                    user_id=request.user_id
+                        requirement=request.requirement,
+                        model_name=request.model_name,
+                        conversation_id=request.conversation_id,
+                        user_id=request.user_id
                 ):
                     yield chunk
             except Exception as e:
@@ -518,15 +516,29 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
                 yield f"data: {json.dumps(error_chunk)}\n\n"
                 yield "data: [DONE]\n\n"
 
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
-            }
-        )
+        # 根据stream参数决定响应类型
+        if request.stream:
+            # 流式响应
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            # 非流式响应：收集所有数据后返回完整结果
+            from app.utils.sse_helper import SSECollector
+            collector = SSECollector()
+            complete_response = await collector.collect_stream_data(generate_stream())
+
+            # 添加模型信息
+            complete_response["model"] = request.model_name
+            complete_response["requirement"] = request.requirement
+
+            return complete_response
 
     except HTTPException:
         raise

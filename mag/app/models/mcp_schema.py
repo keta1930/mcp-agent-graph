@@ -102,6 +102,7 @@ class MCPGenerationRequest(BaseModel):
     model_name: str   # 指定的模型名称
     conversation_id: Optional[str] = None  # 对话ID，为空时创建新对话
     user_id: str = Field(default="default_user", description="用户ID")
+    stream: bool = Field(default=True, description="是否使用流式响应")
 
 
 class MCPToolRegistration(BaseModel):

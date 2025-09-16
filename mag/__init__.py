@@ -200,6 +200,22 @@ from .client.model import (
     delete_model
 )
 
+# MCP服务器管理
+from .client.mcp import (
+    get_mcp_config,
+    update_mcp_config,
+    mcp_status,
+    connect,
+    mcptools,
+    add_mcp,
+    remove_mcp,
+    disconnect,
+    test_mcptool,
+    mcp_template,
+    gen_mcp
+)
+
+
 # 图管理
 from .client.graph import (
     list as list_graphs,
@@ -218,27 +234,6 @@ from .client.graph import (
     optimize,
     generate as generate_graph
 )
-
-
-
-# MCP服务器管理
-from .client.mcp import (
-    get_config as get_mcp_config,
-    update_config as update_mcp_config,
-    get_status as get_mcp_status,
-    connect as connect_mcp,
-    get_tools as get_tools,
-    add_server as add_server,
-    remove_server as remove_server,
-    disconnect as disconnect_mcp,
-    test_tool as test_mcp,
-    get_ai_generator_template as get_mcp_prompt,
-    generate_mcp_tool as generate_mcp,
-    register_mcp_tool as register_mcp,
-    list_ai_mcp_tools as list_ai_mcp
-)
-
-
 
 
 run_graph = run

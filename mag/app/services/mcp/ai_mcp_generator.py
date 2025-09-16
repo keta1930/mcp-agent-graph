@@ -377,30 +377,8 @@ class AIMCPGenerator:
         try:
             # 1. 连接所有服务器以确保所有工具可用
             from app.services.mcp_service import mcp_service
-            connect_result = await mcp_service.connect_all_servers()
-            logger.info(f"连接所有服务器结果: {connect_result}")
 
-            # 2. 获取所有工具信息
-            all_tools_data = await mcp_service.get_all_tools()
-
-            # 3. 处理工具描述
-            tools_description = ""
-
-            if not all_tools_data:
-                tools_description = "当前没有可用的MCP工具。\n\n"
-            else:
-                tools_description += "# 现有工具列表\n\n"
-
-                for server_name, tools in all_tools_data.items():
-                    if tools:
-                        tools_description += f"## 服务：{server_name}\n\n"
-                        for tool in tools:
-                            tool_name = tool.get("name", "未知工具")
-                            tool_desc = tool.get("description", "无描述")
-                            tools_description += f"- **{tool_name}**：{tool_desc}\n"
-                        tools_description += "\n"
-
-            # 4. 读取MCP生成模板文件
+            # 2. 读取MCP生成模板文件
             template_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates",
                                          "mcp_generator_template.md")
 
@@ -412,8 +390,7 @@ class AIMCPGenerator:
                 raise FileNotFoundError(f"MCP生成模板文件不存在: {template_path}")
 
             # 5. 替换模板中的占位符
-            system_prompt = template_content.replace("{TOOLS_DESCRIPTION}", tools_description)
-            system_prompt = system_prompt.replace("{REQUIREMENT}", "{REQUIREMENT}")  # 保持占位符，在实际使用时替换
+            system_prompt = template_content
 
             return system_prompt
 
@@ -512,7 +489,7 @@ class AIMCPGenerator:
             logger.error(f"组装最终MCP工具时出错: {str(e)}")
             return {"success": False, "error": str(e)}
 
-    async def get_mcp_generator_template(self, requirement: str, all_tools_data: Dict[str, List[Dict]] = None) -> str:
+    async def get_mcp_generator_template(self) -> str:
         """获取MCP生成器的提示词模板"""
         try:
             # 1. 读取模板文件
@@ -525,27 +502,8 @@ class AIMCPGenerator:
             with open(template_path, 'r', encoding='utf-8') as f:
                 template_content = f.read()
 
-            # 2. 处理工具描述
-            tools_description = ""
-
-            if not all_tools_data:
-                tools_description = "当前没有可用的MCP工具。\n\n"
-            else:
-                tools_description += "# 现有工具列表\n\n"
-
-                for server_name, tools in all_tools_data.items():
-                    if tools:
-                        tools_description += f"## 服务：{server_name}\n\n"
-                        for tool in tools:
-                            tool_name = tool.get("name", "未知工具")
-                            tool_desc = tool.get("description", "无描述")
-                            tools_description += f"- **{tool_name}**：{tool_desc}\n"
-                        tools_description += "\n"
-
-            # 3. 替换模板中的占位符
-            final_prompt = template_content.replace("{REQUIREMENT}", requirement)
-            final_prompt = final_prompt.replace("{TOOLS_DESCRIPTION}", tools_description)
-
+            # 2. 替换模板中的占位符
+            final_prompt = template_content
             return final_prompt
 
         except Exception as e:

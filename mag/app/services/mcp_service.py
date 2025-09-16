@@ -109,10 +109,9 @@ class MCPService:
             return {"error": "MCP Client未启动"}
         return await self.tool_executor.execute_single_tool(server_name, tool_name, params)
 
-    async def get_mcp_generator_template(self, requirement: str) -> str:
+    async def get_mcp_generator_template(self) -> str:
         """获取MCP生成器的提示词模板"""
-        all_tools_data = await self.get_all_tools()
-        return await self.ai_mcp_generator.get_mcp_generator_template(requirement, all_tools_data)
+        return await self.ai_mcp_generator.get_mcp_generator_template()
 
     async def ai_generate_mcp_stream(self,
                                      requirement: str,
