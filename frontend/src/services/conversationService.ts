@@ -5,6 +5,7 @@ import {
   ConversationDetail,
   ChatRequest,
   AgentRequest,
+  GraphGenerationRequest,
   GraphExecuteRequest
 } from '../types/conversation';
 import { getCurrentUserId } from '../config/user';
@@ -156,7 +157,7 @@ export class ConversationService {
   }
 
   // Graph生成模式 - 创建SSE连接
-  static async createGraphGenerateSSE(request: AgentRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+  static async createGraphGenerateSSE(request: GraphGenerationRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     const response = await fetch(`${api.defaults.baseURL}/graphs/generate`, {
       method: 'POST',
       headers: {

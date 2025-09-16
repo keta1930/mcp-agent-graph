@@ -202,8 +202,11 @@ export const importGraphPackageFromFile = async (file: File): Promise<ImportResu
 // ======= AI提示词模板功能 =======
 
 // Get prompt template for graph generation
-export const getPromptTemplate = async (): Promise<PromptTemplateResponse> => {
-  const response = await api.get('/prompt-template');
+export const getPromptTemplate = async (request?: { mcp_servers?: string[], graph_name?: string }): Promise<PromptTemplateResponse> => {
+  const response = await api.post('/prompt-template', {
+    mcp_servers: request?.mcp_servers || [],
+    graph_name: request?.graph_name
+  });
   return response.data;
 };
 

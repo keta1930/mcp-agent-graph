@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Button, Modal, Form, Input, Select, Tooltip, message, Space, Radio, 
-  Upload, Divider, Row, Col, Dropdown, Menu, Card
+  Upload, Divider, Row, Col, Dropdown, Menu, Card, Typography, Tag
 } from 'antd';
 import {
   PlusOutlined, SaveOutlined, CodeOutlined, CopyOutlined, CheckOutlined,
@@ -19,6 +19,7 @@ import SmartPromptEditor from '../common/SmartPromptEditor';
 import * as graphService from '../../services/graphService';
 import MarkdownRenderer from '../common/MarkdownRenderer';
 const { TextArea } = Input;
+const { Text } = Typography;
 const { Option } = Select;
 const { Dragger } = Upload;
 
@@ -52,6 +53,15 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   } = useGraphEditorStore();
 
   const { config, status, fetchConfig, fetchStatus } = useMCPStore();
+  
+  // 获取可用的MCP服务器列表
+  const getAvailableMcpServers = () => {
+    if (!config.mcpServers) return [];
+    return Object.keys(config.mcpServers).filter(serverName => {
+      const server = config.mcpServers[serverName];
+      return !server.disabled;
+    });
+  };
   const { models, fetchModels } = useModelStore();
 
   const [loading, setLoading] = useState(false);
@@ -75,6 +85,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   const [importType, setImportType] = useState<'json' | 'zip'>('json');
   const [importMethod, setImportMethod] = useState<'path' | 'file'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  // AI生成提示词模板的选项状态
+  const [promptMcpServers, setPromptMcpServers] = useState<string[]>([]);
+  const [promptSelectedGraph, setPromptSelectedGraph] = useState<string>('');
 
   const [form] = Form.useForm();
   const [importForm] = Form.useForm();
@@ -336,12 +350,23 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   };
 
   // 获取AI生成提示词模板
-  const handleGetPromptTemplate = async () => {
+  const handleGetPromptTemplate = () => {
+    // 重置选项并显示配置模态框
+    setPromptMcpServers([]);
+    setPromptSelectedGraph('');
+    setPromptTemplate(''); // 重置模板内容
+    setPromptTemplateModalVisible(true);
+  };
+
+  // 生成提示词模板
+  const handleGeneratePromptTemplate = async () => {
     try {
       setLoading(true);
-      const result = await graphService.getPromptTemplate();
+      const result = await graphService.getPromptTemplate({
+        mcp_servers: promptMcpServers,
+        graph_name: promptSelectedGraph || undefined
+      });
       setPromptTemplate(result.prompt);
-      setPromptTemplateModalVisible(true);
     } catch (error) {
       messageApi.error(`获取提示词模板失败: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -856,22 +881,139 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       <Modal
         title="AI生成提示词模板"
         open={promptTemplateModalVisible}
+        onOk={handleGeneratePromptTemplate}
         onCancel={() => setPromptTemplateModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setPromptTemplateModalVisible(false)}>
-            关闭
-          </Button>
-        ]}
-        width={1000}
-        bodyStyle={{ padding: 0 }}
+        okText="生成提示词"
+        cancelText="关闭"
+        confirmLoading={loading}
+        width={800}
+        destroyOnClose
       >
-        <MarkdownRenderer
-          content={promptTemplate}
-          title="AI图生成提示词模板"
-          showCopyButton={true}
-          showPreview={true}
-          style={{ border: 'none', boxShadow: 'none' }}
-        />
+        {!promptTemplate ? (
+          // 配置阶段
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <div>
+              <Text strong style={{ fontSize: '16px', marginBottom: '16px', display: 'block' }}>
+                配置AI生成选项
+              </Text>
+              <Text type="secondary">
+                选择需要使用的MCP服务器和已有图配置来生成更精准的提示词模板
+              </Text>
+            </div>
+            
+            {/* MCP服务器选择 */}
+            <Card size="small" title="MCP服务器选择">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Text type="secondary">
+                  选择生成Graph时需要使用的MCP服务器（可选）
+                </Text>
+                <Select
+                  mode="multiple"
+                  placeholder="选择MCP服务器（不选择则不限制工具）"
+                  style={{ width: '100%' }}
+                  value={promptMcpServers}
+                  onChange={setPromptMcpServers}
+                  allowClear
+                >
+                  {getAvailableMcpServers().map(serverName => (
+                    <Option key={serverName} value={serverName}>
+                      <Space>
+                        <div
+                          className={`mcp-connection-indicator ${
+                            status[serverName]?.connected ? 'connected' : 'disconnected'
+                          }`}
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: status[serverName]?.connected ? '#52c41a' : '#ff4d4f',
+                            display: 'inline-block'
+                          }}
+                        />
+                        {serverName}
+                      </Space>
+                    </Option>
+                  ))}
+                </Select>
+              </Space>
+            </Card>
+
+            {/* 已有图配置选择 */}
+            <Card size="small" title="已有图配置">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Text type="secondary">
+                  选择一个已有的图配置用于优化或参考（可选）
+                </Text>
+                <Select
+                  placeholder="选择已有图配置（可选）"
+                  style={{ width: '100%' }}
+                  value={promptSelectedGraph}
+                  onChange={setPromptSelectedGraph}
+                  allowClear
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {graphs.map(graphName => (
+                    <Option key={graphName} value={graphName}>
+                      {graphName}
+                    </Option>
+                  ))}
+                </Select>
+              </Space>
+            </Card>
+
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#f6f8fa', 
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#666'
+            }}>
+              <strong>提示：</strong>
+              <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                <li>选择MCP服务器后，生成的提示词将只包含这些服务器的工具信息</li>
+                <li>选择已有图配置后，可以基于该图进行优化或扩展</li>
+                <li>不选择任何选项将生成包含所有工具的通用提示词模板</li>
+              </ul>
+            </div>
+          </Space>
+        ) : (
+          // 显示结果阶段
+          <div>
+            <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
+              <Text strong>生成配置：</Text>
+              <div style={{ marginTop: '8px' }}>
+                {promptMcpServers.length > 0 && (
+                  <div>
+                    <Text type="secondary">MCP服务器：</Text>
+                    {promptMcpServers.map(server => (
+                      <Tag key={server} size="small" style={{ marginLeft: '4px' }}>{server}</Tag>
+                    ))}
+                  </div>
+                )}
+                {promptSelectedGraph && (
+                  <div style={{ marginTop: '4px' }}>
+                    <Text type="secondary">参考图配置：</Text>
+                    <Tag color="blue" size="small" style={{ marginLeft: '4px' }}>{promptSelectedGraph}</Tag>
+                  </div>
+                )}
+                {promptMcpServers.length === 0 && !promptSelectedGraph && (
+                  <Text type="secondary">使用默认配置（包含所有工具）</Text>
+                )}
+              </div>
+            </div>
+            
+            <MarkdownRenderer
+              content={promptTemplate}
+              title="AI图生成提示词模板"
+              showCopyButton={true}
+              showPreview={true}
+              style={{ border: 'none', boxShadow: 'none' }}
+            />
+          </div>
+        )}
       </Modal>
 
       {/* AI优化提示词模板 modal */}

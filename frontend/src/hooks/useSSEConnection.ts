@@ -8,6 +8,7 @@ import { getCurrentUserId } from '../config/user';
 import {
   ChatRequest,
   AgentRequest,
+  GraphGenerationRequest,
   GraphExecuteRequest,
   SSEMessage,
   ConversationMode,
@@ -412,19 +413,26 @@ export function useSSEConnection() {
         }
 
         case 'agent': {
-          const request: AgentRequest = {
-            requirement: inputText,
-            model_name: options.model_name,
-            conversation_id: conversationId,
-            user_id: getCurrentUserId()
-          };
-
           if (options.agentType === 'graph') {
             console.log('Creating Graph Generate SSE connection');
-            reader = await ConversationService.createGraphGenerateSSE(request);
+            const graphRequest: GraphGenerationRequest = {
+              requirement: inputText,
+              model_name: options.model_name,
+              mcp_servers: options.mcp_servers || [],
+              graph_name: options.graph_name,
+              conversation_id: conversationId,
+              user_id: getCurrentUserId()
+            };
+            reader = await ConversationService.createGraphGenerateSSE(graphRequest);
           } else {
             console.log('Creating MCP Generate SSE connection');
-            reader = await ConversationService.createAgentSSE(request);
+            const mcpRequest: AgentRequest = {
+              requirement: inputText,
+              model_name: options.model_name,
+              conversation_id: conversationId,
+              user_id: getCurrentUserId()
+            };
+            reader = await ConversationService.createAgentSSE(mcpRequest);
           }
           break;
         }

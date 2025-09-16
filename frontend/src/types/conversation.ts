@@ -126,6 +126,15 @@ export interface AgentRequest {
   user_id?: string;
 }
 
+export interface GraphGenerationRequest {
+  requirement: string;
+  model_name: string;
+  mcp_servers?: string[];
+  conversation_id?: string;
+  graph_name?: string;
+  user_id?: string;
+}
+
 export interface GraphExecuteRequest {
   graph_name: string;
   input_text: string;

@@ -62,7 +62,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [inputText, setInputText] = React.useState('');
   const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
   const [showMcpTools, setShowMcpTools] = React.useState(false);
+  const [showGraphSelector, setShowGraphSelector] = React.useState(false);
   const mcpDropdownRef = useRef<HTMLDivElement>(null);
+  const graphDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleModeChange = (mode: ConversationMode) => {
     setCurrentMode(mode);
@@ -76,6 +78,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setInputText('');
     setPromptMode('user'); // 重置为用户提示词模式
     setShowMcpTools(false);
+    setShowGraphSelector(false);
     // 设置Agent模式的默认类型
     if (mode === 'agent') {
       setAgentType('mcp');
@@ -99,19 +102,22 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setSelectedMCPServers(initialStates);
   }, [availableMCPServers]);
 
-  // 点击外部关闭MCP工具面板
+  // 点击外部关闭MCP工具面板和图选择面板
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mcpDropdownRef.current && !mcpDropdownRef.current.contains(event.target as Node)) {
         setShowMcpTools(false);
       }
+      if (graphDropdownRef.current && !graphDropdownRef.current.contains(event.target as Node)) {
+        setShowGraphSelector(false);
+      }
     };
 
-    if (showMcpTools) {
+    if (showMcpTools || showGraphSelector) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showMcpTools]);
+  }, [showMcpTools, showGraphSelector]);
 
   const handleStart = () => {
     const content = currentMode === 'chat' && userPrompt.trim() ? userPrompt.trim() : inputText.trim();
@@ -338,6 +344,108 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                         {agentType === 'mcp' ? 'MCP' : 'Graph'}
                       </Button>
                     </Tooltip>
+                  )}
+
+                  {/* Agent Graph模式的MCP工具选择 */}
+                  {currentMode === 'agent' && agentType === 'graph' && availableMCPServers.length > 0 && (
+                    <div className="mcp-tools-container" ref={mcpDropdownRef}>
+                      <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
+                        <Button
+                          type="text"
+                          icon={<ToolOutlined />}
+                          className={`mcp-tools-button ${showMcpTools ? 'active' : ''} ${enabledMcpCount > 0 ? 'has-enabled' : ''}`}
+                          onClick={() => setShowMcpTools(!showMcpTools)}
+                          size="small"
+                        />
+                      </Tooltip>
+
+                      {/* MCP工具面板 */}
+                      {showMcpTools && (
+                        <div className="mcp-tools-panel">
+                          <div className="mcp-tools-header">
+                            <Text strong>MCP工具</Text>
+                          </div>
+                          <div className="mcp-tools-list">
+                            {availableMCPServers.map(serverName => {
+                              const isConnected = getServerConnectionStatus(serverName);
+                              return (
+                                <div key={serverName} className="mcp-tool-item">
+                                  <div className="mcp-tool-info">
+                                    <div
+                                      className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
+                                      title={isConnected ? '已连接' : '未连接'}
+                                    />
+                                    <Tooltip title={serverName} placement="top">
+                                      <span className="mcp-tool-name">{serverName}</span>
+                                    </Tooltip>
+                                  </div>
+                                  <Switch
+                                    size="small"
+                                    checked={selectedMCPServers[serverName] || false}
+                                    onChange={(checked) => toggleMcpServer(serverName, checked)}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Agent Graph模式的图配置选择 */}
+                  {currentMode === 'agent' && agentType === 'graph' && (
+                    <div className="graph-selector-container" ref={graphDropdownRef}>
+                      <Tooltip title={selectedGraph ? `已选择图: ${selectedGraph}` : "选择基础图配置（可选）"}>
+                        <Button
+                          type="text"
+                          icon={<NodeIndexOutlined />}
+                          className={`graph-selector-button ${showGraphSelector ? 'active' : ''} ${selectedGraph ? 'has-selected' : ''}`}
+                          onClick={() => setShowGraphSelector(!showGraphSelector)}
+                          size="small"
+                        />
+                      </Tooltip>
+
+                      {/* 图选择面板 */}
+                      {showGraphSelector && (
+                        <div className="graph-selector-panel">
+                          <div className="graph-selector-header">
+                            <Text strong>基础图配置</Text>
+                            <Text type="secondary" style={{ fontSize: '11px' }}>（可选）</Text>
+                          </div>
+                          <div className="graph-selector-list">
+                            <div className="graph-option-item">
+                              <div className="graph-option-info">
+                                <span className="graph-option-name">不使用基础配置</span>
+                              </div>
+                              <Button
+                                type={!selectedGraph ? "primary" : "default"}
+                                size="small"
+                                onClick={() => setSelectedGraph('')}
+                              >
+                                {!selectedGraph ? '已选择' : '选择'}
+                              </Button>
+                            </div>
+                            {availableGraphs && availableGraphs.length > 0 && availableGraphs.map(graphName => (
+                              <div key={graphName} className="graph-option-item">
+                                <div className="graph-option-info">
+                                  <Tooltip title={graphName} placement="left">
+                                    <span className="graph-option-name">{graphName}</span>
+                                  </Tooltip>
+                                </div>
+                                <Button
+                                  type={selectedGraph === graphName ? "primary" : "default"}
+                                  size="small"
+                                  onClick={() => setSelectedGraph(graphName)}
+                                >
+                                  {selectedGraph === graphName ? '已选择' : '选择'}
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
