@@ -170,16 +170,19 @@ class GraphService:
     async def ai_generate_graph(self,
                                 requirement: str,
                                 model_name: str,
+                                mcp_servers: List[str],
                                 conversation_id: Optional[str] = None,
                                 user_id: str = "default_user",
-                                graph_config: Optional[Dict[str, Any]] = None) -> AsyncGenerator[str, None]:
+                                graph_config: Optional[Dict[str, Any]] = None,
+                                ) -> AsyncGenerator[str, None]:
         """AI生成图的流式接口"""
         async for chunk in self.ai_generator.ai_generate_stream(
                 requirement=requirement,
                 model_name=model_name,
+                mcp_servers=mcp_servers,
                 conversation_id=conversation_id,
                 user_id=user_id,
-                graph_config=graph_config
+                graph_config=graph_config,
         ):
             yield chunk
 

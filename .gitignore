@@ -12,3 +12,7 @@ wheels/
 
 .idea/
 version/
+
+.qoderignore
+
+.qoder/

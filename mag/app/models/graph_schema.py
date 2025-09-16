@@ -105,6 +105,7 @@ class GraphGenerationRequest(BaseModel):
     conversation_id: Optional[str] = None  # 对话ID，为空时创建新对话
     graph_name: Optional[str] = None  # 图名称，用于更新已有的图
     user_id: str = Field(default="default_user", description="用户ID")
+    mcp_servers: List[str] = Field(default=[], description="需要使用的MCP服务器名称列表")
 
 class GraphGenerationResponse(BaseModel):
     """图生成响应"""
@@ -114,3 +115,9 @@ class GraphGenerationResponse(BaseModel):
     graph_name: Optional[str] = Field(None, description="生成的图名称")
     final_graph_config: Optional[Dict[str, Any]] = Field(None, description="最终生成的图配置")
     error: Optional[str] = Field(None, description="错误信息")
+
+class PromptTemplateRequest(BaseModel):
+    """提示词模板生成请求"""
+    mcp_servers: List[str] = Field(default=[], description="需要使用的MCP服务器名称列表")
+    graph_name: Optional[str] = Field(None, description="图名称，用于包含具体图配置")
+

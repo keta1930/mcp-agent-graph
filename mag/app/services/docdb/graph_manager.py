@@ -79,7 +79,6 @@ class GraphManager:
                 "final_graph_config": messages_doc.get("final_graph_config")
             })
 
-            # 为了兼容旧格式，将rounds转换为messages（如果需要）
             messages = []
             for round_data in messages_doc.get("rounds", []):
                 messages.extend(round_data.get("messages", []))

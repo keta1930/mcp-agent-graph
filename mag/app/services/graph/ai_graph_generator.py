@@ -26,9 +26,11 @@ class AIGraphGenerator:
     async def ai_generate_stream(self,
                                  requirement: str,
                                  model_name: str,
+                                 mcp_servers: List[str],
                                  conversation_id: Optional[str] = None,
                                  user_id: str = "default_user",
-                                 graph_config: Optional[Dict[str, Any]] = None) -> AsyncGenerator[str, None]:
+                                 graph_config: Optional[Dict[str, Any]] = None
+                                 ) -> AsyncGenerator[str, None]:
         """AI生成图的流式接口"""
         try:
             # 检查是否为结束指令
@@ -54,7 +56,7 @@ class AIGraphGenerator:
             # 创建或继续对话
             if conversation_id is None:
                 # 没有conversation_id，创建新对话
-                conversation_id = await self._create_conversation(user_id, requirement, graph_config)
+                conversation_id = await self._create_conversation(user_id, requirement, graph_config, mcp_servers)
                 if not conversation_id:
                     error_chunk = {
                         "error": {
@@ -83,7 +85,8 @@ class AIGraphGenerator:
                         return
                 else:
                     # 对话不存在，使用该conversation_id创建新对话
-                    success = await self._create_conversation(user_id, requirement, graph_config, conversation_id)
+                    success = await self._create_conversation(user_id, requirement, graph_config, mcp_servers,
+                                                              conversation_id)
                     if not success:
                         error_chunk = {
                             "error": {
@@ -221,6 +224,112 @@ class AIGraphGenerator:
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
 
+    async def build_system_prompt(self, mcp_servers, graph_config: Optional[Dict[str, Any]] = None
+                                   ) -> str:
+        """构建系统提示词"""
+        try:
+            # 获取可用模型列表
+            models = model_service.get_all_models()
+            models_description = "当前可用的模型：\n"
+            for model in models:
+                models_description += f"- {model['name']}: {model.get('model', 'N/A')}\n"
+
+            # 生成工具描述
+            tools_description = ""
+
+            # 如果没有指定MCP服务器，说明不需要工具
+            if not mcp_servers:
+                tools_description = "# MCP工具信息\n\n此图配置不使用MCP工具，仅使用模型进行处理。\n\n"
+            else:
+                try:
+                    # 确保指定的服务器已连接
+                    connection_status = await mcp_service.server_manager.ensure_servers_connected(mcp_servers)
+                    logger.info(f"指定服务器连接结果: {connection_status}")
+
+                    # 检查连接失败的服务器
+                    failed_servers = [name for name, status in connection_status.items() if not status]
+                    successful_servers = [name for name, status in connection_status.items() if status]
+
+                    # 获取指定服务器的工具信息
+                    all_tools_data = await mcp_service.get_all_tools()
+
+                    # 过滤出指定且成功连接的服务器的工具
+                    filtered_tools_data = {}
+                    for server_name in successful_servers:
+                        if server_name in all_tools_data:
+                            filtered_tools_data[server_name] = all_tools_data[server_name]
+
+                    if not filtered_tools_data and failed_servers:
+                        tools_description = f"# MCP工具信息\n\n指定的MCP服务器连接失败: {', '.join(failed_servers)}，当前没有可用的工具。\n\n"
+                    elif not filtered_tools_data:
+                        tools_description = "# MCP工具信息\n\n指定的MCP服务器中没有可用的工具。\n\n"
+                    else:
+                        tools_description += "# 可用MCP工具\n\n"
+
+                        # 统计服务器和工具总数
+                        server_count = len(filtered_tools_data)
+                        total_tools = sum(len(tools) for tools in filtered_tools_data.values())
+                        tools_description += f"系统中共有 {server_count} 个MCP服务，提供 {total_tools} 个工具。\n\n"
+
+                        # 添加连接状态信息
+                        if failed_servers:
+                            tools_description += f"**注意**: 以下服务器连接失败: {', '.join(failed_servers)}\n\n"
+
+                        # 遍历每个成功连接的服务器
+                        for server_name, tools in filtered_tools_data.items():
+                            tools_description += f"## 服务：{server_name}\n\n"
+
+                            if not tools:
+                                tools_description += "此服务未提供工具。\n\n"
+                                continue
+
+                            # 显示此服务的工具数量
+                            tools_description += f"此服务提供 {len(tools)} 个工具：\n\n"
+
+                            # 遍历服务提供的每个工具
+                            for i, tool in enumerate(tools, 1):
+                                # 从工具数据中提取需要的字段
+                                tool_name = tool.get("name", "未知工具")
+                                tool_desc = tool.get("description", "无描述")
+
+                                # 添加工具标签和编号
+                                tools_description += f"### 工具 {i}：{tool_name}\n\n"
+                                tools_description += f"**工具说明**：{tool_desc}\n\n"
+
+                                # 添加分隔符，除非是最后一个工具
+                                if i < len(tools):
+                                    tools_description += "---\n\n"
+
+                            tools_description += "***\n\n"
+                except Exception as e:
+                    logger.error(f"获取MCP工具信息时出错: {str(e)}")
+                    tools_description = f"# MCP工具信息\n\n获取工具信息时出错: {str(e)}\n\n"
+
+            template_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates",
+                                         "prompt_template.md")
+
+            try:
+                with open(template_path, 'r', encoding='utf-8') as f:
+                    template_content = f.read()
+            except FileNotFoundError:
+                logger.error(f"找不到提示词模板文件: {template_path}")
+                raise FileNotFoundError(f"提示词模板文件不存在: {template_path}")
+
+            # 替换占位符
+            system_prompt = template_content.replace("{MODELS_DESCRIPTION}", models_description)
+            system_prompt = system_prompt.replace("{TOOLS_DESCRIPTION}", tools_description)
+
+            # 如果提供了graph_config，添加到系统提示词的最后
+            if graph_config:
+                graph_section = f"\n\n## 以下是本次需要更新的graph：\n\n{json.dumps(graph_config, ensure_ascii=False, indent=2)}\n\n请按照用户需求对graph进行更新"
+                system_prompt += graph_section
+
+            return system_prompt
+
+        except Exception as e:
+            logger.error(f"构建系统提示词时出错: {str(e)}")
+            raise e  # 直接抛出异常，不使用默认提示词
+
     def _filter_reasoning_content(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """过滤掉消息中的reasoning_content字段"""
         filtered_messages = []
@@ -316,6 +425,7 @@ class AIGraphGenerator:
 
     async def _create_conversation(self, user_id: str, requirement: str,
                                    graph_config: Optional[Dict[str, Any]] = None,
+                                   mcp_servers: List[str] = None,
                                    conversation_id: Optional[str] = None) -> Optional[str]:
         """创建新的图生成对话"""
         try:
@@ -332,8 +442,19 @@ class AIGraphGenerator:
             if not success:
                 return None
 
+            if graph_config:
+                initial_parsed_results = {
+                    "graph_name": graph_config.get("name"),
+                    "graph_description": graph_config.get("description", ""),
+                    "nodes": graph_config.get("nodes", []),
+                    "end_template": graph_config.get("end_template")
+                }
+                await mongodb_service.update_graph_generation_parsed_results(
+                    conversation_id, initial_parsed_results
+                )
+
             # 构建系统提示词
-            system_prompt = await self._build_system_prompt(graph_config)
+            system_prompt = await self.build_system_prompt(mcp_servers,graph_config)
 
             # 添加系统消息
             system_message = {
@@ -375,87 +496,6 @@ class AIGraphGenerator:
         except Exception as e:
             logger.error(f"继续对话时出错: {str(e)}")
             return False
-
-    async def _build_system_prompt(self, graph_config: Optional[Dict[str, Any]] = None) -> str:
-        """构建系统提示词"""
-        try:
-            # 获取可用模型列表
-            models = model_service.get_all_models()
-            models_description = "当前可用的模型：\n"
-            for model in models:
-                models_description += f"- {model['name']}: {model.get('model', 'N/A')}\n"
-
-            # 1. 连接所有服务器以确保所有工具可用
-            connect_result = await mcp_service.connect_all_servers()
-            logger.info(f"连接所有服务器结果: {connect_result}")
-
-            # 2. 获取所有工具信息
-            all_tools_data = await mcp_service.get_all_tools()
-
-            # 3. 过滤和转换工具信息为文本描述，添加清晰的标签
-            tools_description = ""
-
-            if not all_tools_data:
-                tools_description = "当前没有可用的MCP工具。\n\n"
-            else:
-                tools_description += "# 可用MCP工具\n\n"
-
-                # 统计服务器和工具总数
-                server_count = len(all_tools_data)
-                total_tools = sum(len(tools) for tools in all_tools_data.values())
-                tools_description += f"系统中共有 {server_count} 个MCP服务，提供 {total_tools} 个工具。\n\n"
-
-                # 遍历每个服务器
-                for server_name, tools in all_tools_data.items():
-                    tools_description += f"## 服务：{server_name}\n\n"
-
-                    if not tools:
-                        tools_description += "此服务未提供工具。\n\n"
-                        continue
-
-                    # 显示此服务的工具数量
-                    tools_description += f"此服务提供 {len(tools)} 个工具：\n\n"
-
-                    # 遍历服务提供的每个工具
-                    for i, tool in enumerate(tools, 1):
-                        # 从工具数据中提取需要的字段
-                        tool_name = tool.get("name", "未知工具")
-                        tool_desc = tool.get("description", "无描述")
-
-                        # 添加工具标签和编号
-                        tools_description += f"### 工具 {i}：{tool_name}\n\n"
-                        tools_description += f"**工具说明**：{tool_desc}\n\n"
-
-                        # 添加分隔符，除非是最后一个工具
-                        if i < len(tools):
-                            tools_description += "---\n\n"
-
-                    tools_description += "***\n\n"
-
-            template_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates",
-                                         "prompt_template.md")
-
-            try:
-                with open(template_path, 'r', encoding='utf-8') as f:
-                    template_content = f.read()
-            except FileNotFoundError:
-                logger.error(f"找不到提示词模板文件: {template_path}")
-                raise FileNotFoundError(f"提示词模板文件不存在: {template_path}")
-
-            # 替换占位符
-            system_prompt = template_content.replace("{MODELS_DESCRIPTION}", models_description)
-            system_prompt = system_prompt.replace("{TOOLS_DESCRIPTION}", tools_description)
-
-            # 如果提供了graph_config，添加到系统提示词的最后
-            if graph_config:
-                graph_section = f"\n\n## 以下是本次需要更新的graph：\n\n{json.dumps(graph_config, ensure_ascii=False, indent=2)}\n\n请按照用户需求对graph进行更新"
-                system_prompt += graph_section
-
-            return system_prompt
-
-        except Exception as e:
-            logger.error(f"构建系统提示词时出错: {str(e)}")
-            raise e  # 直接抛出异常，不使用默认提示词
 
     async def _check_completion(self, conversation_id: str) -> Dict[str, Any]:
         """检查是否完成了所有必需阶段"""
