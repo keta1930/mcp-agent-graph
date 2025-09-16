@@ -72,7 +72,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   const [readmeModalVisible, setReadmeModalVisible] = useState(false);
   const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
   const [promptTemplateModalVisible, setPromptTemplateModalVisible] = useState(false);
-  const [optimizePromptTemplateModalVisible, setOptimizePromptTemplateModalVisible] = useState(false);
 
   const [mcpScript, setMcpScript] = useState("");
   const [parallelScript, setParallelScript] = useState("");
@@ -81,7 +80,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   const [copied, setCopied] = useState(false);
   const [readmeContent, setReadmeContent] = useState("");
   const [promptTemplate, setPromptTemplate] = useState("");
-  const [optimizePromptTemplate, setOptimizePromptTemplate] = useState("");
   const [importType, setImportType] = useState<'json' | 'zip'>('json');
   const [importMethod, setImportMethod] = useState<'path' | 'file'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -374,26 +372,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
     }
   };
 
-  // 获取AI优化提示词模板
-  const handleGetOptimizePromptTemplate = async () => {
-    try {
-      setLoading(true);
-      const request = currentGraph?.name ? { graph_name: currentGraph.name } : undefined;
-      const result = await graphService.getOptimizePromptTemplate(request);
-      
-      if (result.status === 'error') {
-        messageApi.error(`获取优化提示词模板失败: ${result.message}`);
-        return;
-      }
-      
-      setOptimizePromptTemplate(result.prompt);
-      setOptimizePromptTemplateModalVisible(true);
-    } catch (error) {
-      messageApi.error(`获取优化提示词模板失败: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 图设置
   const handleGraphSettings = () => {
@@ -444,14 +422,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       </Menu.Item>
       <Menu.Item key="ai-generate-prompt" icon={<BulbOutlined />} onClick={handleGetPromptTemplate}>
         AI生成提示词
-      </Menu.Item>
-      <Menu.Item 
-        key="ai-optimize-prompt" 
-        icon={<FileTextOutlined />} 
-        onClick={handleGetOptimizePromptTemplate}
-        disabled={!currentGraph?.name}
-      >
-        AI优化提示词
       </Menu.Item>
     </Menu>
   );
@@ -1014,28 +984,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
             />
           </div>
         )}
-      </Modal>
-
-      {/* AI优化提示词模板 modal */}
-      <Modal
-        title="AI优化提示词模板"
-        open={optimizePromptTemplateModalVisible}
-        onCancel={() => setOptimizePromptTemplateModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setOptimizePromptTemplateModalVisible(false)}>
-            关闭
-          </Button>
-        ]}
-        width={1000}
-        bodyStyle={{ padding: 0 }}
-      >
-        <MarkdownRenderer
-          content={optimizePromptTemplate}
-          title={`AI优化提示词模板${currentGraph ? ` - ${currentGraph.name}` : ''}`}
-          showCopyButton={true}
-          showPreview={true}
-          style={{ border: 'none', boxShadow: 'none' }}
-        />
       </Modal>
 
       {/* MCP script modal with script type selector */}

@@ -53,9 +53,6 @@ export interface MCPScriptResponse {
 }
 
 
-export interface OptimizePromptTemplateRequest {
-  graph_name?: string;
-}
 
 export interface GraphFilePath {
   file_path: string;
@@ -85,14 +82,6 @@ export interface PromptTemplateResponse {
   prompt: string;
 }
 
-export interface OptimizePromptTemplateResponse {
-  prompt: string;
-  graph_name?: string;
-  has_graph_config?: boolean;
-  note?: string;
-  status?: string;
-  message?: string;
-}
 
 
 export const SAVE_FORMAT_OPTIONS = [

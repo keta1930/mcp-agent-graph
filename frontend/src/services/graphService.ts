@@ -4,12 +4,10 @@ import {
   BackendGraphConfig, 
   GraphCardResponse, 
   MCPScriptResponse,
-  OptimizePromptTemplateRequest,
   ImportResult,
   ExportResult,
   GraphReadmeResponse,
-  PromptTemplateResponse,
-  OptimizePromptTemplateResponse
+  PromptTemplateResponse
 } from '../types/graph';
 
 // Clean special characters, comments, etc. from JSON
@@ -210,12 +208,6 @@ export const getPromptTemplate = async (request?: { mcp_servers?: string[], grap
   return response.data;
 };
 
-// Get optimize prompt template
-export const getOptimizePromptTemplate = async (request?: OptimizePromptTemplateRequest): Promise<OptimizePromptTemplateResponse> => {
-  const params = request?.graph_name ? { graph_name: request.graph_name } : {};
-  const response = await api.get('/optimize-prompt-template', { params });
-  return response.data;
-};
 
 // ======= README功能 =======
 
