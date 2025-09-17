@@ -15,6 +15,27 @@ def _ensure_server_running():
         if not start():
             raise RuntimeError("无法启动MAG服务器")
 
+def _stream_response_generator(payload: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
+    """
+    内部方法：生成流式响应并解析SSE数据
+
+    返回:
+        Iterator[Dict[str, Any]]: 解析后的JSON数据流
+    """
+    with requests.post(f"{API_BASE}/chat/completions", json=payload, stream=True) as response:
+        response.raise_for_status()
+        for line in response.iter_lines():
+            if line:
+                chunk = line.decode("utf-8")
+                if chunk.startswith("data: "):
+                    data_part = chunk[6:].strip()  # 去掉 "data: " 前缀
+                    if data_part == "[DONE]":
+                        break
+                    try:
+                        yield json.loads(data_part)
+                    except json.JSONDecodeError:
+                        continue
+
 def chat_completions(
         user_prompt: str,
         model: str,
@@ -61,28 +82,6 @@ def chat_completions(
         response = requests.post(f"{API_BASE}/chat/completions", json=payload)
         response.raise_for_status()
         return response.json()
-
-
-def _stream_response_generator(payload: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
-    """
-    内部方法：生成流式响应并解析SSE数据
-
-    返回:
-        Iterator[Dict[str, Any]]: 解析后的JSON数据流
-    """
-    with requests.post(f"{API_BASE}/chat/completions", json=payload, stream=True) as response:
-        response.raise_for_status()
-        for line in response.iter_lines():
-            if line:
-                chunk = line.decode("utf-8")
-                if chunk.startswith("data: "):
-                    data_part = chunk[6:].strip()  # 去掉 "data: " 前缀
-                    if data_part == "[DONE]":
-                        break
-                    try:
-                        yield json.loads(data_part)
-                    except json.JSONDecodeError:
-                        continue
 
 def list_conversations(user_id: str = "default_user") -> Dict[str, Any]:
     """

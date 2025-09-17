@@ -52,7 +52,7 @@ async def get_prompt_template(request: PromptTemplateRequest):
 
 @router.post("/graphs/generate")
 async def generate_graph(request: GraphGenerationRequest):
-    """AI生成图接口 - 流式SSE响应"""
+    """AI生成图接口 - 支持流式和非流式响应"""
     try:
         # 基本参数验证
         if not request.requirement.strip():
@@ -85,7 +85,7 @@ async def generate_graph(request: GraphGenerationRequest):
                     detail=f"找不到图 '{request.graph_name}'"
                 )
 
-        # 生成流式响应
+        # 生成流式响应的生成器
         async def generate_stream():
             try:
                 async for chunk in graph_service.ai_generate_graph(
@@ -108,15 +108,37 @@ async def generate_graph(request: GraphGenerationRequest):
                 yield f"data: {json.dumps(error_chunk)}\n\n"
                 yield "data: [DONE]\n\n"
 
-        return StreamingResponse(
-            generate_stream(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
-            }
-        )
+        # 根据stream参数决定响应类型
+        if request.stream:
+            # 流式响应
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            async for chunk in generate_stream():
+                pass
+
+            if request.conversation_id:
+                from app.api.chat_routes import get_conversation_detail
+                conversation_detail = await get_conversation_detail(request.conversation_id)
+
+                # 只添加模型和需求信息
+                conversation_detail_dict = conversation_detail.dict()
+                conversation_detail_dict["model"] = request.model_name
+
+                return conversation_detail_dict
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="非流式响应缺少conversation_id"
+                )
+
 
     except HTTPException:
         raise

@@ -61,7 +61,7 @@ def stream_generation(requirement, conversation_id, model):
 
                 # 输出思考内容（如果有）
                 if delta.get("reasoning_content"):
-                    print(f"\n[思考]: {delta['reasoning_content']}", flush=True)
+                    print(f"{delta['reasoning_content']}", end="", flush=True)
 
             # 处理错误信息
             elif "error" in chunk:

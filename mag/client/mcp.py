@@ -258,9 +258,9 @@ def mcp_template() -> Dict[str, str]:
 def gen_mcp(
         requirement: str,
         model: str,
-        conversation_id: Optional[str] = None,
+        conversation_id: str,
         user_id: str = "default_user",
-        stream: bool = False
+        stream: bool = True
 ) -> Union[Dict[str, Any], Iterator[Dict[str, Any]]]:
     """
     AI生成MCP工具
@@ -268,9 +268,9 @@ def gen_mcp(
     参数:
         requirement (str): MCP工具需求描述
         model (str): 使用的模型名称
-        conversation_id (str, optional): 对话ID，用于多轮交互
+        conversation_id (str): 对话ID，用于多轮交互
         user_id (str, optional): 用户ID
-        stream (bool, optional): 是否流式响应，默认为False
+        stream (bool, optional): 是否流式响应，默认为True
 
     返回:
         Union[Dict[str, Any], Iterator[Dict[str, Any]]]: 生成结果或流式数据
@@ -280,13 +280,10 @@ def gen_mcp(
     payload = {
         "requirement": requirement,
         "model_name": model,
+        "conversation_id": conversation_id,
         "user_id": user_id,
         "stream": stream
     }
-
-    # 添加可选参数
-    if conversation_id is not None:
-        payload["conversation_id"] = conversation_id
 
     if stream:
         # 流式响应 - 返回解析后的JSON数据迭代器

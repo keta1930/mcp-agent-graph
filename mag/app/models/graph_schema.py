@@ -106,6 +106,7 @@ class GraphGenerationRequest(BaseModel):
     graph_name: Optional[str] = None  # 图名称，用于更新已有的图
     user_id: str = Field(default="default_user", description="用户ID")
     mcp_servers: List[str] = Field(default=[], description="需要使用的MCP服务器名称列表")
+    stream: bool = Field(default=True, description="是否使用流式响应")  # 新增
 
 class GraphGenerationResponse(BaseModel):
     """图生成响应"""

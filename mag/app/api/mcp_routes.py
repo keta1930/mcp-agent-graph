@@ -529,16 +529,21 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
                 }
             )
         else:
-            # 非流式响应：收集所有数据后返回完整结果
-            from app.utils.sse_helper import SSECollector
-            collector = SSECollector()
-            complete_response = await collector.collect_stream_data(generate_stream())
+            async for chunk in generate_stream():
+                pass
 
-            # 添加模型信息
-            complete_response["model"] = request.model_name
-            complete_response["requirement"] = request.requirement
+            if request.conversation_id:
+                from app.api.chat_routes import get_conversation_detail
+                conversation_detail = await get_conversation_detail(request.conversation_id)
 
-            return complete_response
+                conversation_detail_dict = conversation_detail.dict()
+                conversation_detail_dict["model"] = request.model_name
+                return conversation_detail_dict
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="非流式响应缺少conversation_id"
+                )
 
     except HTTPException:
         raise
@@ -549,7 +554,6 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
             detail=f"处理AI MCP生成请求时出错: {str(e)}"
         )
 
-# todo 更新为stdio
 @router.post("/mcp/register-tool", response_model=Dict[str, Any])
 async def register_mcp_tool(request: MCPToolRegistration):
     """注册MCP工具到系统"""

@@ -166,7 +166,7 @@ async def get_conversations_list(user_id: str = "default_user"):
         )
 
 
-@router.get("/chat/conversations/{conversation_id}", response_model=ConversationDetailResponse)
+@router.get("/chat/conversations/{conversation_id}", response_model=ConversationDetailResponse,response_model_exclude_none=True)
 async def get_conversation_detail(conversation_id: str):
     """获取对话完整内容（支持所有类型的对话）"""
     try:
