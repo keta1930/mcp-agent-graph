@@ -228,30 +228,22 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     <div className="mode-selector-container">
       <div className="mode-selector-content">
 
-        {/* 模式选择卡片 */}
-        <Row gutter={[24, 24]} className="mode-cards">
-          {modes.map(mode => (
-            <Col span={8} key={mode.key}>
-              <Card
-                hoverable
-                className={`mode-card ${currentMode === mode.key ? 'selected' : ''}`}
+        {/* 简洁的模式选择按钮 */}
+        <div className="mode-selector-simple">
+          <div className="mode-selector-label">选择对话模式:</div>
+          <div className="mode-buttons">
+            {modes.map(mode => (
+              <button
+                key={mode.key}
+                className={`mode-button ${currentMode === mode.key ? 'active' : ''}`}
                 onClick={() => handleModeChange(mode.key)}
-                styles={{ body: { padding: '24px' } }}
               >
-                <div className="mode-card-content">
-                  <div
-                    className="mode-icon"
-                    style={{ color: mode.color }}
-                  >
-                    {mode.icon}
-                  </div>
-                  <Title level={4}>{mode.title}</Title>
-                  <Text type="secondary">{mode.description}</Text>
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                <span className="mode-button-icon">{mode.icon}</span>
+                {mode.title}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 输入区域 - 使用与InputArea一致的样式 */}
         {currentMode && (

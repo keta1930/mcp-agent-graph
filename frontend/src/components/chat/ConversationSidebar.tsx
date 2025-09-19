@@ -410,15 +410,104 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   };
 
   if (sidebarCollapsed) {
+    const favoriteCount = statusCounts.favorite || 0;
+    const totalCount = conversations.length;
+
     return (
       <div className="conversation-sidebar collapsed">
-        <Button
-          type="text"
-          onClick={toggleSidebar}
-          className="sidebar-toggle"
-        >
-          <img src="/starstar.png" alt="展开" style={{ width: 16, height: 16 }} />
-        </Button>
+        {/* 顶部区域 */}
+        <div className="collapsed-header">
+          <button
+            onClick={toggleSidebar}
+            className="collapsed-nav-item collapsed-expand-button"
+            title="展开侧边栏"
+          >
+            <img src="/starstar.png" alt="展开" style={{ width: 16, height: 16 }} />
+            <div className="collapsed-tooltip">展开侧边栏</div>
+          </button>
+        </div>
+
+        {/* 主导航区域 */}
+        <div className="collapsed-navigation">
+          {/* Chat对话 - 狐狸 */}
+          <button
+            className={`collapsed-nav-item ${typeFilter === 'chat' ? 'active' : ''}`}
+            onClick={() => setTypeFilter('chat')}
+            title="Chat对话"
+          >
+            <span className="animal-icon">🦊</span>
+            {typeCounts.chat > 0 && (
+              <span className="collapsed-badge">{typeCounts.chat}</span>
+            )}
+            <div className="collapsed-tooltip">Chat对话 ({typeCounts.chat || 0})</div>
+          </button>
+
+          {/* Agent对话 - 猫咪 */}
+          <button
+            className={`collapsed-nav-item ${typeFilter === 'agent' ? 'active' : ''}`}
+            onClick={() => setTypeFilter('agent')}
+            title="Agent对话"
+          >
+            <span className="animal-icon">🐱</span>
+            {typeCounts.agent > 0 && (
+              <span className="collapsed-badge">{typeCounts.agent}</span>
+            )}
+            <div className="collapsed-tooltip">Agent对话 ({typeCounts.agent || 0})</div>
+          </button>
+
+          {/* Graph对话 - 浣熊 */}
+          <button
+            className={`collapsed-nav-item ${typeFilter === 'graph' ? 'active' : ''}`}
+            onClick={() => setTypeFilter('graph')}
+            title="Graph对话"
+          >
+            <span className="animal-icon">🦝</span>
+            {typeCounts.graph > 0 && (
+              <span className="collapsed-badge">{typeCounts.graph}</span>
+            )}
+            <div className="collapsed-tooltip">Graph对话 ({typeCounts.graph || 0})</div>
+          </button>
+
+          {/* 新建对话 */}
+          {onNewConversation && (
+            <button
+              className="collapsed-nav-item"
+              onClick={onNewConversation}
+              title="新建对话"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              <div className="collapsed-tooltip">新建对话</div>
+            </button>
+          )}
+        </div>
+
+        {/* 底部区域 */}
+        <div className="collapsed-footer">
+          {/* 状态指示器 */}
+          <div className="collapsed-status-indicator" title="系统在线"></div>
+
+          {/* 用户信息 */}
+          <button
+            className="collapsed-nav-item"
+            onClick={handleUserNameEdit}
+            title={`用户: ${currentUserDisplayName}`}
+          >
+            <UserOutlined />
+            <div className="collapsed-tooltip">用户: {currentUserDisplayName}</div>
+          </button>
+
+          {/* 回到主页 */}
+          <button
+            className="collapsed-nav-item"
+            onClick={() => navigate('/')}
+            title="返回主页"
+          >
+            <HomeOutlined />
+            <div className="collapsed-tooltip">返回主页</div>
+          </button>
+        </div>
       </div>
     );
   }
