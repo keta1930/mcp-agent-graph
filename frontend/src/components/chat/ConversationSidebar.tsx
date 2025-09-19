@@ -205,13 +205,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           onClick={onClick}
         >
           <div className="conversation-header">
-            <div className="conversation-status">
-              <div 
-                className="status-indicator"
-                style={{ backgroundColor: getStatusColor() }}
-              />
-            </div>
-            
             <div className="conversation-info">
               <div className="conversation-title">{conversation.title}</div>
             </div>

@@ -119,7 +119,6 @@
   border-color: rgba(24, 144, 255, 0.4);
   background: rgba(24, 144, 255, 0.1);
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.15);
 }
 
 .header-actions .ant-btn.new-conversation-btn {
@@ -614,31 +613,9 @@
   z-index: 1;
 }
 
-.conversation-status {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 2px;
-}
 
-.status-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
-  transition: all 0.2s ease;
-}
 
-.conversation-item:hover .status-indicator {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-  transform: scale(1.1);
-}
 
-.conversation-item.active .status-indicator {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.4);
-  transform: scale(1.2);
-}
 
 .type-icon {
   font-size: 12px;
