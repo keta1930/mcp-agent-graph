@@ -3,6 +3,7 @@ import logging
 import uuid
 import time
 import copy
+from datetime import datetime
 import threading
 from typing import Dict, List, Any, Optional, Set
 from app.core.file_manager import FileManager
@@ -20,9 +21,11 @@ class ConversationManager:
         self._active_conversation_ids = set()
 
     def _generate_unique_conversation_id(self, graph_name: str, max_retries: int = 10) -> str:
-        """生成唯一的会话ID，确保不冲突"""
+        """生成唯一的会话ID"""
         for attempt in range(max_retries):
-            candidate_id = f"{graph_name}_{int(time.time() * 1000000)}_{str(uuid.uuid4())[:8]}"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            uuid_part = str(uuid.uuid4())[:8]
+            candidate_id = f"{graph_name}_{timestamp}_{uuid_part}"
 
             with self._conversation_lock:
                 if candidate_id not in self._active_conversation_ids:
@@ -33,13 +36,16 @@ class ConversationManager:
             time.sleep(0.001 * (attempt + 1))
             logger.warning(f"会话ID冲突，重试生成: {candidate_id} (尝试 {attempt + 1})")
 
-        fallback_id = f"{graph_name}_{int(time.time() * 1000000)}_{str(uuid.uuid4())}"
-        logger.error(f"会话ID生成重试失败，使用后备方案: {fallback_id}")
+        # 如果重试失败，直接使用最后一次生成的ID
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        uuid_part = str(uuid.uuid4())[:8]
+        final_id = f"{graph_name}_{timestamp}_{uuid_part}"
+        logger.error(f"会话ID生成重试失败，使用最终ID: {final_id}")
 
         with self._conversation_lock:
-            self._active_conversation_ids.add(fallback_id)
+            self._active_conversation_ids.add(final_id)
 
-        return fallback_id
+        return final_id
 
     async def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
         """创建新的会话，使用MongoDB存储"""

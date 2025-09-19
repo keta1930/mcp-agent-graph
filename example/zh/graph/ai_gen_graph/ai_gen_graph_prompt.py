@@ -6,7 +6,7 @@ MAG Graph Prompt Template Example
 
 import mag
 
-def get_graph_generation_template():
+def get_graph_generation_prompt_template():
     """获取包含指定MCP服务器的提示词模板"""
     mcp_servers = ["fetch"]  # 示例MCP服务器
     # mcp_servers = ["fetch", "playwright"] # 需要先注册到系统中
@@ -19,4 +19,4 @@ def get_graph_generation_template():
 
 
 if __name__ == "__main__":
-    get_graph_generation_template()
+    get_graph_generation_prompt_template()

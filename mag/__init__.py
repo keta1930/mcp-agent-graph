@@ -223,7 +223,13 @@ from .client.graph import (
     get_graph_detail,
     generate as gen_graph,
     optimize as update_graph,
-    graph_gen_prompt
+    graph_gen_prompt,
+    save_graph,
+    delete_graph,
+    rename_graph,
+    import_graph,
+    export_graph,
+    graph_to_mcp
 )
 
 #
