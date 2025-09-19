@@ -211,34 +211,25 @@ from .client.mcp import (
     remove_mcp,
     disconnect,
     test_mcptool,
-    mcp_template,
+    mcp_gen_prompt,
     gen_mcp
 )
 
 
 # 图管理
 from .client.graph import (
-    list as list_graphs,
-    get as get_graph,
-    save as save_graph,
-    delete as delete_graph,
-    rename as rename_graph,
-    get_detail as get_graph_detail,
-    run,
-    continue_run,
-    import_graph,
-    export,
-    generate_mcp_script,
-    get_generate_prompt,
-    get_optimize_prompt,
-    optimize,
-    generate as generate_graph
+    list_graph,
+    get_graph_config,
+    get_graph_detail,
+    generate as gen_graph,
+    optimize as update_graph,
+    graph_gen_prompt
 )
 
-
-run_graph = run
-import_graph = import_graph
-export_graph = export
-generate_graph = generate_graph
-optimize_graph = optimize
-get_optimize_prompt = get_optimize_prompt
+#
+# run_graph = run
+# import_graph = import_graph
+# export_graph = export
+# generate_graph = generate_graph
+# optimize_graph = optimize
+# get_optimize_prompt = get_optimize_prompt

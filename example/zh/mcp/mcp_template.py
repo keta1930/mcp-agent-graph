@@ -3,20 +3,20 @@ import json
 
 def get_mcp_template():
     """获取AI生成MCP的提示词模板"""
-    template_data = mag.mcp_template()
-    print("\nmcp template data:\n")
-    print(json.dumps(template_data, ensure_ascii=False, indent=2))
+    mcp_gen_prompt = mag.mcp_gen_prompt()
+    print("\nmcp generation prompt:\n")
+    print(json.dumps(mcp_gen_prompt, ensure_ascii=False, indent=2))
 
     # 显示模板内容预览
-    if "template" in template_data:
+    if "template" in mcp_gen_prompt:
         print(f"\n=== 模板内容预览 ===\n")
-        template_content = template_data["template"]
+        template_content = mcp_gen_prompt["template"]
         print(template_content)
 
     # 显示使用说明
-    if "note" in template_data:
+    if "note" in mcp_gen_prompt:
         print(f"\n=== 使用说明 ===\n")
-        print(template_data["note"])
+        print(mcp_gen_prompt["note"])
 
 
 if __name__ == "__main__":

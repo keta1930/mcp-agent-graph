@@ -242,7 +242,7 @@ def test_mcptool(server_name: str, tool_name: str, params: Dict[str, Any] = None
     return response.json()
 
 
-def mcp_template() -> Dict[str, str]:
+def mcp_gen_prompt() -> Dict[str, str]:
     """
     获取AI生成MCP的提示词模板
 

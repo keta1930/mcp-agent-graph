@@ -536,7 +536,7 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
                 from app.api.chat_routes import get_conversation_detail
                 conversation_detail = await get_conversation_detail(request.conversation_id)
 
-                conversation_detail_dict = conversation_detail.dict()
+                conversation_detail_dict = conversation_detail.dict(exclude_none=True)
                 conversation_detail_dict["model"] = request.model_name
                 return conversation_detail_dict
             else:

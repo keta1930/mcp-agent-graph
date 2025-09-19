@@ -129,7 +129,7 @@ async def generate_graph(request: GraphGenerationRequest):
                 conversation_detail = await get_conversation_detail(request.conversation_id)
 
                 # 只添加模型和需求信息
-                conversation_detail_dict = conversation_detail.dict()
+                conversation_detail_dict = conversation_detail.dict(exclude_none=True)
                 conversation_detail_dict["model"] = request.model_name
 
                 return conversation_detail_dict
