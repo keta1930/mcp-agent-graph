@@ -22,7 +22,8 @@ import {
   TagOutlined,
   HomeOutlined,
   UserOutlined,
-  PlusOutlined
+  PlusOutlined,
+  FilterOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useConversationStore } from '../../store/conversationStore';
@@ -294,6 +295,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   const [userEditModalVisible, setUserEditModalVisible] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [currentUserDisplayName, setCurrentUserDisplayName] = useState(getCurrentUserDisplayName());
+  const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const {
     conversations,
@@ -445,6 +447,70 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 />
               </Tooltip>
             )}
+            <Dropdown
+              open={filterDropdownVisible}
+              onOpenChange={setFilterDropdownVisible}
+              trigger={['click']}
+              menu={{
+                items: [
+                  {
+                    key: 'status',
+                    label: '按状态筛选',
+                    type: 'group',
+                    children: [
+                      {
+                        key: 'active',
+                        label: `普通 (${statusCounts.active || 0})`,
+                        onClick: () => setStatusFilter('active')
+                      },
+                      {
+                        key: 'favorite',
+                        label: `收藏 (${statusCounts.favorite || 0})`,
+                        onClick: () => setStatusFilter('favorite')
+                      },
+                      {
+                        key: 'deleted',
+                        label: `移除 (${statusCounts.deleted || 0})`,
+                        onClick: () => setStatusFilter('deleted')
+                      }
+                    ]
+                  },
+                  {
+                    type: 'divider'
+                  },
+                  {
+                    key: 'type',
+                    label: '按类型筛选',
+                    type: 'group',
+                    children: [
+                      {
+                        key: 'chat',
+                        label: `Chat (${typeCounts.chat || 0})`,
+                        onClick: () => setTypeFilter('chat')
+                      },
+                      {
+                        key: 'agent',
+                        label: `Agent (${typeCounts.agent || 0})`,
+                        onClick: () => setTypeFilter('agent')
+                      },
+                      {
+                        key: 'graph',
+                        label: `Graph (${typeCounts.graph || 0})`,
+                        onClick: () => setTypeFilter('graph')
+                      }
+                    ]
+                  }
+                ]
+              }}
+            >
+              <Tooltip title="筛选对话">
+                <Button
+                  type="text"
+                  icon={<FilterOutlined />}
+                  className="filter-btn"
+                />
+              </Tooltip>
+            </Dropdown>
             <Button
               type="text"
               onClick={toggleSidebar}
@@ -456,46 +522,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         </div>
       </div>
 
-      {/* 分类筛选 */}
-      <div className="filter-section">
-        {/* 第一排：状态筛选 */}
-        <div className="filter-tabs status-filters">
-          {[
-            { key: 'active', label: '普通', count: statusCounts.active || 0 },
-            { key: 'favorite', label: '收藏', count: statusCounts.favorite || 0 },
-            { key: 'deleted', label: '移除', count: statusCounts.deleted || 0 }
-          ].map(({ key, label, count }) => (
-            <Button
-              key={key}
-              type={statusFilter === key ? 'primary' : 'text'}
-              size="small"
-              onClick={() => setStatusFilter(key as any)}
-              className="filter-tab"
-            >
-              {label} ({count})
-            </Button>
-          ))}
-        </div>
-
-        {/* 第二排：类型筛选 */}
-        <div className="filter-tabs type-filters">
-          {[
-            { key: 'chat', label: 'Chat', count: typeCounts.chat || 0 },
-            { key: 'agent', label: 'Agent', count: typeCounts.agent || 0 },
-            { key: 'graph', label: 'Graph', count: typeCounts.graph || 0 }
-          ].map(({ key, label, count }) => (
-            <Button
-              key={key}
-              type={typeFilter === key ? 'primary' : 'text'}
-              size="small"
-              onClick={() => setTypeFilter(key as any)}
-              className="filter-tab"
-            >
-              {label} ({count})
-            </Button>
-          ))}
-        </div>
-      </div>
 
       {/* 对话列表 */}
       <div className="conversation-list" ref={listRef} onScroll={saveScrollPosition}>

@@ -1,20 +1,24 @@
 /* src/styles/chat-system.css */
 
-/* 主题变量 */
+/* 主题变量 - 经典优雅风格 */
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --bg-tertiary: #fafafa;
-  --text-primary: #000000;
-  --text-secondary: #666666;
-  --text-tertiary: #999999;
-  --border-color: #d9d9d9;
-  --shadow-light: rgba(0, 0, 0, 0.1);
-  --shadow-medium: rgba(0, 0, 0, 0.15);
-  --shadow-heavy: rgba(0, 0, 0, 0.2);
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.2);
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #e8e8e8;
+  --bg-tertiary: #f0f0f0;
+  --text-primary: #2c3e50;
+  --text-secondary: #34495e;
+  --text-tertiary: #7f8c8d;
+  --border-color: #bdc3c7;
+  --accent-color: #3498db;
+  --accent-secondary: #5d6d7e;
+  --shadow-light: rgba(44, 62, 80, 0.1);
+  --shadow-medium: rgba(44, 62, 80, 0.15);
+  --shadow-heavy: rgba(44, 62, 80, 0.2);
+  --glass-bg: rgba(245, 245, 245, 0.9);
+  --glass-border: rgba(189, 195, 199, 0.5);
   --backdrop-blur: blur(10px);
+  --elegant-font: 'Times New Roman', serif;
+  --modern-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 /* 全局样式重置 */
@@ -49,18 +53,17 @@
   overflow: hidden;
 }
 
-/* 侧边栏样式 */
+/* 侧边栏样式 - 经典优雅风格 */
 .conversation-sidebar {
   width: 320px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border-right: 2px solid rgba(24, 144, 255, 0.15);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 12px var(--shadow-light);
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
   position: relative;
+  border-top: 3px solid var(--accent-color);
 }
 
 .conversation-sidebar.collapsed {
@@ -80,11 +83,21 @@
 }
 
 .sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--glass-border);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
+  padding: 24px 20px;
+  border-bottom: 1px dotted var(--text-tertiary);
+  background: linear-gradient(135deg, rgba(245, 245, 245, 0.95) 0%, rgba(232, 232, 232, 0.95) 100%);
+  position: relative;
+}
+
+.sidebar-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: var(--accent-color);
 }
 
 .search-and-actions {
@@ -103,22 +116,25 @@
 }
 
 .header-actions .ant-btn {
-  height: 36px; /* 确保按钮有统一高度 */
+  height: 36px;
   width: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
-  border: 1px solid rgba(24, 144, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px var(--shadow-light);
+  color: var(--text-secondary);
 }
 
 .header-actions .ant-btn:hover {
-  border-color: rgba(24, 144, 255, 0.4);
-  background: rgba(24, 144, 255, 0.1);
-  transform: translateY(-1px);
+  border-color: var(--accent-color);
+  background: rgba(52, 152, 219, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-medium);
+  color: var(--accent-color);
 }
 
 .header-actions .ant-btn.new-conversation-btn {
@@ -135,27 +151,38 @@
 }
 
 .header-actions .ant-btn.sidebar-toggle:hover {
-  color: #1890ff;
+  color: var(--accent-color);
+}
+
+.header-actions .ant-btn.filter-btn {
+  color: var(--text-secondary);
+}
+
+.header-actions .ant-btn.filter-btn:hover {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 /* 确保输入框与按钮对齐 */
 .search-and-actions .ant-input-affix-wrapper {
-  height: 36px; /* 与按钮高度保持一致 */
-  border-radius: 18px;
-  border: 1px solid rgba(24, 144, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 3px var(--shadow-light);
+  font-family: var(--modern-font);
 }
 
 .search-and-actions .ant-input-affix-wrapper:hover {
-  border-color: rgba(24, 144, 255, 0.4);
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: inset 0 1px 3px var(--shadow-light), 0 0 0 2px rgba(52, 152, 219, 0.1);
 }
 
 .search-and-actions .ant-input-affix-wrapper:focus-within {
-  border-color: #1890ff;
-  box-shadow: 0 2px 12px rgba(24, 144, 255, 0.2);
+  border-color: var(--accent-color);
+  box-shadow: inset 0 1px 3px var(--shadow-light), 0 0 0 3px rgba(52, 152, 219, 0.15);
 }
 
 .search-and-actions .ant-input {
@@ -490,10 +517,8 @@
 }
 
 
-.filter-section {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--glass-border);
-  background: rgba(248, 250, 252, 0.5);
+.conversation-sidebar .filter-section {
+  display: none;
 }
 
 .filter-tabs {
@@ -510,38 +535,43 @@
 }
 
 .filter-tab {
-  border-radius: 18px;
-  border: 1px solid rgba(24, 144, 255, 0.2);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 12px;
+  padding: 6px 14px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: fit-content;
-  transition: all 0.2s ease;
-  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: var(--modern-font);
+  letter-spacing: 0.5px;
 }
 
 .filter-tab:hover {
-  background: rgba(24, 144, 255, 0.1);
-  border-color: rgba(24, 144, 255, 0.4);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.15);
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px var(--shadow-medium);
+  color: var(--accent-color);
 }
 
 .filter-tab.ant-btn-primary {
-  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
-  border-color: #1890ff;
+  background: linear-gradient(135deg, var(--accent-color) 0%, #5dade2 100%);
+  border-color: var(--accent-color);
   color: white;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+  font-weight: 600;
 }
 
 .conversation-list {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 16px;
+  padding: 16px;
   background: transparent;
 }
 
@@ -559,15 +589,16 @@
 }
 
 .conversation-item {
-  margin-bottom: 6px;
-  padding: 14px 16px;
-  border-radius: 12px;
+  margin-bottom: 8px;
+  padding: 16px 18px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: transparent;
-  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  background: var(--bg-primary);
+  border: 1px solid rgba(189, 195, 199, 0.2);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(44, 62, 80, 0.08);
 }
 
 .conversation-item::before {
@@ -575,19 +606,20 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(24, 144, 255, 0.03) 0%, rgba(24, 144, 255, 0.01) 100%);
+  width: 3px;
+  background: linear-gradient(135deg, var(--accent-color) 0%, #5dade2 100%);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
   pointer-events: none;
+  border-radius: 0 3px 3px 0;
 }
 
 .conversation-item:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(24, 144, 255, 0.2);
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1);
+  background: linear-gradient(135deg, rgba(245, 245, 245, 0.98) 0%, rgba(248, 248, 248, 0.98) 100%);
+  border-color: rgba(52, 152, 219, 0.3);
+  transform: translateX(3px);
+  box-shadow: 0 3px 12px rgba(44, 62, 80, 0.12);
 }
 
 .conversation-item:hover::before {
@@ -595,14 +627,14 @@
 }
 
 .conversation-item.active {
-  background: linear-gradient(135deg, rgba(24, 144, 255, 0.1) 0%, rgba(24, 144, 255, 0.05) 100%);
-  border-color: #1890ff;
-  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.2);
-  transform: translateX(6px);
+  background: var(--bg-primary);
+  border-color: rgba(189, 195, 199, 0.2);
+  box-shadow: 0 1px 3px rgba(44, 62, 80, 0.08);
+  transform: translateX(0);
 }
 
 .conversation-item.active::before {
-  opacity: 1;
+  opacity: 0;
 }
 
 .conversation-header {
@@ -629,24 +661,28 @@
 }
 
 .conversation-title {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-primary);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: 0.2px;
-  transition: color 0.2s ease;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+  font-family: var(--modern-font);
+  position: relative;
 }
 
 .conversation-item:hover .conversation-title {
-  color: #1890ff;
+  color: #2980b9;
+  font-weight: 550;
 }
 
 .conversation-item.active .conversation-title {
-  color: #1890ff;
-  font-weight: 700;
+  color: #2980b9;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 .conversation-meta {
@@ -658,15 +694,16 @@
 
 .conversation-menu {
   opacity: 0;
-  transition: all 0.2s ease;
-  border-radius: 12px;
+  transition: all 0.3s ease;
+  border-radius: 6px;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
 }
 
 .conversation-item:hover .conversation-menu {
@@ -674,9 +711,11 @@
 }
 
 .conversation-menu:hover {
-  background: rgba(24, 144, 255, 0.1);
-  border-color: rgba(24, 144, 255, 0.2);
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--accent-color);
   transform: scale(1.05);
+  color: var(--accent-color);
+  box-shadow: 0 2px 6px var(--shadow-light);
 }
 
 .conversation-tags {
@@ -755,37 +794,48 @@
 }
 
 .sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--glass-border);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
+  padding: 18px 20px;
+  border-top: 1px dotted var(--text-tertiary);
+  background: linear-gradient(135deg, rgba(245, 245, 245, 0.95) 0%, rgba(232, 232, 232, 0.95) 100%);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 -3px 12px var(--shadow-light);
+  position: relative;
+}
+
+.sidebar-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-color) 50%, transparent 100%);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: rgba(24, 144, 255, 0.08);
-  border: 1px solid rgba(24, 144, 255, 0.15);
-  transition: all 0.2s ease;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  font-family: var(--modern-font);
+  letter-spacing: 0.3px;
 }
 
 .user-info:hover {
-  background: rgba(24, 144, 255, 0.12);
-  border-color: rgba(24, 144, 255, 0.25);
-  color: #1890ff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.15);
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px var(--shadow-medium);
 }
 
 .footer-actions {
@@ -796,22 +846,23 @@
 .footer-actions .ant-btn {
   width: 32px;
   height: 32px;
-  border-radius: 16px;
-  border: 1px solid rgba(24, 144, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 4px var(--shadow-light);
 }
 
 .footer-actions .ant-btn:hover {
-  background: rgba(24, 144, 255, 0.1);
-  border-color: rgba(24, 144, 255, 0.3);
-  color: #1890ff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.15);
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px var(--shadow-medium);
 }
 
 /* 主对话区域 */
@@ -822,15 +873,44 @@
   background: transparent;
 }
 
+/* 重置主对话区域的样式变量为原始值 */
+.main-conversation-area {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #fafafa;
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border-color: #d9d9d9;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
 .conversation-header-bar {
   padding: 16px 24px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.conversation-header-bar .conversation-title-display {
+  color: #000000;
+}
+
+.conversation-header-bar .compact-button {
+  color: #666666;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.conversation-header-bar .compact-button:hover {
+  color: #000000;
+  border-color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
 }
 
 .conversation-title-display {
@@ -1272,10 +1352,10 @@
 
 /* 输入区域 */
 .input-area {
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border-top: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   padding: 16px 24px;
   display: flex;
   justify-content: center;
