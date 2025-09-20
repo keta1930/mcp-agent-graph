@@ -240,67 +240,6 @@ class FileManager:
         return FileManager.ensure_attachment_dir_atomic(conversation_id)
 
     @staticmethod
-    def save_conversation_atomic(conversation_id: str, graph_name: str,
-                                 start_time: str, json_content: Dict[str, Any]) -> bool:
-        """保存会话内容，避免并发冲突，只保存JSON文件"""
-        try:
-            # 获取目标路径
-            conversation_dir = FileManager.get_conversation_dir(conversation_id)
-
-            # 确保父目录存在
-            conversation_dir.parent.mkdir(parents=True, exist_ok=True)
-
-            # 检查目录是否已存在（防止冲突）
-            if conversation_dir.exists():
-                logger.error(f"会话目录已存在，可能存在ID冲突: {conversation_dir}")
-                return False
-
-            # 创建临时目录
-            temp_dir = None
-            try:
-                # 在同一父目录下创建临时目录
-                temp_dir = tempfile.mkdtemp(
-                    prefix=f"temp_{conversation_id}_",
-                    dir=conversation_dir.parent
-                )
-                temp_path = Path(temp_dir)
-
-                # 在临时目录中创建JSON文件
-                json_path = temp_path / f"{conversation_id}.json"
-
-                # 写入JSON文件
-                with open(json_path, 'w', encoding='utf-8') as f:
-                    json.dump(json_content, f, ensure_ascii=False, indent=2)
-
-                # 创建attachment子目录
-                attachment_dir = temp_path / "attachment"
-                attachment_dir.mkdir(exist_ok=True)
-
-                # 重命名（移动整个目录）
-                try:
-                    shutil.move(str(temp_path), str(conversation_dir))
-                    logger.info(f"创建会话目录: {conversation_dir}")
-                    return True
-                except OSError as e:
-                    if "already exists" in str(e).lower():
-                        logger.error(f"目标目录已存在，存在并发冲突: {conversation_dir}")
-                        return False
-                    else:
-                        raise
-
-            finally:
-                # 清理临时目录（如果还存在）
-                if temp_dir and Path(temp_dir).exists():
-                    try:
-                        shutil.rmtree(temp_dir)
-                    except:
-                        pass
-
-        except Exception as e:
-            logger.error(f"保存会话时出错: {str(e)}")
-            return False
-
-    @staticmethod
     def cleanup_conversation_files(conversation_id: str):
         """清理会话文件（用于错误恢复）"""
         try:
@@ -374,11 +313,6 @@ class FileManager:
         return FileManager.save_node_output_to_file_atomic(conversation_id, node_name, content, file_ext)
 
     @staticmethod
-    def get_conversation_json_path(conversation_id: str) -> Path:
-        """获取会话JSON文件路径"""
-        return FileManager.get_conversation_dir(conversation_id) / f"{conversation_id}.json"
-
-    @staticmethod
     def get_conversation_attachments(conversation_id: str) -> List[Dict[str, Any]]:
         """获取会话附件目录中的所有文件信息"""
         attachment_dir = FileManager.get_conversation_attachment_dir(conversation_id)
@@ -404,41 +338,6 @@ class FileManager:
         attachments.sort(key=lambda x: os.path.getmtime(x["path"]), reverse=True)
 
         return attachments
-
-    @staticmethod
-    def save_conversation(conversation_id: str, graph_name: str,
-                          start_time: str, json_content: Dict[str, Any]) -> bool:
-        """保存会话内容到JSON文件"""
-        try:
-            # 创建会话目录
-            conversation_dir = FileManager.get_conversation_dir(conversation_id)
-            conversation_dir.mkdir(parents=True, exist_ok=True)
-
-            # 保存JSON文件
-            json_path = FileManager.get_conversation_json_path(conversation_id)
-            FileManager.save_json(json_path, json_content)
-
-            return True
-        except Exception as e:
-            logger.error(f"保存会话 {conversation_id} 时出错: {str(e)}")
-            return False
-
-    @staticmethod
-    def update_conversation(conversation_id: str, json_content: Dict[str, Any]) -> bool:
-        """更新会话内容"""
-        try:
-            # 确保会话目录存在
-            conversation_dir = FileManager.get_conversation_dir(conversation_id)
-            conversation_dir.mkdir(parents=True, exist_ok=True)
-
-            # 更新JSON文件
-            json_path = FileManager.get_conversation_json_path(conversation_id)
-            FileManager.save_json(json_path, json_content)
-
-            return True
-        except Exception as e:
-            logger.error(f"更新会话 {conversation_id} 时出错: {str(e)}")
-            return False
 
     @staticmethod
     def delete_conversation(conversation_id: str) -> bool:
