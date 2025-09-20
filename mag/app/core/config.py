@@ -4,10 +4,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 project_root = Path(__file__).parent.parent.parent
-docker_env_path = project_root / "docker" / "mongo" / ".env"
+mag_services_env_path = project_root / "docker" / "mag_services" / ".env"
 
-if docker_env_path.exists():
-    load_dotenv(docker_env_path)
+if mag_services_env_path.exists():
+    load_dotenv(mag_services_env_path)
 
 class Settings:
     """应用配置设置"""
@@ -24,6 +24,13 @@ class Settings:
     )
 
     MONGODB_DB: str = os.getenv("MONGO_DATABASE", "mcp-agent-graph")
+
+    # MinIO 配置
+    MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", f"localhost:{os.getenv('MINIO_API_PORT', '9010')}")
+    MINIO_ACCESS_KEY: str = os.getenv("MINIO_ROOT_USER", "minioadmin")
+    MINIO_SECRET_KEY: str = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin123")
+    MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "false").lower() == "true"
+    MINIO_BUCKET_NAME: str = os.getenv("MINIO_BUCKET_NAME", "mag")
 
     # 根据操作系统确定配置目录
     @property

@@ -9,7 +9,7 @@ from app.services.graph_service import graph_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["system"])
 
 @router.post("/system/shutdown", response_model=Dict[str, Any])
 async def shutdown_service(background_tasks: BackgroundTasks):
