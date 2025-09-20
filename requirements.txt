@@ -12,3 +12,4 @@ typing-extensions>=4.13.2
 uvicorn>=0.34.2
 websockets>=15.0.1
 beautifulsoup4>=4.13.4
+minio>=7.2.16
