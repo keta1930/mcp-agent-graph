@@ -305,6 +305,7 @@ async def execute_graph(input_data: GraphInput):
                     async for sse_data in graph_service.execute_graph_stream(
                             input_data.graph_name,
                             input_data.input_text,
+                            graph_config
                     ):
                         yield sse_data
 

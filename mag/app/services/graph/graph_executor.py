@@ -18,7 +18,6 @@ class GraphExecutor:
 
     async def execute_graph_stream(self,
                                    graph_name: str,
-                                   original_config: Dict[str, Any],
                                    flattened_config: Dict[str, Any],
                                    input_text: str,
                                    model_service=None) -> AsyncGenerator[str, None]:

@@ -114,24 +114,18 @@ class GraphService:
         """获取会话状态"""
         return await self.conversation_manager.get_conversation(conversation_id)
 
-    async def execute_graph_stream(self, graph_name: str, input_text: str) -> AsyncGenerator[str, None]:
+    async def execute_graph_stream(self, graph_name: str, input_text: str,graph_config) -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""
         try:
-            original_config = self.get_graph(graph_name)
-            if not original_config:
-                yield SSEHelper.send_error(f"找不到图 '{graph_name}'")
-                return
-
             cycle = self.detect_graph_cycles(graph_name)
             if cycle:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
                 return
 
-            flattened_config = self.preprocess_graph(original_config)
+            flattened_config = self.preprocess_graph(graph_config)
 
             async for sse_data in self.executor.execute_graph_stream(
                     graph_name,
-                    original_config,
                     flattened_config,
                     input_text,
                     model_service
