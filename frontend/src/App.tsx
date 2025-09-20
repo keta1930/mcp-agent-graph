@@ -10,6 +10,7 @@ import ChatSystem from './pages/ChatSystem';
 import GraphEditor from './pages/GraphEditor';
 import ModelManager from './pages/ModelManager';
 import MCPManager from './pages/MCPManager';
+import PromptManager from './pages/PromptManager';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -54,11 +55,20 @@ const App: React.FC = () => {
             </WorkspaceLayout>
           }
         />
-        
+        <Route
+          path="/workspace/prompt-manager"
+          element={
+            <WorkspaceLayout>
+              <PromptManager />
+            </WorkspaceLayout>
+          }
+        />
+
         {/* 重定向旧路由到新的工作台路由 */}
         <Route path="/graph-editor" element={<Navigate to="/workspace/graph-editor" replace />} />
         <Route path="/model-manager" element={<Navigate to="/workspace/model-manager" replace />} />
         <Route path="/mcp-manager" element={<Navigate to="/workspace/mcp-manager" replace />} />
+        <Route path="/prompt-manager" element={<Navigate to="/workspace/prompt-manager" replace />} />
       </Routes>
     </Router>
   );

@@ -9,7 +9,8 @@ import {
   PoweroffOutlined,
   HomeOutlined,
   MenuFoldOutlined,
-  MenuUnfoldOutlined
+  MenuUnfoldOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { shutdownSystem } from '../services/systemService';
 
@@ -41,6 +42,11 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
       key: '/workspace/mcp-manager',
       icon: <SettingOutlined />,
       label: <Link to="/workspace/mcp-manager">MCP管理</Link>,
+    },
+    {
+      key: '/workspace/prompt-manager',
+      icon: <FileTextOutlined />,
+      label: <Link to="/workspace/prompt-manager">提示词管理</Link>,
     },
   ];
 

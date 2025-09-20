@@ -187,7 +187,7 @@ class MinIOClient:
             content = response.read().decode('utf-8')
             response.close()
             response.release_conn()
-            logger.info(f"内容下载成功: {object_name}")
+            logger.info(f"内容获取成功: {object_name}")
             return content
         except S3Error as e:
             logger.error(f"内容下载失败 {object_name}: {e}")
