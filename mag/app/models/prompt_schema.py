@@ -1,6 +1,7 @@
 """
 Prompt 相关的数据模型定义
 """
+import re
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
@@ -11,7 +12,7 @@ class PromptCreate(BaseModel):
     """创建提示词的请求模型"""
     name: str = Field(..., description="提示词名称", min_length=1, max_length=100)
     content: str = Field(..., description="提示词内容", min_length=1)
-    category: Optional[str] = Field(None, description="提示词分类", max_length=50)
+    category: str = Field(..., description="提示词分类", min_length=1, max_length=50)
 
     @validator('name')
     def validate_name(cls, v):
@@ -26,6 +27,14 @@ class PromptCreate(BaseModel):
     def validate_content(cls, v):
         return v.strip()
 
+    @validator('category')
+    def validate_category(cls, v):
+        v = v.strip()
+        # 检查是否为英文（字母、数字、连字符、下划线）
+        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+            raise ValueError('提示词分类只能包含英文字母、数字、连字符和下划线')
+        return v
+
 
 class PromptUpdate(BaseModel):
     """更新提示词的请求模型"""
@@ -37,6 +46,17 @@ class PromptUpdate(BaseModel):
         if v is not None:
             return v.strip()
         return v
+
+    @validator('category')
+    def validate_category(cls, v):
+        if v is not None:
+            v = v.strip()
+            if v:  # 如果不是空字符串，则验证格式
+                if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+                    raise ValueError('提示词分类只能包含英文字母、数字、连字符和下划线')
+            return v
+        return v
+
 
 class PromptInfo(BaseModel):
     """提示词信息响应模型（只包含元数据）"""
@@ -61,14 +81,50 @@ class PromptList(BaseModel):
 class PromptImportByPathRequest(BaseModel):
     """通过路径导入提示词的请求模型"""
     file_path: str = Field(..., description="本地文件路径")
-    name: Optional[str] = Field(None, description="提示词名称（如果不提供则使用文件名）")
-    category: Optional[str] = Field(None, description="提示词分类")
+    name: str = Field(..., description="提示词名称", min_length=1, max_length=100)
+    category: str = Field(..., description="提示词分类", min_length=1, max_length=50)
+
+    @validator('name')
+    def validate_name(cls, v):
+        v = v.strip()
+        # 检查名称是否包含非法字符（不能包含路径分隔符等）
+        illegal_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|']
+        for char in illegal_chars:
+            if char in v:
+                raise ValueError(f'提示词名称不能包含字符: {char}')
+        return v
+
+    @validator('category')
+    def validate_category(cls, v):
+        v = v.strip()
+        # 检查是否为英文（字母、数字、连字符、下划线）
+        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+            raise ValueError('提示词分类只能包含英文字母、数字、连字符和下划线')
+        return v
 
 
 class PromptImportByFileRequest(BaseModel):
     """通过文件上传导入提示词的请求模型"""
-    name: Optional[str] = Field(None, description="提示词名称（如果不提供则使用文件名）")
-    category: Optional[str] = Field(None, description="提示词分类")
+    name: str = Field(..., description="提示词名称", min_length=1, max_length=100)
+    category: str = Field(..., description="提示词分类", min_length=1, max_length=50)
+
+    @validator('name')
+    def validate_name(cls, v):
+        v = v.strip()
+        # 检查名称是否包含非法字符（不能包含路径分隔符等）
+        illegal_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|']
+        for char in illegal_chars:
+            if char in v:
+                raise ValueError(f'提示词名称不能包含字符: {char}')
+        return v
+
+    @validator('category')
+    def validate_category(cls, v):
+        v = v.strip()
+        # 检查是否为英文（字母、数字、连字符、下划线）
+        if not re.match(r'^[a-zA-Z0-9_-]+$', v):
+            raise ValueError('提示词分类只能包含英文字母、数字、连字符和下划线')
+        return v
 
 
 class PromptExportRequest(BaseModel):

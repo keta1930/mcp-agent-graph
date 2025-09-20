@@ -154,20 +154,15 @@ class PromptManager:
         """
         try:
             prompt_path = self._get_prompt_path(name)
-
-            # 检查提示词是否存在
             if not minio_client.object_exists(prompt_path):
                 return {
                     "success": False,
                     "message": f"提示词 '{name}' 不存在"
                 }
 
-            # 确定新内容
             if update_data.content is not None:
-                # 用户提供了新内容，直接使用
                 new_content = update_data.content
             else:
-                # 用户没提供新内容，保持原内容不变
                 existing_content = minio_client.download_content(prompt_path)
                 if existing_content is None:
                     return {
@@ -176,22 +171,17 @@ class PromptManager:
                     }
                 new_content = existing_content
 
-            # 确定新分类
             new_metadata = {}
             if update_data.category is not None:
-                # 用户明确设置了分类
-                if update_data.category:  # 非空字符串
+                if update_data.category:
                     new_metadata["category"] = update_data.category
-                # 如果是空字符串，则不设置元数据（相当于清除分类）
             else:
-                # 用户没提供分类，保持原分类不变
                 obj_info = minio_client.get_object_info(prompt_path)
                 if obj_info:
                     existing_category = obj_info.get("metadata", {}).get("x-amz-meta-category")
                     if existing_category:
                         new_metadata["category"] = existing_category
 
-            # 直接上传新内容和新元数据
             success = minio_client.upload_content(
                 object_name=prompt_path,
                 content=new_content,
@@ -277,10 +267,10 @@ class PromptManager:
                     # 提取提示词名称
                     name = Path(obj["object_name"]).stem
 
-                    # 从对象元数据获取 category，键名是 x-amz-meta-category
+                    # 从元数据获取 category，键名是 x-amz-meta-category
                     category = obj.get("metadata", {}).get("x-amz-meta-category")
 
-                    # obj["last_modified"] 是 ISO 格式的字符串，转为年月日格式
+                    # obj["last_modified"] 是 ISO 格式的字符串
                     if obj["last_modified"]:
                         dt = datetime.fromisoformat(obj["last_modified"])
                         date_str = dt.strftime("%Y-%m-%d")
@@ -289,105 +279,19 @@ class PromptManager:
 
                     prompt_info = PromptInfo(
                         name=name,
-                        category=category,  # 从元数据获取分类
+                        category=category,
                         size=obj["size"],
                         created_time=date_str,
                         modified_time=date_str
                     )
                     prompts.append(prompt_info)
 
-            # 排序
             prompts.sort(key=lambda x: x.modified_time, reverse=True)
-
             return PromptList(prompts=prompts, total=len(prompts))
 
         except Exception as e:
             logger.error(f"列出提示词失败: {e}")
             return PromptList(prompts=[], total=0)
-
-    def import_prompt_by_path(self, import_request: PromptImportByPathRequest) -> Dict[str, Any]:
-        """
-        通过本地文件路径导入提示词
-
-        Args:
-            import_request: 导入请求
-
-        Returns:
-            Dict[str, Any]: 导入结果
-        """
-        try:
-            file_path = Path(import_request.file_path)
-
-            # 检查文件是否存在
-            if not file_path.exists():
-                return {
-                    "success": False,
-                    "message": f"文件不存在: {import_request.file_path}"
-                }
-
-            # 检查是否为 Markdown 文件
-            if file_path.suffix.lower() != '.md':
-                return {
-                    "success": False,
-                    "message": "只支持导入 .md 文件"
-                }
-
-            # 读取文件内容
-            try:
-                content = file_path.read_text(encoding='utf-8')
-            except UnicodeDecodeError:
-                # 尝试其他编码
-                try:
-                    content = file_path.read_text(encoding='gbk')
-                except UnicodeDecodeError:
-                    return {
-                        "success": False,
-                        "message": "无法读取文件，请检查文件编码"
-                    }
-
-            # 确定提示词名称
-            prompt_name = import_request.name or file_path.stem
-
-            # 准备元数据
-            metadata = {}
-            if import_request.category:
-                metadata["category"] = import_request.category
-
-            # 检查是否已存在
-            prompt_path = self._get_prompt_path(prompt_name)
-            if minio_client.object_exists(prompt_path):
-                return {
-                    "success": False,
-                    "message": f"提示词 '{prompt_name}' 已存在"
-                }
-
-            # 直接上传内容和元数据
-            success = minio_client.upload_content(
-                object_name=prompt_path,
-                content=content,
-                content_type="text/markdown",
-                metadata=metadata
-            )
-
-            if success:
-                logger.info(f"提示词导入成功: {prompt_name}")
-                return {
-                    "success": True,
-                    "message": f"提示词 '{prompt_name}' 导入成功",
-                    "data": {"name": prompt_name, "path": prompt_path}
-                }
-            else:
-                return {
-                    "success": False,
-                    "message": f"提示词 '{prompt_name}' 导入失败"
-                }
-
-        except Exception as e:
-            logger.error(f"通过路径导入提示词失败: {e}")
-            return {
-                "success": False,
-                "message": f"导入失败: {str(e)}"
-            }
 
     def import_prompt_by_file(self, file: UploadFile, import_request: PromptImportByFileRequest) -> Dict[str, Any]:
         """
@@ -408,16 +312,8 @@ class PromptManager:
                     "message": "只支持上传 .md 文件"
                 }
 
-            # 读取文件内容
-            content = file.file.read().decode('utf-8')
-
             # 确定提示词名称
             prompt_name = import_request.name or Path(file.filename).stem
-
-            # 准备元数据
-            metadata = {}
-            if import_request.category:
-                metadata["category"] = import_request.category
 
             # 检查是否已存在
             prompt_path = self._get_prompt_path(prompt_name)
@@ -427,10 +323,15 @@ class PromptManager:
                     "message": f"提示词 '{prompt_name}' 已存在"
                 }
 
-            # 直接上传内容和元数据
-            success = minio_client.upload_content(
+            # 准备元数据
+            metadata = {}
+            if import_request.category:
+                metadata["category"] = import_request.category
+
+            # 直接使用文件流上传，避免内存中的数据转换
+            success = minio_client.upload_fileobj(
                 object_name=prompt_path,
-                content=content,
+                file_obj=file.file,  # 直接传入文件对象
                 content_type="text/markdown",
                 metadata=metadata
             )

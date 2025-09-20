@@ -1,8 +1,9 @@
 """
-MinIO 客户端管理器
+MinIO 客户端管理器 - 优化版本
 提供通用的 MinIO 对象存储操作功能
 """
 import io
+import os
 import logging
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -50,7 +51,7 @@ class MinIOClient:
 
     def upload_file(self, object_name: str, file_path: str, content_type: str = None) -> bool:
         """
-        上传文件到 MinIO
+        上传文件到 MinIO（不支持元数据）
 
         Args:
             object_name: 对象名称（存储路径）
@@ -73,7 +74,8 @@ class MinIOClient:
             logger.error(f"文件上传失败 {object_name}: {e}")
             return False
 
-    def upload_content(self, object_name: str, content: str, content_type: str = "text/plain", metadata: Dict[str, str] = None) -> bool:
+    def upload_content(self, object_name: str, content: str, content_type: str = "text/plain",
+                       metadata: Dict[str, str] = None) -> bool:
         """
         上传字符串内容到 MinIO
 
@@ -97,6 +99,46 @@ class MinIOClient:
                 length=len(content_bytes),
                 content_type=content_type,
                 metadata=metadata or {}
+            )
+            logger.info(f"内容上传成功: {object_name}")
+            return True
+        except S3Error as e:
+            logger.error(f"内容上传失败 {object_name}: {e}")
+            return False
+
+    def upload_fileobj(self, object_name: str, file_obj, content_type: str = "text/plain",
+                       metadata: Dict[str, str] = None) -> bool:
+        """
+        上传文件流到 MinIO
+
+
+        Args:
+        object_name: 对象名称（存储路径）
+        file_obj: 文件对象 (类文件流，如 UploadFile.file)
+        content_type: 内容类型
+        metadata: 自定义元数据
+
+
+        Returns:
+        bool: 上传是否成功
+        """
+
+        try:
+            # 获取文件大小
+            file_obj.seek(0, os.SEEK_END)
+            size = file_obj.tell()
+            file_obj.seek(0)
+
+            # 规范化元数据 key
+            normalized_metadata = {f"x-amz-meta-{k}": v for k, v in (metadata or {}).items()}
+
+            self._client.put_object(
+                bucket_name=settings.MINIO_BUCKET_NAME,
+                object_name=object_name,
+                data=file_obj,
+                length=size,
+                content_type=content_type,
+                metadata=normalized_metadata
             )
             logger.info(f"内容上传成功: {object_name}")
             return True
@@ -186,9 +228,9 @@ class MinIOClient:
         try:
             objects = []
             for obj in self._client.list_objects(
-                bucket_name=settings.MINIO_BUCKET_NAME,
-                prefix=prefix,
-                recursive=True
+                    bucket_name=settings.MINIO_BUCKET_NAME,
+                    prefix=prefix,
+                    recursive=True
             ):
                 obj_info = {
                     "object_name": obj.object_name,

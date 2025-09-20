@@ -181,36 +181,6 @@ async def batch_delete_prompts(delete_request: PromptBatchDeleteRequest):
         )
 
 
-@router.post("/import/by-path", response_model=PromptResponse, summary="通过文件路径导入提示词")
-async def import_prompt_by_path(import_request: PromptImportByPathRequest):
-    """
-    通过本地文件路径导入提示词
-
-    - **file_path**: 本地 Markdown 文件路径
-    - **name**: 提示词名称（必须）
-    - **category**: 提示词分类（必须）
-    """
-    try:
-        result = await prompt_service.import_prompt_by_path(import_request)
-
-        if result["success"]:
-            return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content=result
-            )
-        else:
-            return JSONResponse(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                content=result
-            )
-    except Exception as e:
-        logger.error(f"通过路径导入提示词 API 错误: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"通过路径导入提示词时发生服务器错误: {str(e)}"
-        )
-
-
 @router.post("/import/by-file", response_model=PromptResponse, summary="通过文件上传导入提示词")
 async def import_prompt_by_file(
     file: UploadFile = File(..., description="要上传的 Markdown 文件"),
