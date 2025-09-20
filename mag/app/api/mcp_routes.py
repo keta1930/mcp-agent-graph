@@ -18,7 +18,7 @@ from app.models.chat_schema import MCPGenerationSession
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["mcp"])
 
 # ======= MCP服务器管理 =======
 

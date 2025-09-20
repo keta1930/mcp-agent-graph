@@ -9,7 +9,7 @@ from app.models.model_schema import ModelConfig
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["model"])
 
 # ======= 模型管理 =======
 @router.get("/models", response_model=List[Dict[str, Any]])

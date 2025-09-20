@@ -17,7 +17,7 @@ from app.models.graph_schema import GraphFilePath
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["graph"])
 
 # ======= 图导入/导出功能 =======
 @router.post("/graphs/import", response_model=Dict[str, Any])

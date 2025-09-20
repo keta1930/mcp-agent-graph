@@ -15,7 +15,7 @@ from app.models.graph_schema import GraphConfig, GraphInput
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["graph"])
 
 # ======= 图管理 =======
 @router.get("/graphs", response_model=List[str])

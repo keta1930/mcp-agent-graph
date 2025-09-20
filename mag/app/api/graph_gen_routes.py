@@ -11,7 +11,7 @@ from app.models.graph_schema import GraphGenerationRequest, PromptTemplateReques
 from app.services.graph.ai_graph_generator import AIGraphGenerator
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["graph"])
 
 
 @router.post("/prompt-template", response_model=Dict[str, str])
