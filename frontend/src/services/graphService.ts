@@ -101,10 +101,8 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
 
       if (node.is_subgraph) {
         result.subgraph_name = node.subgraph_name || "";
-        result.model_name = "";
       } else {
         result.model_name = node.model_name || "";
-        result.subgraph_name = null;
       }
 
       return result;

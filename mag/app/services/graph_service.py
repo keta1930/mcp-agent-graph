@@ -44,11 +44,7 @@ class GraphService:
     def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
         """保存图配置"""
         print("save_graph", graph_name, config)
-
-        flattened_config = self.processor._flatten_all_subgraphs(config)
-        config_with_levels = self.processor._calculate_node_levels(flattened_config)
-
-        return FileManager.save_agent(graph_name, config_with_levels)
+        return FileManager.save_agent(graph_name, config)
 
     def delete_graph(self, graph_name: str) -> bool:
         """删除图配置"""
@@ -122,7 +118,8 @@ class GraphService:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
                 return
 
-            flattened_config = self.preprocess_graph(graph_config)
+            flattened_config = self.processor._flatten_all_subgraphs(graph_config)
+            flattened_config = self.processor._calculate_node_levels(flattened_config)
 
             async for sse_data in self.executor.execute_graph_stream(
                     graph_name,

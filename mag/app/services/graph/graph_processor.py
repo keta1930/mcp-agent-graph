@@ -525,8 +525,8 @@ class GraphProcessor:
 
                 # 检查MCP服务器是否存在和连接
                 for server_name in node.get("mcp_servers", []):
-                    if server_name not in servers_status or not servers_status[server_name].get("connected", False):
-                        return False, f"节点 '{node['name']}' 使用了不存在或未连接的MCP服务器 '{server_name}'"
+                    if server_name not in servers_status:
+                        return False, f"节点 '{node['name']}' 使用了不存在的MCP服务器 '{server_name}'"
 
             # 检查是否至少有一个开始节点
             has_start = False
