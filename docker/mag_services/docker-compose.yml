@@ -14,7 +14,7 @@ services:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
     networks:
-      - mongodb_network
+      - mag_network
     command: ["--bind_ip_all"]
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
@@ -54,7 +54,7 @@ services:
     depends_on:
       - mongodb
     networks:
-      - mongodb_network
+      - mag_network
     logging:
       driver: "json-file"
       options:
@@ -69,10 +69,47 @@ services:
           cpus: '0.5'       # 0.5个CPU核心，按需调整
           memory: 256M      # 256MB内存，按需调整
 
+  # MinIO 对象存储服务
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT}:9000"     # API端口
+      - "127.0.0.1:${MINIO_CONSOLE_PORT}:9001" # Console端口
+    volumes:
+      - minio_data:/data
+    networks:
+      - mag_network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'         # 2个CPU核心，按需调整
+          memory: 2G        # 2GB内存，按需调整
+        reservations:
+          cpus: '1'         # 1个CPU核心，按需调整
+          memory: 1G        # 1GB内存，按需调整
+
 networks:
-  mongodb_network:
+  mag_network:
     driver: bridge
 
 volumes:
   mongodb_data:
   mongodb_config:
+  minio_data:
