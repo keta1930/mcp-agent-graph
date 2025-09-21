@@ -1,6 +1,5 @@
 // src/pages/Home.tsx
 import React from 'react';
-import { Card, Row, Col, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { 
   DesktopOutlined, 

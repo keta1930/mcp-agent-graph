@@ -24,7 +24,7 @@
 
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
+  50% { transform: translateY(-10px) rotate(90deg); }
 }
 
 .home-header {
@@ -35,7 +35,7 @@
 }
 
 .header-content {
-  animation: fadeInUp 0.6s ease-out;
+  animation: fadeInUp 0.2s ease-out;
 }
 
 @keyframes fadeInUp {
@@ -74,7 +74,7 @@
   color: #fff;
   margin: 0 0 1rem 0;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-  animation: slideInLeft 0.6s ease-out 0.1s both;
+  animation: slideInLeft 0.2s ease-out both;
 }
 
 @keyframes slideInLeft {
@@ -93,7 +93,7 @@
   color: rgba(255, 255, 255, 0.9);
   margin: 0;
   font-weight: 300;
-  animation: slideInRight 0.6s ease-out 0.2s both;
+  animation: slideInRight 0.2s ease-out 0.05s both;
 }
 
 @keyframes slideInRight {
@@ -111,7 +111,7 @@
   margin-bottom: 3rem;
   z-index: 1;
   position: relative;
-  animation: fadeIn 0.6s ease-out 0.3s both;
+  animation: fadeIn 0.2s ease-out 0.1s both;
 }
 
 @keyframes fadeIn {
@@ -134,14 +134,14 @@
   align-items: center;
   text-align: center;
   color: #fff;
-  animation: slideInUp 0.6s ease-out forwards;
+  animation: slideInUp 0.2s ease-out forwards;
   transition: all 0.3s ease;
 }
 
-.feature-item:nth-child(1) { animation-delay: 0.4s; }
-.feature-item:nth-child(2) { animation-delay: 0.5s; }
-.feature-item:nth-child(3) { animation-delay: 0.6s; }
-.feature-item:nth-child(4) { animation-delay: 0.7s; }
+.feature-item:nth-child(1) { animation-delay: 0.1s; }
+.feature-item:nth-child(2) { animation-delay: 0.15s; }
+.feature-item:nth-child(3) { animation-delay: 0.2s; }
+.feature-item:nth-child(4) { animation-delay: 0.25s; }
 
 @keyframes slideInUp {
   from {
@@ -173,7 +173,7 @@
 .main-actions {
   z-index: 1;
   position: relative;
-  animation: fadeInUp 0.6s ease-out 0.8s both;
+  animation: fadeInUp 0.2s ease-out 0.2s both;
 }
 
 .actions-horizontal {
@@ -276,7 +276,7 @@
   text-align: center;
   z-index: 1;
   position: relative;
-  animation: fadeIn 0.6s ease-out 1s both;
+  animation: fadeIn 0.2s ease-out 0.25s both;
 }
 
 .home-footer p {

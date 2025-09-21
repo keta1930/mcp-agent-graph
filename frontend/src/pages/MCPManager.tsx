@@ -328,14 +328,12 @@ const MCPManager: React.FC = () => {
           className="mb-4"
         />
       )}
-  
-      <Card>
-        <Tabs
-          defaultActiveKey="visual"
-          items={tabItems}
-          onChange={setActiveTab}
-        />
-      </Card>
+
+      <Tabs
+        defaultActiveKey="visual"
+        items={tabItems}
+        onChange={setActiveTab}
+      />
 
       {/* 现有模态框 */}
       <MCPServerForm
