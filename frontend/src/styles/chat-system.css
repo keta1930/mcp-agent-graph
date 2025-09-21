@@ -1416,6 +1416,61 @@
   display: block;
 }
 
+/* 用户消息底色 */
+.message-item.user-message .message-content {
+  max-height: 30rem;
+  overflow: auto;
+  overflow-x: unset;
+  background-color: hsl(48deg 25% 92.16%);
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(189, 195, 199, 0.3);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* 用户消息容器悬停效果 */
+.message-item.user-message .message-content:hover {
+  border-color: rgba(189, 195, 199, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 用户消息滚动条样式 */
+.message-item.user-message .message-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-track {
+  background: rgba(189, 195, 199, 0.1);
+  border-radius: 6px;
+  margin: 4px;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.4) 0%, rgba(189, 195, 199, 0.6) 100%);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: all 0.3s ease;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.6) 0%, rgba(189, 195, 199, 0.8) 100%);
+  border: 1px solid transparent;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.7) 0%, rgba(189, 195, 199, 0.9) 100%);
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .message-body {
   width: 100%;
 }

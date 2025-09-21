@@ -111,7 +111,9 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
           margin: 0,
           padding: '12px 16px',
           fontSize: '13px',
-          lineHeight: '1.5'
+          lineHeight: '1.5',
+          maxHeight: '30rem',
+          overflow: 'auto'
         } as any}
       >
         {children}
