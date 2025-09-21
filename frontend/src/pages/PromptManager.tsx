@@ -64,7 +64,12 @@ const PromptManager: React.FC = () => {
 
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12); // 每页显示12个卡片 (4行 × 3列)，或6个卡片 (2行 × 3列)
+  const [pageSize, setPageSize] = useState(12);
+
+  // 提交状态
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     loadPrompts();
@@ -75,7 +80,6 @@ const PromptManager: React.FC = () => {
   }, [prompts, searchText, selectedCategory]);
 
   useEffect(() => {
-    // 当筛选条件改变时，重置到第一页
     setCurrentPage(1);
   }, [searchText, selectedCategory]);
 
@@ -126,14 +130,12 @@ const PromptManager: React.FC = () => {
     setFilteredPrompts(filtered);
   };
 
-  // 获取当前页的数据
   const getCurrentPageData = () => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return filteredPrompts.slice(startIndex, endIndex);
   };
 
-  // 分页变化处理
   const handlePageChange = (page: number, size?: number) => {
     setCurrentPage(page);
     if (size && size !== pageSize) {
@@ -159,6 +161,7 @@ const PromptManager: React.FC = () => {
   };
 
   const handleCreatePrompt = async (values: PromptCreate) => {
+    setIsCreating(true);
     try {
       const response = await promptService.createPrompt(values);
       if (response.success) {
@@ -172,12 +175,15 @@ const PromptManager: React.FC = () => {
     } catch (error) {
       message.error('创建提示词失败');
       console.error('Error creating prompt:', error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleUpdatePrompt = async (values: PromptUpdate) => {
     if (!selectedPrompt) return;
 
+    setIsUpdating(true);
     try {
       const response = await promptService.updatePrompt(selectedPrompt.name, values);
       if (response.success) {
@@ -192,6 +198,8 @@ const PromptManager: React.FC = () => {
     } catch (error) {
       message.error('更新提示词失败');
       console.error('Error updating prompt:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -265,6 +273,7 @@ const PromptManager: React.FC = () => {
       return;
     }
 
+    setIsImporting(true);
     try {
       const response = await promptService.importPromptByFile(file[0].originFileObj, {
         name,
@@ -281,6 +290,8 @@ const PromptManager: React.FC = () => {
     } catch (error) {
       message.error('导入提示词失败');
       console.error('Error importing prompt:', error);
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -306,7 +317,7 @@ const PromptManager: React.FC = () => {
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: 'calc(100vh - 64px)', // 减去Header高度
+      height: 'calc(100vh - 64px)',
       padding: '24px'
     }}>
       {/* 页面标题和工具栏 */}
@@ -380,13 +391,13 @@ const PromptManager: React.FC = () => {
         flex: 1,
         minHeight: 0,
         marginBottom: '16px',
-        overflow: 'hidden'  // 防止主内容区域产生滚动条
+        overflow: 'hidden'
       }}>
         {/* 提示词列表 */}
         <div style={{
           flex: 1,
           minWidth: 0,
-          overflow: 'hidden'  // 完全禁止滚动
+          overflow: 'hidden'
         }}>
           <Spin spinning={loading}>
             {filteredPrompts.length === 0 ? (
@@ -532,128 +543,287 @@ const PromptManager: React.FC = () => {
       )}
     </div>
 
-      {/* 创建提示词模态框 */}
+      {/* 🔥 修复后的创建提示词模态框 */}
       <Modal
-        title="创建提示词"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileTextOutlined />
+            创建提示词
+          </div>
+        }
         open={showCreateModal}
         onCancel={() => {
-          setShowCreateModal(false);
-          createForm.resetFields();
+          if (!isCreating) {
+            createForm.resetFields();
+            setShowCreateModal(false);
+          }
+        }}
+        width="min(90vw, 800px)"
+        style={{
+          maxHeight: '90vh',
+          top: '5vh'
+        }}
+        bodyStyle={{
+          height: 'calc(85vh - 120px)',
+          padding: 0,
+          overflow: 'hidden'
         }}
         footer={null}
-        width={600}
+        destroyOnClose
+        maskClosable={!isCreating}
       >
         <Form
           form={createForm}
-          layout="vertical"
           onFinish={handleCreatePrompt}
+          layout="vertical"
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
-          <Form.Item
-            label="提示词名称"
-            name="name"
-            rules={[
-              { required: true, message: '请输入提示词名称' },
-              { max: 100, message: '名称长度不能超过100个字符' }
-            ]}
-          >
-            <Input placeholder="输入提示词名称" />
-          </Form.Item>
-          <Form.Item
-            label="分类"
-            name="category"
-            rules={[
-              { required: true, message: '请输入分类' },
-              { pattern: /^[a-zA-Z0-9_-]+$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
-            ]}
-          >
-            <Input placeholder="输入分类名称（如：system, chat, analysis）" />
-          </Form.Item>
-          <Form.Item
-            label="内容"
-            name="content"
-            rules={[{ required: true, message: '请输入提示词内容' }]}
-          >
-            <TextArea rows={12} placeholder="输入提示词内容..." />
-          </Form.Item>
-          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-            <Space>
-              <Button onClick={() => {
-                setShowCreateModal(false);
+          {/* 基础信息区域 - 固定高度 */}
+          <div style={{
+            padding: '24px 24px 0',
+            flexShrink: 0
+          }}>
+            <Form.Item
+              label="提示词名称"
+              name="name"
+              rules={[
+                { required: true, message: '请输入提示词名称' },
+                { max: 100, message: '名称长度不能超过100个字符' }
+              ]}
+            >
+              <Input placeholder="输入提示词名称" disabled={isCreating} />
+            </Form.Item>
+
+            <Form.Item
+              label="分类"
+              name="category"
+              rules={[
+                { required: true, message: '请输入分类' },
+                { pattern: /^[a-zA-Z0-9_-]+$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
+              ]}
+            >
+              <Input placeholder="输入分类名称（如：system, chat, analysis）" disabled={isCreating} />
+            </Form.Item>
+          </div>
+
+          {/* 内容编辑区域 - 占据剩余空间，完全解耦 */}
+          <div style={{
+            flex: 1,
+            padding: '0 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0
+          }}>
+            <Form.Item
+              label="内容"
+              name="content"
+              rules={[{ required: true, message: '请输入提示词内容' }]}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                marginBottom: 0
+              }}
+            >
+              <TextArea
+                placeholder="输入提示词内容..."
+                style={{
+                  flex: 1,
+                  resize: 'none',
+                  minHeight: '200px',
+                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                  fontSize: '14px',
+                  lineHeight: '1.6'
+                }}
+                disabled={isCreating}
+              />
+            </Form.Item>
+          </div>
+
+          {/* 按钮区域 - 固定在底部 */}
+          <div style={{
+            padding: '16px 24px 24px',
+            borderTop: '1px solid #f0f0f0',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '8px',
+            flexShrink: 0
+          }}>
+            <Button
+              onClick={() => {
                 createForm.resetFields();
-              }}>
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit">
-                创建
-              </Button>
-            </Space>
-          </Form.Item>
+                setShowCreateModal(false);
+              }}
+              disabled={isCreating}
+            >
+              取消
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isCreating}
+            >
+              创建
+            </Button>
+          </div>
         </Form>
       </Modal>
 
-      {/* 编辑提示词模态框 */}
+      {/* 🔥 修复后的编辑提示词模态框 */}
       <Modal
-        title="编辑提示词"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <EditOutlined />
+            编辑提示词
+          </div>
+        }
         open={showEditModal}
         onCancel={() => {
-          setShowEditModal(false);
-          editForm.resetFields();
+          if (!isUpdating) {
+            editForm.resetFields();
+            setShowEditModal(false);
+          }
+        }}
+        width="min(90vw, 800px)"
+        style={{
+          maxHeight: '90vh',
+          top: '5vh'
+        }}
+        bodyStyle={{
+          height: 'calc(85vh - 120px)',
+          padding: 0,
+          overflow: 'hidden'
         }}
         footer={null}
-        width={600}
+        destroyOnClose
+        maskClosable={!isUpdating}
       >
         <Form
           form={editForm}
-          layout="vertical"
           onFinish={handleUpdatePrompt}
+          layout="vertical"
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
-          <Form.Item
-            label="分类"
-            name="category"
-            rules={[
-              { pattern: /^[a-zA-Z0-9_-]*$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
-            ]}
-          >
-            <Input placeholder="输入分类名称（如：system, chat, analysis）" />
-          </Form.Item>
-          <Form.Item
-            label="内容"
-            name="content"
-            rules={[{ required: true, message: '请输入提示词内容' }]}
-          >
-            <TextArea rows={12} placeholder="输入提示词内容..." />
-          </Form.Item>
-          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-            <Space>
-              <Button onClick={() => {
-                setShowEditModal(false);
+          {/* 基础信息区域 - 固定高度 */}
+          <div style={{
+            padding: '24px 24px 0',
+            flexShrink: 0
+          }}>
+            <Form.Item
+              label="分类"
+              name="category"
+              rules={[
+                { pattern: /^[a-zA-Z0-9_-]*$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
+              ]}
+            >
+              <Input placeholder="输入分类名称（如：system, chat, analysis）" disabled={isUpdating} />
+            </Form.Item>
+          </div>
+
+          {/* 内容编辑区域 - 占据剩余空间，完全解耦 */}
+          <div style={{
+            flex: 1,
+            padding: '0 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0
+          }}>
+            <Form.Item
+              label="内容"
+              name="content"
+              rules={[{ required: true, message: '请输入提示词内容' }]}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                marginBottom: 0
+              }}
+            >
+              <TextArea
+                placeholder="输入提示词内容..."
+                style={{
+                  flex: 1,
+                  resize: 'none',
+                  minHeight: '300px',
+                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                  fontSize: '14px',
+                  lineHeight: '1.6'
+                }}
+                disabled={isUpdating}
+              />
+            </Form.Item>
+          </div>
+
+          {/* 按钮区域 - 固定在底部 */}
+          <div style={{
+            padding: '16px 24px 24px',
+            borderTop: '1px solid #f0f0f0',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '8px',
+            flexShrink: 0
+          }}>
+            <Button
+              onClick={() => {
                 editForm.resetFields();
-              }}>
-                取消
-              </Button>
-              <Button type="primary" htmlType="submit">
-                保存
-              </Button>
-            </Space>
-          </Form.Item>
+                setShowEditModal(false);
+              }}
+              disabled={isUpdating}
+            >
+              取消
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isUpdating}
+            >
+              保存
+            </Button>
+          </div>
         </Form>
       </Modal>
 
-      {/* 导入提示词模态框 */}
+      {/* 🔥 修复后的导入提示词模态框 */}
       <Modal
-        title="导入提示词"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <UploadOutlined />
+            导入提示词
+          </div>
+        }
         open={showImportModal}
         onCancel={() => {
-          setShowImportModal(false);
-          importForm.resetFields();
+          if (!isImporting) {
+            importForm.resetFields();
+            setShowImportModal(false);
+          }
+        }}
+        width="min(90vw, 600px)"
+        style={{
+          maxHeight: '80vh',
+          top: '10vh'
+        }}
+        bodyStyle={{
+          maxHeight: 'calc(70vh - 120px)',
+          overflow: 'auto'
         }}
         footer={null}
-        width={500}
+        destroyOnClose
+        maskClosable={!isImporting}
       >
         <Form
           form={importForm}
           layout="vertical"
           onFinish={handleImportPrompt}
+          style={{ padding: '8px 0' }}
         >
           <Form.Item
             label="选择文件"
@@ -666,10 +836,14 @@ const PromptManager: React.FC = () => {
               beforeUpload={() => false}
               accept=".md,.txt"
               maxCount={1}
+              disabled={isImporting}
             >
-              <Button icon={<UploadOutlined />}>选择Markdown文件</Button>
+              <Button icon={<UploadOutlined />} disabled={isImporting}>
+                选择Markdown文件
+              </Button>
             </Upload>
           </Form.Item>
+
           <Form.Item
             label="提示词名称"
             name="name"
@@ -678,8 +852,9 @@ const PromptManager: React.FC = () => {
               { max: 100, message: '名称长度不能超过100个字符' }
             ]}
           >
-            <Input placeholder="输入提示词名称" />
+            <Input placeholder="输入提示词名称" disabled={isImporting} />
           </Form.Item>
+
           <Form.Item
             label="分类"
             name="category"
@@ -688,17 +863,25 @@ const PromptManager: React.FC = () => {
               { pattern: /^[a-zA-Z0-9_-]+$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
             ]}
           >
-            <Input placeholder="输入分类名称（如：system, chat, analysis）" />
+            <Input placeholder="输入分类名称（如：system, chat, analysis）" disabled={isImporting} />
           </Form.Item>
-          <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
+
+          <Form.Item style={{ textAlign: 'right', marginBottom: 0, marginTop: '24px' }}>
             <Space>
-              <Button onClick={() => {
-                setShowImportModal(false);
-                importForm.resetFields();
-              }}>
+              <Button
+                onClick={() => {
+                  importForm.resetFields();
+                  setShowImportModal(false);
+                }}
+                disabled={isImporting}
+              >
                 取消
               </Button>
-              <Button type="primary" htmlType="submit">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isImporting}
+              >
                 导入
               </Button>
             </Space>
