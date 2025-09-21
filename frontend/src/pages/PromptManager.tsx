@@ -18,7 +18,8 @@ import {
   Select,
   Popconfirm,
   Checkbox,
-  Divider
+  Divider,
+  Pagination
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,12 +30,12 @@ import {
   EditOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
-  FolderOutlined
+  FilterOutlined
 } from '@ant-design/icons';
 import { promptService } from '../services/promptService';
 import { PromptInfo, PromptDetail, PromptCreate, PromptUpdate } from '../types/prompt';
 
-const { Content, Sider } = Layout;
+const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
@@ -51,6 +52,7 @@ const PromptManager: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
   const [categories, setCategories] = useState<CategoryStats>({});
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -60,6 +62,10 @@ const PromptManager: React.FC = () => {
   const [importForm] = Form.useForm();
   const [editForm] = Form.useForm();
 
+  // 分页相关状态
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12); // 每页显示12个卡片 (4行 × 3列)，或6个卡片 (2行 × 3列)
+
   useEffect(() => {
     loadPrompts();
   }, []);
@@ -67,6 +73,11 @@ const PromptManager: React.FC = () => {
   useEffect(() => {
     filterPrompts();
   }, [prompts, searchText, selectedCategory]);
+
+  useEffect(() => {
+    // 当筛选条件改变时，重置到第一页
+    setCurrentPage(1);
+  }, [searchText, selectedCategory]);
 
   const loadPrompts = async () => {
     setLoading(true);
@@ -113,6 +124,21 @@ const PromptManager: React.FC = () => {
     }
 
     setFilteredPrompts(filtered);
+  };
+
+  // 获取当前页的数据
+  const getCurrentPageData = () => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredPrompts.slice(startIndex, endIndex);
+  };
+
+  // 分页变化处理
+  const handlePageChange = (page: number, size?: number) => {
+    setCurrentPage(page);
+    if (size && size !== pageSize) {
+      setPageSize(size);
+    }
   };
 
   const loadPromptDetail = async (name: string) => {
@@ -276,224 +302,235 @@ const PromptManager: React.FC = () => {
   };
 
   return (
-    <div style={{ height: '100vh', background: '#f5f5f5' }}>
-      <Layout style={{ height: '100%' }}>
-        {/* 侧边栏 - 分类筛选 */}
-        <Sider width={220} style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}>
-          <div style={{ padding: '16px' }}>
-            <Title level={5} style={{ margin: '0 0 16px 0' }}>
-              <FolderOutlined /> 分类筛选
+    <>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: 'calc(100vh - 64px)', // 减去Header高度
+      padding: '24px'
+    }}>
+      {/* 页面标题和工具栏 */}
+      <div style={{ marginBottom: '24px', flexShrink: 0 }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title level={3} style={{ margin: 0 }}>
+              <FileTextOutlined /> 提示词注册中心
             </Title>
-            <div>
-              <div
-                onClick={() => setSelectedCategory('')}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                  marginBottom: '4px',
-                  background: selectedCategory === '' ? '#e6f4ff' : 'transparent',
-                  color: selectedCategory === '' ? '#1890ff' : '#333'
-                }}
+          </Col>
+          <Col>
+            <Space>
+              <Input
+                placeholder="搜索提示词..."
+                prefix={<SearchOutlined />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 240 }}
+                allowClear
+              />
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreateModal(true)}>
+                创建
+              </Button>
+              <Select
+                placeholder="筛选分类"
+                value={selectedCategory || undefined}
+                onChange={(value) => setSelectedCategory(value || '')}
+                style={{ width: 150 }}
+                suffixIcon={<FilterOutlined />}
+                allowClear
               >
-                全部 ({prompts.length})
-              </div>
-              {Object.entries(categories).map(([category, count]) => (
-                <div
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  style={{
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderRadius: '6px',
-                    marginBottom: '4px',
-                    background: selectedCategory === category ? '#e6f4ff' : 'transparent',
-                    color: selectedCategory === category ? '#1890ff' : '#333'
-                  }}
-                >
-                  {category} ({count})
-                </div>
-              ))}
-            </div>
-          </div>
-        </Sider>
-
-        <Layout>
-          {/* 主内容区 */}
-          <Content style={{ padding: '16px', overflow: 'hidden' }}>
-            <div style={{ marginBottom: '16px' }}>
-              <Row justify="space-between" align="middle">
-                <Col>
-                  <Title level={4} style={{ margin: 0 }}>
-                    <FileTextOutlined /> 提示词注册中心
-                  </Title>
-                </Col>
-                <Col>
-                  <Space>
-                    <Input
-                      placeholder="搜索提示词..."
-                      prefix={<SearchOutlined />}
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      style={{ width: 240 }}
-                      allowClear
-                    />
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreateModal(true)}>
-                      创建提示词
+                <Option value="">全部 ({prompts.length})</Option>
+                {Object.entries(categories).map(([category, count]) => (
+                  <Option key={category} value={category}>
+                    {category} ({count})
+                  </Option>
+                ))}
+              </Select>
+              <Button icon={<UploadOutlined />} onClick={() => setShowImportModal(true)}>
+                导入
+              </Button>
+              {selectedPrompts.length > 0 && (
+                <>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    onClick={handleExportPrompts}
+                  >
+                    导出
+                  </Button>
+                  <Popconfirm
+                    title={`确定要删除选中的 ${selectedPrompts.length} 个提示词吗？`}
+                    onConfirm={handleBatchDelete}
+                    okText="确定"
+                    cancelText="取消"
+                  >
+                    <Button danger icon={<DeleteOutlined />}>
+                      删除
                     </Button>
-                    <Button icon={<UploadOutlined />} onClick={() => setShowImportModal(true)}>
-                      导入
-                    </Button>
-                    {selectedPrompts.length > 0 && (
-                      <>
-                        <Button
-                          icon={<DownloadOutlined />}
-                          onClick={handleExportPrompts}
-                        >
-                          导出 ({selectedPrompts.length})
-                        </Button>
-                        <Popconfirm
-                          title={`确定要删除选中的 ${selectedPrompts.length} 个提示词吗？`}
-                          onConfirm={handleBatchDelete}
-                          okText="确定"
-                          cancelText="取消"
-                        >
-                          <Button danger icon={<DeleteOutlined />}>
-                            删除 ({selectedPrompts.length})
-                          </Button>
-                        </Popconfirm>
-                      </>
-                    )}
-                  </Space>
-                </Col>
-              </Row>
-            </div>
-
-            <Layout style={{ background: '#fff', height: 'calc(100% - 80px)' }}>
-              {/* 提示词列表 */}
-              <Content style={{ padding: '16px', overflow: 'auto' }}>
-                <Spin spinning={loading}>
-                  {filteredPrompts.length === 0 ? (
-                    <Empty description="暂无提示词" />
-                  ) : (
-                    <Row gutter={[16, 16]}>
-                      {filteredPrompts.map((prompt) => (
-                        <Col key={prompt.name} span={8}>
-                          <Card
-                            size="small"
-                            hoverable
-                            onClick={() => loadPromptDetail(prompt.name)}
-                            style={{
-                              border: selectedPrompt?.name === prompt.name ? '2px solid #1890ff' : '1px solid #f0f0f0',
-                              cursor: 'pointer'
-                            }}
-                            title={
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Text strong ellipsis style={{ flex: 1 }}>
-                                  {prompt.name}
-                                </Text>
-                                <Checkbox
-                                  checked={selectedPrompts.includes(prompt.name)}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    if (e.target.checked) {
-                                      setSelectedPrompts([...selectedPrompts, prompt.name]);
-                                    } else {
-                                      setSelectedPrompts(selectedPrompts.filter(name => name !== prompt.name));
-                                    }
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                            }
-                            extra={
-                              <Space>
-                                <Popconfirm
-                                  title="确定要删除这个提示词吗？"
-                                  onConfirm={(e) => {
-                                    e?.stopPropagation();
-                                    handleDeletePrompt(prompt.name);
-                                  }}
-                                  okText="确定"
-                                  cancelText="取消"
-                                >
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    danger
-                                    icon={<DeleteOutlined />}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </Popconfirm>
-                              </Space>
-                            }
-                          >
-                            <div style={{ marginBottom: '8px' }}>
-                              {prompt.category && <Tag color="blue">{prompt.category}</Tag>}
-                            </div>
-                            <div style={{ color: '#666', fontSize: '12px' }}>
-                              <div><ClockCircleOutlined /> {prompt.modified_time}</div>
-                              <div>大小: {formatFileSize(prompt.size)}</div>
-                            </div>
-                          </Card>
-                        </Col>
-                      ))}
-                    </Row>
-                  )}
-                </Spin>
-              </Content>
-
-              {/* 右侧详情面板 */}
-              {selectedPrompt && (
-                <Sider width={400} style={{ background: '#fff', borderLeft: '1px solid #f0f0f0' }}>
-                  <div style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Title level={5} style={{ margin: 0 }}>提示词详情</Title>
-                      <Button type="primary" size="small" icon={<EditOutlined />} onClick={openEditModal}>
-                        编辑
-                      </Button>
-                    </div>
-
-                    <Spin spinning={detailLoading} style={{ flex: 1 }}>
-                      {selectedPrompt && (
-                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                          <div style={{ marginBottom: '16px' }}>
-                            <Text strong>{selectedPrompt.name}</Text>
-                            {selectedPrompt.category && (
-                              <div style={{ marginTop: '8px' }}>
-                                <Tag color="blue">{selectedPrompt.category}</Tag>
-                              </div>
-                            )}
-                          </div>
-
-                          <Divider style={{ margin: '12px 0' }} />
-
-                          <div style={{ flex: 1, overflow: 'hidden' }}>
-                            <Text strong style={{ fontSize: '14px' }}>内容:</Text>
-                            <div style={{
-                              marginTop: '8px',
-                              height: 'calc(100% - 24px)',
-                              overflow: 'auto',
-                              padding: '12px',
-                              background: '#fafafa',
-                              border: '1px solid #f0f0f0',
-                              borderRadius: '6px'
-                            }}>
-                              <Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '13px' }}>
-                                {selectedPrompt.content}
-                              </Paragraph>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </Spin>
-                  </div>
-                </Sider>
+                  </Popconfirm>
+                </>
               )}
-            </Layout>
-          </Content>
-        </Layout>
-      </Layout>
+            </Space>
+          </Col>
+        </Row>
+      </div>
+
+      {/* 主内容区域 */}
+      <div style={{
+        display: 'flex',
+        gap: '24px',
+        flex: 1,
+        minHeight: 0,
+        marginBottom: '16px',
+        overflow: 'hidden'  // 防止主内容区域产生滚动条
+      }}>
+        {/* 提示词列表 */}
+        <div style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden'  // 完全禁止滚动
+        }}>
+          <Spin spinning={loading}>
+            {filteredPrompts.length === 0 ? (
+              <Empty description="暂无提示词" style={{ marginTop: '40px' }} />
+            ) : (
+              <Row gutter={[16, 16]}>
+                {getCurrentPageData().map((prompt) => (
+                  <Col key={prompt.name} span={8}>
+                    <Card
+                      size="small"
+                      hoverable
+                      onClick={() => loadPromptDetail(prompt.name)}
+                      style={{
+                        border: selectedPrompt?.name === prompt.name ? '2px solid #1890ff' : '1px solid #f0f0f0',
+                        cursor: 'pointer'
+                      }}
+                      title={
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text strong ellipsis style={{ flex: 1 }}>
+                            {prompt.name}
+                          </Text>
+                          <Checkbox
+                            checked={selectedPrompts.includes(prompt.name)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (e.target.checked) {
+                                setSelectedPrompts([...selectedPrompts, prompt.name]);
+                              } else {
+                                setSelectedPrompts(selectedPrompts.filter(name => name !== prompt.name));
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      }
+                      extra={
+                        <Space>
+                          <Popconfirm
+                            title="确定要删除这个提示词吗？"
+                            onConfirm={(e) => {
+                              e?.stopPropagation();
+                              handleDeletePrompt(prompt.name);
+                            }}
+                            okText="确定"
+                            cancelText="取消"
+                          >
+                            <Button
+                              type="text"
+                              size="small"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </Popconfirm>
+                        </Space>
+                      }
+                    >
+                      <div style={{ marginBottom: '8px' }}>
+                        {prompt.category && <Tag color="blue">{prompt.category}</Tag>}
+                      </div>
+                      <div style={{ color: '#666', fontSize: '12px' }}>
+                        <div><ClockCircleOutlined /> {prompt.modified_time}</div>
+                        <div>大小: {formatFileSize(prompt.size)}</div>
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            )}
+          </Spin>
+        </div>
+
+        {/* 右侧详情面板 */}
+        {selectedPrompt && (
+          <Card
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <Text strong style={{ fontSize: '16px' }}>
+                    {selectedPrompt.name}
+                  </Text>
+                  {selectedPrompt.category && (
+                    <Tag color="blue" size="small" style={{ marginLeft: '8px' }}>
+                      {selectedPrompt.category}
+                    </Tag>
+                  )}
+                </div>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={openEditModal}
+                >
+                  编辑
+                </Button>
+              </div>
+            }
+            style={{ width: '400px' }}
+            bodyStyle={{
+              maxHeight: '60vh',
+              overflow: 'auto',
+              padding: '16px',
+              backgroundColor: '#fafafa'
+            }}
+          >
+            <Spin spinning={detailLoading}>
+              <Paragraph style={{
+                margin: 0,
+                whiteSpace: 'pre-wrap',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                color: '#333'
+              }}>
+                {selectedPrompt.content}
+              </Paragraph>
+            </Spin>
+          </Card>
+        )}
+      </div>
+
+      {/* 固定在底部的分页组件 */}
+      {filteredPrompts.length > 0 && (
+        <div style={{
+          borderTop: '1px solid #f0f0f0',
+          paddingTop: '16px',
+          flexShrink: 0,
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <Pagination
+            current={currentPage}
+            total={filteredPrompts.length}
+            pageSize={pageSize}
+            showSizeChanger
+            showQuickJumper
+            showTotal={(total, range) =>
+              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+            }
+            pageSizeOptions={['6', '12']}
+            onChange={handlePageChange}
+          />
+        </div>
+      )}
+    </div>
 
       {/* 创建提示词模态框 */}
       <Modal
@@ -668,7 +705,7 @@ const PromptManager: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   );
 };
 

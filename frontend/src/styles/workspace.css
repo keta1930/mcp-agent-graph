@@ -1,0 +1,481 @@
+/* src/styles/workspace.css */
+
+/* 工作台样式 - 完全仿照对话系统的设计 */
+
+/* 主题变量 */
+:root {
+  --workspace-bg-primary: #f5f5f5;
+  --workspace-bg-secondary: #e8e8e8;
+  --workspace-border-color: #bdc3c7;
+  --workspace-text-primary: #2c3e50;
+  --workspace-text-secondary: #34495e;
+  --workspace-text-tertiary: #7f8c8d;
+  --workspace-accent-color: #3498db;
+  --workspace-shadow-light: rgba(44, 62, 80, 0.1);
+  --workspace-shadow-medium: rgba(44, 62, 80, 0.15);
+}
+
+/* 工作台侧边栏样式 - 完全复制对话系统 */
+.workspace-sidebar {
+  width: 320px;
+  background: linear-gradient(135deg, var(--workspace-bg-primary) 0%, var(--workspace-bg-secondary) 100%);
+  border-right: 1px solid var(--workspace-border-color);
+  box-shadow: 2px 0 12px var(--workspace-shadow-light);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  position: relative;
+  border-top: 3px solid var(--workspace-accent-color);
+}
+
+/* 折叠侧边栏 - 高端极简设计 */
+.workspace-sidebar.collapsed {
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: linear-gradient(180deg,
+    rgba(248, 250, 252, 0.98) 0%,
+    rgba(245, 245, 245, 0.98) 50%,
+    rgba(241, 245, 249, 0.98) 100%);
+  border-right: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* 折叠侧边栏顶部区域 */
+.collapsed-header {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* 主要导航区域 */
+.collapsed-navigation {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 导航项 */
+.collapsed-nav-item {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+/* 可爱水果图标样式 */
+.fruit-icon {
+  font-size: 22px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  user-select: none;
+  line-height: 1;
+}
+
+.collapsed-nav-item:hover .fruit-icon {
+  transform: scale(1.15) rotate(-5deg);
+  filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.25));
+}
+
+.collapsed-nav-item.active .fruit-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 6px 12px rgba(255, 255, 255, 0.4))
+          drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+  animation: bounce-gentle 0.6s ease;
+}
+
+/* 温柔的弹跳动画 */
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: scale(1.2) translateY(0);
+  }
+  50% {
+    transform: scale(1.2) translateY(-3px);
+  }
+}
+
+/* 导航项悬停效果 */
+.collapsed-nav-item:hover {
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(147, 197, 253, 0.08) 100%);
+  color: #3b82f6;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+/* 激活状态 */
+.collapsed-nav-item.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+/* 危险按钮悬停效果 */
+.collapsed-nav-item.danger:hover {
+  background: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.1) 0%,
+    rgba(248, 113, 113, 0.08) 100%);
+  color: #ef4444;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+}
+
+/* 导航项指示器 */
+.collapsed-nav-item::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 0 2px 2px 0;
+  transition: height 0.3s ease;
+}
+
+.collapsed-nav-item:hover::before {
+  height: 20px;
+}
+
+.collapsed-nav-item.active::before {
+  height: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+}
+
+/* 展开按钮特殊样式 */
+.collapsed-expand-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  color: #64748b;
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.collapsed-expand-button:hover {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* 折叠侧边栏底部 */
+.collapsed-footer {
+  padding: 16px 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid rgba(226, 232, 240, 0.5);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* 状态指示器 */
+.collapsed-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* 工具提示 */
+.collapsed-tooltip {
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(17, 24, 39, 0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.collapsed-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-right-color: rgba(17, 24, 39, 0.95);
+}
+
+.collapsed-nav-item:hover .collapsed-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(8px);
+}
+
+/* 展开状态样式 */
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px dotted var(--workspace-text-tertiary);
+  background: linear-gradient(135deg, rgba(245, 245, 245, 0.95) 0%, rgba(232, 232, 232, 0.95) 100%);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sidebar-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: var(--workspace-accent-color);
+}
+
+/* 头部内容布局 */
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-content .sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+  background: #eaeaea;
+  color: var(--workspace-text-secondary);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px var(--workspace-shadow-light);
+}
+
+.header-content .sidebar-toggle:hover {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--workspace-accent-color);
+  color: var(--workspace-accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px var(--workspace-shadow-medium);
+}
+
+.workspace-navigation {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.workspace-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: var(--workspace-bg-primary);
+  border: 1px solid rgba(189, 195, 199, 0.2);
+  color: var(--workspace-text-secondary);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(44, 62, 80, 0.08);
+}
+
+.workspace-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(135deg, var(--workspace-accent-color) 0%, #5dade2 100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  border-radius: 0 3px 3px 0;
+}
+
+.workspace-nav-item:hover {
+  background: linear-gradient(135deg, rgba(245, 245, 245, 0.98) 0%, rgba(248, 248, 248, 0.98) 100%);
+  border-color: rgba(52, 152, 219, 0.3);
+  transform: translateX(3px);
+  box-shadow: 0 3px 12px rgba(44, 62, 80, 0.12);
+}
+
+.workspace-nav-item:hover::before {
+  opacity: 1;
+}
+
+.workspace-nav-item.active {
+  background: linear-gradient(135deg, var(--workspace-accent-color) 0%, #5dade2 100%);
+  color: white;
+  box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+  font-weight: 600;
+}
+
+.workspace-nav-item .fruit-icon {
+  font-size: 18px;
+}
+
+.nav-label {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.sidebar-footer {
+  padding: 18px 20px !important;
+  border-top: 1px dotted var(--workspace-text-tertiary) !important;
+  background: linear-gradient(135deg, rgba(245, 245, 245, 0.95) 0%, rgba(232, 232, 232, 0.95) 100%) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  box-shadow: 0 -3px 12px var(--workspace-shadow-light) !important;
+  position: relative !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.sidebar-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--workspace-accent-color) 50%, transparent 100%);
+}
+
+.footer-actions {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.footer-actions .ant-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--workspace-border-color) !important;
+  background: var(--workspace-bg-primary) !important;
+  color: var(--workspace-text-secondary) !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 4px var(--workspace-shadow-light) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.footer-actions .ant-btn:hover {
+  background: rgba(52, 152, 219, 0.1) !important;
+  border-color: var(--workspace-accent-color) !important;
+  color: var(--workspace-accent-color) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 10px var(--workspace-shadow-medium) !important;
+}
+
+.footer-actions .ant-btn.ant-btn-dangerous:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+/* 确保布局不受Ant Design影响 */
+.ant-layout {
+  background: transparent;
+}
+
+.ant-layout-content {
+  background: transparent;
+}
+
+/* 强制底部按钮居中 - 覆盖所有可能的冲突样式 */
+.workspace-sidebar .sidebar-footer {
+  text-align: center !important;
+}
+
+.workspace-sidebar .sidebar-footer .footer-actions {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+/* 确保按钮不被外部样式影响 */
+.workspace-sidebar .footer-actions .ant-btn {
+  flex-shrink: 0 !important;
+  position: relative !important;
+}
+
+/* 调试用：给footer-actions添加背景色来检查位置 */
+.workspace-sidebar .footer-actions {
+  /* background: rgba(255, 0, 0, 0.1) !important; */
+}
+
+/* 移动设备适配 */
+@media (max-width: 768px) {
+  .workspace-sidebar {
+    position: fixed;
+    z-index: 1000;
+    height: 100vh;
+  }
+
+  .workspace-sidebar.collapsed {
+    width: 56px !important;
+  }
+}

@@ -1,20 +1,13 @@
 // src/layouts/WorkspaceLayout.tsx
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Modal, message } from 'antd';
+import { Button, Modal, message } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  EditOutlined,
-  ApiOutlined,
-  SettingOutlined,
   PoweroffOutlined,
-  HomeOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  FileTextOutlined
+  HomeOutlined
 } from '@ant-design/icons';
 import { shutdownSystem } from '../services/systemService';
-
-const { Header, Sider, Content } = Layout;
+import '../styles/workspace.css';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -27,28 +20,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
-    {
-      key: '/workspace/graph-editor',
-      icon: <EditOutlined />,
-      label: <Link to="/workspace/graph-editor">图形编辑器</Link>,
-    },
-    {
-      key: '/workspace/model-manager',
-      icon: <ApiOutlined />,
-      label: <Link to="/workspace/model-manager">模型管理</Link>,
-    },
-    {
-      key: '/workspace/mcp-manager',
-      icon: <SettingOutlined />,
-      label: <Link to="/workspace/mcp-manager">MCP管理</Link>,
-    },
-    {
-      key: '/workspace/prompt-manager',
-      icon: <FileTextOutlined />,
-      label: <Link to="/workspace/prompt-manager">提示词管理</Link>,
-    },
-  ];
 
   const handleShutdown = async () => {
     setIsShuttingDown(true);
@@ -82,100 +53,183 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
-        collapsed={collapsed}
-        style={{ background: '#F5F5F5' }}
-      >
-        <div className="workspace-logo" style={{ 
-          textAlign: 'center', 
-          padding: '16px 8px',
-          borderBottom: '1px solid #f0f0f0'
-        }}>
-          {collapsed ? (
-            <div style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: 'bold', 
-              color: '#333',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '32px'
-            }}>
-              MAG
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* 自定义侧边栏 - 完全仿照对话系统 */}
+      <div className={`workspace-sidebar ${collapsed ? 'collapsed' : ''}`}>
+        {collapsed ? (
+          <>
+            {/* 折叠状态 */}
+            {/* 顶部区域 */}
+            <div className="collapsed-header">
+              <button
+                onClick={() => setCollapsed(false)}
+                className="collapsed-nav-item collapsed-expand-button"
+                title="展开侧边栏"
+              >
+                <img src="/starstar.png" alt="展开" style={{ width: 16, height: 16 }} />
+                <div className="collapsed-tooltip">展开侧边栏</div>
+              </button>
             </div>
-          ) : (
-            <h3 style={{ 
-              color: '#333', 
-              margin: 0,
-              fontSize: '1.1rem',
-              fontWeight: '600'
-            }}>
-              MCP Agent Graph
-            </h3>
-          )}
-        </div>
-        <Menu
-          theme="light"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          style={{ 
-            background: '#F5F5F5',
-            border: 'none'
-          }}
-        />
-      </Sider>
-      
-      <Layout>
-        <Header style={{ 
-          padding: '0 16px', 
-          background: '#fff', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          borderBottom: '1px solid #f0f0f0'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                fontSize: '16px',
-                width: 64,
-                height: 64,
-              }}
-            />
-            <h2 style={{ margin: 0, color: '#333' }}>工作台</h2>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <Button
-              icon={<HomeOutlined />}
-              onClick={handleBackHome}
-              type="default"
-            >
-              返回首页
-            </Button>
-            <Button
-              danger
-              icon={<PoweroffOutlined />}
-              loading={isShuttingDown}
-              onClick={showConfirmModal}
-            >
-              关闭系统
-            </Button>
-          </div>
-        </Header>
-        
-        <Content style={{ padding: 0, margin: 0 }}>
-          {children}
-        </Content>
-      </Layout>
 
+            {/* 主导航区域 */}
+            <div className="collapsed-navigation">
+              {/* 图形编辑器 - 西瓜 */}
+              <Link
+                to="/workspace/graph-editor"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
+                title="图形编辑器"
+              >
+                <span className="fruit-icon">🍉</span>
+                <div className="collapsed-tooltip">图形编辑器</div>
+              </Link>
+
+              {/* 模型管理 - 橙子 */}
+              <Link
+                to="/workspace/model-manager"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/model-manager' ? 'active' : ''}`}
+                title="模型管理"
+              >
+                <span className="fruit-icon">🍊</span>
+                <div className="collapsed-tooltip">模型管理</div>
+              </Link>
+
+              {/* MCP管理 - 樱桃 */}
+              <Link
+                to="/workspace/mcp-manager"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/mcp-manager' ? 'active' : ''}`}
+                title="MCP管理"
+              >
+                <span className="fruit-icon">🍒</span>
+                <div className="collapsed-tooltip">MCP管理</div>
+              </Link>
+
+              {/* 提示词管理 - 葡萄 */}
+              <Link
+                to="/workspace/prompt-manager"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/prompt-manager' ? 'active' : ''}`}
+                title="提示词管理"
+              >
+                <span className="fruit-icon">🍇</span>
+                <div className="collapsed-tooltip">提示词管理</div>
+              </Link>
+            </div>
+
+            {/* 底部区域 */}
+            <div className="collapsed-footer">
+              {/* 状态指示器 */}
+              <div className="collapsed-status-indicator" title="系统在线"></div>
+
+              {/* 返回首页 */}
+              <button
+                className="collapsed-nav-item"
+                onClick={handleBackHome}
+                title="返回首页"
+              >
+                <HomeOutlined />
+                <div className="collapsed-tooltip">返回首页</div>
+              </button>
+
+              {/* 关闭系统 */}
+              <button
+                className="collapsed-nav-item danger"
+                onClick={showConfirmModal}
+                disabled={isShuttingDown}
+                title="关闭系统"
+              >
+                <PoweroffOutlined />
+                <div className="collapsed-tooltip">关闭系统</div>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* 展开状态 */}
+            {/* 侧边栏头部 */}
+            <div className="sidebar-header">
+              <div className="header-content">
+                <h3 style={{
+                  color: '#333',
+                  margin: 0,
+                  fontSize: '1.1rem',
+                  fontWeight: '600'
+                }}>
+                  MCP Agent Graph
+                </h3>
+                <Button
+                  type="text"
+                  onClick={() => setCollapsed(true)}
+                  title="折叠侧边栏"
+                  className="sidebar-toggle"
+                >
+                  <img src="/starstar.png" alt="折叠" style={{ width: 16, height: 16 }} />
+                </Button>
+              </div>
+            </div>
+
+            {/* 导航列表 */}
+            <div className="workspace-navigation">
+              <Link
+                to="/workspace/graph-editor"
+                className={`workspace-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">🍉</span>
+                <span className="nav-label">图形编辑器</span>
+              </Link>
+
+              <Link
+                to="/workspace/model-manager"
+                className={`workspace-nav-item ${location.pathname === '/workspace/model-manager' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">🍊</span>
+                <span className="nav-label">模型管理</span>
+              </Link>
+
+              <Link
+                to="/workspace/mcp-manager"
+                className={`workspace-nav-item ${location.pathname === '/workspace/mcp-manager' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">🍒</span>
+                <span className="nav-label">MCP管理</span>
+              </Link>
+
+              <Link
+                to="/workspace/prompt-manager"
+                className={`workspace-nav-item ${location.pathname === '/workspace/prompt-manager' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">🍇</span>
+                <span className="nav-label">提示词管理</span>
+              </Link>
+            </div>
+
+            {/* 底部操作区 */}
+            <div className="sidebar-footer">
+              <div className="footer-actions">
+                <Button
+                  type="text"
+                  icon={<HomeOutlined />}
+                  onClick={handleBackHome}
+                  title="返回首页"
+                />
+                <Button
+                  type="text"
+                  danger
+                  icon={<PoweroffOutlined />}
+                  loading={isShuttingDown}
+                  onClick={showConfirmModal}
+                  title="关闭系统"
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 主内容区域 */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </div>
+
+      {/* 关闭系统确认对话框 */}
       <Modal
         title="确认关闭系统"
         open={confirmModalVisible}
@@ -188,7 +242,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
         <p>您确定要关闭服务吗？</p>
         <p>这将终止所有正在运行的进程，服务器将停止响应。</p>
       </Modal>
-    </Layout>
+    </div>
   );
 };
 
