@@ -456,7 +456,7 @@ const GraphEditor: React.FC = () => {
       <Spin spinning={loading} tip="加载中..." delay={300}>
         {!currentGraph ? (
           <div ref={emptyStateRef}>
-            <Card className="text-center p-8" style={{ height: '85vh' }}>
+            <Card className="text-center p-8" style={{ height: 'calc(100vh - 120px)' }}>
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description="暂无图配置"
@@ -481,7 +481,7 @@ const GraphEditor: React.FC = () => {
           <Card
             bodyStyle={{ padding: 0 }}
             className="overflow-hidden"
-            style={{ height: '85vh' }}
+            style={{ height: 'calc(100vh - 120px)' }}
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>图画布 - {currentGraph.name}</span>

@@ -225,8 +225,21 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
       </div>
 
       {/* 主内容区域 */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {children}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          flex: 1,
+          padding: '16px',
+          overflow: 'auto',
+          height: '100%'
+        }}>
+          {children}
+        </div>
       </div>
 
       {/* 关闭系统确认对话框 */}
