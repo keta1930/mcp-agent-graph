@@ -7,13 +7,16 @@ import {
   DownOutlined,
   CheckOutlined,
   SwapOutlined,
-  NodeIndexOutlined
+  NodeIndexOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import { useModelStore } from '../../store/modelStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { ConversationMode, AgentType } from '../../types/conversation';
+import { promptService } from '../../services/promptService';
+import { PromptInfo } from '../../types/prompt';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -43,8 +46,12 @@ const InputArea: React.FC<InputAreaProps> = ({
   const [selectedGraph, setSelectedGraph] = useState<string>(inheritedConfig.selectedGraph || '');
   const [mcpServerStates, setMcpServerStates] = useState<Record<string, boolean>>({});
   const [showMcpTools, setShowMcpTools] = useState(false);
+  const [showPrompts, setShowPrompts] = useState(false);
+  const [availablePrompts, setAvailablePrompts] = useState<PromptInfo[]>([]);
+  const [loadingPrompts, setLoadingPrompts] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mcpDropdownRef = useRef<HTMLDivElement>(null);
+  const promptDropdownRef = useRef<HTMLDivElement>(null);
 
   const { agentType, setAgentType } = useConversationStore();
   const { models: availableModels } = useModelStore();
@@ -105,19 +112,58 @@ const InputArea: React.FC<InputAreaProps> = ({
     }
   }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph, inheritedConfig]);
 
-  // 点击外部关闭MCP工具面板
+  // 点击外部关闭面板
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mcpDropdownRef.current && !mcpDropdownRef.current.contains(event.target as Node)) {
         setShowMcpTools(false);
       }
+      if (promptDropdownRef.current && !promptDropdownRef.current.contains(event.target as Node)) {
+        setShowPrompts(false);
+      }
     };
 
-    if (showMcpTools) {
+    if (showMcpTools || showPrompts) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showMcpTools]);
+  }, [showMcpTools, showPrompts]);
+
+  // 获取提示词列表
+  const fetchPrompts = async () => {
+    setLoadingPrompts(true);
+    try {
+      const response = await promptService.listPrompts();
+      if (response.success && response.data) {
+        setAvailablePrompts(response.data.prompts);
+      }
+    } catch (error) {
+      console.error('获取提示词列表失败:', error);
+    } finally {
+      setLoadingPrompts(false);
+    }
+  };
+
+  // 处理提示词按钮点击
+  const handlePromptButtonClick = () => {
+    if (!showPrompts && availablePrompts.length === 0) {
+      fetchPrompts();
+    }
+    setShowPrompts(!showPrompts);
+  };
+
+  // 选择提示词
+  const handleSelectPrompt = async (promptName: string) => {
+    try {
+      const response = await promptService.getPromptContent(promptName);
+      if (response.success && response.data) {
+        setInputValue(response.data.content);
+        setShowPrompts(false);
+      }
+    } catch (error) {
+      console.error('获取提示词内容失败:', error);
+    }
+  };
 
   const handleSend = () => {
     const currentInput = isSystemPromptMode ? systemPrompt : inputValue;
@@ -260,6 +306,21 @@ const InputArea: React.FC<InputAreaProps> = ({
 
           {/* 左下角控件 */}
           <div className="input-bottom-left">
+            {/* Chat模式的系统提示词切换按钮 */}
+            {mode === 'chat' && (
+              <Tooltip title={isSystemPromptMode ? "切换到用户消息" : "切换到系统提示词"}>
+                <Button
+                  type="text"
+                  icon={<SwapOutlined />}
+                  className={`system-prompt-toggle ${isSystemPromptMode ? 'active' : ''}`}
+                  onClick={handleToggleSystemPrompt}
+                  size="small"
+                >
+                  {isSystemPromptMode ? '系统' : '用户'}
+                </Button>
+              </Tooltip>
+            )}
+
             {/* Chat模式的MCP工具图标 */}
             {mode === 'chat' && availableMcpServers.length > 0 && (
               <div className="mcp-tools-container" ref={mcpDropdownRef}>
@@ -307,19 +368,47 @@ const InputArea: React.FC<InputAreaProps> = ({
               </div>
             )}
 
-            {/* Chat模式的系统提示词切换按钮 */}
+            {/* Chat模式的提示词按钮 */}
             {mode === 'chat' && (
-              <Tooltip title={isSystemPromptMode ? "切换到用户消息" : "切换到系统提示词"}>
-                <Button
-                  type="text"
-                  icon={<SwapOutlined />}
-                  className={`system-prompt-toggle ${isSystemPromptMode ? 'active' : ''}`}
-                  onClick={handleToggleSystemPrompt}
-                  size="small"
-                >
-                  {isSystemPromptMode ? '系统' : '用户'}
-                </Button>
-              </Tooltip>
+              <div className="prompt-selector-container" ref={promptDropdownRef}>
+                <Tooltip title="选择提示词">
+                  <Button
+                    type="text"
+                    icon={<FileTextOutlined />}
+                    className={`prompt-selector-button ${showPrompts ? 'active' : ''}`}
+                    onClick={handlePromptButtonClick}
+                    size="small"
+                    loading={loadingPrompts}
+                  />
+                </Tooltip>
+
+                {/* 提示词面板 */}
+                {showPrompts && (
+                  <div className="prompt-selector-panel">
+                    <div className="prompt-selector-header">
+                      <Text strong>选择提示词</Text>
+                    </div>
+                    <div className="prompt-selector-list">
+                      {availablePrompts.length === 0 ? (
+                        <div className="prompt-empty">暂无提示词</div>
+                      ) : (
+                        availablePrompts.map(prompt => (
+                          <div
+                            key={prompt.name}
+                            className="prompt-item"
+                            onClick={() => handleSelectPrompt(prompt.name)}
+                          >
+                            <div className="prompt-item-name">{prompt.name}</div>
+                            {prompt.category && (
+                              <div className="prompt-item-category">{prompt.category}</div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Agent模式的类型切换按钮 */}

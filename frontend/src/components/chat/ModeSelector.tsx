@@ -9,13 +9,16 @@ import {
   NodeIndexOutlined,
   DownOutlined,
   ArrowUpOutlined,
-  SwapOutlined
+  SwapOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import { useModelStore } from '../../store/modelStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { ConversationMode, AgentType } from '../../types/conversation';
+import { promptService } from '../../services/promptService';
+import { PromptInfo } from '../../types/prompt';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -63,8 +66,12 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
   const [showMcpTools, setShowMcpTools] = React.useState(false);
   const [showGraphSelector, setShowGraphSelector] = React.useState(false);
+  const [showPrompts, setShowPrompts] = React.useState(false);
+  const [availablePrompts, setAvailablePrompts] = React.useState<PromptInfo[]>([]);
+  const [loadingPrompts, setLoadingPrompts] = React.useState(false);
   const mcpDropdownRef = useRef<HTMLDivElement>(null);
   const graphDropdownRef = useRef<HTMLDivElement>(null);
+  const promptDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleModeChange = (mode: ConversationMode) => {
     setCurrentMode(mode);
@@ -79,6 +86,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setPromptMode('user'); // 重置为用户提示词模式
     setShowMcpTools(false);
     setShowGraphSelector(false);
+    setShowPrompts(false);
     // 设置Agent模式的默认类型
     if (mode === 'agent') {
       setAgentType('mcp');
@@ -102,7 +110,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setSelectedMCPServers(initialStates);
   }, [availableMCPServers]);
 
-  // 点击外部关闭MCP工具面板和图选择面板
+  // 点击外部关闭面板
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (mcpDropdownRef.current && !mcpDropdownRef.current.contains(event.target as Node)) {
@@ -111,13 +119,16 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       if (graphDropdownRef.current && !graphDropdownRef.current.contains(event.target as Node)) {
         setShowGraphSelector(false);
       }
+      if (promptDropdownRef.current && !promptDropdownRef.current.contains(event.target as Node)) {
+        setShowPrompts(false);
+      }
     };
 
-    if (showMcpTools || showGraphSelector) {
+    if (showMcpTools || showGraphSelector || showPrompts) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showMcpTools, showGraphSelector]);
+  }, [showMcpTools, showGraphSelector, showPrompts]);
 
   const handleStart = () => {
     const content = currentMode === 'chat' && userPrompt.trim() ? userPrompt.trim() : inputText.trim();
@@ -166,6 +177,50 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       ...prev,
       [serverName]: enabled
     }));
+  };
+
+  // 获取提示词列表
+  const fetchPrompts = async () => {
+    setLoadingPrompts(true);
+    try {
+      const response = await promptService.listPrompts();
+      if (response.success && response.data) {
+        setAvailablePrompts(response.data.prompts);
+      }
+    } catch (error) {
+      console.error('获取提示词列表失败:', error);
+    } finally {
+      setLoadingPrompts(false);
+    }
+  };
+
+  // 处理提示词按钮点击
+  const handlePromptButtonClick = () => {
+    if (!showPrompts && availablePrompts.length === 0) {
+      fetchPrompts();
+    }
+    setShowPrompts(!showPrompts);
+  };
+
+  // 选择提示词
+  const handleSelectPrompt = async (promptName: string) => {
+    try {
+      const response = await promptService.getPromptContent(promptName);
+      if (response.success && response.data) {
+        if (currentMode === 'chat') {
+          if (promptMode === 'user') {
+            setUserPrompt(response.data.content);
+          } else {
+            setSystemPrompt(response.data.content);
+          }
+        } else {
+          setInputText(response.data.content);
+        }
+        setShowPrompts(false);
+      }
+    } catch (error) {
+      console.error('获取提示词内容失败:', error);
+    }
   };
 
   const modes = [
@@ -261,6 +316,21 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
 
                 {/* 左下角控件 */}
                 <div className="input-bottom-left">
+                  {/* Chat模式的系统提示词切换按钮 */}
+                  {currentMode === 'chat' && (
+                    <Tooltip title={promptMode === 'user' ? "切换到系统提示词" : "切换到用户消息"}>
+                      <Button
+                        type="text"
+                        icon={<SwapOutlined />}
+                        className={`system-prompt-toggle ${promptMode === 'system' ? 'active' : ''}`}
+                        onClick={() => setPromptMode(promptMode === 'user' ? 'system' : 'user')}
+                        size="small"
+                      >
+                        {promptMode === 'system' ? '系统' : '用户'}
+                      </Button>
+                    </Tooltip>
+                  )}
+
                   {/* Chat模式的MCP工具图标 */}
                   {currentMode === 'chat' && availableMCPServers.length > 0 && (
                     <div className="mcp-tools-container" ref={mcpDropdownRef}>
@@ -308,19 +378,47 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                     </div>
                   )}
 
-                  {/* Chat模式的系统提示词切换按钮 */}
+                  {/* Chat模式的提示词按钮 */}
                   {currentMode === 'chat' && (
-                    <Tooltip title={promptMode === 'user' ? "切换到系统提示词" : "切换到用户消息"}>
-                      <Button
-                        type="text"
-                        icon={<SwapOutlined />}
-                        className={`system-prompt-toggle ${promptMode === 'system' ? 'active' : ''}`}
-                        onClick={() => setPromptMode(promptMode === 'user' ? 'system' : 'user')}
-                        size="small"
-                      >
-                        {promptMode === 'system' ? '系统' : '用户'}
-                      </Button>
-                    </Tooltip>
+                    <div className="prompt-selector-container" ref={promptDropdownRef}>
+                      <Tooltip title="选择提示词">
+                        <Button
+                          type="text"
+                          icon={<FileTextOutlined />}
+                          className={`prompt-selector-button ${showPrompts ? 'active' : ''}`}
+                          onClick={handlePromptButtonClick}
+                          size="small"
+                          loading={loadingPrompts}
+                        />
+                      </Tooltip>
+
+                      {/* 提示词面板 */}
+                      {showPrompts && (
+                        <div className="prompt-selector-panel">
+                          <div className="prompt-selector-header">
+                            <Text strong>选择提示词</Text>
+                          </div>
+                          <div className="prompt-selector-list">
+                            {availablePrompts.length === 0 ? (
+                              <div className="prompt-empty">暂无提示词</div>
+                            ) : (
+                              availablePrompts.map(prompt => (
+                                <div
+                                  key={prompt.name}
+                                  className="prompt-item"
+                                  onClick={() => handleSelectPrompt(prompt.name)}
+                                >
+                                  <div className="prompt-item-name">{prompt.name}</div>
+                                  {prompt.category && (
+                                    <div className="prompt-item-category">{prompt.category}</div>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Agent模式的类型切换按钮 */}

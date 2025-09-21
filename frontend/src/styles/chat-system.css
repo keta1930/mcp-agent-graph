@@ -557,6 +557,88 @@
   color: #52c41a;
 }
 
+/* 提示词选择器按钮 */
+.prompt-selector-button {
+  color: var(--text-tertiary);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.prompt-selector-button:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.prompt-selector-button.active {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.15);
+}
+
+/* 提示词选择器面板 */
+.prompt-selector-panel {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  width: 320px;
+  background: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUp 0.2s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.prompt-selector-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.prompt-selector-list {
+  padding: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.prompt-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.prompt-item:hover {
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.prompt-item:last-child {
+  margin-bottom: 0;
+}
+
+.prompt-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.prompt-item-category {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.prompt-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
 /* MCP工具面板 */
 .mcp-tools-panel {
   position: absolute;
