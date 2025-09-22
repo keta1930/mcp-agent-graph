@@ -1,4 +1,4 @@
-# MCP Agent Graph (MAG)
+![MCP Agent Graph Logo](assets/logo.png)
 
 English | [中文](README_CN.md)
 
@@ -231,7 +231,7 @@ If you find MCP Agent Graph helpful for your research or work, please consider c
 ```
 
 ## WeChat Group
-![alt text](./appendix/wechat.jpg)
+![alt text](./assets/wechat.jpg)
 
 ## ⭐ Star History
 

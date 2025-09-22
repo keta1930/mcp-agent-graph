@@ -1,7 +1,6 @@
-# MCP Agent Graph (MAG)
+![MCP Agent Graph Logo](assets/logo.png)
 
 [English](README.md) | 中文
-
 
 > 前言：mcp-agent-graph 是一款高效、轻量、易上手的 Agent 开发框架。作为 Agent 开发工作者，您可能会使用类似Dify，扣子等可视化工作流编排；您可能更习惯代码开发，那么您可能接触的是langgraph、crewai、Google ADK等等。mcp-agent-graph 和上述框架有何不同？有什么值得推荐的理由？本文将介绍项目的设计理念，功能特点。用最短的时间让您了解这个项目，或许您会发现这个项目正符合您的需求。
 
@@ -228,7 +227,7 @@ mcp-agent-graph 作为一款**精致小巧又便捷**的 Agent 开发框架，�
 ```
 
 ## 微信群
-![alt text](./appendix/wechat.jpg)
+![alt text](./assets/wechat.jpg)
 
 ## ⭐ 星标历史
 
