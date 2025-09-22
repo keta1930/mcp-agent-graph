@@ -427,9 +427,6 @@ def parse_ai_generation_response(text: str) -> Dict[str, Any]:
 
     return result
 
-
-# 在text_parser.py中添加以下函数
-
 def extract_script_file_content(text: str) -> Dict[str, str]:
     """
     从文本中提取所有 <script_file name="文件名">代码</script_file> 标签中的内容
@@ -557,8 +554,6 @@ def extract_folder_name_content(text: str) -> Optional[str]:
         logger.error(f"提取文件夹名称时出错: {str(e)}")
         return None
 
-
-# 更新parse_ai_mcp_generation_response函数
 def parse_ai_mcp_generation_response(text: str) -> Dict[str, Any]:
     """
     解析AI MCP生成响应，提取所有可能的结构化内容
