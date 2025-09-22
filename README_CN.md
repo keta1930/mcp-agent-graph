@@ -227,7 +227,7 @@ mcp-agent-graph 作为一款**精致小巧又便捷**的 Agent 开发框架，�
 ```
 
 ## 微信群
-![alt text](./assets/wechat.jpg)
+![alt text](./assets/wechat.png)
 
 ## ⭐ 星标历史
 
