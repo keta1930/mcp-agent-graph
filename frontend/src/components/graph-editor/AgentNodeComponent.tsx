@@ -64,16 +64,14 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
   // 构建节点标题区域
   const renderNodeTitle = () => (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '24px' }}>
-      {/* 主图标 */}
-      {is_subgraph ? (
+      {/* 主图标 - 只为子图显示图标 */}
+      {is_subgraph && (
         <BranchesOutlined style={{
           color: '#1677ff',
           fontSize: '16px'
         }} />
-      ) : (
-        <RobotOutlined style={{ color: '#52c41a', fontSize: '14px' }} />
       )}
-      
+
       {/* 节点名称 */}
       <Text strong ellipsis style={{ flex: 1, fontSize: '13px' }}>
         {name}
@@ -146,12 +144,9 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
             </Text>
           </>
         ) : (
-          <>
-            <RobotOutlined style={{ marginRight: '4px', fontSize: '11px', color: '#52c41a' }} />
-            <Text ellipsis style={{ maxWidth: '140px', fontSize: '11px' }}>
-              {model_name || 'N/A'}
-            </Text>
-          </>
+          <Text ellipsis style={{ maxWidth: '160px', fontSize: '11px' }}>
+            {model_name || 'N/A'}
+          </Text>
         )}
       </div>
 
