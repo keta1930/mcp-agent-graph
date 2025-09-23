@@ -3,19 +3,13 @@ from typing import Dict, List, Any, Tuple, Optional
 
 
 class GraphPromptTemplate:
-    """Graph Prompt模板处理器 - 支持{{node:count}}、{{@prompt_name}}、{{node1:3|node2:3}}语法"""
+    """Graph Prompt模板处理器"""
 
-    # 支持三种语法的统一正则表达式
+    # 支持节点输出引用的正则表达式
     PLACEHOLDER_PATTERN = r'\{\{([^}]+)\}\}'
 
-    def __init__(self, prompt_service=None):
-        """
-        初始化模板处理器
-
-        Args:
-            prompt_service: 提示词服务实例，用于获取提示词模板
-        """
-        self.prompt_service = prompt_service
+    def __init__(self):
+        pass
 
     def parse_placeholder(self, placeholder: str) -> Dict[str, Any]:
         """
@@ -27,23 +21,13 @@ class GraphPromptTemplate:
         Returns:
             Dict包含：
             {
-                "type": "single|joint|prompt",
-                "nodes": [{"name": "node1", "count": "3"}, ...],  # single和joint类型
-                "prompt_name": "template_name"  # prompt类型
+                "type": "single|joint",
+                "nodes": [{"name": "node1", "count": "3"}, ...],
             }
         """
         placeholder = placeholder.strip()
 
-        # 1. 检查是否为提示词模板引用
-        if placeholder.startswith('@'):
-            prompt_name = placeholder[1:].strip()
-            return {
-                "type": "prompt",
-                "prompt_name": prompt_name,
-                "nodes": [],
-            }
-
-        # 2. 检查是否为联合输出引用（包含|分隔符）
+        # 检查是否为联合输出引用（包含|分隔符）
         if '|' in placeholder:
             # 解析联合输出格式：node1:3|node2:2|node3:1
             node_configs = []
@@ -77,11 +61,10 @@ class GraphPromptTemplate:
 
             return {
                 "type": "joint",
-                "nodes": node_configs,
-                "prompt_name": None
+                "nodes": node_configs
             }
 
-        # 3. 单节点引用（现有语法）
+        # 单节点引用
         if ':' in placeholder:
             node_name, count_str = placeholder.split(':', 1)
             node_name = node_name.strip()
@@ -103,8 +86,7 @@ class GraphPromptTemplate:
 
         return {
             "type": "single",
-            "nodes": [{"name": node_name, "count": count_str}],
-            "prompt_name": None
+            "nodes": [{"name": node_name, "count": count_str}]
         }
 
     def get_node_outputs(self, node_name: str, count_mode: str,
@@ -201,33 +183,10 @@ class GraphPromptTemplate:
 
         formatted_parts = []
         for item in joint_results:
-            header = f"{item['node']}-round{item['round']} output："
+            header = f"{item['node']}-round{item['round']}output："
             formatted_parts.append(f"{header}\n{item['content']}")
 
         return "\n".join(formatted_parts)
-
-    def get_prompt_template(self, prompt_name: str) -> str:
-        """
-        从提示词服务获取模板内容
-
-        Args:
-            prompt_name: 提示词名称
-
-        Returns:
-            str: 提示词内容，获取失败时返回空字符串
-        """
-        if not self.prompt_service:
-            return ""
-
-        try:
-            # 直接调用PromptManager的同步方法获取提示词详情
-            result = self.prompt_service.prompt_manager.get_prompt(prompt_name)
-            if result:
-                return result.content
-            return ""
-        except Exception as e:
-            # 静默处理错误，返回空字符串
-            return ""
 
     def format_outputs(self, outputs: List[str]) -> str:
         """
@@ -251,14 +210,14 @@ class GraphPromptTemplate:
 
     def render_template(self, template: str, node_outputs: Dict[str, List[str]]) -> str:
         """
-        处理模板中的占位符，直接替换不递归
+        处理模板中的动态节点占位符
 
         Args:
-            template: 包含占位符的模板字符串
+            template: 包含节点占位符的模板字符串（提示词引用已预处理）
             node_outputs: 节点输出历史 {node_name: [output1, output2, ...]}
 
         Returns:
-            渲染后的字符串，所有占位符被替换为对应内容
+            渲染后的字符串，所有节点占位符被替换为对应内容
         """
 
         def replace_placeholder(match):
@@ -268,18 +227,13 @@ class GraphPromptTemplate:
             parsed = self.parse_placeholder(placeholder_content)
             placeholder_type = parsed["type"]
 
-            if placeholder_type == "prompt":
-                # 提示词模板引用
-                prompt_name = parsed["prompt_name"]
-                return self.get_prompt_template(prompt_name)
-
-            elif placeholder_type == "joint":
+            if placeholder_type == "joint":
                 # 联合输出引用
                 joint_config = parsed["nodes"]
                 return self.render_joint_output(joint_config, node_outputs)
 
             elif placeholder_type == "single":
-                # 单节点引用（现有逻辑）
+                # 单节点引用
                 node_config = parsed["nodes"][0]
                 node_name = node_config["name"]
                 count_mode = node_config["count"]
@@ -290,5 +244,5 @@ class GraphPromptTemplate:
             # 未知类型，返回原占位符
             return match.group(0)
 
-        # 使用正则表达式替换所有占位符
+        # 使用正则表达式替换所有节点占位符
         return re.sub(self.PLACEHOLDER_PATTERN, replace_placeholder, template)

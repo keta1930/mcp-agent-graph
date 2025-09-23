@@ -14,10 +14,9 @@ logger = logging.getLogger(__name__)
 class GraphExecutor:
     """图执行服务 - 处理图和节点的实际执行流程"""
 
-    def __init__(self, conversation_manager, mcp_service, prompt_service=None):
+    def __init__(self, conversation_manager, mcp_service):
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
-        self.prompt_service = prompt_service
 
     async def execute_graph_stream(self,
                                    graph_name: str,
@@ -574,19 +573,18 @@ class GraphExecutor:
             yield SSEHelper.send_error(f"执行节点时出错: {str(e)}")
 
     async def _create_agent_messages(self, node: Dict[str, Any]) -> List[Dict[str, str]]:
-        """创建Agent的消息列表 - {{}}占位符控制输入"""
+        """
+        创建Agent的消息列表
+        """
         messages = []
 
         conversation_id = node.get("_conversation_id", "")
         conversation = None
-        graph_name = ""
         if conversation_id:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
-            if conversation:
-                graph_name = conversation.get("graph_name", "")
 
-        # 创建模板处理器，注入提示词服务
-        template_processor = GraphPromptTemplate(prompt_service=self.prompt_service)
+        # 创建简化的模板处理器
+        template_processor = GraphPromptTemplate()
 
         # 获取全局输出历史
         global_outputs = {}
@@ -595,18 +593,16 @@ class GraphExecutor:
 
         system_prompt = node.get("system_prompt", "")
         if system_prompt:
-            # 使用模板处理器渲染系统提示词
+            # 使用模板处理器渲染动态节点引用
             system_prompt = template_processor.render_template(system_prompt, global_outputs)
             messages.append({"role": "system", "content": system_prompt})
 
         user_prompt = node.get("user_prompt", "")
         if user_prompt:
             user_prompt = template_processor.render_template(user_prompt, global_outputs)
-
             messages.append({"role": "user", "content": user_prompt})
 
         return messages
-
 
     async def _execute_single_tool(self, tool_name: str, tool_args: Dict[str, Any], mcp_servers: List[str]) -> Dict[
         str, Any]:

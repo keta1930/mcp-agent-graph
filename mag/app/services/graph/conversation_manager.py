@@ -13,11 +13,13 @@ logger = logging.getLogger(__name__)
 class ConversationManager:
     """会话管理服务 - 处理会话状态和结果处理（图运行专用，使用MongoDB存储）"""
 
-    def __init__(self, prompt_service=None):
+    def __init__(self):
+        """
+        初始化会话管理器
+        """
         self.active_conversations: Dict[str, Dict[str, Any]] = {}
         self._conversation_lock = threading.Lock()
         self._active_conversation_ids = set()
-        self.prompt_service = prompt_service
 
     def _generate_unique_conversation_id(self, graph_name: str, max_retries: int = 10) -> str:
         """生成唯一的会话ID"""
@@ -267,7 +269,7 @@ class ConversationManager:
 
         if end_template:
             from app.utils.output_tools import GraphPromptTemplate
-            template_processor = GraphPromptTemplate(prompt_service=self.prompt_service)
+            template_processor = GraphPromptTemplate()
 
             # 获取全局输出历史
             global_outputs = conversation.get("global_outputs", {})

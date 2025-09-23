@@ -2,8 +2,9 @@ import asyncio
 import logging
 import json
 import uuid
-from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import re
+import copy
+from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import os
 
 from app.core.file_manager import FileManager
@@ -25,8 +26,9 @@ class GraphService:
 
     def __init__(self):
         self.processor = GraphProcessor(self.get_graph)
-        self.conversation_manager = ConversationManager(prompt_service)
-        self.executor = GraphExecutor(self.conversation_manager, mcp_service, prompt_service)
+        # 简化组件初始化，移除prompt_service依赖
+        self.conversation_manager = ConversationManager()
+        self.executor = GraphExecutor(self.conversation_manager, mcp_service)
         self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
 
@@ -54,6 +56,102 @@ class GraphService:
     def rename_graph(self, old_name: str, new_name: str) -> bool:
         """重命名图"""
         return FileManager.rename_agent(old_name, new_name)
+
+    def _extract_prompt_references(self, text: str) -> Set[str]:
+        """
+        从文本中提取所有提示词引用
+
+        Args:
+            text: 包含可能的提示词引用的文本
+
+        Returns:
+            Set[str]: 提示词名称集合
+        """
+        if not text:
+            return set()
+
+        # 匹配 {{@prompt_name}} 格式
+        prompt_pattern = r'\{\{@([^}]+)\}\}'
+        matches = re.findall(prompt_pattern, text)
+
+        # 清理并返回提示词名称
+        return {match.strip() for match in matches}
+
+    async def _preprocess_graph_prompts(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        预处理图配置中的所有提示词引用，替换为实际内容
+
+        Args:
+            graph_config: 原始图配置
+
+        Returns:
+            Dict[str, Any]: 处理后的图配置（提示词引用已替换为实际内容）
+        """
+        # 创建图配置的深拷贝，保持原始配置不变
+        processed_config = copy.deepcopy(graph_config)
+
+        # 收集所有需要的提示词引用
+        all_prompt_refs = set()
+
+        # 扫描所有节点的system_prompt和user_prompt
+        for node in processed_config.get("nodes", []):
+            system_prompt = node.get("system_prompt", "")
+            user_prompt = node.get("user_prompt", "")
+
+            all_prompt_refs.update(self._extract_prompt_references(system_prompt))
+            all_prompt_refs.update(self._extract_prompt_references(user_prompt))
+
+        # 扫描end_template
+        end_template = processed_config.get("end_template", "")
+        all_prompt_refs.update(self._extract_prompt_references(end_template))
+
+        # 如果没有提示词引用，直接返回
+        if not all_prompt_refs:
+            logger.info("图配置中未发现提示词引用，跳过预处理")
+            return processed_config
+
+        logger.info(f"发现提示词引用: {list(all_prompt_refs)}")
+
+        # 批量获取所有提示词内容
+        prompt_contents = {}
+        for prompt_name in all_prompt_refs:
+            try:
+                # 直接调用PromptManager的同步方法
+                prompt_detail = prompt_service.prompt_manager.get_prompt(prompt_name)
+                if prompt_detail:
+                    prompt_contents[prompt_name] = prompt_detail.content
+                    logger.info(f"成功获取提示词: {prompt_name}")
+                else:
+                    prompt_contents[prompt_name] = ""
+                    logger.warning(f"提示词不存在，使用空内容: {prompt_name}")
+            except Exception as e:
+                prompt_contents[prompt_name] = ""
+                logger.error(f"获取提示词失败，使用空内容: {prompt_name}, 错误: {str(e)}")
+
+        # 定义替换函数
+        def replace_prompt_refs(text: str) -> str:
+            if not text:
+                return text
+
+            def replace_match(match):
+                prompt_name = match.group(1).strip()
+                return prompt_contents.get(prompt_name, "")
+
+            return re.sub(r'\{\{@([^}]+)\}\}', replace_match, text)
+
+        # 替换所有节点中的提示词引用
+        for node in processed_config.get("nodes", []):
+            if "system_prompt" in node:
+                node["system_prompt"] = replace_prompt_refs(node["system_prompt"])
+            if "user_prompt" in node:
+                node["user_prompt"] = replace_prompt_refs(node["user_prompt"])
+
+        # 替换end_template中的提示词引用
+        if "end_template" in processed_config:
+            processed_config["end_template"] = replace_prompt_refs(processed_config["end_template"])
+
+        logger.info("提示词预处理完成")
+        return processed_config
 
     def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
         """将图中所有子图完全展开为扁平结构，并更新节点引用关系"""
@@ -111,7 +209,7 @@ class GraphService:
         """获取会话状态"""
         return await self.conversation_manager.get_conversation(conversation_id)
 
-    async def execute_graph_stream(self, graph_name: str, input_text: str,graph_config) -> AsyncGenerator[str, None]:
+    async def execute_graph_stream(self, graph_name: str, input_text: str, graph_config) -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""
         try:
             cycle = self.detect_graph_cycles(graph_name)
@@ -119,9 +217,15 @@ class GraphService:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
                 return
 
-            flattened_config = self.processor._flatten_all_subgraphs(graph_config)
+            # 第一步：预处理提示词引用
+            logger.info("开始预处理图配置中的提示词引用")
+            preprocessed_config = await self._preprocess_graph_prompts(graph_config)
+
+            # 第二步：展开子图和计算层级
+            flattened_config = self.processor._flatten_all_subgraphs(preprocessed_config)
             flattened_config = self.processor._calculate_node_levels(flattened_config)
 
+            # 第三步：执行图
             async for sse_data in self.executor.execute_graph_stream(
                     graph_name,
                     flattened_config,
@@ -144,6 +248,15 @@ class GraphService:
             if not conversation:
                 yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
                 return
+
+            # 如果是新的输入，需要重新预处理提示词
+            if input_text and not continue_from_checkpoint:
+                logger.info("继续会话需要预处理图配置中的提示词引用")
+                original_config = conversation.get("graph_config", {})
+                preprocessed_config = await self._preprocess_graph_prompts(original_config)
+
+                # 更新会话中的图配置为预处理后的版本
+                conversation["graph_config"] = preprocessed_config
 
             async for sse_data in self.executor.continue_conversation_stream(
                     conversation_id,
