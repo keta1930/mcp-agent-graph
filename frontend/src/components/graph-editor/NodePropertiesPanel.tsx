@@ -50,17 +50,18 @@ const NodePropertiesPanel: React.FC = () => {
       .map(n => n.name);
   };
 
-  // Get all available nodes for prompt references (including special nodes)
+  // Get all available nodes for prompt references (including special nodes and current node)
   const getAvailableNodesForPrompt = () => {
-    const nodeNames = getAvailableNodes();
-    
+    if (!currentGraph) return ['start'];
+
+    // 获取图中的所有节点（包括当前节点）
+    const allNodeNames = currentGraph.nodes.map(n => n.name);
+
     // 添加特殊节点
     const specialNodes = ['start'];
-    
-    // Note: global_output nodes feature has been removed
-    
+
     // 合并并去重
-    const allNodes = [...new Set([...specialNodes, ...nodeNames])];
+    const allNodes = [...new Set([...specialNodes, ...allNodeNames])];
 
     return allNodes.sort();
   };
@@ -402,6 +403,7 @@ const NodePropertiesPanel: React.FC = () => {
                 placeholder="输入系统提示词，可以用 {node_name} 引用其他节点的输出"
                 rows={8}
                 availableNodes={availableNodesForPrompt}
+                currentNodeName={node?.name}
                 size="large"
               />
             </Form.Item>
@@ -421,6 +423,7 @@ const NodePropertiesPanel: React.FC = () => {
                 placeholder="输入用户提示词，可以用 {node_name} 引用其他节点的输出"
                 rows={8}
                 availableNodes={availableNodesForPrompt}
+                currentNodeName={node?.name}
                 size="large"
               />
             </Form.Item>
@@ -434,12 +437,13 @@ const NodePropertiesPanel: React.FC = () => {
               color: '#666',
               marginTop: '16px'
             }}>
-              <strong>💡 节点引用说明：</strong>
+              <strong>💡 引用语法说明：</strong>
               <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
-                <li>输入 <code>{`{`}</code> 可以快速选择要引用的节点</li>
-                <li>使用 <code>{`{start}`}</code> 引用用户输入</li>
-                <li>使用 <code>{`{node_name}`}</code> 引用其他节点的输出</li>
-                <li>所有节点的输出都可以被其他节点引用</li>
+                <li>输入 <code>{`{{`}</code> 可以快速选择要引用的节点</li>
+                <li>使用 <code>{`{{start}}`}</code> 引用用户输入</li>
+                <li>使用 <code>{`{{node_name}}`}</code> 引用其他节点的输出</li>
+                <li>使用 <code>{`{{@prompt_name}}`}</code> 引用已注册的提示词模板</li>
+                <li>支持联合引用：<code>{`{{node1:3|node2:2}}`}</code> 获取多节点交错输出</li>
               </ul>
             </div>
           </Form>
