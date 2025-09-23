@@ -14,9 +14,10 @@ logger = logging.getLogger(__name__)
 class GraphExecutor:
     """图执行服务 - 处理图和节点的实际执行流程"""
 
-    def __init__(self, conversation_manager, mcp_service):
+    def __init__(self, conversation_manager, mcp_service, prompt_service=None):
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
+        self.prompt_service = prompt_service
 
     async def execute_graph_stream(self,
                                    graph_name: str,
@@ -584,8 +585,8 @@ class GraphExecutor:
             if conversation:
                 graph_name = conversation.get("graph_name", "")
 
-        # 导入模板处理器
-        template_processor = GraphPromptTemplate()
+        # 创建模板处理器，注入提示词服务
+        template_processor = GraphPromptTemplate(prompt_service=self.prompt_service)
 
         # 获取全局输出历史
         global_outputs = {}

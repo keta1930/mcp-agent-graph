@@ -1,44 +1,111 @@
 import re
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 
 
 class GraphPromptTemplate:
-    """Graph Prompt模板处理器 - 支持{{node:count}}语法"""
+    """Graph Prompt模板处理器 - 支持{{node:count}}、{{@prompt_name}}、{{node1:3|node2:3}}语法"""
 
-    # 占位符正则表达式：匹配 {{node}} 或 {{node:count}}
+    # 支持三种语法的统一正则表达式
     PLACEHOLDER_PATTERN = r'\{\{([^}]+)\}\}'
 
-    def parse_placeholder(self, placeholder: str) -> Tuple[str, str]:
+    def __init__(self, prompt_service=None):
         """
-        解析占位符内容
+        初始化模板处理器
 
         Args:
-            placeholder: 占位符内容（不含大括号），如 "node" 或 "node:3" 或 "node:all"
+            prompt_service: 提示词服务实例，用于获取提示词模板
+        """
+        self.prompt_service = prompt_service
+
+    def parse_placeholder(self, placeholder: str) -> Dict[str, Any]:
+        """
+        解析占位符，返回类型和参数
+
+        Args:
+            placeholder: 占位符内容（不含大括号）
 
         Returns:
-            (node_name, count_mode): 节点名和数量模式
+            Dict包含：
+            {
+                "type": "single|joint|prompt",
+                "nodes": [{"name": "node1", "count": "3"}, ...],  # single和joint类型
+                "prompt_name": "template_name"  # prompt类型
+            }
         """
-        # 分割节点名和数量模式
-        if ":" in placeholder:
-            parts = placeholder.split(":", 1)
-            node_name = parts[0].strip()
-            count_mode = parts[1].strip()
+        placeholder = placeholder.strip()
+
+        # 1. 检查是否为提示词模板引用
+        if placeholder.startswith('@'):
+            prompt_name = placeholder[1:].strip()
+            return {
+                "type": "prompt",
+                "prompt_name": prompt_name,
+                "nodes": [],
+            }
+
+        # 2. 检查是否为联合输出引用（包含|分隔符）
+        if '|' in placeholder:
+            # 解析联合输出格式：node1:3|node2:2|node3:1
+            node_configs = []
+            parts = placeholder.split('|')
+
+            for part in parts:
+                part = part.strip()
+                if ':' in part:
+                    node_name, count_str = part.split(':', 1)
+                    node_name = node_name.strip()
+                    count_str = count_str.strip()
+                else:
+                    node_name = part.strip()
+                    count_str = "1"
+
+                # 验证count参数
+                if count_str != "all":
+                    try:
+                        count = int(count_str)
+                        if count <= 0:
+                            count_str = "1"
+                        else:
+                            count_str = str(count)
+                    except ValueError:
+                        count_str = "1"
+
+                node_configs.append({
+                    "name": node_name,
+                    "count": count_str
+                })
+
+            return {
+                "type": "joint",
+                "nodes": node_configs,
+                "prompt_name": None
+            }
+
+        # 3. 单节点引用（现有语法）
+        if ':' in placeholder:
+            node_name, count_str = placeholder.split(':', 1)
+            node_name = node_name.strip()
+            count_str = count_str.strip()
         else:
             node_name = placeholder.strip()
-            count_mode = "1"  # 默认获取最新1条
+            count_str = "1"
 
-        # 验证数量模式
-        if count_mode != "all":
+        # 验证count参数
+        if count_str != "all":
             try:
-                count = int(count_mode)
+                count = int(count_str)
                 if count <= 0:
-                    count_mode = "1"  # 无效数字时fallback到1
+                    count_str = "1"
                 else:
-                    count_mode = str(count)  # 确保是字符串格式
+                    count_str = str(count)
             except ValueError:
-                count_mode = "1"  # 无法解析时fallback到1
+                count_str = "1"
 
-        return node_name, count_mode
+        return {
+            "type": "single",
+            "nodes": [{"name": node_name, "count": count_str}],
+            "prompt_name": None
+        }
 
     def get_node_outputs(self, node_name: str, count_mode: str,
                          all_outputs: Dict[str, List[str]]) -> List[str]:
@@ -72,6 +139,96 @@ class GraphPromptTemplate:
             except ValueError:
                 return node_outputs[-1:] if node_outputs else []  # fallback到最新1条
 
+    def render_joint_output(self, joint_config: List[Dict[str, str]],
+                            all_outputs: Dict[str, List[str]]) -> str:
+        """
+        渲染联合输出，实现交错逻辑
+
+        Args:
+            joint_config: 联合配置列表 [{"name": "node1", "count": "3"}, ...]
+            all_outputs: 所有节点的输出历史
+
+        Returns:
+            格式化的交错输出字符串
+        """
+        # 收集每个节点需要的输出
+        node_outputs_map = {}
+        max_rounds = 0
+
+        for config in joint_config:
+            node_name = config["name"]
+            count_mode = config["count"]
+
+            outputs = self.get_node_outputs(node_name, count_mode, all_outputs)
+            node_outputs_map[node_name] = outputs
+            max_rounds = max(max_rounds, len(outputs))
+
+        # 按轮次交错生成输出
+        joint_results = []
+
+        for round_idx in range(max_rounds):
+            for config in joint_config:
+                node_name = config["name"]
+                node_outputs = node_outputs_map[node_name]
+
+                # 如果该节点在当前轮次有输出
+                if round_idx < len(node_outputs):
+                    content = node_outputs[round_idx]
+                    joint_results.append({
+                        "node": node_name,
+                        "round": round_idx + 1,
+                        "content": content
+                    })
+
+        return self.format_joint_outputs(joint_results)
+
+    def format_joint_outputs(self, joint_results: List[Dict[str, Any]]) -> str:
+        """
+        格式化联合输出
+
+        Args:
+            joint_results: [
+                {"node": "node1", "round": 1, "content": "..."},
+                {"node": "node2", "round": 1, "content": "..."},
+                ...
+            ]
+
+        Returns:
+            格式化后的字符串
+        """
+        if not joint_results:
+            return ""
+
+        formatted_parts = []
+        for item in joint_results:
+            header = f"{item['node']}-round{item['round']} output："
+            formatted_parts.append(f"{header}\n{item['content']}")
+
+        return "\n".join(formatted_parts)
+
+    def get_prompt_template(self, prompt_name: str) -> str:
+        """
+        从提示词服务获取模板内容
+
+        Args:
+            prompt_name: 提示词名称
+
+        Returns:
+            str: 提示词内容，获取失败时返回空字符串
+        """
+        if not self.prompt_service:
+            return ""
+
+        try:
+            # 直接调用PromptManager的同步方法获取提示词详情
+            result = self.prompt_service.prompt_manager.get_prompt(prompt_name)
+            if result:
+                return result.content
+            return ""
+        except Exception as e:
+            # 静默处理错误，返回空字符串
+            return ""
+
     def format_outputs(self, outputs: List[str]) -> str:
         """
         格式化输出内容列表
@@ -94,7 +251,7 @@ class GraphPromptTemplate:
 
     def render_template(self, template: str, node_outputs: Dict[str, List[str]]) -> str:
         """
-        渲染模板，替换所有占位符
+        处理模板中的占位符，直接替换不递归
 
         Args:
             template: 包含占位符的模板字符串
@@ -106,13 +263,32 @@ class GraphPromptTemplate:
 
         def replace_placeholder(match):
             placeholder_content = match.group(1)  # 获取括号内的内容
-            node_name, count_mode = self.parse_placeholder(placeholder_content)
 
-            # 获取节点输出
-            outputs = self.get_node_outputs(node_name, count_mode, node_outputs)
+            # 解析占位符类型和参数
+            parsed = self.parse_placeholder(placeholder_content)
+            placeholder_type = parsed["type"]
 
-            # 格式化并返回
-            return self.format_outputs(outputs)
+            if placeholder_type == "prompt":
+                # 提示词模板引用
+                prompt_name = parsed["prompt_name"]
+                return self.get_prompt_template(prompt_name)
+
+            elif placeholder_type == "joint":
+                # 联合输出引用
+                joint_config = parsed["nodes"]
+                return self.render_joint_output(joint_config, node_outputs)
+
+            elif placeholder_type == "single":
+                # 单节点引用（现有逻辑）
+                node_config = parsed["nodes"][0]
+                node_name = node_config["name"]
+                count_mode = node_config["count"]
+
+                outputs = self.get_node_outputs(node_name, count_mode, node_outputs)
+                return self.format_outputs(outputs)
+
+            # 未知类型，返回原占位符
+            return match.group(0)
 
         # 使用正则表达式替换所有占位符
         return re.sub(self.PLACEHOLDER_PATTERN, replace_placeholder, template)

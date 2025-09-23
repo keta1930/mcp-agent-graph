@@ -9,6 +9,7 @@ import os
 from app.core.file_manager import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
+from app.services.prompt_service import prompt_service
 from app.models.graph_schema import GraphConfig, AgentNode
 from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
@@ -24,8 +25,8 @@ class GraphService:
 
     def __init__(self):
         self.processor = GraphProcessor(self.get_graph)
-        self.conversation_manager = ConversationManager()
-        self.executor = GraphExecutor(self.conversation_manager, mcp_service)
+        self.conversation_manager = ConversationManager(prompt_service)
+        self.executor = GraphExecutor(self.conversation_manager, mcp_service, prompt_service)
         self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
 
