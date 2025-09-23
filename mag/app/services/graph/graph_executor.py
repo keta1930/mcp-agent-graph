@@ -6,6 +6,8 @@ from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import copy
 from app.core.file_manager import FileManager
 from app.utils.sse_helper import SSEHelper
+from app.utils.output_tools import GraphPromptTemplate
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,9 +23,10 @@ class GraphExecutor:
                                    flattened_config: Dict[str, Any],
                                    input_text: str,
                                    model_service=None) -> AsyncGenerator[str, None]:
-        """执行整个图并返回流式结果 - 混合方案"""
+        """执行整个图并返回流式结果"""
         try:
-            conversation_id = await self.conversation_manager.create_conversation_with_config(graph_name, flattened_config)
+            conversation_id = await self.conversation_manager.create_conversation_with_config(graph_name,
+                                                                                              flattened_config)
 
             # 立即发送对话ID给前端
             yield SSEHelper.send_json({
@@ -36,9 +39,9 @@ class GraphExecutor:
 
             # 发送start节点开始事件
             yield SSEHelper.send_node_start("start", 0)
-            
+
             await self._record_user_input(conversation_id, input_text)
-            
+
             # 发送start节点结束事件
             yield SSEHelper.send_node_end("start")
 
@@ -62,7 +65,7 @@ class GraphExecutor:
                                            input_text: str = None,
                                            model_service=None,
                                            continue_from_checkpoint: bool = False) -> AsyncGenerator[str, None]:
-        """继续现有会话并返回流式结果 - 混合方案"""
+        """继续现有会话并返回流式结果"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
@@ -118,8 +121,8 @@ class GraphExecutor:
             yield SSEHelper.send_error(f"继续会话时出错: {str(e)}")
 
     async def _execute_graph_by_level_sequential_stream(self, conversation_id: str, model_service=None) -> \
-    AsyncGenerator[str, None]:
-        """基于层级的顺序执行方法 - 混合方案流式版本（更新版）"""
+            AsyncGenerator[str, None]:
+        """基于层级的顺序执行方法"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
@@ -133,9 +136,7 @@ class GraphExecutor:
                 nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes_to_execute:
-                    node_input = await self._get_node_input_from_rounds(node, conversation)
-
-                    async for sse_data in self._execute_node_stream(node, node_input, conversation_id, model_service):
+                    async for sse_data in self._execute_node_stream(node, conversation_id, model_service):
                         yield sse_data
 
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -166,7 +167,7 @@ class GraphExecutor:
                                                          start_level: int,
                                                          restart_node: Optional[str],
                                                          model_service=None) -> AsyncGenerator[str, None]:
-        """从指定层级继续顺序执行图 - 混合方案流式版本"""
+        """从指定层级继续顺序执行图"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
@@ -178,9 +179,7 @@ class GraphExecutor:
                 restart_node_obj = self._find_node_by_name(graph_config, restart_node)
                 if restart_node_obj:
                     current_level = restart_node_obj.get("level", 0)
-                    node_input = await self._get_node_input_from_rounds(restart_node_obj, conversation)
-
-                    async for sse_data in self._execute_node_stream(restart_node_obj, node_input, conversation_id,
+                    async for sse_data in self._execute_node_stream(restart_node_obj, conversation_id,
                                                                     model_service):
                         yield sse_data
 
@@ -205,9 +204,7 @@ class GraphExecutor:
                 nodes = self._get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes:
-                    node_input = await self._get_node_input_from_rounds(node, conversation)
-
-                    async for sse_data in self._execute_node_stream(node, node_input, conversation_id, model_service):
+                    async for sse_data in self._execute_node_stream(node, conversation_id, model_service):
                         yield sse_data
 
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -235,7 +232,7 @@ class GraphExecutor:
                                                        conversation_id: str,
                                                        target_node: str,
                                                        model_service=None) -> AsyncGenerator[str, None]:
-        """从handoffs选择继续执行 - 混合方案流式版本"""
+        """从handoffs选择继续执行"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
@@ -264,7 +261,7 @@ class GraphExecutor:
                                                 conversation_id: str,
                                                 current_node: str,
                                                 model_service=None) -> AsyncGenerator[str, None]:
-        """继续等待handoffs的节点 - 混合方案流式版本"""
+        """继续等待handoffs的节点"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
@@ -276,9 +273,7 @@ class GraphExecutor:
 
             logger.info(f"继续等待handoffs的节点: {current_node}")
 
-            node_input = await self._get_node_input_from_rounds(current_node_obj, conversation)
-
-            async for sse_data in self._execute_node_stream(current_node_obj, node_input, conversation_id,
+            async for sse_data in self._execute_node_stream(current_node_obj, conversation_id,
                                                             model_service):
                 yield sse_data
 
@@ -317,10 +312,9 @@ class GraphExecutor:
 
     async def _execute_node_stream(self,
                                    node: Dict[str, Any],
-                                   input_text: str,
                                    conversation_id: str,
                                    model_service) -> AsyncGenerator[str, None]:
-        """执行单个节点 - 混合方案流式版本"""
+        """执行单个节点"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
@@ -339,11 +333,10 @@ class GraphExecutor:
             mcp_servers = node.get("mcp_servers", [])
             output_enabled = node.get("output_enabled", True)
 
-            node_outputs = await self._get_node_outputs_for_inputs(node, conversation)
             node_copy = copy.deepcopy(node)
             node_copy["_conversation_id"] = conversation_id
 
-            conversation_messages = await self._create_agent_messages(node_copy, input_text, node_outputs)
+            conversation_messages = await self._create_agent_messages(node_copy)
 
             handoffs_limit = node.get("handoffs")
             handoffs_status = await self.conversation_manager.get_handoffs_status(conversation_id, node_name)
@@ -541,22 +534,24 @@ class GraphExecutor:
             from app.services.mongodb_service import mongodb_service
             await mongodb_service.add_round_to_graph_run(conversation_id, round_data)
 
-            if node.get("global_output", False):
-                if output_enabled:
-                    if final_output:
-                        await self.conversation_manager._add_global_output(
-                            conversation_id,
-                            node_name,
-                            final_output
-                        )
-                else:
-                    if tool_results_content:
-                        tool_output = "\n".join(tool_results_content)
-                        await self.conversation_manager._add_global_output(
-                            conversation_id,
-                            node_name,
-                            tool_output
-                        )
+            # 所有节点保存全局输出
+            if output_enabled:
+                # 对于output_enabled=True的节点，保存assistant的最终输出
+                if final_output:
+                    await self.conversation_manager._add_global_output(
+                        conversation_id,
+                        node_name,
+                        final_output
+                    )
+            else:
+                # 对于output_enabled=False的节点，保存工具调用结果
+                if tool_results_content:
+                    tool_output = "\n".join(tool_results_content)
+                    await self.conversation_manager._add_global_output(
+                        conversation_id,
+                        node_name,
+                        tool_output
+                    )
 
             save_ext = node.get("save")
             if save_ext and final_output.strip():
@@ -576,6 +571,41 @@ class GraphExecutor:
         except Exception as e:
             logger.error(f"执行节点 '{node['name']}' 流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"执行节点时出错: {str(e)}")
+
+    async def _create_agent_messages(self, node: Dict[str, Any]) -> List[Dict[str, str]]:
+        """创建Agent的消息列表 - {{}}占位符控制输入"""
+        messages = []
+
+        conversation_id = node.get("_conversation_id", "")
+        conversation = None
+        graph_name = ""
+        if conversation_id:
+            conversation = await self.conversation_manager.get_conversation(conversation_id)
+            if conversation:
+                graph_name = conversation.get("graph_name", "")
+
+        # 导入模板处理器
+        template_processor = GraphPromptTemplate()
+
+        # 获取全局输出历史
+        global_outputs = {}
+        if conversation:
+            global_outputs = conversation.get("global_outputs", {})
+
+        system_prompt = node.get("system_prompt", "")
+        if system_prompt:
+            # 使用模板处理器渲染系统提示词
+            system_prompt = template_processor.render_template(system_prompt, global_outputs)
+            messages.append({"role": "system", "content": system_prompt})
+
+        user_prompt = node.get("user_prompt", "")
+        if user_prompt:
+            user_prompt = template_processor.render_template(user_prompt, global_outputs)
+
+            messages.append({"role": "user", "content": user_prompt})
+
+        return messages
+
 
     async def _execute_single_tool(self, tool_name: str, tool_args: Dict[str, Any], mcp_servers: List[str]) -> Dict[
         str, Any]:
@@ -666,66 +696,6 @@ class GraphExecutor:
 
         return tools
 
-    async def _create_agent_messages(self,
-                               node: Dict[str, Any],
-                               input_text: str,
-                               node_outputs: Dict[str, str] = None) -> List[Dict[str, str]]:
-        """创建Agent的消息列表"""
-        messages = []
-
-        if node_outputs is None:
-            node_outputs = {}
-
-        conversation_id = node.get("_conversation_id", "")
-        conversation = None
-        graph_name = ""
-        if conversation_id:
-            conversation = await self.conversation_manager.get_conversation(conversation_id)
-            if conversation:
-                graph_name = conversation.get("graph_name", "")
-
-        used_input_nodes = set()
-
-        system_prompt = node.get("system_prompt", "")
-        if system_prompt:
-            if graph_name:
-                system_prompt = FileManager.replace_prompt_file_placeholders(graph_name, system_prompt)
-
-            for node_name, output in node_outputs.items():
-                placeholder = "{" + node_name + "}"
-                if placeholder in system_prompt:
-                    system_prompt = system_prompt.replace(placeholder, output)
-                    used_input_nodes.add(node_name)
-
-            messages.append({"role": "system", "content": system_prompt})
-
-        user_prompt = node.get("user_prompt", "")
-        if user_prompt:
-            if graph_name:
-                user_prompt = FileManager.replace_prompt_file_placeholders(graph_name, user_prompt)
-
-            for node_name, output in node_outputs.items():
-                placeholder = "{" + node_name + "}"
-                if placeholder in user_prompt:
-                    user_prompt = user_prompt.replace(placeholder, output)
-                    used_input_nodes.add(node_name)
-
-            unused_inputs = []
-            for node_name, output in node_outputs.items():
-                if node_name not in used_input_nodes and output.strip():
-                    unused_inputs.append(output)
-
-            if unused_inputs and (user_prompt.strip() or not used_input_nodes):
-                if user_prompt and not user_prompt.endswith("\n"):
-                    user_prompt += "\n\n"
-                user_prompt += "\n\n".join(unused_inputs)
-
-            messages.append({"role": "user", "content": user_prompt})
-        else:
-            messages.append({"role": "user", "content": input_text})
-
-        return messages
-
     async def _record_user_input(self, conversation_id: str, input_text: str):
         """记录用户输入为round格式"""
         conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -799,117 +769,6 @@ class GraphExecutor:
         await mongodb_service.update_graph_run_execution_chain(
             conversation["conversation_id"], execution_chain
         )
-
-    async def _get_node_outputs_for_inputs(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> Dict[str, str]:
-        """获取节点输入所需的所有输出结果 - 支持output_enabled"""
-        node_outputs = {}
-
-        for input_node_name in node.get("input_nodes", []):
-            if input_node_name == "start":
-                user_input = self._get_user_input_from_rounds(conversation)
-                if user_input:
-                    node_outputs["start"] = user_input
-            else:
-                node_output = self._get_node_output_from_rounds(conversation, input_node_name)
-                if node_output:
-                    node_outputs[input_node_name] = node_output
-
-        context_nodes = node.get("context", [])
-        if context_nodes:
-            context_mode = node.get("context_mode", "all")
-
-            for context_node_name in context_nodes:
-                global_outputs = await self.conversation_manager._get_global_outputs(
-                    conversation["conversation_id"],
-                    context_node_name,
-                    context_mode
-                )
-
-                if global_outputs:
-                    node_outputs[context_node_name] = "\n\n".join(global_outputs)
-
-        return node_outputs
-
-    async def _get_node_input_from_rounds(self, node: Dict[str, Any], conversation: Dict[str, Any]) -> str:
-        """从rounds中获取节点输入 - 支持output_enabled"""
-        input_nodes = node.get("input_nodes", [])
-        inputs = []
-
-        for input_node_name in input_nodes:
-            if input_node_name == "start":
-                user_input = self._get_user_input_from_rounds(conversation)
-                if user_input:
-                    inputs.append(user_input)
-            else:
-                node_output = self._get_node_output_from_rounds(conversation, input_node_name)
-                if node_output:
-                    inputs.append(node_output)
-
-        context_nodes = node.get("context", [])
-        if context_nodes:
-            context_mode = node.get("context_mode", "all")
-
-            for context_node_name in context_nodes:
-                global_outputs = await self.conversation_manager._get_global_outputs(
-                    conversation["conversation_id"],
-                    context_node_name,
-                    context_mode
-                )
-
-                if global_outputs:
-                    inputs.append("\n\n".join(global_outputs))
-
-        return "\n\n".join(inputs)
-
-    def _get_user_input_from_rounds(self, conversation: Dict[str, Any]) -> str:
-        """从rounds中获取最新的用户输入"""
-        rounds = conversation.get("rounds", [])
-
-        for round_data in reversed(rounds):
-            if round_data.get("node_name") == "start":
-                messages = round_data.get("messages", [])
-                for message in messages:
-                    if message.get("role") == "user":
-                        return message.get("content", "")
-
-        return ""
-
-    def _get_node_output_from_rounds(self, conversation: Dict[str, Any], node_name: str) -> str:
-        """从rounds中获取指定节点的输出 - 支持output_enabled"""
-        rounds = conversation.get("rounds", [])
-        graph_config = conversation.get("graph_config", {})
-
-        node_config = None
-        for node in graph_config.get("nodes", []):
-            if node["name"] == node_name:
-                node_config = node
-                break
-
-        for round_data in reversed(rounds):
-            if round_data.get("node_name") == node_name:
-                messages = round_data.get("messages", [])
-
-                round_output_enabled = round_data.get("output_enabled")
-                if round_output_enabled is None and node_config:
-                    round_output_enabled = node_config.get("output_enabled", True)
-                else:
-                    round_output_enabled = True
-
-                if round_output_enabled:
-                    for message in reversed(messages):
-                        if message.get("role") == "assistant":
-                            return message.get("content", "")
-                else:
-                    tool_contents = []
-                    for message in messages:
-                        if message.get("role") == "tool":
-                            content = message.get("content", "")
-                            if content and not content.startswith("已选择节点:"):
-                                tool_contents.append(content)
-
-                    return "\n".join(tool_contents) if tool_contents else ""
-
-        return ""
 
     def _check_handoffs_in_round(self, round_data: Dict[str, Any], node: Dict[str, Any]) -> bool:
         """检查round中是否有handoffs选择"""

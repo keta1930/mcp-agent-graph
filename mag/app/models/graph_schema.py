@@ -12,9 +12,6 @@ class AgentNode(BaseModel):
     input_nodes: List[str] = Field(default_factory=list, description="输入节点列表")
     output_nodes: List[str] = Field(default_factory=list, description="输出节点列表")
     handoffs: Optional[int] = Field(default=None, description="节点可以执行的选择次数，用于支持循环流程")
-    global_output: bool = Field(default=False, description="是否全局管理此节点的输出")
-    context: List[str] = Field(default_factory=list, description="需要引用的全局管理节点列表")
-    context_mode: str = Field(default="all", description="全局内容获取模式，可选值：all（获取全部）, 数字（获取最新n次输出，如'1','2','3'等）")
     output_enabled: bool = Field(default=True, description="是否输出回复")
     is_subgraph: bool = Field(default=False, description="是否为子图节点")
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
@@ -58,21 +55,6 @@ class AgentNode(BaseModel):
         if v and not v.isalnum():
             v = ''.join(c for c in v if c.isalnum())
         return v
-
-    @validator('context_mode')
-    def validate_context_mode(cls, v):
-        """验证context_mode格式"""
-        if v == "all":
-            return v
-        try:
-            n = int(v)
-            if n <= 0:
-                raise ValueError('context_mode数字值必须大于0')
-            return v
-        except ValueError:
-            if 'context_mode数字值必须大于0' in str(ValueError):
-                raise
-            raise ValueError('context_mode必须是"all"或正整数字符串（如"1","2","3"等）')
 
 
 class GraphConfig(BaseModel):

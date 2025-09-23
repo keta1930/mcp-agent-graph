@@ -6,8 +6,6 @@ import copy
 from datetime import datetime
 import threading
 from typing import Dict, List, Any, Optional, Set
-from app.core.file_manager import FileManager
-from app.utils.output_tools import _parse_placeholder, _format_content_with_default_style
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +143,7 @@ class ConversationManager:
         await mongodb_service.update_graph_run_global_outputs(conversation_id, node_name, output)
 
     async def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all") -> List[str]:
-        """全局输出获取函数，支持新的context_mode格式"""
+        """全局输出获取函数"""
         conversation = await self.get_conversation(conversation_id)
         if not conversation or "global_outputs" not in conversation or node_name not in conversation["global_outputs"]:
             logger.debug(f"找不到节点 '{node_name}' 的全局输出内容")
@@ -259,72 +257,22 @@ class ConversationManager:
         }
 
     async def _get_final_output(self, conversation: Dict[str, Any]) -> str:
-        """获取图的最终输出 - 支持output_enabled的占位符替换"""
+        """获取图的最终输出"""
         graph_config = conversation["graph_config"]
         rounds = conversation.get("rounds", [])
 
         end_template = graph_config.get("end_template")
 
         if end_template:
-            node_outputs = {}
+            # 使用新的模板处理器处理end_template
+            from app.utils.output_tools import GraphPromptTemplate
+            template_processor = GraphPromptTemplate()
 
-            for round_data in rounds:
-                node_name = round_data.get("node_name", "")
-                messages = round_data.get("messages", [])
+            # 获取全局输出历史
+            global_outputs = conversation.get("global_outputs", {})
 
-                if node_name == "start":
-                    for msg in messages:
-                        if msg.get("role") == "user":
-                            node_outputs["start"] = msg.get("content", "")
-                            break
-                else:
-                    output_enabled = round_data.get("output_enabled", True)
-
-                    if output_enabled:
-                        for msg in reversed(messages):
-                            if msg.get("role") == "assistant":
-                                node_outputs[node_name] = msg.get("content", "")
-                                break
-                    else:
-                        tool_contents = []
-                        for msg in messages:
-                            if msg.get("role") == "tool":
-                                content = msg.get("content", "")
-                                if content and not content.startswith("已选择节点:"):
-                                    tool_contents.append(content)
-                        node_outputs[node_name] = "\n".join(tool_contents) if tool_contents else ""
-
-            output = end_template
-            placeholder_pattern = r'\{([^}]+)\}'
-            placeholders = re.findall(placeholder_pattern, output)
-
-            for placeholder in placeholders:
-                node_name, mode = _parse_placeholder(placeholder)
-
-                if mode != "1":
-                    global_outputs = await self._get_global_outputs(
-                        conversation["conversation_id"],
-                        node_name,
-                        mode
-                    )
-                    if global_outputs:
-                        replacement = _format_content_with_default_style(global_outputs)
-                        output = output.replace(f"{{{placeholder}}}", replacement)
-                    else:
-                        output = output.replace(f"{{{placeholder}}}", "")
-                else:
-                    if node_name in node_outputs:
-                        output = output.replace(f"{{{placeholder}}}", node_outputs[node_name])
-                    else:
-                        global_outputs = await self._get_global_outputs(
-                            conversation["conversation_id"],
-                            node_name,
-                            "1"
-                        )
-                        if global_outputs:
-                            output = output.replace(f"{{{placeholder}}}", global_outputs[0])
-                        else:
-                            output = output.replace(f"{{{placeholder}}}", "")
+            # 渲染end_template
+            output = template_processor.render_template(end_template, global_outputs)
 
             conversation["final_result"] = output
 
@@ -333,6 +281,7 @@ class ConversationManager:
 
             return output
 
+        # 如果没有end_template，使用默认逻辑：返回最后一个非start节点的输出
         if not rounds:
             return ""
 
@@ -343,12 +292,14 @@ class ConversationManager:
                 output_enabled = round_data.get("output_enabled", True)
 
                 if output_enabled:
+                    # 从assistant消息中获取输出
                     for msg in reversed(messages):
                         if msg.get("role") == "assistant":
                             final_output = msg.get("content", "")
                             conversation["final_result"] = final_output
                             return final_output
                 else:
+                    # 从tool消息中获取输出
                     tool_contents = []
                     for msg in messages:
                         if msg.get("role") == "tool":
