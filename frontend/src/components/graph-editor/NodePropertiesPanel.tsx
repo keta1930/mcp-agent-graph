@@ -11,7 +11,7 @@ import {
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
-import { SAVE_FORMAT_OPTIONS, CONTEXT_MODE_OPTIONS } from '../../types/graph';
+import { SAVE_FORMAT_OPTIONS } from '../../types/graph';
 import SmartPromptEditor from '../common/SmartPromptEditor';
 
 const { Text } = Typography;
@@ -39,10 +39,7 @@ const NodePropertiesPanel: React.FC = () => {
     graphName => !currentGraph || graphName !== currentGraph.name
   );
 
-  // Get available context nodes (nodes with global_output enabled, excluding current node)
-  const availableContextNodes = currentGraph?.nodes
-    .filter(n => n.global_output && n.id !== selectedNode)
-    .map(n => n.name) || [];
+  // Note: context nodes feature has been removed in the new version
 
   // Get available nodes for input/output connections (excluding current node)
   const getAvailableNodes = () => {
@@ -60,14 +57,11 @@ const NodePropertiesPanel: React.FC = () => {
     // 添加特殊节点
     const specialNodes = ['start'];
     
-    // 添加有全局输出的节点
-    const globalOutputNodes = currentGraph?.nodes
-      .filter(n => n.global_output && n.id !== selectedNode)
-      .map(n => n.name) || [];
+    // Note: global_output nodes feature has been removed
     
     // 合并并去重
-    const allNodes = [...new Set([...specialNodes, ...nodeNames, ...globalOutputNodes])];
-    
+    const allNodes = [...new Set([...specialNodes, ...nodeNames])];
+
     return allNodes.sort();
   };
 
@@ -100,10 +94,6 @@ const NodePropertiesPanel: React.FC = () => {
         input_nodes: node.input_nodes || [],
         output_nodes: node.output_nodes || [],
         output_enabled: node.output_enabled,
-        global_output: node.global_output || false,
-        context: node.context || [],
-        context_mode: node.context_mode || 'all',
-        context_n: node.context_n || 1,
         handoffs: node.handoffs,
         level: node.level,
         save: node.save
@@ -144,11 +134,6 @@ const NodePropertiesPanel: React.FC = () => {
     }
   };
 
-  const handleContextModeChange = (mode: string) => {
-    if (mode !== 'latest_n') {
-      updateNode(selectedNode!, { context_n: 1 });
-    }
-  };
 
   // 如果没有选中节点，返回空（在模态框模式下不应该出现这种情况）
   if (!node) {
@@ -183,7 +168,6 @@ const NodePropertiesPanel: React.FC = () => {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {node.input_nodes?.includes('start') && <Tag color="green">起始节点</Tag>}
               {node.output_nodes?.includes('end') && <Tag color="blue">结束节点</Tag>}
-              {node.global_output && <Tag color="purple">全局输出</Tag>}
               {node.level !== undefined && node.level !== null && (
                 <Tag color="orange">执行层级: {node.level}</Tag>
               )}
@@ -392,16 +376,6 @@ const NodePropertiesPanel: React.FC = () => {
                   />
                 </Form.Item>
 
-                <Form.Item
-                  name="global_output"
-                  valuePropName="checked"
-                  style={{ marginBottom: 0 }}
-                >
-                  <Switch
-                    checkedChildren="全局输出"
-                    unCheckedChildren="局部输出"
-                  />
-                </Form.Item>
               </Space>
             </div>
           </Form>
@@ -465,7 +439,7 @@ const NodePropertiesPanel: React.FC = () => {
                 <li>输入 <code>{`{`}</code> 可以快速选择要引用的节点</li>
                 <li>使用 <code>{`{start}`}</code> 引用用户输入</li>
                 <li>使用 <code>{`{node_name}`}</code> 引用其他节点的输出</li>
-                <li>支持引用设置了全局输出的节点</li>
+                <li>所有节点的输出都可以被其他节点引用</li>
               </ul>
             </div>
           </Form>
@@ -537,99 +511,6 @@ const NodePropertiesPanel: React.FC = () => {
           </Form>
         </TabPane>
 
-        <TabPane tab="上下文管理" key="context">
-          <Form
-            form={form}
-            layout="vertical"
-            onValuesChange={handleValuesChange}
-          >
-            <Form.Item
-              name="context"
-              label={
-                <span>
-                  引用节点{' '}
-                  <Tooltip title="选择需要引用输出的全局节点">
-                    <QuestionCircleOutlined />
-                  </Tooltip>
-                </span>
-              }
-            >
-              <Select 
-                mode="multiple" 
-                placeholder="选择要引用的节点"
-                size="large"
-                disabled={availableContextNodes.length === 0}
-              >
-                {availableContextNodes.map(nodeName => (
-                  <Option key={nodeName} value={nodeName}>{nodeName}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              noStyle
-              shouldUpdate={(prevValues, currentValues) => 
-                prevValues.context !== currentValues.context
-              }
-            >
-              {({ getFieldValue }) => {
-                const selectedContext = getFieldValue('context') || [];
-                return selectedContext.length > 0 ? (
-                  <>
-                    <Form.Item
-                      name="context_mode"
-                      label="获取模式"
-                    >
-                      <Select onChange={handleContextModeChange} size="large">
-                        {CONTEXT_MODE_OPTIONS.map(option => (
-                          <Option key={option.value} value={option.value}>
-                            {option.label}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-
-                    <Form.Item
-                      noStyle
-                      shouldUpdate={(prevValues, currentValues) => 
-                        prevValues.context_mode !== currentValues.context_mode
-                      }
-                    >
-                      {({ getFieldValue }) => 
-                        getFieldValue('context_mode') === 'latest_n' ? (
-                          <Form.Item
-                            name="context_n"
-                            label="获取数量"
-                          >
-                            <InputNumber 
-                              min={1} 
-                              max={10}
-                              style={{ width: '100%' }}
-                              size="large"
-                            />
-                          </Form.Item>
-                        ) : null
-                      }
-                    </Form.Item>
-                  </>
-                ) : (
-                  <div style={{ 
-                    padding: '20px', 
-                    backgroundColor: '#f5f5f5', 
-                    borderRadius: '8px', 
-                    textAlign: 'center' 
-                  }}>
-                    <Text type="secondary" style={{ fontSize: '14px' }}>
-                      {availableContextNodes.length === 0 
-                        ? '当前图中没有全局输出节点' 
-                        : '请选择要引用的节点'}
-                    </Text>
-                  </div>
-                );
-              }}
-            </Form.Item>
-          </Form>
-        </TabPane>
 
         <TabPane tab="连接信息" key="connections">
           <div style={{ padding: '8px' }}>

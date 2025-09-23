@@ -22,10 +22,6 @@ interface AgentNodeProps {
     model_name?: string;
     subgraph_name?: string;
     mcp_servers: string[];
-    global_output: boolean;
-    context: string[];
-    context_mode: 'all' | 'latest' | 'latest_n';
-    context_n: number;
     handoffs?: number;
     level?: number;
     save?: string;
@@ -44,10 +40,6 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
     model_name,
     subgraph_name,
     mcp_servers,
-    global_output,
-    context,
-    context_mode,
-    context_n,
     handoffs,
     level,
     save,
@@ -112,24 +104,10 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
           </Tooltip>
         )}
 
-        {/* 全局输出 */}
-        {global_output && (
-          <Tooltip title="全局输出节点">
-            <GlobalOutlined style={{ color: '#722ed1', fontSize: '12px' }} />
-          </Tooltip>
-        )}
-
         {/* 文件保存 */}
         {save && (
           <Tooltip title={`保存为 ${save.toUpperCase()} 文件`}>
             <SaveOutlined style={{ color: '#13c2c2', fontSize: '12px' }} />
-          </Tooltip>
-        )}
-
-        {/* 上下文引用 */}
-        {context && context.length > 0 && (
-          <Tooltip title={`引用 ${context.length} 个节点的输出`}>
-            <LinkOutlined style={{ color: '#eb2f96', fontSize: '12px' }} />
           </Tooltip>
         )}
 
@@ -207,18 +185,6 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         )}
       </div>
 
-      {/* 上下文信息 */}
-      {context && context.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <LinkOutlined style={{ marginRight: '4px', fontSize: '11px', color: '#eb2f96' }} />
-          <Tooltip title={`引用模式: ${context_mode === 'all' ? '所有输出' : 
-            context_mode === 'latest' ? '最新输出' : `最新${context_n}次输出`}`}>
-            <Text style={{ fontSize: '11px' }}>
-              引用 {context.length} 个节点
-            </Text>
-          </Tooltip>
-        </div>
-      )}
     </div>
   );
 
@@ -253,10 +219,6 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
       borderColor = '#1677ff';
       boxShadow = '0 0 8px rgba(22,119,255,0.2)';
       background = 'linear-gradient(to bottom, #f5f9ff, #ffffff)';
-    } else if (global_output) {
-      borderColor = '#722ed1';
-      boxShadow = '0 0 6px rgba(114,46,209,0.2)';
-      background = 'linear-gradient(to bottom, #f9f0ff, #ffffff)';
     } else if (hasHandoffs) {
       // 为有handoffs的节点添加特殊样式
       borderColor = '#fa8c16';

@@ -17,7 +17,7 @@ import {
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
-import { SAVE_FORMAT_OPTIONS, CONTEXT_MODE_OPTIONS } from '../../types/graph';
+import { SAVE_FORMAT_OPTIONS } from '../../types/graph';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -42,10 +42,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
     graphName => !currentGraph || graphName !== currentGraph.name
   );
 
-  // Get available context nodes (nodes with global_output enabled)
-  const availableContextNodes = currentGraph?.nodes
-    .filter(node => node.global_output)
-    .map(node => node.name) || [];
+  // Note: context nodes feature has been removed in the new version
 
   // Get available nodes for input/output connections
   const getAvailableNodes = (excludeSelf: boolean = true, nodeNameToExclude?: string) => {
@@ -63,14 +60,10 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
     try {
       const values = await form.validateFields();
       
-      // Set default values for new fields (removed level)
+      // Set default values for new fields
       const nodeData = {
         ...values,
         description: values.description || "",
-        global_output: values.global_output || false,
-        context: values.context || [],
-        context_mode: values.context_mode || 'all',
-        context_n: values.context_n || 1,
         handoffs: values.handoffs || null,
         save: values.save || null,
         input_nodes: values.input_nodes || [],
@@ -94,11 +87,6 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
     }
   };
 
-  const handleContextModeChange = (mode: string) => {
-    if (mode !== 'latest_n') {
-      form.setFieldsValue({ context_n: 1 });
-    }
-  };
 
   // 精致的卡片样式
   const getCardStyle = (gradient: string) => ({
@@ -379,40 +367,22 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   </Select>
                 </Form.Item>
 
-                <div style={{ 
-                  background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', 
-                  padding: '12px', 
-                  borderRadius: '8px',
-                  border: '1px solid rgba(0, 0, 0, 0.04)'
-                }}>
-                  <Text strong style={{ color: '#374151', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-                    💡 输出配置
-                  </Text>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item
-                        name="output_enabled"
-                        label={<Text style={{ fontSize: '12px', color: '#6b7280' }}>启用输出</Text>}
-                        valuePropName="checked"
-                        initialValue={true}
-                        style={{ marginBottom: '0' }}
-                      >
-                        <Switch size="small" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="global_output"
-                        label={<Text style={{ fontSize: '12px', color: '#6b7280' }}>全局输出</Text>}
-                        valuePropName="checked"
-                        initialValue={false}
-                        style={{ marginBottom: '0' }}
-                      >
-                        <Switch size="small" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </div>
+                <Form.Item
+                  name="output_enabled"
+                  label={
+                    <span style={{ color: '#374151', fontSize: '14px', fontWeight: '600' }}>
+                      💡 启用输出{' '}
+                      <Tooltip title="是否输出节点回复内容">
+                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                      </Tooltip>
+                    </span>
+                  }
+                  valuePropName="checked"
+                  initialValue={true}
+                  style={{ marginBottom: '16px' }}
+                >
+                  <Switch />
+                </Form.Item>
 
                 <Form.Item
                   name="save"
@@ -597,102 +567,6 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   />
                 </Form.Item>
 
-                <Form.Item
-                  name="context"
-                  label={
-                    <span style={{ color: '#374151', fontSize: '14px', fontWeight: '600' }}>
-                      🔗 上下文引用{' '}
-                      <Tooltip title="选择需要引用输出的全局节点">
-                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
-                      </Tooltip>
-                    </span>
-                  }
-                  initialValue={[]}
-                  style={{ marginBottom: '0' }}
-                >
-                  <Select 
-                    mode="multiple" 
-                    placeholder="🧠 选择要引用的节点"
-                    disabled={availableContextNodes.length === 0}
-                    style={{ borderRadius: '8px' }}
-                  >
-                    {availableContextNodes.map(nodeName => (
-                      <Option key={nodeName} value={nodeName}>
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <GlobalOutlined style={{ marginRight: '8px', color: '#7c3aed' }} />
-                          {nodeName}
-                        </div>
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  noStyle
-                  shouldUpdate={(prevValues, currentValues) => 
-                    prevValues.context !== currentValues.context
-                  }
-                >
-                  {({ getFieldValue }) => {
-                    const selectedContext = getFieldValue('context') || [];
-                    return selectedContext.length > 0 ? (
-                      <div style={{ 
-                        background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', 
-                        padding: '12px', 
-                        borderRadius: '8px',
-                        border: '1px solid rgba(0, 0, 0, 0.04)'
-                      }}>
-                        <Text strong style={{ color: '#374151', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-                          ⚙️ 获取配置
-                        </Text>
-                        <Row gutter={12}>
-                          <Col span={16}>
-                            <Form.Item
-                              name="context_mode"
-                              label={<Text style={{ fontSize: '12px', color: '#6b7280' }}>获取模式</Text>}
-                              initialValue="all"
-                              style={{ marginBottom: '0' }}
-                            >
-                              <Select onChange={handleContextModeChange} style={{ borderRadius: '6px' }} size="small">
-                                {CONTEXT_MODE_OPTIONS.map(option => (
-                                  <Option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </Option>
-                                ))}
-                              </Select>
-                            </Form.Item>
-                          </Col>
-                          <Col span={8}>
-                            <Form.Item
-                              noStyle
-                              shouldUpdate={(prevValues, currentValues) => 
-                                prevValues.context_mode !== currentValues.context_mode
-                              }
-                            >
-                              {({ getFieldValue }) => 
-                                getFieldValue('context_mode') === 'latest_n' ? (
-                                  <Form.Item
-                                    name="context_n"
-                                    label={<Text style={{ fontSize: '12px', color: '#6b7280' }}>数量</Text>}
-                                    initialValue={1}
-                                    style={{ marginBottom: '0' }}
-                                  >
-                                    <InputNumber 
-                                      min={1} 
-                                      max={10}
-                                      size="small"
-                                      style={{ width: '100%', borderRadius: '6px' }}
-                                    />
-                                  </Form.Item>
-                                ) : null
-                              }
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                      </div>
-                    ) : null;
-                  }}
-                </Form.Item>
               </Space>
             </Card>
           </Col>

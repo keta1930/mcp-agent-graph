@@ -364,10 +364,6 @@ const GraphCanvas: React.FC = () => {
         model_name: node.model_name,
         subgraph_name: node.subgraph_name,
         mcp_servers: node.mcp_servers || [],
-        global_output: node.global_output || false,
-        context: node.context || [],
-        context_mode: node.context_mode || 'all',
-        context_n: node.context_n || 1,
         handoffs: node.handoffs,
         level: node.level,
         save: node.save,
@@ -468,11 +464,7 @@ const GraphCanvas: React.FC = () => {
       style.stroke = levelColors[colorIndex];
     }
 
-    // 如果目标节点是全局输出节点，使用紫色
-    if (targetNode.global_output) {
-      style.stroke = '#722ed1';
-      style.strokeWidth = 3;
-    }
+    // Note: global_output feature has been removed
 
     return style;
   };
@@ -480,8 +472,7 @@ const GraphCanvas: React.FC = () => {
   // 确定是否需要动画
   const shouldAnimateEdge = (sourceNode: any, targetNode: any) => {
     // 如果有执行层级，显示动画
-    return (sourceNode.level !== undefined && sourceNode.level !== null) || 
-           targetNode.global_output;
+    return (sourceNode.level !== undefined && sourceNode.level !== null);
   };
 
   // Handle node changes
@@ -570,7 +561,6 @@ const GraphCanvas: React.FC = () => {
     
     if (nodeData.selected) return '#1677ff';
     if (nodeData.is_subgraph) return '#1677ff';
-    if (nodeData.global_output) return '#722ed1';
     if (nodeData.handoffs && nodeData.handoffs > 1) return '#fa8c16';
     if (nodeData.input_nodes?.includes('start')) return '#52c41a';
     if (nodeData.output_nodes?.includes('end')) return '#f5222d';

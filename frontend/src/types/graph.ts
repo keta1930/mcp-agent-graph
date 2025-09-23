@@ -16,10 +16,6 @@ export interface AgentNode {
   input_nodes: string[];
   output_nodes: string[];
   handoffs?: number;
-  global_output: boolean;
-  context: string[];
-  context_mode: 'all' | 'latest' | 'latest_n';
-  context_n: number;
   output_enabled: boolean;
   position?: NodePosition;
   level?: number;
@@ -95,8 +91,3 @@ export const SAVE_FORMAT_OPTIONS = [
   { label: 'XML (.xml)', value: 'xml' },
 ] as const;
 
-export const CONTEXT_MODE_OPTIONS = [
-  { label: '所有输出', value: 'all' },
-  { label: '最新输出', value: 'latest' },
-  { label: '最新N次输出', value: 'latest_n' },
-] as const;
