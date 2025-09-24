@@ -17,6 +17,7 @@ from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor
 from app.services.graph.ai_graph_generator import AIGraphGenerator
 from app.utils.sse_helper import SSEHelper
+from app.services.graph.background_executor import BackgroundExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,9 @@ class GraphService:
 
     def __init__(self):
         self.processor = GraphProcessor(self.get_graph)
-        # 简化组件初始化，移除prompt_service依赖
         self.conversation_manager = ConversationManager()
         self.executor = GraphExecutor(self.conversation_manager, mcp_service)
+        self.background_executor = BackgroundExecutor(self.conversation_manager, mcp_service)
         self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
 
@@ -208,6 +209,55 @@ class GraphService:
     async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取会话状态"""
         return await self.conversation_manager.get_conversation(conversation_id)
+
+    async def execute_graph_background(self, graph_name: str, input_text: str,
+                                       graph_config: Dict[str, Any],
+                                       conversation_id: Optional[str] = None) -> Dict[str, Any]:
+        """后台异步执行图，执行到创建conversation_id后立即返回，图在后台继续运行"""
+        try:
+            # 检测图循环（和SSE版本一样的前期检查）
+            cycle = self.detect_graph_cycles(graph_name)
+            if cycle:
+                return {
+                    "status": "error",
+                    "message": f"检测到循环引用链: {' -> '.join(cycle)}"
+                }
+
+            if conversation_id:
+                # 继续现有会话的后台执行
+                conversation = await self.get_conversation(conversation_id)
+                if not conversation:
+                    return {
+                        "status": "error",
+                        "message": f"找不到会话 '{conversation_id}'"
+                    }
+
+                # 使用后台执行器继续会话
+                result = await self.background_executor.continue_conversation_background(
+                    conversation_id, input_text, model_service
+                )
+                return result
+            else:
+                # 预处理提示词引用
+                logger.info("开始预处理图配置中的提示词引用")
+                preprocessed_config = await self._preprocess_graph_prompts(graph_config)
+
+                # 展开子图和计算层级
+                flattened_config = self.processor._flatten_all_subgraphs(preprocessed_config)
+                flattened_config = self.processor._calculate_node_levels(flattened_config)
+
+                # 使用后台执行器执行图
+                result = await self.background_executor.execute_graph_background(
+                    graph_name, flattened_config, input_text, model_service
+                )
+                return result
+
+        except Exception as e:
+            logger.error(f"启动后台执行失败: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"启动后台执行失败: {str(e)}"
+            }
 
     async def execute_graph_stream(self, graph_name: str, input_text: str, graph_config) -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""

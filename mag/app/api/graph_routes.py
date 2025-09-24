@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse,JSONResponse
 from typing import Dict, List, Any, Optional
 
 from app.core.config import settings
@@ -281,7 +281,7 @@ async def generate_mcp_script(graph_name: str):
 # ======= 图执行 =======
 @router.post("/graphs/execute")
 async def execute_graph(input_data: GraphInput):
-    """执行图并返回流式结果"""
+    """执行图并返回流式结果或后台执行结果"""
     try:
         # 检查图是否存在
         graph_config = graph_service.get_graph(input_data.graph_name)
@@ -291,46 +291,64 @@ async def execute_graph(input_data: GraphInput):
                 detail=f"找不到图 '{input_data.graph_name}'"
             )
 
-        async def generate_hybrid_stream():
+        # 根据background参数选择执行模式
+        if input_data.background:
+            # 后台执行模式：返回conversation_id，图在后台继续执行
             try:
-                if input_data.conversation_id:
-                    # 继续现有会话
-                    async for sse_data in graph_service.continue_conversation_stream(
-                            input_data.conversation_id,
-                            input_data.input_text,
-                        # TODO continue_from_checkpoint 参数取舍
-                    ):
-                        yield sse_data
-                else:
-                    # 创建新会话
-                    async for sse_data in graph_service.execute_graph_stream(
-                            input_data.graph_name,
-                            input_data.input_text,
-                            graph_config
-                    ):
-                        yield sse_data
-
-                # 发送完成标记
-                yield SSEHelper.format_done()
-
-            except HTTPException as he:
-                yield SSEHelper.send_error(he.detail)
-                yield SSEHelper.format_done()
+                result = await graph_service.execute_graph_background(
+                    input_data.graph_name,
+                    input_data.input_text,
+                    graph_config,
+                    input_data.conversation_id
+                )
+                return JSONResponse(result)
             except Exception as e:
-                logger.error(f"执行图时出错: {str(e)}")
-                yield SSEHelper.send_error(f"执行图时出错: {str(e)}")
-                yield SSEHelper.format_done()
+                logger.error(f"启动后台执行时出错: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"启动后台执行时出错: {str(e)}"
+                )
+        else:
+            # SSE模式：现有流程保持不变
+            async def generate_hybrid_stream():
+                try:
+                    if input_data.conversation_id:
+                        # 继续现有会话
+                        async for sse_data in graph_service.continue_conversation_stream(
+                                input_data.conversation_id,
+                                input_data.input_text,
+                        ):
+                            yield sse_data
+                    else:
+                        # 创建新会话
+                        async for sse_data in graph_service.execute_graph_stream(
+                                input_data.graph_name,
+                                input_data.input_text,
+                                graph_config
+                        ):
+                            yield sse_data
 
-        return StreamingResponse(
-            generate_hybrid_stream(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
+                    # 发送完成标记
+                    yield SSEHelper.format_done()
+
+                except HTTPException as he:
+                    yield SSEHelper.send_error(he.detail)
+                    yield SSEHelper.format_done()
+                except Exception as e:
+                    logger.error(f"执行图时出错: {str(e)}")
+                    yield SSEHelper.send_error(f"执行图时出错: {str(e)}")
+                    yield SSEHelper.format_done()
+
+            return StreamingResponse(
+                generate_hybrid_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "*",
+                }
+            )
 
     except HTTPException:
         raise

@@ -4,6 +4,8 @@ MAG SDK - 图管理客户端API
 
 import json
 import os
+import time
+
 import requests
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, Iterator
@@ -32,7 +34,11 @@ def _stream_response_generator(payload: Dict[str, Any], endpoint: str) -> Iterat
     返回:
         Iterator[Dict[str, Any]]: 解析后的JSON数据流
     """
-    with requests.post(f"{API_BASE}{endpoint}", json=payload, stream=True) as response:
+    # 使用SSE模式
+    sse_payload = payload.copy()
+    sse_payload["background"] = False
+
+    with requests.post(f"{API_BASE}{endpoint}", json=sse_payload, stream=True) as response:
         response.raise_for_status()
         for line in response.iter_lines():
             if line:
@@ -46,6 +52,120 @@ def _stream_response_generator(payload: Dict[str, Any], endpoint: str) -> Iterat
                     except json.JSONDecodeError:
                         continue
 
+def _run_graph_background(payload: Dict[str, Any]) -> str:
+    """
+    后台运行图并返回conversation_id
+
+    使用新的background=true API参数，直接返回conversation_id
+
+    参数:
+        payload: 请求载荷
+
+    返回:
+        str: conversation_id
+    """
+    # 设置后台执行参数
+    background_payload = payload.copy()
+    background_payload["background"] = True
+
+    # 调用后台执行API
+    response = requests.post(f"{API_BASE}/graphs/execute", json=background_payload)
+    response.raise_for_status()
+
+    result = response.json()
+
+    # 检查响应状态
+    if result.get("status") == "started":
+        conversation_id = result.get("conversation_id")
+        if not conversation_id:
+            raise RuntimeError("后台执行API返回格式错误：缺少conversation_id")
+        return conversation_id
+    elif result.get("status") == "error":
+        error_msg = result.get("message", "未知错误")
+        raise RuntimeError(f"后台执行启动失败：{error_msg}")
+    else:
+        raise RuntimeError(f"后台执行API返回格式错误：{result}")
+
+
+def _run_graph_and_wait_for_completion(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    运行图并等待完成，然后返回完整的conversation详情
+
+    参数:
+        payload: 请求载荷
+
+    返回:
+        Dict[str, Any]: 完整的conversation详情
+    """
+    conversation_id = None
+    graph_completed = False
+
+    # 确保使用SSE模式（background=false）
+    sse_payload = payload.copy()
+    sse_payload["background"] = False
+
+    # 第一步：执行图并监控完成状态
+    with requests.post(f"{API_BASE}/graphs/execute", json=sse_payload, stream=True) as response:
+        response.raise_for_status()
+
+        for line in response.iter_lines():
+            if line:
+                chunk = line.decode("utf-8")
+                if chunk.startswith("data: "):
+                    data_part = chunk[6:].strip()
+                    if data_part == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(data_part)
+
+                        # 获取conversation_id
+                        if data.get("type") == "conversation_created":
+                            conversation_id = data.get("conversation_id")
+
+                        # 检测图执行完成
+                        elif data.get("type") == "graph_complete":
+                            graph_completed = True
+                            break
+
+                    except json.JSONDecodeError:
+                        continue
+
+    if not conversation_id:
+        raise RuntimeError("无法获取conversation_id，图启动失败")
+
+    if not graph_completed:
+        raise RuntimeError("图执行未完成或执行失败")
+
+    # 第二步：等待数据保存并获取conversation详情
+    time.sleep(1)
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # 调用conversation detail API
+            response = requests.get(f"{API_BASE}/chat/conversations/{conversation_id}")
+            response.raise_for_status()
+            conversation_detail = response.json()
+
+            # 验证数据完整性
+            if conversation_detail.get("_id") and conversation_detail.get("rounds"):
+                return conversation_detail
+            else:
+                # 数据可能还没有完全保存，等待重试
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                else:
+                    raise RuntimeError("获取到的conversation详情不完整")
+
+        except requests.RequestException as e:
+            if attempt < max_retries - 1:
+                time.sleep(2)
+                continue
+            else:
+                raise RuntimeError(f"获取conversation详情失败: {str(e)}")
+
+    raise RuntimeError("获取conversation详情失败：达到最大重试次数")
 
 # ======= 基本图管理 =======
 
@@ -110,17 +230,22 @@ def get_graph_detail(graph_name: str) -> Dict[str, Any]:
 
 # ======= 图执行 =======
 
-def run_graph(name: str, input_text: str, stream: bool = False) -> Union[Dict[str, Any], Iterator[Dict[str, Any]]]:
+def run_graph(name: str, input_text: str, stream: bool = False, background: bool = False) -> Union[Dict[str, Any], Iterator[Dict[str, Any]], str]:
     """
-    执行图
+    执行图 - 支持后台运行和前台监控模式
 
     参数:
         name (str): 图名称
         input_text (str): 输入文本
-        stream (bool): 是否使用流式响应，默认为False
+        stream (bool): 是否使用流式响应，仅在background=False时有效
+        background (bool): 是否后台运行，默认为False
+                          - True: 启动图执行后立即返回conversation_id
+                          - False: 根据stream参数决定行为
 
     返回:
-        Union[Dict[str, Any], Iterator[Dict[str, Any]]]: 执行结果或流式数据
+        - background=True: 返回 conversation_id (str)
+        - background=False + stream=True: 返回流式数据迭代器 (Iterator[Dict[str, Any]])
+        - background=False + stream=False: 返回完整的conversation详情 (Dict[str, Any])
     """
     _ensure_server_running()
     payload = {
@@ -128,46 +253,15 @@ def run_graph(name: str, input_text: str, stream: bool = False) -> Union[Dict[st
         "input_text": input_text
     }
 
-    if stream:
-        # 流式响应 - 返回解析后的JSON数据迭代器
+    if background:
+        # 后台运行模式：启动图执行并立即返回conversation_id
+        return _run_graph_background(payload)
+    elif stream:
+        # 前台流式模式：返回流式数据迭代器
         return _stream_response_generator(payload, "/graphs/execute")
     else:
-        # 非流式响应 - 直接返回API的完整结果
-        response = requests.post(f"{API_BASE}/graphs/execute", json=payload)
-        response.raise_for_status()
-        return response.json()
-
-
-def continue_run(conversation_id: str, input_text: str = None,
-                 continue_from_checkpoint: bool = False, stream: bool = False) -> Union[
-    Dict[str, Any], Iterator[Dict[str, Any]]]:
-    """
-    继续执行会话
-
-    参数:
-        conversation_id (str): 会话ID
-        input_text (str, optional): 新的输入文本，如果为None则从断点继续
-        continue_from_checkpoint (bool): 是否从断点继续，默认为False
-        stream (bool): 是否使用流式响应，默认为False
-
-    返回:
-        Union[Dict[str, Any], Iterator[Dict[str, Any]]]: 执行结果或流式数据
-    """
-    _ensure_server_running()
-    payload = {
-        "conversation_id": conversation_id,
-        "input_text": input_text,
-        "continue_from_checkpoint": continue_from_checkpoint
-    }
-
-    if stream:
-        # 流式响应 - 返回解析后的JSON数据迭代器
-        return _stream_response_generator(payload, "/graphs/execute")
-    else:
-        # 非流式响应 - 直接返回API的完整结果
-        response = requests.post(f"{API_BASE}/graphs/execute", json=payload)
-        response.raise_for_status()
-        return response.json()
+        # 前台非流式模式：等待图执行完成并返回conversation详情
+        return _run_graph_and_wait_for_completion(payload)
 
 
 # ======= AI 图生成 =======

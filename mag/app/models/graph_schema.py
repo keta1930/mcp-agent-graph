@@ -76,6 +76,7 @@ class GraphInput(BaseModel):
     input_text: Optional[str] = Field(None, description="输入文本")
     conversation_id: Optional[str] = Field(None, description="会话ID，用于继续现有会话")
     continue_from_checkpoint: bool = Field(default=False, description="是否从断点继续执行")
+    background: bool = Field(default=False, description="是否后台执行，默认为False使用SSE模式")
 
 class GraphFilePath(BaseModel):
     file_path: str
