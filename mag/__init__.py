@@ -221,6 +221,7 @@ from .client.graph import (
     list_graph,
     get_graph_config,
     get_graph_detail,
+    run_graph,
     generate as gen_graph,
     optimize as update_graph,
     graph_gen_prompt,

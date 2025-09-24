@@ -298,6 +298,7 @@ async def execute_graph(input_data: GraphInput):
                     async for sse_data in graph_service.continue_conversation_stream(
                             input_data.conversation_id,
                             input_data.input_text,
+                        # TODO continue_from_checkpoint 参数取舍
                     ):
                         yield sse_data
                 else:
