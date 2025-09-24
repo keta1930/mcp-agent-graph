@@ -1,0 +1,106 @@
+{
+  "name": "deepresearch",
+  "description": "保留研究计划制作的深度研究系统，自动分析问题并制定TODO，然后执行多轮智能检索并生成可视化HTML网页",
+  "nodes": [
+    {
+      "name": "todo_maker",
+      "description": "分析用户问题并制作系统性的研究计划，将复杂问题分解为具体可执行的研究任务并确定优先级",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "你是一位研究规划专家，具备问题分析和研究规划双重能力。你需要：\n1. 深度分析用户问题，识别核心主题、关键概念和研究维度\n2. 识别可能的相关领域和交叉学科\n3. 将复杂问题分解为具体的研究任务\n4. 确定每个任务的优先级和重要性\n5. 为每个任务指定具体的检索关键词\n6. 估算每个任务需要的信息量和深度",
+      "user_prompt": "请分析以下用户问题并制作详细的研究TODO清单：\n\n{{start:1}}\n\n任务要求：\n1. 首先深度分析问题的核心主题和关键概念\n2. 识别需要研究的各个维度和角度\n3. 制作具体的研究任务列表（每个任务要明确且可执行）\n4. 确定任务优先级排序\n5. 为每个任务提供检索关键词建议\n6. 定义预期信息收集目标和完成标准\n\n请以结构化格式输出，便于后续跟踪和检查。",
+      "input_nodes": [
+        "start"
+      ],
+      "output_nodes": [
+        "search_executor"
+      ],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 300.0,
+        "y": 400.0
+      },
+      "level": 0,
+      "save": "md"
+    },
+    {
+      "name": "search_executor",
+      "description": "执行信息检索任务，根据研究计划选择重要任务并使用搜索工具获取高质量的相关信息",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [
+        "tavily-mcp"
+      ],
+      "system_prompt": "你是一位专业的信息检索专家，擅长使用各种搜索策略获取高质量信息。你需要：\n1. 根据TODO清单选择当前最重要的研究任务\n2. 设计有效的搜索查询词\n3. 执行多角度搜索以获得全面信息\n4. 评估搜索结果的质量和相关性\n5. 提取和整理关键信息点",
+      "user_prompt": "当前研究TODO清单：\n{{todo_maker:1}}\n\n已收集的研究内容：\n{{search_executor:all}}\n\n请执行本轮搜索任务：\n1. 从TODO清单中选择一个尚未完成或需要补充的重要任务\n2. 使用搜索工具获取相关信息\n3. 整理和总结获取的信息\n4. 说明本轮搜索针对的具体任务和获得的成果",
+      "input_nodes": [
+        "todo_maker"
+      ],
+      "output_nodes": [
+        "progress_checker"
+      ],
+      "handoffs": null,
+      "output_enabled": false,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 701.1486983549971,
+        "y": 400.0
+      },
+      "level": 1,
+      "save": "md"
+    },
+    {
+      "name": "progress_checker",
+      "description": "评估研究进度和完成情况，判断信息收集是否充分，决定继续检索还是开始生成最终网页",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "你是一位研究进度评估专家，负责判断当前研究是否已经足够完成最终任务。你需要：\n1. 对比TODO清单和当前知识库内容\n2. 评估信息的完整性和深度\n3. 判断是否还有重要信息缺失\n4. 决定下一步行动：继续检索或开始生成网页\n5. 如果继续检索，明确指出还需要什么信息",
+      "user_prompt": "请评估当前研究进度：\n\n原始TODO清单：\n{{todo_maker:1}}\n\n检索的信息：\n{{search_executor:all}}\n\n评估任务：\n1. 检查TODO清单中的各项任务完成情况\n2. 评估信息收集的充分性和质量\n3. 判断是否已经具备生成高质量网页的条件\n4. 做出明确决策：继续检索或开始生成网页\n\n你需要调用工具，如果你的决策是继续检索，你会调用search_executor继续检索，如果你的决策是生成网页，你会调用webpage_generator生成网页。",
+      "input_nodes": [
+        "search_executor"
+      ],
+      "output_nodes": [
+        "webpage_generator",
+        "search_executor"
+      ],
+      "handoffs": 3,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 1100.0,
+        "y": 400.0
+      },
+      "level": 2,
+      "save": "md"
+    },
+    {
+      "name": "webpage_generator",
+      "description": "基于完整的研究成果创建可视化HTML网页，将所有收集的信息整合成最终的展示页面",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "你是一位专业的网页开发专家，专门创建美观、信息丰富的可视化网页。请遵循以下HTML制作规范：\n\n**HTML结构要求：**\n- 使用语义化HTML5元素（header、main、section、article、aside、footer）\n- 包含适当的meta标签和响应式viewport\n- 使用标题层级（h1-h6）组织内容结构\n\n**样式设计指南：**\n- 使用现代CSS，采用flexbox/grid布局\n- 实现响应式设计，兼容移动端\n- 应用一致的配色方案和字体排版\n- 添加适度的动画和过渡效果提升用户体验\n\n**内容组织原则：**\n- 为每个研究组件创建清晰的区块\n- 使用卡片、面板或容器组织相关信息\n- 包含导航菜单便于内容访问\n- 如内容较多可添加搜索功能\n\n你需要：\n1. 读取完整的知识图谱内容\n2. 整合所有研究信息\n3. 设计美观的可视化网页\n4. 确保信息展示清晰有序\n5. 包含交互性和用户体验设计",
+      "user_prompt": "基于完整的研究结果创建可视化HTML网页：\n\n原始问题：\n{{start:1}}\n\n研究计划：\n{{todo_maker:1}}\n\n研究成果：\n{{search_executor:all}}\n\n请创建一个专业的HTML网页，全面展示研究结果，包含美观的样式和良好的用户体验。",
+      "input_nodes": [
+        "progress_checker"
+      ],
+      "output_nodes": [
+        "end"
+      ],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 1500.0,
+        "y": 400.0
+      },
+      "level": 3,
+      "save": "html"
+    }
+  ],
+  "end_template": "# 深度研究报告\n\n## 原始问题\n{{start:1}}\n\n## 研究计划\n{{todo_maker:1}}\n\n## 搜索结果\n{{search_executor:all}}\n\n## 进度评估\n{{progress_checker:all}}\n\n## 生成的可视化网页\n{{webpage_generator:1}}\n\n---\n\n研究完成！生成的HTML网页已保存，包含了对原始问题的全面深度分析和可视化展示。"
+}

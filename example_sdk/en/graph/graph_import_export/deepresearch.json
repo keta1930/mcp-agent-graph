@@ -1,0 +1,106 @@
+{
+  "name": "deepresearch",
+  "description": "Advanced research system that automatically analyzes problems, creates TODO plans, executes multi-round intelligent searches, and generates visualized HTML pages",
+  "nodes": [
+    {
+      "name": "todo_maker",
+      "description": "Analyzes user questions and creates systematic research plans, breaking down complex problems into specific executable research tasks with priority ranking",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "You are a research planning expert with dual capabilities in problem analysis and research planning. You need to:\n1. Deeply analyze user questions, identify core themes, key concepts, and research dimensions\n2. Identify possible related fields and interdisciplinary areas\n3. Break down complex problems into specific research tasks\n4. Determine priority and importance of each task\n5. Specify concrete search keywords for each task\n6. Estimate the required information volume and depth for each task",
+      "user_prompt": "Please analyze the following user question and create a detailed research TODO list:\n\n{{start:1}}\n\nTask requirements:\n1. First, deeply analyze the core themes and key concepts of the problem\n2. Identify various dimensions and angles that need to be researched\n3. Create a specific research task list (each task must be clear and executable)\n4. Determine task priority ranking\n5. Provide search keyword suggestions for each task\n6. Define expected information collection goals and completion criteria\n\nPlease output in structured format for easy tracking and checking.",
+      "input_nodes": [
+        "start"
+      ],
+      "output_nodes": [
+        "search_executor"
+      ],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 300.0,
+        "y": 400.0
+      },
+      "level": 0,
+      "save": "md"
+    },
+    {
+      "name": "search_executor",
+      "description": "Executes information retrieval tasks, selects important tasks based on research plans, and uses search tools to obtain high-quality relevant information",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [
+        "tavily-mcp"
+      ],
+      "system_prompt": "You are a professional information retrieval expert, skilled in using various search strategies to obtain high-quality information. You need to:\n1. Select the most important research task based on the TODO list\n2. Design effective search query terms\n3. Execute multi-angle searches to obtain comprehensive information\n4. Evaluate the quality and relevance of search results\n5. Extract and organize key information points",
+      "user_prompt": "Current research TODO list:\n{{todo_maker:1}}\n\nAlready collected research content:\n{{search_executor:all}}\n\nPlease execute this round of search tasks:\n1. Select an important task from the TODO list that is not yet completed or needs supplementation\n2. Use search tools to obtain relevant information\n3. Organize and summarize the obtained information\n4. Explain the specific task targeted by this round of search and the achievements obtained",
+      "input_nodes": [
+        "todo_maker"
+      ],
+      "output_nodes": [
+        "progress_checker"
+      ],
+      "handoffs": null,
+      "output_enabled": false,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 701.1486983549971,
+        "y": 400.0
+      },
+      "level": 1,
+      "save": "md"
+    },
+    {
+      "name": "progress_checker",
+      "description": "Evaluates research progress and completion status, determines if information collection is sufficient, and decides whether to continue retrieval or start generating the final webpage",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "You are a research progress evaluation expert, responsible for determining whether the current research is sufficient to complete the final task. You need to:\n1. Compare the TODO list with current knowledge base content\n2. Evaluate the completeness and depth of information\n3. Determine if there is still important information missing\n4. Decide on the next action: continue retrieval or start generating webpage\n5. If continuing retrieval, clearly specify what information is still needed",
+      "user_prompt": "Please evaluate the current research progress:\n\nOriginal TODO list:\n{{todo_maker:1}}\n\nRetrieved information:\n{{search_executor:all}}\n\nEvaluation tasks:\n1. Check the completion status of each task in the TODO list\n2. Evaluate the sufficiency and quality of information collection\n3. Determine if conditions are met for generating a high-quality webpage\n4. Make a clear decision: continue retrieval or start generating webpage\n\nYou need to call tools. If your decision is to continue retrieval, you will call search_executor to continue searching. If your decision is to generate webpage, you will call webpage_generator to generate the webpage.",
+      "input_nodes": [
+        "search_executor"
+      ],
+      "output_nodes": [
+        "webpage_generator",
+        "search_executor"
+      ],
+      "handoffs": 3,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 1100.0,
+        "y": 400.0
+      },
+      "level": 2,
+      "save": "md"
+    },
+    {
+      "name": "webpage_generator",
+      "description": "Creates visualized HTML webpages based on complete research results, integrating all collected information into the final presentation page",
+      "model_name": "deepseek-chat",
+      "mcp_servers": [],
+      "system_prompt": "You are a professional web development expert, specializing in creating beautiful, information-rich visualized webpages. Follow these HTML creation guidelines:\n\n**HTML Structure Requirements:**\n- Use semantic HTML5 elements (header, main, section, article, aside, footer)\n- Include proper meta tags and responsive viewport\n- Organize content with clear hierarchy using headings (h1-h6)\n\n**Styling Guidelines:**\n- Use modern CSS with flexbox/grid for layout\n- Implement responsive design for mobile compatibility\n- Apply consistent color scheme and typography\n- Add subtle animations and transitions for better UX\n\n**Content Organization:**\n- Create clear sections for each research component\n- Use cards, panels, or containers to group related information\n- Include navigation menu for easy content access\n- Add search functionality if content is extensive\n\nYou need to:\n1. Read complete knowledge graph content\n2. Integrate all research information\n3. Design beautiful visualized webpages\n4. Ensure clear and orderly information display\n5. Include interactivity and user experience design",
+      "user_prompt": "Create a visualized HTML webpage based on complete research results:\n\nOriginal question:\n{{start:1}}\n\nResearch plan:\n{{todo_maker:1}}\n\nResearch results:\n{{search_executor:all}}\n\nPlease create a professional HTML webpage that comprehensively displays research results, including beautiful styling and good user experience.",
+      "input_nodes": [
+        "progress_checker"
+      ],
+      "output_nodes": [
+        "end"
+      ],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {
+        "x": 1500.0,
+        "y": 400.0
+      },
+      "level": 3,
+      "save": "html"
+    }
+  ],
+  "end_template": "# Deep Research Report\n\n## Original Question\n{{start:1}}\n\n## Research Plan\n{{todo_maker:1}}\n\n## Search Results\n{{search_executor:all}}\n\n## Progress Evaluation\n{{progress_checker:all}}\n\n## Generated Visualized Webpage\n{{webpage_generator:1}}\n\n---\n\nResearch completed! The generated HTML webpage has been saved, containing comprehensive in-depth analysis and visualization of the original question."
+}
