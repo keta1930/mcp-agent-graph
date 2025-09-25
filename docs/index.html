@@ -6,11 +6,11 @@
     <title>MAG SDK Documentation</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="./favicon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-    <link rel="shortcut icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="shortcut icon" href="favicon.ico">
 
     <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -359,13 +359,28 @@
         // Load translations
         async function loadTranslations() {
             try {
-                const enResponse = await fetch('./assets/i18n/en.json');
-                const zhResponse = await fetch('./assets/i18n/zh.json');
+                const basePath = window.location.pathname.includes('/mcp-agent-graph/') ? '/mcp-agent-graph' : '';
+                const enResponse = await fetch(`${basePath}/assets/i18n/en.json`);
+                const zhResponse = await fetch(`${basePath}/assets/i18n/zh.json`);
                 translations.en = await enResponse.json();
                 translations.zh = await zhResponse.json();
                 updateLanguage();
             } catch (error) {
                 console.error('Failed to load translations:', error);
+                // Fallback to English if translations fail to load
+                translations.en = {
+                    "nav": {
+                        "getting_started": "Getting Started",
+                        "installation": "Installation",
+                        "quick_start": "Quick Start"
+                    },
+                    "welcome": {
+                        "title": "Welcome to MAG SDK",
+                        "description": "MAG is a powerful framework for building and executing AI agent graphs."
+                    }
+                };
+                translations.zh = translations.en; // Fallback
+                updateLanguage();
             }
         }
 
@@ -406,7 +421,8 @@
             const moduleContent = document.getElementById('module-content');
 
             try {
-                const response = await fetch(`./modules/${moduleName}.html`);
+                const basePath = window.location.pathname.includes('/mcp-agent-graph/') ? '/mcp-agent-graph' : '';
+                const response = await fetch(`${basePath}/modules/${moduleName}.html`);
                 const content = await response.text();
 
                 moduleContent.innerHTML = content;
@@ -429,7 +445,14 @@
 
             } catch (error) {
                 console.error('Failed to load module:', error);
-                moduleContent.innerHTML = '<p class="text-red-600">Failed to load content</p>';
+                moduleContent.innerHTML = `
+                    <div class="text-red-600 p-4 border border-red-300 rounded">
+                        <h3 class="font-bold mb-2">Failed to load content</h3>
+                        <p>Module: ${moduleName}</p>
+                        <p>Error: ${error.message}</p>
+                        <p>请检查网络连接或联系管理员</p>
+                    </div>
+                `;
             }
         }
 

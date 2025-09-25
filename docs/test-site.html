@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MAG Documentation Test</title>
+    <script>
+        function testResourceLoading() {
+            console.log('Testing resource loading...');
+
+            // Test module loading
+            fetch('./modules/installation.html')
+                .then(response => {
+                    if (response.ok) {
+                        console.log('✅ Module files accessible');
+                    } else {
+                        console.log('❌ Module files not accessible');
+                    }
+                })
+                .catch(error => console.log('❌ Module loading error:', error));
+
+            // Test i18n loading
+            fetch('./assets/i18n/en.json')
+                .then(response => {
+                    if (response.ok) {
+                        console.log('✅ i18n files accessible');
+                    } else {
+                        console.log('❌ i18n files not accessible');
+                    }
+                })
+                .catch(error => console.log('❌ i18n loading error:', error));
+        }
+
+        window.onload = testResourceLoading;
+    </script>
+</head>
+<body>
+    <h1>MAG Documentation Test Page</h1>
+    <p>Check the browser console for test results.</p>
+    <p>Base URL: <span id="baseUrl"></span></p>
+    <script>
+        document.getElementById('baseUrl').textContent = window.location.origin + window.location.pathname;
+    </script>
+</body>
+</html>

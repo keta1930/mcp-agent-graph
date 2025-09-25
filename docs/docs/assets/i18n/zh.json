@@ -1,0 +1,78 @@
+{
+  "title": "MAG SDK 使用文档",
+  "nav": {
+    "getting_started": "快速开始",
+    "installation": "安装指南",
+    "quick_start": "快速入门",
+    "core_features": "核心功能",
+    "graph_management": "图管理",
+    "graph_execution": "图执行",
+    "conversation": "对话管理",
+    "ai_generation": "AI生成",
+    "integration": "集成功能",
+    "mcp_integration": "MCP集成",
+    "model_management": "模型管理",
+    "advanced": "高级功能",
+    "background_execution": "后台执行",
+    "streaming": "流式处理",
+    "concurrent_execution": "并发执行"
+  },
+  "modules": {
+    "installation": {
+      "title": "安装指南",
+      "description": "按照简单的安装步骤开始使用MAG SDK。"
+    },
+    "quick_start": {
+      "title": "快速入门",
+      "description": "几分钟内启动并运行MAG SDK。本指南将引导您创建并执行第一个图。"
+    },
+    "graph_execution": {
+      "title": "图执行",
+      "description": "学习如何使用不同模式执行图，包括新的后台执行功能。"
+    },
+    "conversation": {
+      "title": "对话管理",
+      "description": "学习如何在图执行期间管理和跟踪对话历史。MAG SDK提供全面的对话管理功能。"
+    },
+    "ai_generation": {
+      "title": "AI生成",
+      "description": "利用AI的力量自动生成图和MCP服务器。MAG SDK包含智能生成功能。"
+    },
+    "mcp_integration": {
+      "title": "MCP集成",
+      "description": "模型上下文协议(MCP)集成允许您通过外部工具和服务扩展MAG SDK功能。"
+    },
+    "model_management": {
+      "title": "模型管理",
+      "description": "为您的图配置和管理AI模型。MAG SDK支持多个模型提供商。"
+    },
+    "advanced": {
+      "title": "高级功能",
+      "description": "掌握高级MAG SDK功能，包括并发执行、流式优化和企业级功能。"
+    }
+  },
+  "welcome": {
+    "title": "欢迎使用MAG SDK",
+    "description": "MAG是一个强大的AI智能体图构建和执行框架，支持MCP集成。请通过左侧导航探索文档内容。",
+    "get_started": "开始使用",
+    "quick_start": "快速入门"
+  },
+  "subtitle": "使用文档",
+  "common": {
+    "parameters": "参数",
+    "returns": "返回值",
+    "example": "示例",
+    "examples": "示例",
+    "description": "描述",
+    "type": "类型",
+    "required": "必需",
+    "optional": "可选",
+    "method": "方法",
+    "response": "响应",
+    "usage": "用法",
+    "note": "注意",
+    "warning": "警告",
+    "see_also": "参见",
+    "start": "开始 →"
+  }
+}

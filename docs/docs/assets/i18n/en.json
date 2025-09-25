@@ -1,0 +1,78 @@
+{
+  "title": "MAG SDK Documentation",
+  "nav": {
+    "getting_started": "Getting Started",
+    "installation": "Installation",
+    "quick_start": "Quick Start",
+    "core_features": "Core Features",
+    "graph_management": "Graph Management",
+    "graph_execution": "Graph Execution",
+    "conversation": "Conversation",
+    "ai_generation": "AI Generation",
+    "integration": "Integration",
+    "mcp_integration": "MCP Integration",
+    "model_management": "Model Management",
+    "advanced": "Advanced",
+    "background_execution": "Background Execution",
+    "streaming": "Streaming",
+    "concurrent_execution": "Concurrent Execution"
+  },
+  "modules": {
+    "installation": {
+      "title": "Installation",
+      "description": "Get started with MAG SDK by following these simple installation steps."
+    },
+    "quick_start": {
+      "title": "Quick Start",
+      "description": "Get up and running with MAG SDK in minutes. This guide will walk you through creating and executing your first graph."
+    },
+    "graph_execution": {
+      "title": "Graph Execution",
+      "description": "Learn how to execute graphs with different modes including the new background execution feature."
+    },
+    "conversation": {
+      "title": "Conversation Management",
+      "description": "Learn how to manage and track conversation history during graph execution. MAG SDK provides comprehensive conversation management features."
+    },
+    "ai_generation": {
+      "title": "AI Generation",
+      "description": "Harness the power of AI to automatically generate graphs and MCP servers. MAG SDK includes intelligent generation capabilities."
+    },
+    "mcp_integration": {
+      "title": "MCP Integration",
+      "description": "Model Context Protocol (MCP) integration allows you to extend MAG SDK capabilities with external tools and services."
+    },
+    "model_management": {
+      "title": "Model Management",
+      "description": "Configure and manage AI models for your graphs. MAG SDK supports multiple model providers."
+    },
+    "advanced": {
+      "title": "Advanced Features",
+      "description": "Master advanced MAG SDK capabilities including concurrent execution, streaming optimization, and enterprise-grade features."
+    }
+  },
+  "welcome": {
+    "title": "Welcome to MAG SDK",
+    "description": "MAG is a powerful framework for building and executing AI agent graphs with MCP integration. Get started by exploring the documentation sections on the left.",
+    "get_started": "Get Started",
+    "quick_start": "Quick Start"
+  },
+  "subtitle": "Documentation",
+  "common": {
+    "parameters": "Parameters",
+    "returns": "Returns",
+    "example": "Example",
+    "examples": "Examples",
+    "description": "Description",
+    "type": "Type",
+    "required": "Required",
+    "optional": "Optional",
+    "method": "Method",
+    "response": "Response",
+    "usage": "Usage",
+    "note": "Note",
+    "warning": "Warning",
+    "see_also": "See Also",
+    "start": "Start →"
+  }
+}
