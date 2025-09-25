@@ -216,10 +216,10 @@
                             <i class="fas fa-chevron-down transition-transform" id="getting-started-icon"></i>
                         </button>
                         <div class="collapse-content pl-6" id="getting-started-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('installation')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('installation', event)">
                                 <i class="fas fa-download mr-2"></i><span data-i18n="nav.installation">Installation</span>
                             </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('quick-start')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('quick-start', event)">
                                 <i class="fas fa-play mr-2"></i><span data-i18n="nav.quick_start">Quick Start</span>
                             </a>
                         </div>
@@ -232,10 +232,10 @@
                             <i class="fas fa-chevron-down transition-transform" id="core-features-icon"></i>
                         </button>
                         <div class="collapse-content pl-6" id="core-features-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('graph-execution')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('graph-execution', event)">
                                 <i class="fas fa-play-circle mr-2"></i><span data-i18n="nav.graph_execution">Graph Execution</span>
                             </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('conversation')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('conversation', event)">
                                 <i class="fas fa-comments mr-2"></i><span data-i18n="nav.conversation">Conversation</span>
                             </a>
                         </div>
@@ -248,7 +248,7 @@
                             <i class="fas fa-chevron-down transition-transform" id="ai-features-icon"></i>
                         </button>
                         <div class="collapse-content pl-6" id="ai-features-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('ai-generation')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('ai-generation', event)">
                                 <i class="fas fa-magic mr-2"></i><span data-i18n="nav.ai_generation">AI Generation</span>
                             </a>
                         </div>
@@ -261,10 +261,10 @@
                             <i class="fas fa-chevron-down transition-transform" id="integration-icon"></i>
                         </button>
                         <div class="collapse-content pl-6" id="integration-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('mcp-integration')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('mcp-integration', event)">
                                 <i class="fas fa-server mr-2"></i><span data-i18n="nav.mcp_integration">MCP Integration</span>
                             </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('model-management')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('model-management', event)">
                                 <i class="fas fa-database mr-2"></i><span data-i18n="nav.model_management">Model Management</span>
                             </a>
                         </div>
@@ -277,7 +277,7 @@
                             <i class="fas fa-chevron-down transition-transform" id="advanced-icon"></i>
                         </button>
                         <div class="collapse-content pl-6" id="advanced-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('advanced')">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('advanced', event)">
                                 <i class="fas fa-rocket mr-2"></i><span data-i18n="nav.advanced">Advanced Features</span>
                             </a>
                         </div>
@@ -305,7 +305,7 @@
                                 <h3 class="text-xl font-semibold" data-i18n="welcome.get_started">Get Started</h3>
                             </div>
                             <p class="text-gray-600 mb-4">Learn the basics and run your first graph</p>
-                            <button class="text-blue-600 font-medium hover:text-blue-700" onclick="showModule('installation')">
+                            <button class="text-blue-600 font-medium hover:text-blue-700" onclick="showModuleFromWelcome('installation')">
                                 <span data-i18n="common.start">Start →</span>
                             </button>
                         </div>
@@ -318,7 +318,7 @@
                                 <h3 class="text-xl font-semibold">Background Execution</h3>
                             </div>
                             <p class="text-gray-600 mb-4">New feature: Execute graphs in the background</p>
-                            <button class="text-green-600 font-medium hover:text-green-700" onclick="showModule('graph-execution')">
+                            <button class="text-green-600 font-medium hover:text-green-700" onclick="showModuleFromWelcome('graph-execution')">
                                 Learn More →
                             </button>
                         </div>
@@ -416,7 +416,7 @@
         }
 
         // Show module content
-        async function showModule(moduleName) {
+        async function showModule(moduleName, event) {
             const welcomePage = document.getElementById('welcome-page');
             const moduleContent = document.getElementById('module-content');
 
@@ -433,7 +433,9 @@
                 document.querySelectorAll('.nav-item').forEach(item => {
                     item.classList.remove('active');
                 });
-                event.target.closest('.nav-item').classList.add('active');
+                if (event && event.target) {
+                    event.target.closest('.nav-item').classList.add('active');
+                }
 
                 // Re-highlight code blocks
                 moduleContent.querySelectorAll('pre code').forEach((block) => {
@@ -468,6 +470,11 @@
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
+        }
+
+        // Wrapper function for welcome page buttons
+        function showModuleFromWelcome(moduleName) {
+            showModule(moduleName, null);
         }
 
         // Add copy buttons to code blocks
