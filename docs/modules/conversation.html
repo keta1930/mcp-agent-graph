@@ -110,6 +110,8 @@ print(f"Number of Rounds: {len(conversation.get('rounds', []))}")</code></pre>
                 <i class="fas fa-copy"></i>
             </button>
             <pre><code class="language-python"># List all conversations
+import mag
+
 all_conversations = mag.list_conversations()
 print(f"Total conversations: {len(all_conversations)}")
 

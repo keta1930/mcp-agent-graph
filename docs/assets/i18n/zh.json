@@ -57,6 +57,7 @@
     "get_started": "开始使用",
     "quick_start": "快速入门"
   },
+  "subtitle": "使用文档",
   "common": {
     "parameters": "参数",
     "returns": "返回值",
@@ -71,6 +72,7 @@
     "usage": "用法",
     "note": "注意",
     "warning": "警告",
-    "see_also": "参见"
+    "see_also": "参见",
+    "start": "开始 →"
   }
 }

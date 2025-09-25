@@ -57,6 +57,7 @@
     "get_started": "Get Started",
     "quick_start": "Quick Start"
   },
+  "subtitle": "Documentation",
   "common": {
     "parameters": "Parameters",
     "returns": "Returns",
@@ -71,6 +72,7 @@
     "usage": "Usage",
     "note": "Note",
     "warning": "Warning",
-    "see_also": "See Also"
+    "see_also": "See Also",
+    "start": "Start →"
   }
 }

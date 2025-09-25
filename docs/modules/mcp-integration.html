@@ -60,27 +60,33 @@
                 <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Add a file system MCP server\nresult = mag.add_mcp_server(\n    name=\"filesystem\",\n    command=\"npx\",\n    args=[\"-y\", \"@modelcontextprotocol/server-filesystem\", \"/path/to/files\"],\n    description=\"File system operations\"\n)\n\nif result.get(\"success\"):\n    print(f\"Added MCP server: {result.get(\\'name\\')}\") \n    print(f\"Available tools: {len(result.get(\\'tools\\', []))}\") \nelse:\n    print(f\"Failed to add server: {result.get(\\'error\\')}\") \n\n# Add a database MCP server\ndb_result = mag.add_mcp_server(\n    name=\"database\",\n    command=\"python\",\n    args=[\"-m\", \"mcp_server_sqlite\", \"--db-path\", \"./data.db\"],\n    description=\"SQLite database access\"\n)')">
                     <i class="fas fa-copy"></i>
                 </button>
-                <pre><code class="language-python"># Add a file system MCP server
-result = mag.add_mcp_server(
-    name="filesystem",
-    command="npx",
-    args=["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"],
-    description="File system operations"
-)
+                <pre><code class="language-python"># Add MCP servers
+import mag
+
+servers_config = {
+    "filesystem": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"],
+        "description": "File system operations"
+    },
+    "database": {
+        "command": "python",
+        "args": ["-m", "mcp_server_sqlite", "--db-path", "./data.db"],
+        "description": "SQLite database access"
+    }
+}
+
+result = mag.add_mcp(servers_config)
 
 if result.get("success"):
-    print(f"Added MCP server: {result.get('name')}")
-    print(f"Available tools: {len(result.get('tools', []))}")
-else:
-    print(f"Failed to add server: {result.get('error')}")
+    print(f"Added MCP servers: {list(servers_config.keys())}")
 
-# Add a database MCP server
-db_result = mag.add_mcp_server(
-    name="database",
-    command="python",
-    args=["-m", "mcp_server_sqlite", "--db-path", "./data.db"],
-    description="SQLite database access"
-)</code></pre>
+    # Check server status
+    status = mag.mcp_status()
+    for server_name, server_info in status.items():
+        print(f"{server_name}: {server_info.get('status', 'unknown')}")
+else:
+    print(f"Failed to add servers: {result.get('error')}")</code></pre>
             </div>
         </div>
 
@@ -91,19 +97,24 @@ db_result = mag.add_mcp_server(
                 <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# List all MCP servers\nservers = mag.list_mcp_servers()\n\nprint(f\"Available MCP servers: {len(servers)}\")\nfor server in servers:\n    name = server.get(\"name\")\n    status = \"🟢 Running\" if server.get(\"status\") == \"running\" else \"🔴 Stopped\"\n    tools_count = len(server.get(\"tools\", []))\n    \n    print(f\"\\n{name} - {status}\")\n    print(f\"  Description: {server.get(\\'description\\', \\'No description\\')}\") \n    print(f\"  Tools: {tools_count}\")\n    print(f\"  Command: {server.get(\\'command\\')} {\\' \\'.join(server.get(\\'args\\', []))}\") ')">
                     <i class="fas fa-copy"></i>
                 </button>
-                <pre><code class="language-python"># List all MCP servers
-servers = mag.list_mcp_servers()
+                <pre><code class="language-python"># Check MCP server status
+status = mag.mcp_status()
 
-print(f"Available MCP servers: {len(servers)}")
-for server in servers:
-    name = server.get("name")
-    status = "🟢 Running" if server.get("status") == "running" else "🔴 Stopped"
-    tools_count = len(server.get("tools", []))
+print(f"Available MCP servers: {len(status)}")
+for server_name, server_info in status.items():
+    status_icon = "🟢 Running" if server_info.get("status") == "running" else "🔴 Stopped"
 
-    print(f"\n{name} - {status}")
-    print(f"  Description: {server.get('description', 'No description')}")
-    print(f"  Tools: {tools_count}")
-    print(f"  Command: {server.get('command')} {' '.join(server.get('args', []))}")</code></pre>
+    print(f"\n{server_name} - {status_icon}")
+    print(f"  Status: {server_info.get('status', 'unknown')}")
+    if server_info.get("description"):
+        print(f"  Description: {server_info.get('description')}")
+
+    # Get server tools
+    tools = mag.mcptools()
+    server_tools = tools.get(server_name, [])
+    print(f"  Tools: {len(server_tools)}")
+    for tool in server_tools:
+        print(f"    - {tool.get('name')}: {tool.get('description', '')}")</code></pre>
             </div>
         </div>
     </div>

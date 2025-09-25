@@ -12,146 +12,500 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
     <link rel="shortcut icon" href="./favicon.ico">
 
-    <!-- Styles -->
     <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <!-- Highlight.js -->
+    <!-- Highlight.js syntax highlighting -->
     <link id="highlight-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
 
-    <link rel="stylesheet" href="./assets/css/style.css">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --accent-primary: #3182ce;
+            --accent-secondary: #63b3ed;
+            --code-bg: #f7fafc;
+            --sidebar-bg: #ffffff;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-tertiary: #4a5568;
+            --text-primary: #f7fafc;
+            --text-secondary: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border-color: #4a5568;
+            --accent-primary: #63b3ed;
+            --accent-secondary: #90cdf4;
+            --code-bg: #2d3748;
+            --sidebar-bg: #2d3748;
+            --shadow-light: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            font-family: Tahoma, Arial, Roboto, "Droid Sans", "Helvetica Neue", "Droid Sans Fallback", "Heiti SC", "Hiragino Sans GB", Simsun, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar {
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            box-shadow: 4px 0 6px var(--shadow-light);
+        }
+
+        .content-area {
+            background-color: var(--bg-primary);
+        }
+
+        .nav-item {
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+
+        .nav-item:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background-color: var(--accent-primary);
+            color: white;
+            box-shadow: 0 2px 4px var(--shadow-light);
+        }
+
+        .code-block {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .code-block:hover {
+            box-shadow: 0 4px 12px var(--shadow-light);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn {
+            background-color: var(--accent-primary);
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--accent-secondary);
+            transform: scale(1.05);
+        }
+
+        .section-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            box-shadow: 0 8px 25px var(--shadow-light);
+            transform: translateY(-2px);
+        }
+
+        .theme-toggle {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .language-toggle {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .language-toggle:hover {
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapse-content.expanded {
+            max-height: 2000px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .method-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .method-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px var(--shadow-light);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
-<body class="font-sans bg-gray-50 text-gray-900" data-theme="light">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <!-- Logo & Title -->
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-project-diagram text-white text-sm"></i>
-                        </div>
-                        <h1 class="text-xl font-bold text-gray-900" data-i18n="title">MAG SDK Documentation</h1>
-                    </div>
-                </div>
-
-                <!-- Controls -->
-                <div class="flex items-center space-x-4">
-                    <!-- Language Switch -->
-                    <div class="relative">
-                        <button id="langToggle" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">
-                            <i class="fas fa-globe"></i>
-                            <span id="currentLang">EN</span>
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        <div id="langMenu" class="hidden absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border z-10">
-                            <div class="py-1">
-                                <button class="lang-option w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-lang="en">
-                                    <i class="fas fa-check invisible mr-2"></i>English
-                                </button>
-                                <button class="lang-option w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-lang="zh">
-                                    <i class="fas fa-check invisible mr-2"></i>中文
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Theme Toggle -->
-                    <button id="themeToggle" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                        <i id="themeIcon" class="fas fa-moon"></i>
-                    </button>
-
-                    <!-- GitHub Link -->
-                    <a href="https://github.com/your-repo/mag" class="p-2 text-gray-500 hover:text-gray-700 transition-colors" target="_blank">
-                        <i class="fab fa-github text-lg"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="flex max-w-7xl mx-auto">
-        <!-- Sidebar Navigation -->
-        <nav class="w-64 bg-white shadow-sm h-screen sticky top-16 overflow-y-auto flex-shrink-0">
+<body>
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="sidebar w-80 flex-shrink-0 overflow-y-auto">
             <div class="p-6">
-                <div class="space-y-6">
-                    <!-- Getting Started -->
+                <!-- Title -->
+                <div class="flex items-center justify-between mb-8">
                     <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3" data-i18n="nav.getting_started">Getting Started</h3>
-                        <ul class="space-y-2">
-                            <li><a href="#installation" class="nav-link" data-i18n="nav.installation">Installation</a></li>
-                            <li><a href="#quick-start" class="nav-link" data-i18n="nav.quick_start">Quick Start</a></li>
-                        </ul>
+                        <h1 class="text-2xl font-bold text-blue-600">MAG SDK</h1>
+                        <p class="text-sm" style="color: var(--text-muted)" data-i18n="subtitle">Documentation</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <!-- Language Toggle -->
+                        <button id="languageToggle" class="language-toggle p-2 w-12 h-10 flex items-center justify-center">
+                            <span id="langIndicator">EN</span>
+                        </button>
+                        <!-- Theme Toggle -->
+                        <button id="themeToggle" class="theme-toggle p-2 w-10 h-10 flex items-center justify-center">
+                            <i class="fas fa-moon text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Menu -->
+                <nav class="space-y-2">
+                    <!-- Getting Started -->
+                    <div class="nav-section">
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('getting-started')">
+                            <span><i class="fas fa-rocket mr-2"></i><span data-i18n="nav.getting_started">Getting Started</span></span>
+                            <i class="fas fa-chevron-down transition-transform" id="getting-started-icon"></i>
+                        </button>
+                        <div class="collapse-content pl-6" id="getting-started-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('installation')">
+                                <i class="fas fa-download mr-2"></i><span data-i18n="nav.installation">Installation</span>
+                            </a>
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('quick-start')">
+                                <i class="fas fa-play mr-2"></i><span data-i18n="nav.quick_start">Quick Start</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Core Features -->
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3" data-i18n="nav.core_features">Core Features</h3>
-                        <ul class="space-y-2">
-                            <li><a href="#graph-management" class="nav-link" data-i18n="nav.graph_management">Graph Management</a></li>
-                            <li><a href="#graph-execution" class="nav-link" data-i18n="nav.graph_execution">Graph Execution</a></li>
-                            <li><a href="#conversation" class="nav-link" data-i18n="nav.conversation">Conversation</a></li>
-                            <li><a href="#ai-generation" class="nav-link" data-i18n="nav.ai_generation">AI Generation</a></li>
-                        </ul>
+                    <div class="nav-section">
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('core-features')">
+                            <span><i class="fas fa-cogs mr-2"></i><span data-i18n="nav.core_features">Core Features</span></span>
+                            <i class="fas fa-chevron-down transition-transform" id="core-features-icon"></i>
+                        </button>
+                        <div class="collapse-content pl-6" id="core-features-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('graph-execution')">
+                                <i class="fas fa-play-circle mr-2"></i><span data-i18n="nav.graph_execution">Graph Execution</span>
+                            </a>
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('conversation')">
+                                <i class="fas fa-comments mr-2"></i><span data-i18n="nav.conversation">Conversation</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- AI Features -->
+                    <div class="nav-section">
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('ai-features')">
+                            <span><i class="fas fa-brain mr-2"></i><span data-i18n="nav.ai_generation">AI Generation</span></span>
+                            <i class="fas fa-chevron-down transition-transform" id="ai-features-icon"></i>
+                        </button>
+                        <div class="collapse-content pl-6" id="ai-features-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('ai-generation')">
+                                <i class="fas fa-magic mr-2"></i><span data-i18n="nav.ai_generation">AI Generation</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Integration -->
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3" data-i18n="nav.integration">Integration</h3>
-                        <ul class="space-y-2">
-                            <li><a href="#mcp-integration" class="nav-link" data-i18n="nav.mcp_integration">MCP Integration</a></li>
-                            <li><a href="#model-management" class="nav-link" data-i18n="nav.model_management">Model Management</a></li>
-                        </ul>
+                    <div class="nav-section">
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('integration')">
+                            <span><i class="fas fa-plug mr-2"></i><span data-i18n="nav.integration">Integration</span></span>
+                            <i class="fas fa-chevron-down transition-transform" id="integration-icon"></i>
+                        </button>
+                        <div class="collapse-content pl-6" id="integration-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('mcp-integration')">
+                                <i class="fas fa-server mr-2"></i><span data-i18n="nav.mcp_integration">MCP Integration</span>
+                            </a>
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('model-management')">
+                                <i class="fas fa-database mr-2"></i><span data-i18n="nav.model_management">Model Management</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Advanced -->
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3" data-i18n="nav.advanced">Advanced</h3>
-                        <ul class="space-y-2">
-                            <li><a href="#background-execution" class="nav-link" data-i18n="nav.background_execution">Background Execution</a></li>
-                            <li><a href="#streaming" class="nav-link" data-i18n="nav.streaming">Streaming</a></li>
-                            <li><a href="#concurrent-execution" class="nav-link" data-i18n="nav.concurrent_execution">Concurrent Execution</a></li>
-                        </ul>
+                    <div class="nav-section">
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('advanced')">
+                            <span><i class="fas fa-cog mr-2"></i><span data-i18n="nav.advanced">Advanced</span></span>
+                            <i class="fas fa-chevron-down transition-transform" id="advanced-icon"></i>
+                        </button>
+                        <div class="collapse-content pl-6" id="advanced-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('advanced')">
+                                <i class="fas fa-rocket mr-2"></i><span data-i18n="nav.advanced">Advanced Features</span>
+                            </a>
+                        </div>
                     </div>
-                </div>
+                </nav>
             </div>
-        </nav>
+        </div>
 
         <!-- Main Content -->
-        <main class="flex-1 bg-white">
+        <div class="content-area flex-1 overflow-y-auto">
             <div class="p-8">
-                <div id="content-container">
-                    <!-- Content will be loaded here -->
-                    <div class="text-center py-20">
-                        <div class="w-16 h-16 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-project-diagram text-blue-600 text-2xl"></i>
-                        </div>
-                        <h2 class="text-3xl font-bold text-gray-900 mb-4" data-i18n="welcome.title">Welcome to MAG SDK</h2>
-                        <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto" data-i18n="welcome.description">
-                            MAG is a powerful framework for building and executing AI agent graphs with MCP integration.
-                            Get started by exploring the documentation sections on the left.
-                        </p>
-                        <div class="flex justify-center space-x-4">
-                            <button class="nav-link-button bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors" data-target="#installation">
-                                <i class="fas fa-download mr-2"></i>
-                                <span data-i18n="welcome.get_started">Get Started</span>
+                <!-- Welcome Page (default) -->
+                <div id="welcome-page" class="max-w-4xl">
+                    <div class="mb-8">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-4" data-i18n="welcome.title">Welcome to MAG SDK</h1>
+                        <p class="text-lg text-gray-600" data-i18n="welcome.description">MAG is a powerful framework for building and executing AI agent graphs with MCP integration. Get started by exploring the documentation sections on the left.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="section-card p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
+                                    <i class="fas fa-rocket text-white text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold" data-i18n="welcome.get_started">Get Started</h3>
+                            </div>
+                            <p class="text-gray-600 mb-4">Learn the basics and run your first graph</p>
+                            <button class="text-blue-600 font-medium hover:text-blue-700" onclick="showModule('installation')">
+                                <span data-i18n="common.start">Start →</span>
                             </button>
-                            <button class="nav-link-button bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors" data-target="#quick-start">
-                                <i class="fas fa-rocket mr-2"></i>
-                                <span data-i18n="welcome.quick_start">Quick Start</span>
+                        </div>
+
+                        <div class="section-card p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mr-4">
+                                    <i class="fas fa-play-circle text-white text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-semibold">Background Execution</h3>
+                            </div>
+                            <p class="text-gray-600 mb-4">New feature: Execute graphs in the background</p>
+                            <button class="text-green-600 font-medium hover:text-green-700" onclick="showModule('graph-execution')">
+                                Learn More →
                             </button>
                         </div>
                     </div>
+
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-blue-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    <strong>New in this version:</strong> Background execution support allows you to run long-running graphs without blocking your application.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Content Container -->
+                <div id="module-content" class="hidden">
+                    <!-- Dynamic content will be loaded here -->
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <!-- Scripts -->
-    <script src="./assets/js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+    <script>
+        // State management
+        let currentLang = 'en';
+        let currentTheme = 'light';
+        let translations = {};
+
+        // Load translations
+        async function loadTranslations() {
+            try {
+                const enResponse = await fetch('./assets/i18n/en.json');
+                const zhResponse = await fetch('./assets/i18n/zh.json');
+                translations.en = await enResponse.json();
+                translations.zh = await zhResponse.json();
+                updateLanguage();
+            } catch (error) {
+                console.error('Failed to load translations:', error);
+            }
+        }
+
+        // Update language
+        function updateLanguage() {
+            const t = translations[currentLang] || translations.en || {};
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                const value = getNestedValue(t, key);
+                if (value) {
+                    element.textContent = value;
+                }
+            });
+        }
+
+        // Get nested object value by key path
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((current, key) => current && current[key], obj);
+        }
+
+        // Toggle sections
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId + '-content');
+            const icon = document.getElementById(sectionId + '-icon');
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.add('expanded');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // Show module content
+        async function showModule(moduleName) {
+            const welcomePage = document.getElementById('welcome-page');
+            const moduleContent = document.getElementById('module-content');
+
+            try {
+                const response = await fetch(`./modules/${moduleName}.html`);
+                const content = await response.text();
+
+                moduleContent.innerHTML = content;
+                welcomePage.classList.add('hidden');
+                moduleContent.classList.remove('hidden');
+
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                event.target.closest('.nav-item').classList.add('active');
+
+                // Re-highlight code blocks
+                moduleContent.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+
+                // Add copy functionality to code blocks
+                addCopyButtons();
+
+            } catch (error) {
+                console.error('Failed to load module:', error);
+                moduleContent.innerHTML = '<p class="text-red-600">Failed to load content</p>';
+            }
+        }
+
+        // Show welcome page
+        function showWelcome() {
+            const welcomePage = document.getElementById('welcome-page');
+            const moduleContent = document.getElementById('module-content');
+
+            welcomePage.classList.remove('hidden');
+            moduleContent.classList.add('hidden');
+
+            // Remove active nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        // Add copy buttons to code blocks
+        function addCopyButtons() {
+            document.querySelectorAll('pre code').forEach((block) => {
+                const pre = block.parentElement;
+                if (pre.querySelector('.copy-btn')) return; // Already has copy button
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn absolute top-2 right-2 px-3 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity';
+                copyBtn.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy';
+                copyBtn.onclick = () => copyToClipboard(block.textContent, copyBtn);
+
+                pre.classList.add('relative', 'group');
+                pre.appendChild(copyBtn);
+            });
+        }
+
+        // Copy to clipboard
+        async function copyToClipboard(text, button) {
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        }
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', currentTheme);
+
+            const icon = document.querySelector('#themeToggle i');
+            icon.className = currentTheme === 'light' ? 'fas fa-moon text-sm' : 'fas fa-sun text-sm';
+
+            // Update highlight.js theme
+            const highlightTheme = document.getElementById('highlight-theme');
+            highlightTheme.href = currentTheme === 'light'
+                ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'
+                : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+        });
+
+        // Language toggle
+        document.getElementById('languageToggle').addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            document.getElementById('langIndicator').textContent = currentLang.toUpperCase();
+            updateLanguage();
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTranslations();
+
+            // Expand getting started section by default
+            toggleSection('getting-started');
+        });
+    </script>
 </body>
 </html>

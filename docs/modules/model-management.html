@@ -58,7 +58,9 @@
                 <i class="fas fa-copy"></i>
             </button>
             <pre><code class="language-python"># List all available models
-models = mag.list_models()
+import mag
+
+models = mag.list_model()
 
 print(f"Available models: {len(models)}")
 for model in models:

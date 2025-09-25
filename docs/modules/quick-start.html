@@ -36,6 +36,8 @@ print(f"MAG SDK version: {mag.__version__}")</code></pre>
                 <i class="fas fa-copy"></i>
             </button>
             <pre><code class="language-python"># List all available graphs
+import mag
+
 graphs = mag.list_graph()
 print("Available graphs:")
 for graph in graphs:
@@ -75,6 +77,8 @@ for graph in graphs:
                     <i class="fas fa-copy"></i>
                 </button>
                 <pre><code class="language-python"># Execute graph and wait for completion
+import mag
+
 result = mag.run_graph(
     name="your_graph_name",
     input_text="Your input here",
