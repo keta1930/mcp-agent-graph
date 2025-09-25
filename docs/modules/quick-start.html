@@ -1,0 +1,290 @@
+<div class="max-w-4xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Quick Start</h1>
+        <p class="text-lg text-gray-600">Get up and running with MAG SDK in minutes. This guide will walk you through creating and executing your first graph.</p>
+    </div>
+
+    <!-- Step 1: Import and Initialize -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <span class="bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full">1</span>
+            Import and Initialize
+        </h2>
+        <p class="text-gray-600 mb-4">First, import MAG SDK and ensure the service is running:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-4">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('import mag\n\n# The service will start automatically when first used\nprint(f\"MAG SDK version: {mag.__version__}\")')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python">import mag
+
+# The service will start automatically when first used
+print(f"MAG SDK version: {mag.__version__}")</code></pre>
+        </div>
+    </div>
+
+    <!-- Step 2: List Available Graphs -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <span class="bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full">2</span>
+            Explore Available Graphs
+        </h2>
+        <p class="text-gray-600 mb-4">Check what graphs are available in your system:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-4">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# List all available graphs\ngraphs = mag.list_graph()\nprint(\"Available graphs:\")\nfor graph in graphs:\n    print(f\"  - {graph}\")')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python"># List all available graphs
+graphs = mag.list_graph()
+print("Available graphs:")
+for graph in graphs:
+    print(f"  - {graph}")</code></pre>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-lightbulb text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        If you don't have any graphs yet, you can create one using the AI generation feature or import existing graphs.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Run Your First Graph -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <span class="bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full">3</span>
+            Execute a Graph
+        </h2>
+        <p class="text-gray-600 mb-4">Now let's execute a graph. MAG SDK offers multiple execution modes:</p>
+
+        <!-- Basic Execution -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                <i class="fas fa-play text-green-600 mr-2"></i>
+                Basic Execution (Wait for completion)
+            </h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Execute graph and wait for completion\nresult = mag.run_graph(\n    name=\"your_graph_name\",\n    input_text=\"Your input here\",\n    stream=False,      # Non-streaming mode\n    background=False   # Wait for completion\n)\n\nprint(f\"Conversation ID: {result.get(\"_id\")}\")\nprint(f\"Final Result: {result.get(\"final_result\")}\")')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Execute graph and wait for completion
+result = mag.run_graph(
+    name="your_graph_name",
+    input_text="Your input here",
+    stream=False,      # Non-streaming mode
+    background=False   # Wait for completion
+)
+
+print(f"Conversation ID: {result.get('_id')}")
+print(f"Final Result: {result.get('final_result')}")</code></pre>
+            </div>
+        </div>
+
+        <!-- Background Execution -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                <i class="fas fa-clock text-blue-600 mr-2"></i>
+                Background Execution (Non-blocking)
+            </h3>
+            <p class="text-gray-600 mb-3">For long-running graphs, use background execution:</p>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Start graph execution in background\nconversation_id = mag.run_graph(\n    name=\"your_graph_name\",\n    input_text=\"Your input here\",\n    background=True    # Returns immediately with conversation_id\n)\n\nprint(f\"Graph started in background: {conversation_id}\")\nprint(\"You can continue with other tasks while it runs...\")\n\n# Later, check the results\nresult = mag.get_conversation_detail(conversation_id)\nif result.get(\"completed\"):\n    print(f\"Graph completed! Result: {result.get(\"final_result\")}\")\nelse:\n    print(\"Graph is still running...\")')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Start graph execution in background
+conversation_id = mag.run_graph(
+    name="your_graph_name",
+    input_text="Your input here",
+    background=True    # Returns immediately with conversation_id
+)
+
+print(f"Graph started in background: {conversation_id}")
+print("You can continue with other tasks while it runs...")
+
+# Later, check the results
+result = mag.get_conversation_detail(conversation_id)
+if result.get("completed"):
+    print(f"Graph completed! Result: {result.get('final_result')}")
+else:
+    print("Graph is still running...")</code></pre>
+            </div>
+        </div>
+
+        <!-- Streaming Execution -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                <i class="fas fa-stream text-purple-600 mr-2"></i>
+                Streaming Execution (Real-time updates)
+            </h3>
+            <p class="text-gray-600 mb-3">Get real-time updates during graph execution:</p>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Execute graph with streaming updates\nresponse = mag.run_graph(\n    name=\"your_graph_name\",\n    input_text=\"Your input here\",\n    stream=True,       # Enable streaming\n    background=False\n)\n\n# Process streaming updates\nfor chunk in response:\n    if chunk.get(\"type\") == \"conversation_created\":\n        print(f\"Conversation started: {chunk.get(\"conversation_id\")}\")\n    \n    elif chunk.get(\"type\") == \"node_start\":\n        print(f\"Starting node: {chunk.get(\"node_name\")}\")\n    \n    elif chunk.get(\"choices\"):\n        # AI response content\n        delta = chunk[\"choices\"][0].get(\"delta\", {})\n        if delta.get(\"content\"):\n            print(delta[\"content\"], end=\"\", flush=True)\n    \n    elif chunk.get(\"type\") == \"graph_complete\":\n        print(\"\\nGraph execution completed!\")')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Execute graph with streaming updates
+response = mag.run_graph(
+    name="your_graph_name",
+    input_text="Your input here",
+    stream=True,       # Enable streaming
+    background=False
+)
+
+# Process streaming updates
+for chunk in response:
+    if chunk.get("type") == "conversation_created":
+        print(f"Conversation started: {chunk.get('conversation_id')}")
+
+    elif chunk.get("type") == "node_start":
+        print(f"Starting node: {chunk.get('node_name')}")
+
+    elif chunk.get("choices"):
+        # AI response content
+        delta = chunk["choices"][0].get("delta", {})
+        if delta.get("content"):
+            print(delta["content"], end="", flush=True)
+
+    elif chunk.get("type") == "graph_complete":
+        print("\nGraph execution completed!")</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4: Working with Results -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <span class="bg-blue-100 text-blue-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full">4</span>
+            Working with Results
+        </h2>
+        <p class="text-gray-600 mb-4">Understanding the structure of graph execution results:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-4">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Get conversation details\nconversation = mag.get_conversation_detail(\"conversation_id_here\")\n\n# Key fields in the result:\nprint(f\"Conversation ID: {conversation.get(\"_id\")}\")\nprint(f\"Graph Name: {conversation.get(\"graph_name\")}\")\nprint(f\"Status: {\"Completed\" if conversation.get(\"completed\") else \"Running\"}\")\nprint(f\"Final Result: {conversation.get(\"final_result\")}\")\nprint(f\"Number of rounds: {len(conversation.get(\"rounds\", []))}\")\nprint(f\"Start time: {conversation.get(\"start_time\")}\")\n\n# Access individual rounds\nfor i, round_data in enumerate(conversation.get(\"rounds\", [])):\n    print(f\"Round {i+1}: {round_data.get(\"node_name\")}\")\n    # Access messages in this round\n    for message in round_data.get(\"messages\", []):\n        print(f\"  {message.get(\"role\")}: {message.get(\"content\")[:100]}...\")')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python"># Get conversation details
+conversation = mag.get_conversation_detail("conversation_id_here")
+
+# Key fields in the result:
+print(f"Conversation ID: {conversation.get('_id')}")
+print(f"Graph Name: {conversation.get('graph_name')}")
+print(f"Status: {'Completed' if conversation.get('completed') else 'Running'}")
+print(f"Final Result: {conversation.get('final_result')}")
+print(f"Number of rounds: {len(conversation.get('rounds', []))}")
+print(f"Start time: {conversation.get('start_time')}")
+
+# Access individual rounds
+for i, round_data in enumerate(conversation.get("rounds", [])):
+    print(f"Round {i+1}: {round_data.get('node_name')}")
+    # Access messages in this round
+    for message in round_data.get("messages", []):
+        print(f"  {message.get('role')}: {message.get('content')[:100]}...")</code></pre>
+        </div>
+    </div>
+
+    <!-- Common Patterns -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Common Patterns</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Pattern 1 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-sync text-blue-500 mr-2"></i>
+                    Check and Wait for Completion
+                </h3>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-python">import time
+
+# Start background execution
+conversation_id = mag.run_graph(
+    name="my_graph",
+    input_text="input",
+    background=True
+)
+
+# Poll for completion
+while True:
+    result = mag.get_conversation_detail(conversation_id)
+    if result.get("completed"):
+        print("Completed!")
+        break
+    time.sleep(5)  # Wait 5 seconds</code></pre>
+                </div>
+            </div>
+
+            <!-- Pattern 2 -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-list text-green-500 mr-2"></i>
+                    Batch Processing
+                </h3>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-python"># Process multiple inputs
+inputs = ["input1", "input2", "input3"]
+conversation_ids = []
+
+for input_text in inputs:
+    conv_id = mag.run_graph(
+        name="processor",
+        input_text=input_text,
+        background=True
+    )
+    conversation_ids.append(conv_id)
+
+print(f"Started {len(conversation_ids)} jobs")</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- What's Next -->
+    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">
+            <i class="fas fa-graduation-cap text-green-600 mr-2"></i>
+            What's Next?
+        </h3>
+        <p class="text-gray-700 mb-4">Great! You've learned the basics of MAG SDK. Now explore more advanced features:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg p-4 border border-green-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-project-diagram text-blue-500 mr-2"></i>
+                    Graph Management
+                </h4>
+                <p class="text-sm text-gray-600 mb-3">Learn to create, modify, and manage graphs</p>
+                <a href="#graph-management" class="nav-link-button text-sm text-green-600 hover:text-green-700">
+                    Explore →
+                </a>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-green-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-robot text-purple-500 mr-2"></i>
+                    AI Generation
+                </h4>
+                <p class="text-sm text-gray-600 mb-3">Generate graphs automatically using AI</p>
+                <a href="#ai-generation" class="nav-link-button text-sm text-green-600 hover:text-green-700">
+                    Learn More →
+                </a>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-green-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-plug text-orange-500 mr-2"></i>
+                    MCP Integration
+                </h4>
+                <p class="text-sm text-gray-600 mb-3">Connect external tools and services</p>
+                <a href="#mcp-integration" class="nav-link-button text-sm text-green-600 hover:text-green-700">
+                    Get Started →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

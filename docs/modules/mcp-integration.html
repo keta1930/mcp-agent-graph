@@ -1,0 +1,517 @@
+<div class="max-w-4xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">MCP Integration</h1>
+        <p class="text-lg text-gray-600">Model Context Protocol (MCP) integration allows you to extend MAG SDK capabilities with external tools and services. Connect to databases, APIs, file systems, and custom services seamlessly.</p>
+    </div>
+
+    <!-- What is MCP? ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Understanding MCP</h2>
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        <strong>Model Context Protocol (MCP)</strong> is a standardized way to connect AI models with external tools and data sources, enabling powerful integrations and extended functionality.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-plug text-green-600 mr-2"></i>
+                    External Tools
+                </h3>
+                <p class="text-sm text-gray-600">Connect to file systems, databases, web APIs, and custom services</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-sync text-blue-600 mr-2"></i>
+                    Real-time Data
+                </h3>
+                <p class="text-sm text-gray-600">Access live data and perform real-time operations during graph execution</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-expand text-purple-600 mr-2"></i>
+                    Extensibility
+                </h3>
+                <p class="text-sm text-gray-600">Build custom MCP servers to extend functionality for specific use cases</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Managing MCP Servers ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-server text-blue-600 mr-2"></i>
+            Managing MCP Servers
+        </h2>
+        <p class="text-gray-600 mb-4">Add, configure, and manage MCP servers in your MAG SDK environment:</p>
+
+        <!-- Adding MCP Servers ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Adding MCP Servers</h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Add a file system MCP server\nresult = mag.add_mcp_server(\n    name=\"filesystem\",\n    command=\"npx\",\n    args=[\"-y\", \"@modelcontextprotocol/server-filesystem\", \"/path/to/files\"],\n    description=\"File system operations\"\n)\n\nif result.get(\"success\"):\n    print(f\"Added MCP server: {result.get(\\'name\\')}\") \n    print(f\"Available tools: {len(result.get(\\'tools\\', []))}\") \nelse:\n    print(f\"Failed to add server: {result.get(\\'error\\')}\") \n\n# Add a database MCP server\ndb_result = mag.add_mcp_server(\n    name=\"database\",\n    command=\"python\",\n    args=[\"-m\", \"mcp_server_sqlite\", \"--db-path\", \"./data.db\"],\n    description=\"SQLite database access\"\n)')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Add a file system MCP server
+result = mag.add_mcp_server(
+    name="filesystem",
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-filesystem", "/path/to/files"],
+    description="File system operations"
+)
+
+if result.get("success"):
+    print(f"Added MCP server: {result.get('name')}")
+    print(f"Available tools: {len(result.get('tools', []))}")
+else:
+    print(f"Failed to add server: {result.get('error')}")
+
+# Add a database MCP server
+db_result = mag.add_mcp_server(
+    name="database",
+    command="python",
+    args=["-m", "mcp_server_sqlite", "--db-path", "./data.db"],
+    description="SQLite database access"
+)</code></pre>
+            </div>
+        </div>
+
+        <!-- Listing MCP Servers ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Listing Available Servers</h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# List all MCP servers\nservers = mag.list_mcp_servers()\n\nprint(f\"Available MCP servers: {len(servers)}\")\nfor server in servers:\n    name = server.get(\"name\")\n    status = \"🟢 Running\" if server.get(\"status\") == \"running\" else \"🔴 Stopped\"\n    tools_count = len(server.get(\"tools\", []))\n    \n    print(f\"\\n{name} - {status}\")\n    print(f\"  Description: {server.get(\\'description\\', \\'No description\\')}\") \n    print(f\"  Tools: {tools_count}\")\n    print(f\"  Command: {server.get(\\'command\\')} {\\' \\'.join(server.get(\\'args\\', []))}\") ')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># List all MCP servers
+servers = mag.list_mcp_servers()
+
+print(f"Available MCP servers: {len(servers)}")
+for server in servers:
+    name = server.get("name")
+    status = "🟢 Running" if server.get("status") == "running" else "🔴 Stopped"
+    tools_count = len(server.get("tools", []))
+
+    print(f"\n{name} - {status}")
+    print(f"  Description: {server.get('description', 'No description')}")
+    print(f"  Tools: {tools_count}")
+    print(f"  Command: {server.get('command')} {' '.join(server.get('args', []))}")</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Working with MCP Tools ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-tools text-green-600 mr-2"></i>
+            Working with MCP Tools
+        </h2>
+        <p class="text-gray-600 mb-4">Discover and use tools provided by MCP servers:</p>
+
+        <!-- Discovering Tools ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Discovering Available Tools</h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Get all available MCP tools\ntools = mag.list_mcp_tools()\n\nprint(f\"Available MCP tools: {len(tools)}\")\nfor tool in tools:\n    server_name = tool.get(\"server\")\n    tool_name = tool.get(\"name\")\n    description = tool.get(\"description\", \"No description\")\n    \n    print(f\"\\n📦 {server_name}::{tool_name}\")\n    print(f\"   {description}\")\n    \n    # Show parameters if available\n    params = tool.get(\"parameters\", {})\n    if params:\n        print(\"   Parameters:\")\n        for param_name, param_info in params.items():\n            required = \"(required)\" if param_info.get(\"required\") else \"(optional)\"\n            param_type = param_info.get(\"type\", \"unknown\")\n            print(f\"     - {param_name}: {param_type} {required}\")')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Get all available MCP tools
+tools = mag.list_mcp_tools()
+
+print(f"Available MCP tools: {len(tools)}")
+for tool in tools:
+    server_name = tool.get("server")
+    tool_name = tool.get("name")
+    description = tool.get("description", "No description")
+
+    print(f"\n📦 {server_name}::{tool_name}")
+    print(f"   {description}")
+
+    # Show parameters if available
+    params = tool.get("parameters", {})
+    if params:
+        print("   Parameters:")
+        for param_name, param_info in params.items():
+            required = "(required)" if param_info.get("required") else "(optional)"
+            param_type = param_info.get("type", "unknown")
+            print(f"     - {param_name}: {param_type} {required}")</code></pre>
+            </div>
+        </div>
+
+        <!-- Using Tools in Graphs ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Using MCP Tools in Graphs</h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Register MCP tools for use in graphs\nresult = mag.register_mcp_tools(\n    tools=[\n        {\n            \"server\": \"filesystem\",\n            \"name\": \"read_file\",\n            \"alias\": \"read_file\"  # Optional: custom alias\n        },\n        {\n            \"server\": \"filesystem\", \n            \"name\": \"write_file\",\n            \"alias\": \"save_file\"\n        },\n        {\n            \"server\": \"database\",\n            \"name\": \"query\",\n            \"alias\": \"db_query\"\n        }\n    ]\n)\n\nif result.get(\"success\"):\n    print(f\"Registered {len(result.get(\\'registered\\', []))} tools\") \n    print(\"Tools can now be used in graph node prompts\")\n    \n    # Example: These tools are now available in your prompts\n    print(\"\\nExample usage in node prompts:\")\n    print(\"- Use read_file(path=\\'data.txt\\') to read files\") \n    print(\"- Use save_file(path=\\'output.txt\\', content=\\'...\\')\") \n    print(\"- Use db_query(sql=\\'SELECT * FROM users\\')\")')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Register MCP tools for use in graphs
+result = mag.register_mcp_tools(
+    tools=[
+        {
+            "server": "filesystem",
+            "name": "read_file",
+            "alias": "read_file"  # Optional: custom alias
+        },
+        {
+            "server": "filesystem",
+            "name": "write_file",
+            "alias": "save_file"
+        },
+        {
+            "server": "database",
+            "name": "query",
+            "alias": "db_query"
+        }
+    ]
+)
+
+if result.get("success"):
+    print(f"Registered {len(result.get('registered', []))} tools")
+    print("Tools can now be used in graph node prompts")
+
+    # Example: These tools are now available in your prompts
+    print("\nExample usage in node prompts:")
+    print("- Use read_file(path='data.txt') to read files")
+    print("- Use save_file(path='output.txt', content='...')")
+    print("- Use db_query(sql='SELECT * FROM users')")</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- MCP Integration Examples ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+            Integration Examples
+        </h2>
+
+        <!-- File Processing Example ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                <i class="fas fa-file text-blue-500 mr-2"></i>
+                File Processing with MCP
+            </h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Create a file processing graph with MCP integration\nresult = mag.create_graph(\n    name=\"file_processor\",\n    nodes=[\n        {\n            \"name\": \"reader\",\n            \"prompt\": \"Read the input file using read_file(path={input}) and prepare the content for processing.\",\n            \"next_node\": \"processor\"\n        },\n        {\n            \"name\": \"processor\", \n            \"prompt\": \"Process the file content: extract key information, clean data, and format results.\",\n            \"next_node\": \"writer\"\n        },\n        {\n            \"name\": \"writer\",\n            \"prompt\": \"Save the processed results using save_file(path=\\'output.txt\\', content=processed_data).\"\n        }\n    ]\n)\n\n# Execute the file processing graph\nif result.get(\"success\"):\n    process_result = mag.run_graph(\n        name=\"file_processor\",\n        input_text=\"/path/to/input/data.csv\"\n    )\n    print(f\"File processing result: {process_result.get(\\'final_result\\')}\") ')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Create a file processing graph with MCP integration
+result = mag.create_graph(
+    name="file_processor",
+    nodes=[
+        {
+            "name": "reader",
+            "prompt": "Read the input file using read_file(path={input}) and prepare the content for processing.",
+            "next_node": "processor"
+        },
+        {
+            "name": "processor",
+            "prompt": "Process the file content: extract key information, clean data, and format results.",
+            "next_node": "writer"
+        },
+        {
+            "name": "writer",
+            "prompt": "Save the processed results using save_file(path='output.txt', content=processed_data)."
+        }
+    ]
+)
+
+# Execute the file processing graph
+if result.get("success"):
+    process_result = mag.run_graph(
+        name="file_processor",
+        input_text="/path/to/input/data.csv"
+    )
+    print(f"File processing result: {process_result.get('final_result')}")</code></pre>
+            </div>
+        </div>
+
+        <!-- Database Integration Example ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">
+                <i class="fas fa-database text-green-500 mr-2"></i>
+                Database Integration
+            </h3>
+            <div class="bg-gray-50 rounded-lg p-4 border relative group">
+                <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Create a data analysis graph with database integration\nresult = mag.create_graph(\n    name=\"data_analyzer\",\n    nodes=[\n        {\n            \"name\": \"query_data\",\n            \"prompt\": \"Query the database using db_query(sql=\\'SELECT * FROM {input} WHERE created_at > NOW() - INTERVAL 7 DAY\\') to get recent data.\",\n            \"next_node\": \"analyze\"\n        },\n        {\n            \"name\": \"analyze\",\n            \"prompt\": \"Analyze the queried data: calculate statistics, identify trends, and generate insights.\",\n            \"next_node\": \"report\"\n        },\n        {\n            \"name\": \"report\",\n            \"prompt\": \"Create a comprehensive report based on the analysis and save it using save_file().\"\n        }\n    ]\n)\n\n# Run the analysis\nanalysis_result = mag.run_graph(\n    name=\"data_analyzer\",\n    input_text=\"sales_data\"  # table name\n)')">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <pre><code class="language-python"># Create a data analysis graph with database integration
+result = mag.create_graph(
+    name="data_analyzer",
+    nodes=[
+        {
+            "name": "query_data",
+            "prompt": "Query the database using db_query(sql='SELECT * FROM {input} WHERE created_at > NOW() - INTERVAL 7 DAY') to get recent data.",
+            "next_node": "analyze"
+        },
+        {
+            "name": "analyze",
+            "prompt": "Analyze the queried data: calculate statistics, identify trends, and generate insights.",
+            "next_node": "report"
+        },
+        {
+            "name": "report",
+            "prompt": "Create a comprehensive report based on the analysis and save it using save_file()."
+        }
+    ]
+)
+
+# Run the analysis
+analysis_result = mag.run_graph(
+    name="data_analyzer",
+    input_text="sales_data"  # table name
+)</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common MCP Servers ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Common MCP Servers</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Filesystem Server ---->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-folder text-blue-500 mr-2"></i>
+                    Filesystem Server
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">Access local file system operations</p>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-bash"># Install
+npm install -g @modelcontextprotocol/server-filesystem
+
+# Add to MAG
+mag.add_mcp_server(
+    name="fs",
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
+)</code></pre>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Tools: read_file, write_file, list_directory, create_directory
+                </div>
+            </div>
+
+            <!-- SQLite Server ---->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-database text-green-500 mr-2"></i>
+                    SQLite Server
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">SQLite database operations</p>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-bash"># Install
+pip install mcp-server-sqlite
+
+# Add to MAG
+mag.add_mcp_server(
+    name="db",
+    command="python",
+    args=["-m", "mcp_server_sqlite", "--db-path", "./database.db"]
+)</code></pre>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Tools: query, execute, list_tables, describe_table
+                </div>
+            </div>
+
+            <!-- Web Search Server ---->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-search text-purple-500 mr-2"></i>
+                    Web Search Server
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">Web search and scraping capabilities</p>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-bash"># Install
+pip install mcp-server-brave-search
+
+# Add to MAG
+mag.add_mcp_server(
+    name="search",
+    command="python",
+    args=["-m", "mcp_server_brave_search"]
+)</code></pre>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Tools: web_search, fetch_page, extract_content
+                </div>
+            </div>
+
+            <!-- Git Server ---->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-code-branch text-orange-500 mr-2"></i>
+                    Git Server
+                </h3>
+                <p class="text-sm text-gray-600 mb-3">Git repository operations</p>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-bash"># Install
+npm install -g @modelcontextprotocol/server-git
+
+# Add to MAG
+mag.add_mcp_server(
+    name="git",
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-git", "/repo/path"]
+)</code></pre>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Tools: git_log, git_status, git_diff, create_commit
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom MCP Servers ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-code text-indigo-600 mr-2"></i>
+            Building Custom MCP Servers
+        </h2>
+        <p class="text-gray-600 mb-4">Create your own MCP servers for specialized functionality:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-6">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Generate a custom MCP server\nresult = mag.generate_mcp_server(\n    description=\"Create a weather service MCP server with tools for:\"\n                \"- Getting current weather for a location\"\n                \"- Getting weather forecast\"\n                \"- Weather alerts and warnings\",\n    server_name=\"weather_service\",\n    tools=[\n        {\n            \"name\": \"get_weather\",\n            \"description\": \"Get current weather for a location\",\n            \"parameters\": {\n                \"location\": {\"type\": \"string\", \"required\": True},\n                \"units\": {\"type\": \"string\", \"default\": \"celsius\"}\n            }\n        },\n        {\n            \"name\": \"get_forecast\", \n            \"description\": \"Get weather forecast\",\n            \"parameters\": {\n                \"location\": {\"type\": \"string\", \"required\": True},\n                \"days\": {\"type\": \"integer\", \"default\": 5}\n            }\n        }\n    ]\n)\n\nif result.get(\"success\"):\n    print(f\"Custom MCP server created: {result.get(\\'server_path\\')}\") \n    print(\"You can now add it to MAG SDK:\") \n    \n    add_result = mag.add_mcp_server(\n        name=\"weather\",\n        command=\"python\",\n        args=[result.get(\"server_path\")],\n        description=\"Weather service integration\"\n    )')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python"># Generate a custom MCP server
+result = mag.generate_mcp_server(
+    description="Create a weather service MCP server with tools for:"
+                "- Getting current weather for a location"
+                "- Getting weather forecast"
+                "- Weather alerts and warnings",
+    server_name="weather_service",
+    tools=[
+        {
+            "name": "get_weather",
+            "description": "Get current weather for a location",
+            "parameters": {
+                "location": {"type": "string", "required": True},
+                "units": {"type": "string", "default": "celsius"}
+            }
+        },
+        {
+            "name": "get_forecast",
+            "description": "Get weather forecast",
+            "parameters": {
+                "location": {"type": "string", "required": True},
+                "days": {"type": "integer", "default": 5}
+            }
+        }
+    ]
+)
+
+if result.get("success"):
+    print(f"Custom MCP server created: {result.get('server_path')}")
+    print("You can now add it to MAG SDK:")
+
+    add_result = mag.add_mcp_server(
+        name="weather",
+        command="python",
+        args=[result.get("server_path")],
+        description="Weather service integration"
+    )</code></pre>
+        </div>
+    </div>
+
+    <!-- MCP Best Practices ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Best Practices</h2>
+
+        <div class="space-y-4">
+            <!-- Practice 1 ---->
+            <div class="border border-green-200 rounded-lg p-4 bg-green-50">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-shield-alt text-green-500 mr-2"></i>
+                    Security Considerations
+                </h4>
+                <p class="text-gray-700 text-sm mb-2">Always validate and sanitize inputs when using MCP tools:</p>
+                <div class="bg-white rounded p-2 text-xs">
+                    • Restrict file system access to specific directories<br>
+                    • Validate SQL queries to prevent injection<br>
+                    • Use environment variables for sensitive credentials<br>
+                    • Implement proper error handling for external services
+                </div>
+            </div>
+
+            <!-- Practice 2 ---->
+            <div class="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-performance text-blue-500 mr-2"></i>
+                    Performance Optimization
+                </h4>
+                <p class="text-gray-700 text-sm mb-2">Optimize MCP tool usage for better performance:</p>
+                <div class="bg-white rounded p-2 text-xs">
+                    • Cache frequently accessed data<br>
+                    • Use batch operations when possible<br>
+                    • Implement timeouts for external calls<br>
+                    • Monitor tool execution times and optimize bottlenecks
+                </div>
+            </div>
+
+            <!-- Practice 3 ---->
+            <div class="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-bug text-purple-500 mr-2"></i>
+                    Error Handling
+                </h4>
+                <p class="text-gray-700 text-sm mb-2">Implement robust error handling for MCP operations:</p>
+                <div class="bg-white rounded p-2 text-xs">
+                    • Check server status before using tools<br>
+                    • Provide fallback mechanisms for failed operations<br>
+                    • Log MCP tool errors for debugging<br>
+                    • Gracefully handle network and service interruptions
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Troubleshooting ---->
+    <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-6 border border-red-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">
+            <i class="fas fa-wrench text-red-600 mr-2"></i>
+            Troubleshooting MCP Integration
+        </h3>
+        <p class="text-gray-700 mb-4">Common issues and solutions when working with MCP:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white rounded-lg p-4 border border-red-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-server text-red-500 mr-2"></i>
+                    Server Connection Issues
+                </h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• Check if MCP server process is running</li>
+                    <li>• Verify command and arguments are correct</li>
+                    <li>• Test server manually before adding to MAG</li>
+                    <li>• Check server logs for error messages</li>
+                </ul>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-red-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-tools text-blue-500 mr-2"></i>
+                    Tool Execution Problems
+                </h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    <li>• Ensure tools are properly registered</li>
+                    <li>• Verify parameter types and requirements</li>
+                    <li>• Check file permissions and access rights</li>
+                    <li>• Monitor tool execution timeouts</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

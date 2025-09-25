@@ -1,0 +1,352 @@
+<div class="max-w-4xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Conversation Management</h1>
+        <p class="text-lg text-gray-600">Learn how to manage and track conversation history during graph execution. MAG SDK provides comprehensive conversation management features for monitoring execution progress and retrieving results.</p>
+    </div>
+
+    <!-- Understanding Conversations ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Understanding Conversations</h2>
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        Every graph execution creates a <strong>conversation</strong> that tracks the entire execution process, including all node interactions, messages, and results.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-gray-600 mb-4">A conversation contains:</p>
+        <ul class="space-y-2 text-gray-700 mb-6">
+            <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                <span><strong>Unique ID:</strong> Each conversation has a unique identifier for tracking</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                <span><strong>Execution Status:</strong> Current status (running, completed, failed)</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                <span><strong>Rounds:</strong> Each node execution creates a round with messages</span>
+            </li>
+            <li class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-2 mt-1"></i>
+                <span><strong>Final Result:</strong> The ultimate output of the graph execution</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Getting Conversation Details ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-search text-blue-600 mr-2"></i>
+            Getting Conversation Details
+        </h2>
+        <p class="text-gray-600 mb-4">Retrieve detailed information about any conversation using its ID:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-6">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Get conversation details by ID\nconversation = mag.get_conversation_detail(\"conversation_id_here\")\n\n# Print basic information\nprint(f\"Conversation ID: {conversation.get(\\'_id\\')}\") \nprint(f\"Graph Name: {conversation.get(\\'graph_name\\')}\") \nprint(f\"Status: {\\\"Completed\\\" if conversation.get(\\'completed\\') else \\\"Running\\\"}\") \nprint(f\"Final Result: {conversation.get(\\'final_result\\')}\") \nprint(f\"Start Time: {conversation.get(\\'start_time\\')}\") \nprint(f\"Number of Rounds: {len(conversation.get(\\'rounds\\', []))}\") ')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python"># Get conversation details by ID
+conversation = mag.get_conversation_detail("conversation_id_here")
+
+# Print basic information
+print(f"Conversation ID: {conversation.get('_id')}")
+print(f"Graph Name: {conversation.get('graph_name')}")
+print(f"Status: {'Completed' if conversation.get('completed') else 'Running'}")
+print(f"Final Result: {conversation.get('final_result')}")
+print(f"Start Time: {conversation.get('start_time')}")
+print(f"Number of Rounds: {len(conversation.get('rounds', []))}")</code></pre>
+        </div>
+
+        <!-- Conversation Structure ---->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">Conversation Data Structure</h3>
+            <div class="bg-gray-50 rounded-lg p-4 border">
+                <pre><code class="language-json">{
+    "_id": "conversation_unique_id",
+    "graph_name": "your_graph_name",
+    "completed": true,
+    "final_result": "Final output from the graph",
+    "start_time": "2024-01-01T10:00:00Z",
+    "end_time": "2024-01-01T10:05:00Z",
+    "rounds": [
+        {
+            "round_num": 1,
+            "node_name": "node_1",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Input message"
+                },
+                {
+                    "role": "assistant",
+                    "content": "AI response"
+                }
+            ]
+        }
+    ]
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listing Conversations ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibont text-gray-900 mb-4">
+            <i class="fas fa-list text-green-600 mr-2"></i>
+            Listing Conversations
+        </h2>
+        <p class="text-gray-600 mb-4">Get a list of all conversations with optional filtering:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-6">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# List all conversations\nall_conversations = mag.list_conversations()\nprint(f\"Total conversations: {len(all_conversations)}\")\n\n# Display conversation summaries\nfor conv in all_conversations[:5]:  # Show first 5\n    status = \"✅ Completed\" if conv.get(\"completed\") else \"🔄 Running\"\n    print(f\"ID: {conv.get(\\'_id\\')[:8]}... | Graph: {conv.get(\\'graph_name\\')} | {status}\")\n    print(f\"   Started: {conv.get(\\'start_time\\')}\")\n    if conv.get(\\'final_result\\'):\n        result_preview = conv.get(\\'final_result\\')[:50] + \"...\" if len(conv.get(\\'final_result\\', \\'\\')) > 50 else conv.get(\\'final_result\\', \\'\\')  \n        print(f\"   Result: {result_preview}\")\n    print()')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python"># List all conversations
+all_conversations = mag.list_conversations()
+print(f"Total conversations: {len(all_conversations)}")
+
+# Display conversation summaries
+for conv in all_conversations[:5]:  # Show first 5
+    status = "✅ Completed" if conv.get("completed") else "🔄 Running"
+    print(f"ID: {conv.get('_id')[:8]}... | Graph: {conv.get('graph_name')} | {status}")
+    print(f"   Started: {conv.get('start_time')}")
+    if conv.get('final_result'):
+        result_preview = conv.get('final_result')[:50] + "..." if len(conv.get('final_result', '')) > 50 else conv.get('final_result', '')
+        print(f"   Result: {result_preview}")
+    print()</code></pre>
+        </div>
+    </div>
+
+    <!-- Working with Rounds ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-layer-group text-purple-600 mr-2"></i>
+            Working with Rounds
+        </h2>
+        <p class="text-gray-600 mb-4">Each graph execution consists of multiple rounds, where each round represents one node's execution:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-6">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('# Analyze conversation rounds\nconversation = mag.get_conversation_detail(conversation_id)\n\nprint(f\"Graph Execution Flow for: {conversation.get(\\'graph_name\\')}\") \nprint(\"=\" * 50)\n\nfor i, round_data in enumerate(conversation.get(\"rounds\", []), 1):\n    node_name = round_data.get(\"node_name\")\n    messages = round_data.get(\"messages\", [])\n    \n    print(f\"Round {i}: {node_name}\")\n    print(f\"  Messages: {len(messages)}\")\n    \n    # Show user input and AI response\n    for msg in messages:\n        role = msg.get(\"role\")\n        content = msg.get(\"content\", \"\")[:100]  # First 100 chars\n        if content:\n            print(f\"  {role.upper()}: {content}...\")\n    print()')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python"># Analyze conversation rounds
+conversation = mag.get_conversation_detail(conversation_id)
+
+print(f"Graph Execution Flow for: {conversation.get('graph_name')}")
+print("=" * 50)
+
+for i, round_data in enumerate(conversation.get("rounds", []), 1):
+    node_name = round_data.get("node_name")
+    messages = round_data.get("messages", [])
+
+    print(f"Round {i}: {node_name}")
+    print(f"  Messages: {len(messages)}")
+
+    # Show user input and AI response
+    for msg in messages:
+        role = msg.get("role")
+        content = msg.get("content", "")[:100]  # First 100 chars
+        if content:
+            print(f"  {role.upper()}: {content}...")
+    print()</code></pre>
+        </div>
+    </div>
+
+    <!-- Monitoring Background Execution ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-eye text-orange-600 mr-2"></i>
+            Monitoring Background Execution
+        </h2>
+        <p class="text-gray-600 mb-4">When running graphs in background mode, use conversation management to monitor progress:</p>
+
+        <div class="bg-gray-50 rounded-lg p-4 border relative group mb-6">
+            <button class="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity" onclick="copyToClipboard('import time\n\n# Start background execution\nconversation_id = mag.run_graph(\n    name=\"my_graph\",\n    input_text=\"Process this data\",\n    background=True\n)\n\nprint(f\"Started background execution: {conversation_id}\")\n\n# Monitor progress\nwhile True:\n    conversation = mag.get_conversation_detail(conversation_id)\n    \n    if conversation.get(\"completed\"):\n        print(\"✅ Execution completed!\")\n        print(f\"Final result: {conversation.get(\\'final_result\\')}\") \n        print(f\"Total rounds: {len(conversation.get(\\'rounds\\', []))}\") \n        break\n    else:\n        rounds_completed = len(conversation.get(\"rounds\", []))\n        print(f\"🔄 Still running... ({rounds_completed} rounds completed)\")\n        time.sleep(5)  # Check every 5 seconds')">
+                <i class="fas fa-copy"></i>
+            </button>
+            <pre><code class="language-python">import time
+
+# Start background execution
+conversation_id = mag.run_graph(
+    name="my_graph",
+    input_text="Process this data",
+    background=True
+)
+
+print(f"Started background execution: {conversation_id}")
+
+# Monitor progress
+while True:
+    conversation = mag.get_conversation_detail(conversation_id)
+
+    if conversation.get("completed"):
+        print("✅ Execution completed!")
+        print(f"Final result: {conversation.get('final_result')}")
+        print(f"Total rounds: {len(conversation.get('rounds', []))}")
+        break
+    else:
+        rounds_completed = len(conversation.get("rounds", []))
+        print(f"🔄 Still running... ({rounds_completed} rounds completed)")
+        time.sleep(5)  # Check every 5 seconds</code></pre>
+        </div>
+    </div>
+
+    <!-- Conversation Analysis ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-line text-indigo-600 mr-2"></i>
+            Conversation Analysis
+        </h2>
+        <p class="text-gray-600 mb-4">Analyze conversation patterns and extract insights from execution history:</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Performance Analysis ---->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-stopwatch text-blue-500 mr-2"></i>
+                    Performance Analysis
+                </h3>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-python"># Analyze execution time
+conversation = mag.get_conversation_detail(conv_id)
+
+start = conversation.get("start_time")
+end = conversation.get("end_time")
+if start and end:
+    # Calculate duration
+    from datetime import datetime
+    start_dt = datetime.fromisoformat(start.replace('Z', '+00:00'))
+    end_dt = datetime.fromisoformat(end.replace('Z', '+00:00'))
+    duration = (end_dt - start_dt).total_seconds()
+
+    rounds = len(conversation.get("rounds", []))
+    avg_per_round = duration / rounds if rounds > 0 else 0
+
+    print(f"Total time: {duration:.2f} seconds")
+    print(f"Rounds: {rounds}")
+    print(f"Avg per round: {avg_per_round:.2f}s")</code></pre>
+                </div>
+            </div>
+
+            <!-- Content Analysis ---->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fas fa-text-height text-green-500 mr-2"></i>
+                    Content Analysis
+                </h3>
+                <div class="bg-gray-50 rounded p-3 text-sm">
+                    <pre><code class="language-python"># Analyze message content
+total_messages = 0
+total_chars = 0
+node_counts = {}
+
+for round_data in conversation.get("rounds", []):
+    node_name = round_data.get("node_name")
+    node_counts[node_name] = node_counts.get(node_name, 0) + 1
+
+    for msg in round_data.get("messages", []):
+        total_messages += 1
+        total_chars += len(msg.get("content", ""))
+
+print(f"Messages: {total_messages}")
+print(f"Characters: {total_chars}")
+print("Node usage:")
+for node, count in node_counts.items():
+    print(f"  {node}: {count} times")</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Best Practices ---->
+    <div class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-4">Best Practices</h2>
+
+        <div class="space-y-4">
+            <!-- Practice 1 ---->
+            <div class="border border-green-200 rounded-lg p-4 bg-green-50">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-lightbulb text-green-500 mr-2"></i>
+                    Store Conversation IDs
+                </h4>
+                <p class="text-gray-700 text-sm mb-2">Always save conversation IDs for later reference, especially for background executions:</p>
+                <div class="bg-white rounded p-2 text-xs font-mono border">
+                    # Save to file, database, or variable for later use<br>
+                    with open("conversations.txt", "a") as f:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;f.write(f"{conversation_id}\n")
+                </div>
+            </div>
+
+            <!-- Practice 2 ---->
+            <div class="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-clock text-blue-500 mr-2"></i>
+                    Implement Timeout Logic
+                </h4>
+                <p class="text-gray-700 text-sm mb-2">Add timeout limits when monitoring long-running executions:</p>
+                <div class="bg-white rounded p-2 text-xs font-mono border">
+                    max_wait_time = 300  # 5 minutes<br>
+                    start_time = time.time()<br>
+                    if time.time() - start_time > max_wait_time:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;print("Timeout reached")
+                </div>
+            </div>
+
+            <!-- Practice 3 ---->
+            <div class="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                    <i class="fas fa-filter text-purple-500 mr-2"></i>
+                    Filter Conversation Lists
+                </h4>
+                <p class="text-gray-700 text-sm mb-2">When dealing with many conversations, filter by graph name or status:</p>
+                <div class="bg-white rounded p-2 text-xs font-mono border">
+                    completed_convs = [c for c in mag.list_conversations() <br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if c.get("completed") and c.get("graph_name") == "target_graph"]
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integration with Other Features ---->
+    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">
+            <i class="fas fa-puzzle-piece text-purple-600 mr-2"></i>
+            Integration with Other Features
+        </h3>
+        <p class="text-gray-700 mb-4">Conversation management integrates seamlessly with other MAG SDK features:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg p-4 border border-purple-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-stream text-blue-500 mr-2"></i>
+                    Streaming Mode
+                </h4>
+                <p class="text-sm text-gray-600">Real-time conversation updates during streaming execution</p>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-purple-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-tasks text-green-500 mr-2"></i>
+                    Background Mode
+                </h4>
+                <p class="text-sm text-gray-600">Monitor long-running background executions</p>
+            </div>
+
+            <div class="bg-white rounded-lg p-4 border border-purple-100">
+                <h4 class="font-medium text-gray-900 mb-2">
+                    <i class="fas fa-database text-orange-500 mr-2"></i>
+                    Persistent Storage
+                </h4>
+                <p class="text-sm text-gray-600">All conversations are stored persistently for later retrieval</p>
+            </div>
+        </div>
+    </div>
+</div>
