@@ -24,21 +24,23 @@
 | `description` | string | 节点功能的详细描述，帮助理解节点用途。例如：`"研究科学主题并提供详细分析"` | 否 | `""` |
 | `model_name` | string | 使用的模型名称，普通节点必需，子图节点不需要。例如：`"gpt-4-turbo"` | 是* | - |
 | `mcp_servers` | string[] | 使用的MCP服务名称列表，可以指定多个服务。例如：`["search_server", "code_execution"]` | 否 | `[]` |
-| `system_prompt` | string | 系统提示词，定义智能体的角色和能力。支持占位符`{node_name}`引用其他节点输出，`{filename.txt}`引用外部文件 | 否 | `""` |
-| `user_prompt` | string | 用户提示词，包含具体任务指令。可以包含`{start}`占位符接收用户输入，引用其他节点输出或外部文件 | 否 | `""` |
+| `system_prompt` | string | 系统提示词，定义智能体的角色和能力。支持占位符语法（详见下方注释） | 否 | `""` |
+| `user_prompt` | string | 用户提示词，包含具体任务指令。支持占位符语法（详见下方注释） | 否 | `""` |
 | `save` | string | 指定节点输出自动保存的文件格式扩展名，如md、html、py、txt等 | 否 | `null` |
 | `input_nodes` | string[] | 提供输入的节点名称列表。特殊值`"start"`表示接收用户的原始输入 | 否 | `[]` |
 | `output_nodes` | string[] | 接收本节点输出的节点名称列表。特殊值`"end"`表示输出包含在最终结果中 | 否 | `[]` |
 | `handoffs` | number | 节点可以重定向流程的最大次数，用于实现条件分支和循环功能 | 否 | `null` |
-| `global_output` | boolean | 是否将节点输出添加到全局上下文，使其他节点可以通过context参数访问 | 否 | `false` |
-| `context` | string[] | 要引用的全局节点名称列表，访问设置了`global_output: true`的其他节点输出 | 否 | `[]` |
-| `context_mode` | string | 访问全局内容的模式：`"all"`、`"latest"`或`"latest_n"` | 否 | `"all"` |
-| `context_n` | number | 使用`context_mode: "latest_n"`时获取的最新输出数量 | 否 | `1` |
 | `output_enabled` | boolean | 是否在响应中包含输出。如果为false，节点只调用工具，不产生模型输出 | 否 | `true` |
 | `is_subgraph` | boolean | 是否为子图节点，如果为true，使用subgraph_name而不是model_name | 否 | `false` |
 | `subgraph_name` | string | 子图名称，仅当`is_subgraph: true`时需要 | 是* | `null` |
 
-*注：`model_name`对普通节点必需，`subgraph_name`对子图节点必需
+*注1：`model_name`对普通节点必需，`subgraph_name`对子图节点必需  
+*注2：占位符语法规范（统一使用`{{}}`）：  
+- `{{node_name}}`：引用指定节点的最新输出  
+- `{{node_name:N}}`：引用指定节点最近N次输出，按顺序用`\n\n---\n\n`分隔  
+- `{{node_name:all}}`：引用该节点的所有历史输出  
+- `{{@prompt_name}}`：引用已注册的提示词模板  
+- `{{node1:2|node2:3}}`：联合提示词，交错引用多个节点的历史输出  
 
 ### 图级配置参数
 
@@ -47,7 +49,7 @@
 | `name` | string | 图的唯一名称 | 是 | - |
 | `description` | string | 图的功能描述 | 否 | `""` |
 | `nodes` | Array | 包含所有节点配置的数组 | 是 | `[]` |
-| `end_template` | string | 定义最终输出格式模板。只能引用输出到"end"的节点或设置了`global_output: true`的节点，使用`{node_name}`格式 | 否 | `null` |
+| `end_template` | string | 定义最终输出格式模板。只能引用输出到"end"的节点，使用占位符语法 | 否 | `null` |
 
 ## 建议的设计流程
 
@@ -124,7 +126,6 @@
 }
 </node>
 
-
 **删除节点：**
 <delete_node>节点name字段</delete_node>
 
@@ -132,7 +133,7 @@
 
 **最终输出模板：**
 <end_template>
-最终输出模板内容，使用{node_name}引用节点输出
+最终输出模板内容，支持占位符语法（如{{node_name}}、{{@prompt_name}}、联合引用等）
 </end_template>
 
 ## 设计原则
@@ -145,8 +146,8 @@
 
 ## 重要说明
 
-- **内容更新**：如果你需要更新某个分析、计划或图信息，直接使用对应的标签（如`<analysis>`、`<todo>`、`<graph_name>`等），新内容将替换之前的内容
-- **节点更新**：如果你需要更新单个节点，请使用相同`name`的`<node>`标签，新的配置将替换该节点原有配置。说明：更新节点功能只会改变单个节点的配置。不具备删除节点的功能。
+- **内容更新**：如果你需要更新某个分析、计划或图信息，直接使用对应的标签（如`<analysis>`、`<todo>`、`<graph_name>`等），新内容将替换之前的内容。
+- **节点更新**：如果你需要更新单个节点，请使用相同`name`的`<node>`标签，新的配置将替换该节点原有配置。说明：更新节点功能只会更新单个节点的配置。不具备删除节点的功能。
 - **节点删除**：如果某个节点不再需要，你需要删除节点，使用`<delete_node>节点名称</delete_node>`进行删除。
 - **灵活设计**：你不需要严格按照建议步骤的顺序进行，可以根据用户的具体需求和反馈灵活调整设计思路
 - **交互完善**：不建议一次完成所有步骤，也不建议一次提交多个节点，请逐个提交，并确保每个节点的配置正确。认真听取用户反馈，并针对反馈进行修改和优化。
