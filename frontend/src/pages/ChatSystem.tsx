@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { message, Button, Dropdown, Menu, Tooltip } from 'antd';
 import { CompressOutlined, DownOutlined } from '@ant-design/icons';
+import { useParams, useNavigate } from 'react-router-dom';
 import ConversationSidebar from '../components/chat/ConversationSidebar';
 import ModeSelector from '../components/chat/ModeSelector';
 import MessageDisplay from '../components/chat/MessageDisplay';
@@ -18,6 +19,8 @@ import { getCurrentUserId } from '../config/user';
 import '../styles/chat-system.css';
 
 const ChatSystem: React.FC = () => {
+  const { conversationId: urlConversationId } = useParams<{ conversationId?: string }>();
+  const navigate = useNavigate();
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   // 用于处理正在进行的对话，避免全局状态泄露
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
@@ -66,6 +69,33 @@ const ChatSystem: React.FC = () => {
     info: showInfoNotification
   } = useGlobalNotification();
 
+  // 处理URL参数变化
+  useEffect(() => {
+    if (urlConversationId) {
+      if (urlConversationId !== activeConversationId) {
+        // URL中有conversation_id且与当前不同，加载该对话
+        setActiveConversationId(urlConversationId);
+        loadConversationDetail(urlConversationId);
+      }
+      return;
+    }
+
+    // URL中没有 conversation_id：始终清理旧状态并显示新建界面
+    if (activeConversationId) {
+      setActiveConversationId(undefined);
+    }
+    // 停止SSE连接
+    closeConnection();
+    // 清理界面相关的临时状态
+    setPendingUserMessage(null);
+    setTemporaryConversation(null);
+    setSelectedGraphName('');
+    setInheritedConfig({});
+    // 清理当前对话并重置模式
+    clearCurrentConversation();
+    setCurrentMode('chat');
+  }, [urlConversationId, activeConversationId, loadConversationDetail, clearCurrentConversation, setCurrentMode, closeConnection]);
+
   // 获取当前显示的对话（优先临时对话，其次当前对话）
   const getDisplayConversation = useCallback((): ConversationDetail | null => {
     if (temporaryConversation && temporaryConversation.conversation_id === activeConversationId) {
@@ -113,11 +143,15 @@ const ChatSystem: React.FC = () => {
 
     // 先设置新的活跃对话ID并加载新对话，不清除当前对话以避免闪烁
     setActiveConversationId(conversationId);
+
+    // 更新URL
+    navigate(`/chat/${conversationId}`, { replace: true });
+
     await loadConversationDetail(conversationId);
 
     // 需要等待对话加载完成后根据对话类型设置模式
     // 这个逻辑应该在对话加载完成后的useEffect中处理
-  }, [activeConversationId, closeConnection, loadConversationDetail]);
+  }, [activeConversationId, closeConnection, loadConversationDetail, navigate]);
 
   // 处理新建对话
   const handleNewConversation = useCallback(() => {
@@ -132,11 +166,14 @@ const ChatSystem: React.FC = () => {
 
     // 清除当前对话
     clearCurrentConversation();
-    setActiveConversationId(undefined);
+    // setActiveConversationId(undefined); // 移除：避免与URL参数effect竞态导致短暂重新加载旧对话
+
+    // 更新URL到基础聊天页面
+    navigate('/chat', { replace: true });
 
     // 重置为默认模式
     setCurrentMode('chat');
-  }, [closeConnection, clearCurrentConversation, setCurrentMode]);
+  }, [closeConnection, clearCurrentConversation, setCurrentMode, navigate]);
 
   // 当对话加载完成后，根据对话类型设置正确的模式和agentType（不可变）
   useEffect(() => {
@@ -172,7 +209,7 @@ const ChatSystem: React.FC = () => {
         const messageDisplay = document.querySelector('.message-display');
         if (messageDisplay) {
           messageDisplay.scrollTo({
-            top: messageDisplay.scrollHeight,
+            top: (messageDisplay as HTMLElement).scrollHeight,
             behavior: 'smooth'
           });
         }
@@ -218,6 +255,9 @@ const ChatSystem: React.FC = () => {
       // 立即设置活跃对话ID，界面立即切换到对话模式
       setActiveConversationId(conversationId);
 
+      // 更新URL
+      navigate(`/chat/${conversationId}`, { replace: true });
+
       // 创建临时对话数据结构
       const tempConversation = createTemporaryConversation(
         conversationId,
@@ -250,6 +290,8 @@ const ChatSystem: React.FC = () => {
           if (isGraphMode) {
             actualConversationId = backendConversationId;
             setActiveConversationId(backendConversationId);
+            // 更新URL到新的对话ID
+            navigate(`/chat/${backendConversationId}`, { replace: true });
             // 更新临时对话的ID和标题
             setTemporaryConversation(prev => prev ? {
               ...prev,
@@ -311,7 +353,7 @@ const ChatSystem: React.FC = () => {
       setPendingUserMessage(null);
       setTemporaryConversation(null);
     }
-  }, [currentMode, agentType, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation, showSuccessNotification, showInfoNotification]);
+  }, [currentMode, agentType, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation, showSuccessNotification, showInfoNotification, navigate]);
 
   // 发送消息
   const handleSendMessage = useCallback(async (messageText: string, options: any = {}) => {

@@ -40,11 +40,12 @@ interface ConversationItemProps {
   onClick: () => void;
 }
 
-const ConversationItem: React.FC<ConversationItemProps> = ({ 
-  conversation, 
-  isActive, 
-  onClick 
+const ConversationItem: React.FC<ConversationItemProps> = ({
+  conversation,
+  isActive,
+  onClick
 }) => {
+  const navigate = useNavigate();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [tagsModalVisible, setTagsModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -203,7 +204,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       >
         <div
           className={`conversation-item ${isActive ? 'active' : ''}`}
-          onClick={onClick}
+          onClick={() => navigate(`/chat/${conversation._id}`)}
         >
           <div className="conversation-header">
             <div className="conversation-info">
@@ -629,7 +630,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               key={conversation._id}
               conversation={conversation}
               isActive={conversation._id === activeConversationId}
-              onClick={() => onConversationSelect(conversation._id)}
+              onClick={() => navigate(`/chat/${conversation._id}`)}
             />
           ))
         )}

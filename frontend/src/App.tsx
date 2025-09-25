@@ -26,6 +26,7 @@ const App: React.FC = () => {
         
         {/* 对话系统 */}
         <Route path="/chat" element={<ChatSystem />} />
+        <Route path="/chat/:conversationId" element={<ChatSystem />} />
         
         {/* 工作台入口 */}
         <Route path="/workspace" element={<Workspace />} />
