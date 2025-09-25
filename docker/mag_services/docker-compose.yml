@@ -1,5 +1,5 @@
 services:
-  # MongoDB 服务配置
+  # MongoDB service configuration
   mongodb:
     image: mongodb/mongodb-community-server:latest
     container_name: mongodb
@@ -25,18 +25,18 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "50m"     # 单个日志文件最大SIZE，按需调整
-        max-file: "10"      # 最多保留的日志文件数，按需调整
+        max-size: "50m"     # Maximum size of a single log file, adjust as needed
+        max-file: "10"      # Maximum number of log files to retain, adjust as needed
     deploy:
       resources:
         limits:
-          cpus: '4'         # 4个核心，按需调整
-          memory: 4G        # 4GB内存，按需调整
+          cpus: '4'         # 4 CPU cores, adjust as needed
+          memory: 4G        # 4GB memory, adjust as needed
         reservations:
-          cpus: '2'         # 2个核心，按需调整
-          memory: 4G        # 4GB内存，按需调整
+          cpus: '2'         # 2 CPU cores, adjust as needed
+          memory: 4G        # 4GB memory, adjust as needed
 
-  # MongoDB Express Web 界面
+  # MongoDB Express Web interface
   mongo-express:
     image: mongo-express:latest
     container_name: mongo-express
@@ -58,18 +58,18 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "20m"     # 单个日志文件最大SIZE，按需调整
-        max-file: "5"       # 最多保留的日志文件数，按需调整
+        max-size: "20m"     # Maximum size of a single log file, adjust as needed
+        max-file: "5"       # Maximum number of log files to retain, adjust as needed
     deploy:
       resources:
         limits:
-          cpus: '1'         # 1个CPU核心，按需调整
-          memory: 512M      # 512MB内存，按需调整
+          cpus: '1'         # 1 CPU core, adjust as needed
+          memory: 512M      # 512MB memory, adjust as needed
         reservations:
-          cpus: '0.5'       # 0.5个CPU核心，按需调整
-          memory: 256M      # 256MB内存，按需调整
+          cpus: '0.5'       # 0.5 CPU core, adjust as needed
+          memory: 256M      # 256MB memory, adjust as needed
 
-  # MinIO 对象存储服务
+  # MinIO object storage service
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -78,8 +78,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "127.0.0.1:${MINIO_API_PORT}:9000"     # API端口
-      - "127.0.0.1:${MINIO_CONSOLE_PORT}:9001" # Console端口
+      - "127.0.0.1:${MINIO_API_PORT}:9000"     # API port
+      - "127.0.0.1:${MINIO_CONSOLE_PORT}:9001" # Console port
     volumes:
       - minio_data:/data
     networks:
@@ -99,11 +99,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'         # 2个CPU核心，按需调整
-          memory: 2G        # 2GB内存，按需调整
+          cpus: '2'         # 2 CPU cores, adjust as needed
+          memory: 2G        # 2GB memory, adjust as needed
         reservations:
-          cpus: '1'         # 1个CPU核心，按需调整
-          memory: 1G        # 1GB内存，按需调整
+          cpus: '1'         # 1 CPU core, adjust as needed
+          memory: 1G        # 1GB memory, adjust as needed
 
 networks:
   mag_network:
