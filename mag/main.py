@@ -64,6 +64,9 @@ async def startup_event():
         logger.info(f"配置目录: {settings.MAG_DIR}")
         settings.ensure_directories()
 
+        await mongodb_service.initialize(settings.MONGODB_URL,settings.MONGODB_DB)
+        logger.info("MongoDB服务初始化成功")
+
         # 初始化文件系统
         FileManager.initialize()
         logger.info("文件系统初始化成功")
@@ -79,9 +82,6 @@ async def startup_event():
         # 初始化MCP服务 - 启动客户端进程
         await mcp_service.initialize()
         logger.info("MCP服务初始化成功")
-
-        await mongodb_service.initialize(settings.MONGODB_URL,settings.MONGODB_DB)
-        logger.info("MongoDB服务初始化成功")
 
         logger.info("所有服务初始化完成")
     except Exception as e:
