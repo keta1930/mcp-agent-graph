@@ -11,7 +11,7 @@ wheels/
 .trae/
 
 .idea/
-version/
+test/
 
 .qoderignore
 
