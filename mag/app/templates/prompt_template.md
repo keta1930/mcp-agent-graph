@@ -11,7 +11,6 @@
 
 ### 可用MCP服务
 以下是当前系统中可用的MCP服务，每个节点可以选择使用这些服务来获得特殊能力：
-
 {TOOLS_DESCRIPTION}
 
 ## 节点设计指南
@@ -34,14 +33,6 @@
 | `is_subgraph` | boolean | 是否为子图节点，如果为true，使用subgraph_name而不是model_name | 否 | `false` |
 | `subgraph_name` | string | 子图名称，仅当`is_subgraph: true`时需要 | 是* | `null` |
 
-*注1：`model_name`对普通节点必需，`subgraph_name`对子图节点必需  
-*注2：占位符语法规范（统一使用`{{}}`）：  
-- `{{node_name}}`：引用指定节点的最新输出  
-- `{{node_name:N}}`：引用指定节点最近N次输出，按顺序用`\n\n---\n\n`分隔  
-- `{{node_name:all}}`：引用该节点的所有历史输出  
-- `{{@prompt_name}}`：引用已注册的提示词模板  
-- `{{node1:2|node2:3}}`：联合提示词，交错引用多个节点的历史输出  
-
 ### 图级配置参数
 
 | 参数 | 类型 | 描述 | 必需 | 默认值 |
@@ -49,7 +40,28 @@
 | `name` | string | 图的唯一名称 | 是 | - |
 | `description` | string | 图的功能描述 | 否 | `""` |
 | `nodes` | Array | 包含所有节点配置的数组 | 是 | `[]` |
-| `end_template` | string | 定义最终输出格式模板。只能引用输出到"end"的节点，使用占位符语法 | 否 | `null` |
+| `end_template` | string | 定义最终输出格式模板。只能引用输出到"end"的节点，使用占位符语法（详见下方注释） | 否 | `null` |
+
+
+*注1：`model_name`对普通节点必需，`subgraph_name`对子图节点必需
+
+*注2：占位符语法规范（统一使用`{{}}`）：  
+- `{{node_name}}`：引用指定节点的最新输出  
+- `{{node_name:N}}`：引用指定节点最近N次输出，按顺序用`\n\n---\n\n`分隔  
+- `{{node_name:all}}`：引用该节点的所有历史输出  
+- `{{@prompt_name}}`：引用已注册的提示词模板  
+- `{{node1:2|node2:3}}`：联合提示词，交错引用多个节点的历史输出
+
+*注3：子图节点的参数示例：
+{
+  "name": "节点名称",
+  "description": "节点描述",
+  "is_subgraph": true,
+  "subgraph_name": "子图名称",
+  "input_nodes": ["start"],
+  "output_nodes": ["end"],
+  "output_enabled": true
+}
 
 ## 建议的设计流程
 
