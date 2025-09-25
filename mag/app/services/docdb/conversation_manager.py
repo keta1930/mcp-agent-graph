@@ -19,7 +19,7 @@ class ConversationManager:
                                   tags: List[str] = None) -> bool:
         """创建新对话（统一入口，支持所有类型）"""
         try:
-            now = datetime.utcnow()
+            now = datetime.now()
             conversation_doc = {
                 "_id": conversation_id,
                 "user_id": user_id,
