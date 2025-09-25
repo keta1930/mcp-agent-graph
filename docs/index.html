@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAG SDK Documentation</title>
+    <title>MAG SDK 使用文档</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="favicon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="./favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+    <link rel="shortcut icon" href="./favicon.ico">
 
     <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <!-- Highlight.js syntax highlighting -->
+    <!-- Highlight.js 语法高亮 -->
     <link id="highlight-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
 
     <style>
@@ -89,42 +89,6 @@
             box-shadow: 0 2px 4px var(--shadow-light);
         }
 
-        .code-block {
-            background-color: var(--code-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            position: relative;
-            transition: all 0.2s ease;
-        }
-
-        .code-block:hover {
-            box-shadow: 0 4px 12px var(--shadow-light);
-            transform: translateY(-1px);
-        }
-
-        .copy-btn {
-            background-color: var(--accent-primary);
-            color: white;
-            transition: all 0.2s ease;
-        }
-
-        .copy-btn:hover {
-            background-color: var(--accent-secondary);
-            transform: scale(1.05);
-        }
-
-        .section-card {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .section-card:hover {
-            box-shadow: 0 8px 25px var(--shadow-light);
-            transform: translateY(-2px);
-        }
-
         .theme-toggle {
             background-color: var(--bg-tertiary);
             border: 1px solid var(--border-color);
@@ -133,18 +97,6 @@
         }
 
         .theme-toggle:hover {
-            box-shadow: 0 2px 8px var(--shadow-light);
-        }
-
-        .language-toggle {
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            transition: all 0.2s ease;
-            font-size: 12px;
-        }
-
-        .language-toggle:hover {
             box-shadow: 0 2px 8px var(--shadow-light);
         }
 
@@ -167,118 +119,108 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .method-card {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            transition: all 0.2s ease;
+        .module-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: var(--bg-primary);
         }
 
-        .method-card:hover {
-            border-color: var(--accent-primary);
-            box-shadow: 0 4px 12px var(--shadow-light);
+        .loading-spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
 
-        .hidden {
-            display: none !important;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar -->
+        <!-- 侧边栏 -->
         <div class="sidebar w-80 flex-shrink-0 overflow-y-auto">
             <div class="p-6">
-                <!-- Title -->
+                <!-- 标题 -->
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <h1 class="text-2xl font-bold text-blue-600">MAG SDK</h1>
-                        <p class="text-sm" style="color: var(--text-muted)" data-i18n="subtitle">Documentation</p>
+                        <p class="text-sm" style="color: var(--text-muted)">使用文档</p>
                     </div>
-                    <div class="flex space-x-2">
-                        <!-- Language Toggle -->
-                        <button id="languageToggle" class="language-toggle p-2 w-12 h-10 flex items-center justify-center">
-                            <span id="langIndicator">EN</span>
-                        </button>
-                        <!-- Theme Toggle -->
-                        <button id="themeToggle" class="theme-toggle p-2 w-10 h-10 flex items-center justify-center">
-                            <i class="fas fa-moon text-sm"></i>
-                        </button>
-                    </div>
+                    <!-- 主题切换按钮 -->
+                    <button id="themeToggle" class="theme-toggle p-2 w-10 h-10 flex items-center justify-center">
+                        <i class="fas fa-moon text-sm"></i>
+                    </button>
                 </div>
 
-                <!-- Navigation Menu -->
+                <!-- 导航菜单 -->
                 <nav class="space-y-2">
-                    <!-- Getting Started -->
+                    <!-- 快速开始 -->
                     <div class="nav-section">
-                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('getting-started')">
-                            <span><i class="fas fa-rocket mr-2"></i><span data-i18n="nav.getting_started">Getting Started</span></span>
-                            <i class="fas fa-chevron-down transition-transform" id="getting-started-icon"></i>
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('quick-start')">
+                            <span><i class="fas fa-rocket mr-2"></i>快速开始</span>
+                            <i class="fas fa-chevron-down transition-transform" id="quick-start-icon"></i>
                         </button>
-                        <div class="collapse-content pl-6" id="getting-started-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('installation', event)">
-                                <i class="fas fa-download mr-2"></i><span data-i18n="nav.installation">Installation</span>
-                            </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('quick-start', event)">
-                                <i class="fas fa-play mr-2"></i><span data-i18n="nav.quick_start">Quick Start</span>
+                        <div class="collapse-content pl-6" id="quick-start-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="loadModule('quickstart')">
+                                <i class="fas fa-download mr-2"></i>快速开始
                             </a>
                         </div>
                     </div>
 
-                    <!-- Core Features -->
+                    <!-- 模型管理 -->
                     <div class="nav-section">
-                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('core-features')">
-                            <span><i class="fas fa-cogs mr-2"></i><span data-i18n="nav.core_features">Core Features</span></span>
-                            <i class="fas fa-chevron-down transition-transform" id="core-features-icon"></i>
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('model-management')">
+                            <span><i class="fas fa-brain mr-2"></i>模型管理</span>
+                            <i class="fas fa-chevron-down transition-transform" id="model-management-icon"></i>
                         </button>
-                        <div class="collapse-content pl-6" id="core-features-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('graph-execution', event)">
-                                <i class="fas fa-play-circle mr-2"></i><span data-i18n="nav.graph_execution">Graph Execution</span>
-                            </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('conversation', event)">
-                                <i class="fas fa-comments mr-2"></i><span data-i18n="nav.conversation">Conversation</span>
+                        <div class="collapse-content pl-6" id="model-management-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="loadModule('model')">
+                                <i class="fas fa-cogs mr-2"></i>模型管理
                             </a>
                         </div>
                     </div>
 
-                    <!-- AI Features -->
+                    <!-- MCP管理 -->
                     <div class="nav-section">
-                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('ai-features')">
-                            <span><i class="fas fa-brain mr-2"></i><span data-i18n="nav.ai_generation">AI Generation</span></span>
-                            <i class="fas fa-chevron-down transition-transform" id="ai-features-icon"></i>
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('mcp-management')">
+                            <span><i class="fas fa-server mr-2"></i>MCP管理</span>
+                            <i class="fas fa-chevron-down transition-transform" id="mcp-management-icon"></i>
                         </button>
-                        <div class="collapse-content pl-6" id="ai-features-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('ai-generation', event)">
-                                <i class="fas fa-magic mr-2"></i><span data-i18n="nav.ai_generation">AI Generation</span>
+                        <div class="collapse-content pl-6" id="mcp-management-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="loadModule('mcp')">
+                                <i class="fas fa-server mr-2"></i>MCP管理
                             </a>
                         </div>
                     </div>
 
-                    <!-- Integration -->
+                    <!-- 图管理 -->
                     <div class="nav-section">
-                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('integration')">
-                            <span><i class="fas fa-plug mr-2"></i><span data-i18n="nav.integration">Integration</span></span>
-                            <i class="fas fa-chevron-down transition-transform" id="integration-icon"></i>
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('graph-management')">
+                            <span><i class="fas fa-project-diagram mr-2"></i>图管理</span>
+                            <i class="fas fa-chevron-down transition-transform" id="graph-management-icon"></i>
                         </button>
-                        <div class="collapse-content pl-6" id="integration-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('mcp-integration', event)">
-                                <i class="fas fa-server mr-2"></i><span data-i18n="nav.mcp_integration">MCP Integration</span>
-                            </a>
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('model-management', event)">
-                                <i class="fas fa-database mr-2"></i><span data-i18n="nav.model_management">Model Management</span>
+                        <div class="collapse-content pl-6" id="graph-management-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="loadModule('graph')">
+                                <i class="fas fa-project-diagram mr-2"></i>图管理
                             </a>
                         </div>
                     </div>
 
-                    <!-- Advanced -->
+                    <!-- 会话管理 -->
                     <div class="nav-section">
-                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('advanced')">
-                            <span><i class="fas fa-cog mr-2"></i><span data-i18n="nav.advanced">Advanced</span></span>
-                            <i class="fas fa-chevron-down transition-transform" id="advanced-icon"></i>
+                        <button class="nav-item w-full text-left px-4 py-3 flex items-center justify-between font-medium" onclick="toggleSection('conversation-management')">
+                            <span><i class="fas fa-comments mr-2"></i>会话管理</span>
+                            <i class="fas fa-chevron-down transition-transform" id="conversation-management-icon"></i>
                         </button>
-                        <div class="collapse-content pl-6" id="advanced-content">
-                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="showModule('advanced', event)">
-                                <i class="fas fa-rocket mr-2"></i><span data-i18n="nav.advanced">Advanced Features</span>
+                        <div class="collapse-content pl-6" id="conversation-management-content">
+                            <a href="#" class="nav-item block px-4 py-2 text-sm" onclick="loadModule('conversation')">
+                                <i class="fas fa-comments mr-2"></i>会话管理
                             </a>
                         </div>
                     </div>
@@ -286,122 +228,98 @@
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="content-area flex-1 overflow-y-auto">
-            <div class="p-8">
-                <!-- Welcome Page (default) -->
-                <div id="welcome-page" class="max-w-4xl">
-                    <div class="mb-8">
-                        <h1 class="text-3xl font-bold text-gray-900 mb-4" data-i18n="welcome.title">Welcome to MAG SDK</h1>
-                        <p class="text-lg text-gray-600" data-i18n="welcome.description">MAG is a powerful framework for building and executing AI agent graphs with MCP integration. Get started by exploring the documentation sections on the left.</p>
+        <!-- 主要内容区域 -->
+        <div class="content-area flex-1 flex flex-col overflow-hidden">
+            <!-- 内容区 -->
+            <div class="flex-1 overflow-hidden">
+                <!-- 加载指示器 -->
+                <div id="loading" class="hidden h-full flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p style="color: var(--text-muted)">加载中...</p>
                     </div>
+                </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div class="section-card p-6">
-                            <div class="flex items-center mb-4">
-                                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                                    <i class="fas fa-rocket text-white text-xl"></i>
+                <!-- 欢迎页面 -->
+                <div id="welcome" class="h-full p-8">
+                    <div class="text-center h-full flex items-center justify-center">
+                        <div>
+                            <div class="mb-8">
+                                <i class="fas fa-robot text-6xl text-blue-600 mb-6"></i>
+                                <h1 class="text-4xl font-bold mb-4">欢迎使用 MAG SDK</h1>
+                                <p class="text-lg" style="color: var(--text-muted)">MCP Agent Graph - 强大的智能体开发框架</p>
+                            </div>
+
+                            <div class="text-left max-w-2xl mx-auto">
+                                <div class="grid grid-cols-2 gap-6 mb-8">
+                                    <div class="section-card p-6">
+                                        <i class="fas fa-rocket text-2xl text-blue-600 mb-4"></i>
+                                        <h3 class="text-xl font-semibold mb-2">快速开始</h3>
+                                        <p style="color: var(--text-muted)">了解如何安装部署 MAG SDK</p>
+                                    </div>
+                                    <div class="section-card p-6">
+                                        <i class="fas fa-brain text-2xl text-green-600 mb-4"></i>
+                                        <h3 class="text-xl font-semibold mb-2">模型管理</h3>
+                                        <p style="color: var(--text-muted)">管理和配置各种AI模型</p>
+                                    </div>
+                                    <div class="section-card p-6">
+                                        <i class="fas fa-server text-2xl text-purple-600 mb-4"></i>
+                                        <h3 class="text-xl font-semibold mb-2">MCP管理</h3>
+                                        <p style="color: var(--text-muted)">管理MCP服务器和工具</p>
+                                    </div>
+                                    <div class="section-card p-6">
+                                        <i class="fas fa-project-diagram text-2xl text-orange-600 mb-4"></i>
+                                        <h3 class="text-xl font-semibold mb-2">图管理</h3>
+                                        <p style="color: var(--text-muted)">创建和运行智能体图</p>
+                                    </div>
                                 </div>
-                                <h3 class="text-xl font-semibold" data-i18n="welcome.get_started">Get Started</h3>
-                            </div>
-                            <p class="text-gray-600 mb-4">Learn the basics and run your first graph</p>
-                            <button class="text-blue-600 font-medium hover:text-blue-700" onclick="showModuleFromWelcome('installation')">
-                                <span data-i18n="common.start">Start →</span>
-                            </button>
-                        </div>
 
-                        <div class="section-card p-6">
-                            <div class="flex items-center mb-4">
-                                <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mr-4">
-                                    <i class="fas fa-play-circle text-white text-xl"></i>
+                                <div class="text-center">
+                                    <p style="color: var(--text-muted)">点击左侧导航开始探索文档</p>
                                 </div>
-                                <h3 class="text-xl font-semibold">Background Execution</h3>
-                            </div>
-                            <p class="text-gray-600 mb-4">New feature: Execute graphs in the background</p>
-                            <button class="text-green-600 font-medium hover:text-green-700" onclick="showModuleFromWelcome('graph-execution')">
-                                Learn More →
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-info-circle text-blue-400"></i>
-                            </div>
-                            <div class="ml-3">
-                                <p class="text-sm text-blue-700">
-                                    <strong>New in this version:</strong> Background execution support allows you to run long-running graphs without blocking your application.
-                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Module Content Container -->
-                <div id="module-content" class="hidden">
-                    <!-- Dynamic content will be loaded here -->
-                </div>
+                <!-- 模块内容容器 -->
+                <iframe id="moduleFrame" class="module-frame hidden" src=""></iframe>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
-
     <script>
-        // State management
-        let currentLang = 'en';
-        let currentTheme = 'light';
-        let translations = {};
+        // 主题切换功能
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const highlightTheme = document.getElementById('highlight-theme');
 
-        // Load translations
-        async function loadTranslations() {
-            try {
-                const basePath = window.location.pathname.includes('/mcp-agent-graph/') ? '/mcp-agent-graph' : '';
-                const enResponse = await fetch(`${basePath}/assets/i18n/en.json`);
-                const zhResponse = await fetch(`${basePath}/assets/i18n/zh.json`);
-                translations.en = await enResponse.json();
-                translations.zh = await zhResponse.json();
-                updateLanguage();
-            } catch (error) {
-                console.error('Failed to load translations:', error);
-                // Fallback to English if translations fail to load
-                translations.en = {
-                    "nav": {
-                        "getting_started": "Getting Started",
-                        "installation": "Installation",
-                        "quick_start": "Quick Start"
-                    },
-                    "welcome": {
-                        "title": "Welcome to MAG SDK",
-                        "description": "MAG is a powerful framework for building and executing AI agent graphs."
-                    }
-                };
-                translations.zh = translations.en; // Fallback
-                updateLanguage();
+        // 初始化主题
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            themeToggle.innerHTML = '<i class="fas fa-sun text-sm"></i>';
+            highlightTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = body.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                body.removeAttribute('data-theme');
+                themeToggle.innerHTML = '<i class="fas fa-moon text-sm"></i>';
+                highlightTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeToggle.innerHTML = '<i class="fas fa-sun text-sm"></i>';
+                highlightTheme.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+                localStorage.setItem('theme', 'dark');
             }
-        }
+        });
 
-        // Update language
-        function updateLanguage() {
-            const t = translations[currentLang] || translations.en || {};
-            document.querySelectorAll('[data-i18n]').forEach(element => {
-                const key = element.getAttribute('data-i18n');
-                const value = getNestedValue(t, key);
-                if (value) {
-                    element.textContent = value;
-                }
-            });
-        }
-
-        // Get nested object value by key path
-        function getNestedValue(obj, path) {
-            return path.split('.').reduce((current, key) => current && current[key], obj);
-        }
-
-        // Toggle sections
+        // 侧边栏折叠功能
         function toggleSection(sectionId) {
             const content = document.getElementById(sectionId + '-content');
             const icon = document.getElementById(sectionId + '-icon');
@@ -410,131 +328,63 @@
                 content.classList.remove('expanded');
                 icon.style.transform = 'rotate(0deg)';
             } else {
+                // 关闭其他展开的部分
+                document.querySelectorAll('.collapse-content').forEach(el => {
+                    if (el !== content) {
+                        el.classList.remove('expanded');
+                    }
+                });
+                document.querySelectorAll('[id$="-icon"]').forEach(el => {
+                    if (el !== icon) {
+                        el.style.transform = 'rotate(0deg)';
+                    }
+                });
+
                 content.classList.add('expanded');
                 icon.style.transform = 'rotate(180deg)';
             }
         }
 
-        // Show module content
-        async function showModule(moduleName, event) {
-            const welcomePage = document.getElementById('welcome-page');
-            const moduleContent = document.getElementById('module-content');
+        // 模块加载功能
+        function loadModule(moduleName) {
+            const loading = document.getElementById('loading');
+            const welcome = document.getElementById('welcome');
+            const moduleFrame = document.getElementById('moduleFrame');
 
-            try {
-                const basePath = window.location.pathname.includes('/mcp-agent-graph/') ? '/mcp-agent-graph' : '';
-                const response = await fetch(`${basePath}/modules/${moduleName}.html`);
-                const content = await response.text();
+            // 显示加载状态
+            welcome.classList.add('hidden');
+            moduleFrame.classList.add('hidden');
+            loading.classList.remove('hidden');
 
-                moduleContent.innerHTML = content;
-                welcomePage.classList.add('hidden');
-                moduleContent.classList.remove('hidden');
-
-                // Update active nav item
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                if (event && event.target) {
-                    event.target.closest('.nav-item').classList.add('active');
-                }
-
-                // Re-highlight code blocks
-                moduleContent.querySelectorAll('pre code').forEach((block) => {
-                    hljs.highlightElement(block);
-                });
-
-                // Add copy functionality to code blocks
-                addCopyButtons();
-
-            } catch (error) {
-                console.error('Failed to load module:', error);
-                moduleContent.innerHTML = `
-                    <div class="text-red-600 p-4 border border-red-300 rounded">
-                        <h3 class="font-bold mb-2">Failed to load content</h3>
-                        <p>Module: ${moduleName}</p>
-                        <p>Error: ${error.message}</p>
-                        <p>请检查网络连接或联系管理员</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Show welcome page
-        function showWelcome() {
-            const welcomePage = document.getElementById('welcome-page');
-            const moduleContent = document.getElementById('module-content');
-
-            welcomePage.classList.remove('hidden');
-            moduleContent.classList.add('hidden');
-
-            // Remove active nav items
+            // 更新导航状态
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
+            event.target.classList.add('active');
+
+            // 加载模块
+            const moduleUrl = `./modules/${moduleName}.html`;
+            moduleFrame.src = moduleUrl;
+
+            // 处理加载完成
+            moduleFrame.onload = function() {
+                loading.classList.add('hidden');
+                moduleFrame.classList.remove('hidden');
+                moduleFrame.classList.add('fade-in');
+            };
+
+            // 处理加载错误
+            moduleFrame.onerror = function() {
+                loading.classList.add('hidden');
+                welcome.classList.remove('hidden');
+                alert('模块加载失败，请检查文件是否存在');
+            };
         }
 
-        // Wrapper function for welcome page buttons
-        function showModuleFromWelcome(moduleName) {
-            showModule(moduleName, null);
-        }
-
-        // Add copy buttons to code blocks
-        function addCopyButtons() {
-            document.querySelectorAll('pre code').forEach((block) => {
-                const pre = block.parentElement;
-                if (pre.querySelector('.copy-btn')) return; // Already has copy button
-
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'copy-btn absolute top-2 right-2 px-3 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity';
-                copyBtn.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy';
-                copyBtn.onclick = () => copyToClipboard(block.textContent, copyBtn);
-
-                pre.classList.add('relative', 'group');
-                pre.appendChild(copyBtn);
-            });
-        }
-
-        // Copy to clipboard
-        async function copyToClipboard(text, button) {
-            try {
-                await navigator.clipboard.writeText(text);
-                const originalText = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
-                setTimeout(() => {
-                    button.innerHTML = originalText;
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy:', err);
-            }
-        }
-
-        // Theme toggle
-        document.getElementById('themeToggle').addEventListener('click', () => {
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', currentTheme);
-
-            const icon = document.querySelector('#themeToggle i');
-            icon.className = currentTheme === 'light' ? 'fas fa-moon text-sm' : 'fas fa-sun text-sm';
-
-            // Update highlight.js theme
-            const highlightTheme = document.getElementById('highlight-theme');
-            highlightTheme.href = currentTheme === 'light'
-                ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'
-                : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
-        });
-
-        // Language toggle
-        document.getElementById('languageToggle').addEventListener('click', () => {
-            currentLang = currentLang === 'en' ? 'zh' : 'en';
-            document.getElementById('langIndicator').textContent = currentLang.toUpperCase();
-            updateLanguage();
-        });
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadTranslations();
-
-            // Expand getting started section by default
-            toggleSection('getting-started');
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 默认展开快速开始
+            toggleSection('quick-start');
         });
     </script>
 </body>

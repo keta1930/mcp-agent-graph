@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速开始 - MAG SDK</title>
+
+    <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link id="highlight-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
+    <link href="./shared.css" rel="stylesheet">
+
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-rocket mr-3 text-blue-600"></i>快速开始
+        </h1>
+
+        <p class="text-lg mb-8" style="color: var(--text-muted)">
+            MAG SDK 是一个强大的智能体开发框架，本指南将帮助您快速上手使用。
+        </p>
+
+        <!-- 安装部署 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-download mr-2 text-green-600"></i>安装部署
+            </h2>
+
+            <h3 class="text-xl font-medium mb-3">1. 安装SDK</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">Shell</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-bash">pip install mag-sdk</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">2. 导入SDK</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">Python</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">3. 启动服务</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">Python</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python"># 启动MAG服务器
+mag.start()
+
+# 检查服务状态
+if mag.is_running():
+    print("MAG服务已启动")</code></pre>
+            </div>
+        </div>
+
+        <!-- 服务管理 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-cogs mr-2 text-blue-600"></i>服务管理
+            </h2>
+
+            <h3 class="text-xl font-medium mb-3">基本服务控制</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">Python</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 启动服务
+success = mag.start()
+if success:
+    print("服务启动成功")
+
+# 检查服务状态
+running = mag.is_running()
+print(f"服务运行状态: {running}")
+
+# 关闭服务
+mag.shutdown()
+print("服务已关闭")</code></pre>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            <strong>注意：</strong>在使用任何SDK功能之前，必须先调用 <code>mag.start()</code> 启动服务。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第一个例子 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-play mr-2 text-purple-600"></i>第一个例子
+            </h2>
+
+            <p class="mb-4" style="color: var(--text-secondary)">
+                以下是一个简单的例子，展示如何使用MAG SDK进行基本的对话：
+            </p>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">Python</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 启动服务
+mag.start()
+
+# 添加一个模型（如果还没有）
+model_config = {
+    "name": "gpt-4",
+    "base_url": "https://api.openai.com/v1",
+    "api_key": "your-api-key",
+    "model": "gpt-4"
+}
+mag.add_model(model_config)
+
+# 发起对话
+response = mag.chat_completions(
+    user_prompt="你好，请介绍一下MAG SDK",
+    model="gpt-4"
+)
+
+print(response)</code></pre>
+            </div>
+        </div>
+
+        <!-- 核心概念 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-lightbulb mr-2 text-orange-600"></i>核心概念
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="font-semibold mb-2 text-blue-800">
+                        <i class="fas fa-brain mr-2"></i>模型管理
+                    </h4>
+                    <p class="text-sm text-blue-700">管理各种AI模型的配置和调用</p>
+                </div>
+
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold mb-2 text-green-800">
+                        <i class="fas fa-server mr-2"></i>MCP管理
+                    </h4>
+                    <p class="text-sm text-green-700">管理Model Context Protocol服务器</p>
+                </div>
+
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold mb-2 text-purple-800">
+                        <i class="fas fa-project-diagram mr-2"></i>图管理
+                    </h4>
+                    <p class="text-sm text-purple-700">创建和运行智能体工作流图</p>
+                </div>
+
+                <div class="bg-orange-50 p-4 rounded-lg">
+                    <h4 class="font-semibold mb-2 text-orange-800">
+                        <i class="fas fa-comments mr-2"></i>会话管理
+                    </h4>
+                    <p class="text-sm text-orange-700">管理对话历史和上下文</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下一步 -->
+        <div class="method-card p-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-arrow-right mr-2 text-green-600"></i>下一步
+            </h2>
+
+            <p class="mb-4" style="color: var(--text-secondary)">
+                现在您已经了解了基础概念，可以深入学习各个模块：
+            </p>
+
+            <ul class="space-y-2">
+                <li>
+                    <i class="fas fa-brain mr-2 text-blue-600"></i>
+                    <strong>模型管理：</strong>学习如何添加、配置和使用各种AI模型
+                </li>
+                <li>
+                    <i class="fas fa-server mr-2 text-green-600"></i>
+                    <strong>MCP管理：</strong>了解如何管理和使用MCP服务器
+                </li>
+                <li>
+                    <i class="fas fa-project-diagram mr-2 text-purple-600"></i>
+                    <strong>图管理：</strong>创建复杂的智能体工作流
+                </li>
+                <li>
+                    <i class="fas fa-comments mr-2 text-orange-600"></i>
+                    <strong>会话管理：</strong>管理对话和上下文
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="./shared.js"></script>
+</body>
+</html>

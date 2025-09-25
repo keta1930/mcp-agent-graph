@@ -1,0 +1,126 @@
+/* 共享样式文件 - 所有模块通用 */
+
+/* CSS变量定义 */
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1a202c;
+    --text-secondary: #4a5568;
+    --text-muted: #718096;
+    --border-color: #e2e8f0;
+    --accent-primary: #3182ce;
+    --accent-secondary: #63b3ed;
+    --code-bg: #f7fafc;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --section-card-bg: #f8fafc;
+}
+
+/* 深色主题变量 */
+[data-theme="dark"] {
+    --bg-primary: #1a202c;
+    --bg-secondary: #2d3748;
+    --bg-tertiary: #4a5568;
+    --text-primary: #f7fafc;
+    --text-secondary: #e2e8f0;
+    --text-muted: #a0aec0;
+    --border-color: #4a5568;
+    --accent-primary: #63b3ed;
+    --accent-secondary: #90cdf4;
+    --code-bg: #2d3748;
+    --shadow-light: rgba(0, 0, 0, 0.3);
+    --section-card-bg: #2d3748;
+}
+
+/* 基础样式 */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: Tahoma, Arial, Roboto, "Droid Sans", "Helvetica Neue", "Droid Sans Fallback", "Heiti SC", "Hiragino Sans GB", Simsun, sans-serif;
+    transition: all 0.3s ease;
+}
+
+/* 代码块样式 */
+.code-block {
+    background-color: var(--code-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.code-block:hover {
+    box-shadow: 0 4px 12px var(--shadow-light);
+    transform: translateY(-1px);
+}
+
+/* 复制按钮样式 */
+.copy-btn {
+    background-color: var(--accent-primary);
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+    background-color: var(--accent-secondary);
+    transform: scale(1.05);
+}
+
+/* 方法卡片样式 */
+.method-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.method-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+/* 区块卡片样式 */
+.section-card {
+    background-color: var(--section-card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.section-card:hover {
+    box-shadow: 0 8px 25px var(--shadow-light);
+    transform: translateY(-2px);
+}
+
+/* 高亮主题切换 */
+.highlight-theme-light {
+    color-scheme: light;
+}
+
+.highlight-theme-dark {
+    color-scheme: dark;
+}
+
+[data-theme="dark"] .hljs {
+    background-color: var(--code-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}

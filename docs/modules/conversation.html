@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会话管理 - MAG SDK</title>
+
+    <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link id="highlight-theme" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
+    <link href="./shared.css" rel="stylesheet">
+
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-comments mr-3 text-blue-600"></i>会话管理
+        </h1>
+
+        <p class="text-lg mb-8" style="color: var(--text-muted)">
+            MAG SDK 提供了完整的会话管理功能，支持创建对话、获取历史记录、更新状态和压缩会话等操作。
+        </p>
+
+        <!-- 聊天完成 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-comment mr-2 text-green-600"></i>聊天完成
+            </h2>
+
+            <p class="mb-4" style="color: var(--text-secondary)">
+                使用 <code>chat_completions</code> 进行对话，支持流式和非流式响应。
+            </p>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def chat_completions(user_prompt: str, model: str, conversation_id: Optional[str] = None,
+                    system_prompt: Optional[str] = None, mcp: Optional[List[str]] = None,
+                    user_id: str = "default_user", stream: bool = False)
+    -> Union[Dict[str, Any], Iterator[Dict[str, Any]]]</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">基础对话</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 简单对话
+response = mag.chat_completions(
+    user_prompt="你好，请介绍一下MAG SDK",
+    model="gpt-4"
+)
+
+print(f"回复: {response['content']}")
+print(f"对话ID: {response['conversation_id']}")
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">带系统提示词的对话</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 带系统提示词的对话
+response = mag.chat_completions(
+    user_prompt="分析这个数据趋势",
+    model="gpt-4",
+    system_prompt="你是一个专业的数据分析师，请用专业的角度回答问题。",
+    conversation_id="data_analysis_001"
+)
+
+print(response['content'])
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">使用MCP工具的对话</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 使用MCP工具进行对话
+response = mag.chat_completions(
+    user_prompt="请帮我搜索关于人工智能的最新新闻",
+    model="gpt-4",
+    mcp=["brave-search", "filesystem"],
+    conversation_id="news_search_001"
+)
+
+print(response['content'])
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">流式对话</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 流式对话
+print("AI回复: ", end="")
+for chunk in mag.chat_completions(
+    user_prompt="请详细解释机器学习的基本概念",
+    model="gpt-4",
+    stream=True
+):
+    if chunk.get("type") == "content":
+        content = chunk.get("content", "")
+        print(content, end="", flush=True)
+    elif chunk.get("type") == "done":
+        print("\n对话完成!")
+        break
+</code></pre>
+            </div>
+        </div>
+
+        <!-- 会话列表和查询 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-list mr-2 text-blue-600"></i>会话列表和查询
+            </h2>
+
+            <h3 class="text-xl font-medium mb-3">获取会话列表</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def list_conversations(user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 获取所有会话
+conversations = mag.list_conversations()
+
+print(f"会话总数: {conversations['total']}")
+for conv in conversations['conversations']:
+    print(f"ID: {conv['_id']}")
+    print(f"标题: {conv['title']}")
+    print(f"类型: {conv['type']}")
+    print(f"状态: {conv['status']}")
+    print(f"创建时间: {conv['created_at']}")
+    print("---")
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">获取会话详情</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def get_conversation_detail(conversation_id: str) -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 获取会话完整内容
+conversation = mag.get_conversation_detail("conv_12345")
+
+print(f"会话ID: {conversation['_id']}")
+print(f"标题: {conversation['title']}")
+print(f"轮次数: {len(conversation['rounds'])}")
+
+# 查看对话内容
+for i, round_data in enumerate(conversation['rounds']):
+    print(f"\n=== 第 {i+1} 轮 ===")
+    print(f"用户: {round_data.get('user_input', '')}")
+    print(f"AI: {round_data.get('content', '')}")
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">获取会话元数据</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def get_conversation_metadata(conversation_id: str, user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 获取会话元数据（不包含具体对话内容）
+metadata = mag.get_conversation_metadata("conv_12345")
+
+if metadata:
+    print(f"标题: {metadata['title']}")
+    print(f"状态: {metadata['status']}")
+    print(f"标签: {metadata.get('tags', [])}")
+    print(f"最后更新: {metadata['updated_at']}")
+else:
+    print("会话不存在")
+</code></pre>
+            </div>
+        </div>
+
+        <!-- 会话状态管理 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-cog mr-2 text-purple-600"></i>会话状态管理
+            </h2>
+
+            <h3 class="text-xl font-medium mb-3">更新会话状态</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def update_conversation_status(conversation_id: str, status: str, user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 标记会话为收藏
+result = mag.update_conversation_status("conv_12345", "favorite")
+print(f"收藏结果: {result}")
+
+# 软删除会话
+result = mag.update_conversation_status("conv_12345", "deleted")
+print(f"删除结果: {result}")
+
+# 恢复会话为活跃状态
+result = mag.update_conversation_status("conv_12345", "active")
+print(f"恢复结果: {result}")
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">更新会话标题</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def update_conversation_title(conversation_id: str, title: str, user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 更新会话标题
+result = mag.update_conversation_title("conv_12345", "AI技术讨论")
+print(f"标题更新结果: {result}")
+</code></pre>
+            </div>
+
+            <h3 class="text-xl font-medium mb-3">更新会话标签</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def update_conversation_tags(conversation_id: str, tags: List[str], user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 添加标签
+tags = ["AI", "技术", "讨论", "重要"]
+result = mag.update_conversation_tags("conv_12345", tags)
+print(f"标签更新结果: {result}")
+</code></pre>
+            </div>
+        </div>
+
+        <!-- 会话删除 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-trash mr-2 text-red-600"></i>会话删除
+            </h2>
+
+            <h3 class="text-xl font-medium mb-3">永久删除会话</h3>
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def permanently_delete_conversation(conversation_id: str, user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 永久删除会话（不可恢复）
+result = mag.permanently_delete_conversation("conv_12345")
+print(f"永久删除结果: {result}")
+
+# 批量删除示例
+conversations_to_delete = ["conv_001", "conv_002", "conv_003"]
+for conv_id in conversations_to_delete:
+    try:
+        result = mag.permanently_delete_conversation(conv_id)
+        print(f"删除 {conv_id}: {result['status']}")
+    except Exception as e:
+        print(f"删除 {conv_id} 失败: {e}")
+</code></pre>
+            </div>
+
+            <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-red-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700">
+                            <strong>警告：</strong>永久删除操作不可逆，会完全移除会话数据。建议先使用软删除（status="deleted"）。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 会话压缩 -->
+        <div class="method-card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-compress mr-2 text-orange-600"></i>会话压缩
+            </h2>
+
+            <p class="mb-4" style="color: var(--text-secondary)">
+                当会话过长时，可以使用压缩功能来总结历史内容，减少上下文长度。
+            </p>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">函数签名</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">def compact_conversation(conversation_id: str, model_name: str, compact_type: str = "simple",
+                        compact_threshold: int = 2000, user_id: str = "default_user") -> Dict[str, Any]</code></pre>
+            </div>
+
+            <div class="code-block mb-4">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">使用示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 简单压缩（快速但信息损失较多）
+result = mag.compact_conversation(
+    conversation_id="conv_12345",
+    model_name="gpt-4",
+    compact_type="simple",
+    compact_threshold=2000
+)
+
+print(f"压缩结果: {result['status']}")
+print(f"压缩前长度: {result['before_length']}")
+print(f"压缩后长度: {result['after_length']}")
+
+# 智能压缩（保留重要信息）
+result = mag.compact_conversation(
+    conversation_id="conv_12345",
+    model_name="gpt-4",
+    compact_type="smart",  # 更精确的压缩
+    compact_threshold=1500
+)
+
+print(f"智能压缩结果: {result}")
+</code></pre>
+            </div>
+
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                <p class="text-sm text-blue-700">
+                    <strong>压缩类型说明：</strong><br>
+                    • <code>simple</code>: 快速压缩，删除较早的对话轮次<br>
+                    • <code>smart</code>: 智能压缩，使用AI总结重要内容<br>
+                    • <code>compact_threshold</code>: 当内容超过此长度时触发压缩
+                </p>
+            </div>
+        </div>
+
+        <!-- 完整示例 -->
+        <div class="method-card p-6">
+            <h2 class="text-2xl font-semibold mb-4">
+                <i class="fas fa-code mr-2 text-indigo-600"></i>完整示例
+            </h2>
+
+            <p class="mb-4" style="color: var(--text-secondary)">
+                以下是一个完整的会话管理示例，展示了从对话到管理的完整流程：
+            </p>
+
+            <div class="code-block">
+                <div class="flex justify-between items-center p-3 border-b border-gray-200">
+                    <span class="text-sm font-medium text-gray-600">完整示例</span>
+                    <button class="copy-btn px-3 py-1 text-xs rounded" onclick="copyCode(this)">复制</button>
+                </div>
+                <pre class="p-4 overflow-x-auto"><code class="language-python">import mag
+
+# 启动服务
+mag.start()
+
+print("=== 会话管理完整示例 ===")
+
+# 1. 创建新对话
+print("\n1. 创建新对话:")
+response = mag.chat_completions(
+    user_prompt="你好，请介绍一下人工智能的发展历史",
+    model="gpt-4",
+    system_prompt="你是一个AI历史专家，请提供准确的信息。"
+)
+
+conversation_id = response['conversation_id']
+print(f"新对话创建，ID: {conversation_id}")
+print(f"AI回复: {response['content'][:100]}...")
+
+# 2. 继续对话
+print(f"\n2. 继续对话:")
+follow_up = mag.chat_completions(
+    user_prompt="能详细说说机器学习的突破吗？",
+    model="gpt-4",
+    conversation_id=conversation_id
+)
+print(f"继续对话回复: {follow_up['content'][:100]}...")
+
+# 3. 使用MCP工具的对话
+print(f"\n3. 使用MCP工具进行搜索:")
+search_response = mag.chat_completions(
+    user_prompt="请搜索一下最新的AI新闻",
+    model="gpt-4",
+    conversation_id=conversation_id,
+    mcp=["brave-search"]
+)
+print(f"搜索结果: {search_response['content'][:100]}...")
+
+# 4. 更新会话元数据
+print(f"\n4. 更新会话元数据:")
+# 更新标题
+title_result = mag.update_conversation_title(conversation_id, "AI发展历史讨论")
+print(f"标题更新: {title_result['status']}")
+
+# 添加标签
+tags_result = mag.update_conversation_tags(conversation_id, ["AI", "历史", "技术", "重要"])
+print(f"标签更新: {tags_result['status']}")
+
+# 标记为收藏
+favorite_result = mag.update_conversation_status(conversation_id, "favorite")
+print(f"收藏状态: {favorite_result['status']}")
+
+# 5. 查看会话列表
+print(f"\n5. 查看会话列表:")
+conversations = mag.list_conversations()
+print(f"总会话数: {conversations['total']}")
+
+for conv in conversations['conversations'][:3]:  # 显示前3个
+    print(f"  - ID: {conv['_id'][:12]}... 标题: {conv['title']} 状态: {conv['status']}")
+
+# 6. 获取会话详情
+print(f"\n6. 获取会话详情:")
+detail = mag.get_conversation_detail(conversation_id)
+print(f"会话轮次: {len(detail['rounds'])}")
+print(f"创建时间: {detail['created_at']}")
+
+# 查看对话内容
+print("\n最近3轮对话:")
+for i, round_data in enumerate(detail['rounds'][-3:]):
+    round_num = len(detail['rounds']) - 3 + i + 1
+    user_input = round_data.get('user_input', '')[:50]
+    ai_response = round_data.get('content', '')[:50]
+    print(f"  第{round_num}轮 - 用户: {user_input}... AI: {ai_response}...")
+
+# 7. 压缩会话（如果内容过长）
+print(f"\n7. 压缩会话:")
+try:
+    compact_result = mag.compact_conversation(
+        conversation_id=conversation_id,
+        model_name="gpt-4",
+        compact_type="smart",
+        compact_threshold=1000
+    )
+    print(f"压缩状态: {compact_result['status']}")
+    if compact_result['status'] == 'success':
+        print(f"压缩前: {compact_result['before_length']} 字符")
+        print(f"压缩后: {compact_result['after_length']} 字符")
+except Exception as e:
+    print(f"压缩失败或不需要压缩: {e}")
+
+# 8. 流式对话示例
+print(f"\n8. 流式对话示例:")
+print("AI回复: ", end="", flush=True)
+
+for chunk in mag.chat_completions(
+    user_prompt="总结一下我们刚才讨论的要点",
+    model="gpt-4",
+    conversation_id=conversation_id,
+    stream=True
+):
+    if chunk.get("type") == "content":
+        content = chunk.get("content", "")
+        print(content, end="", flush=True)
+    elif chunk.get("type") == "done":
+        print("\n流式对话完成!")
+        break
+
+# 9. 最终状态检查
+print(f"\n9. 最终会话状态:")
+final_metadata = mag.get_conversation_metadata(conversation_id)
+if final_metadata:
+    print(f"最终标题: {final_metadata['title']}")
+    print(f"标签: {final_metadata.get('tags', [])}")
+    print(f"状态: {final_metadata['status']}")
+
+print(f"\n=== 会话管理示例完成 ===")
+print(f"本次示例会话ID: {conversation_id}")
+</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="./shared.js"></script>
+</body>
+</html>
