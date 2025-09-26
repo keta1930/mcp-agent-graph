@@ -11,6 +11,8 @@ import GraphEditor from './pages/GraphEditor';
 import ModelManager from './pages/ModelManager';
 import MCPManager from './pages/MCPManager';
 import PromptManager from './pages/PromptManager';
+import TaskManager from './pages/TaskManager';
+import TaskDetail from './pages/TaskDetail';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -27,6 +29,10 @@ const App: React.FC = () => {
         {/* 对话系统 */}
         <Route path="/chat" element={<ChatSystem />} />
         <Route path="/chat/:conversationId" element={<ChatSystem />} />
+
+        {/* 任务管理 */}
+        <Route path="/tasks" element={<TaskManager />} />
+        <Route path="/tasks/:taskId" element={<TaskDetail />} />
         
         {/* 工作台入口 */}
         <Route path="/workspace" element={<Workspace />} />

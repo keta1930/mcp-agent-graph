@@ -23,7 +23,8 @@ import {
   HomeOutlined,
   UserOutlined,
   PlusOutlined,
-  FilterOutlined
+  FilterOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useConversationStore } from '../../store/conversationStore';
@@ -482,6 +483,16 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               <div className="collapsed-tooltip">新建对话</div>
             </button>
           )}
+
+          {/* 任务中心 */}
+          <button
+            className="collapsed-nav-item"
+            onClick={() => navigate('/tasks')}
+            title="任务中心"
+          >
+            <ClockCircleOutlined />
+            <div className="collapsed-tooltip">任务中心</div>
+          </button>
         </div>
 
         {/* 底部区域 */}
@@ -644,6 +655,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         </div>
         
         <div className="footer-actions">
+          <Tooltip title="任务中心">
+            <Button
+              type="text"
+              icon={<ClockCircleOutlined />}
+              onClick={() => navigate('/tasks')}
+            />
+          </Tooltip>
           <Tooltip title="返回主页">
             <Button
               type="text"
