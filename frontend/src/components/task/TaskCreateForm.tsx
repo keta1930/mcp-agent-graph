@@ -85,7 +85,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         task_name: values.task_name,
         graph_name: values.graph_name,
         input_text: values.input_text || '',
-        execution_count: values.execution_count || 1,
+        execution_count: values.execution_count ?? 1,
         schedule_type: scheduleType,
         schedule_config: {
           ...(scheduleType === ScheduleType.SINGLE && executeAt
@@ -217,13 +217,11 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
           name="execution_count"
           rules={[
             { required: true, message: '请设置并发执行数量' },
-            { min: 1, message: '执行数量至少为1' },
-            { max: 10, message: '执行数量不能超过10' }
+            { type: 'number', min: 1, message: '执行数量至少为1' }
           ]}
         >
           <InputNumber
             min={1}
-            max={10}
             placeholder="每次触发时并发执行的图实例数量"
             style={{ width: '100%' }}
           />
