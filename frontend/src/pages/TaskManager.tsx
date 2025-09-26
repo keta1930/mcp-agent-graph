@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Button,
-  FloatButton,
   Typography,
   Space,
   Statistic,
@@ -86,8 +85,7 @@ const TaskManager: React.FC = () => {
   return (
     <div style={{
       padding: '24px',
-      minHeight: '100vh',
-      backgroundColor: '#f5f5f5'
+      minHeight: '100vh'
     }}>
       {/* 页面头部 */}
       <div style={{
@@ -130,175 +128,25 @@ const TaskManager: React.FC = () => {
         />
       )}
 
-      {/* 统计卡片 - Minimal风格 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24, display: 'flex', flexWrap: 'wrap' }}>
-        <Col xs={12} sm={8} md={4}>
-          <div style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: '16px', 
-            padding: '12px 20px',
-            border: '1px solid rgba(203, 213, 225, 0.6)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: '#94a3b8', 
-                borderRadius: '50%' 
-              }}></div>
-              <span style={{ color: '#475569', fontSize: '14px' }}>总任务</span>
-              <span style={{ fontWeight: 600, color: '#1e293b' }}>{stats.total}</span>
-            </div>
-          </div>
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <div style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: '16px', 
-            padding: '12px 20px',
-            border: '1px solid rgba(203, 213, 225, 0.6)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: '#10b981', 
-                borderRadius: '50%',
-                animation: 'pulse 2s infinite'
-              }}></div>
-              <span style={{ color: '#475569', fontSize: '14px' }}>运行中</span>
-              <span style={{ fontWeight: 600, color: '#059669' }}>{stats.active}</span>
-            </div>
-          </div>
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <div style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: '16px', 
-            padding: '12px 20px',
-            border: '1px solid rgba(203, 213, 225, 0.6)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: '#f59e0b', 
-                borderRadius: '50%' 
-              }}></div>
-              <span style={{ color: '#475569', fontSize: '14px' }}>已暂停</span>
-              <span style={{ fontWeight: 600, color: '#d97706' }}>{stats.paused}</span>
-            </div>
-          </div>
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <div style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: '16px', 
-            padding: '12px 20px',
-            border: '1px solid rgba(203, 213, 225, 0.6)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: '#3b82f6', 
-                borderRadius: '50%' 
-              }}></div>
-              <span style={{ color: '#475569', fontSize: '14px' }}>已完成</span>
-              <span style={{ fontWeight: 600, color: '#2563eb' }}>{stats.completed}</span>
-            </div>
-          </div>
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <div style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: '16px', 
-            padding: '12px 20px',
-            border: '1px solid rgba(203, 213, 225, 0.6)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: '#ef4444', 
-                borderRadius: '50%' 
-              }}></div>
-              <span style={{ color: '#475569', fontSize: '14px' }}>错误</span>
-              <span style={{ fontWeight: 600, color: '#dc2626' }}>{stats.error}</span>
-            </div>
-          </div>
-        </Col>
-        <Col xs={12} sm={8} md={4}>
-          <div style={{ 
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-            borderRadius: '16px', 
-            padding: '12px 20px',
-            border: '1px solid rgba(203, 213, 225, 0.6)',
-            backdropFilter: 'blur(8px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                backgroundColor: '#8b5cf6', 
-                borderRadius: '50%' 
-              }}></div>
-              <span style={{ color: '#475569', fontSize: '14px' }}>调度中</span>
-              <span style={{ fontWeight: 600, color: '#7c3aed' }}>{stats.scheduled}</span>
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      {/* 操作按钮栏 */}
-      <div style={{
-        marginBottom: 16,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <Space>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalVisible(true)}
-          >
-            创建任务
-          </Button>
-          <Button
-            icon={<SyncOutlined />}
-            onClick={handleReloadScheduler}
-            loading={loading}
-          >
-            重载调度器
-          </Button>
-        </Space>
-
-        {scheduledJobs.length > 0 && (
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            调度器中有 {scheduledJobs.length} 个活跃任务
-          </div>
-        )}
-      </div>
-
       {/* 任务列表 */}
-      <Card style={{ backgroundColor: 'white' }}>
-        <TaskList onCreateTask={() => setCreateModalVisible(true)} />
+      <Card 
+        style={{ 
+          backgroundColor: 'transparent',
+          border: 'none',
+          boxShadow: 'none'
+        }}
+        bodyStyle={{
+          padding: 0
+        }}
+      >
+        <TaskList 
+          onCreateTask={() => setCreateModalVisible(true)}
+          scheduledJobsCount={scheduledJobs.length}
+          onReloadScheduler={handleReloadScheduler}
+          loading={loading}
+          stats={stats}
+        />
       </Card>
-
-      {/* 浮动创建按钮 */}
-      <FloatButton
-        icon={<PlusOutlined />}
-        type="primary"
-        style={{ right: 24, bottom: 24 }}
-        onClick={() => setCreateModalVisible(true)}
-        tooltip="创建新任务"
-      />
 
       {/* 创建任务表单 */}
       <TaskCreateForm

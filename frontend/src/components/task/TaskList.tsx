@@ -13,7 +13,8 @@ import {
   Row,
   Col,
   Typography,
-  Empty
+  Empty,
+  Popover
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -25,7 +26,9 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  EyeOutlined
+  EyeOutlined,
+  PlusOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -39,11 +42,30 @@ dayjs.extend(relativeTime);
 const { Option } = Select;
 const { Text } = Typography;
 
-interface TaskListProps {
-  onCreateTask?: () => void;
+interface TaskStats {
+  total: number;
+  active: number;
+  paused: number;
+  completed: number;
+  error: number;
+  scheduled: number;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
+interface TaskListProps {
+  onCreateTask?: () => void;
+  scheduledJobsCount?: number;
+  onReloadScheduler?: () => void;
+  loading?: boolean;
+  stats?: TaskStats;
+}
+
+const TaskList: React.FC<TaskListProps> = ({ 
+  onCreateTask, 
+  scheduledJobsCount = 0, 
+  onReloadScheduler, 
+  loading: externalLoading,
+  stats
+}) => {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | undefined>();
@@ -51,7 +73,7 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
 
   const {
     tasks,
-    loading,
+    loading: storeLoading,
     queryParams,
     setQueryParams,
     loadTasks,
@@ -60,6 +82,8 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
     getTaskNextRunTime,
     loadScheduledJobs
   } = useTaskStore();
+
+  const loading = storeLoading || externalLoading;
 
   // 初始加载
   useEffect(() => {
@@ -159,6 +183,69 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
     setSearchText('');
     setStatusFilter(undefined);
     setTypeFilter(undefined);
+  };
+
+  // 创建统计悬停内容
+  const renderStatsContent = () => {
+    if (!stats) return null;
+    
+    return (
+      <div style={{ padding: '8px 0', minWidth: '200px' }}>
+        <div style={{ marginBottom: '12px', fontWeight: '600', color: '#1e293b' }}>
+          任务统计
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', backgroundColor: '#94a3b8', borderRadius: '50%' }}></div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>总任务</span>
+            </div>
+            <span style={{ fontWeight: '600', color: '#1e293b' }}>{stats.total}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ 
+                width: '6px', 
+                height: '6px', 
+                backgroundColor: '#10b981', 
+                borderRadius: '50%',
+                animation: stats.active > 0 ? 'pulse 2s infinite' : 'none'
+              }}></div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>运行中</span>
+            </div>
+            <span style={{ fontWeight: '600', color: '#059669' }}>{stats.active}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', backgroundColor: '#f59e0b', borderRadius: '50%' }}></div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>已暂停</span>
+            </div>
+            <span style={{ fontWeight: '600', color: '#d97706' }}>{stats.paused}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', backgroundColor: '#3b82f6', borderRadius: '50%' }}></div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>已完成</span>
+            </div>
+            <span style={{ fontWeight: '600', color: '#2563eb' }}>{stats.completed}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>错误</span>
+            </div>
+            <span style={{ fontWeight: '600', color: '#dc2626' }}>{stats.error}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '6px', height: '6px', backgroundColor: '#8b5cf6', borderRadius: '50%' }}></div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>调度中</span>
+            </div>
+            <span style={{ fontWeight: '600', color: '#7c3aed' }}>{stats.scheduled}</span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // 表格列定义
@@ -362,12 +449,6 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
             menu={{
               items: [
                 {
-                  key: 'detail',
-                  label: '查看详情',
-                  icon: <EyeOutlined />,
-                  onClick: () => navigate(`/tasks/${task.id}`)
-                },
-                {
                   key: 'complete',
                   label: '标记完成',
                   disabled: task.status === TaskStatus.COMPLETED,
@@ -392,61 +473,142 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
 
   return (
     <div>
-      {/* 搜索和筛选栏 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} sm={12} md={8}>
-          <Input
-            placeholder="搜索任务名称或图名称"
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            allowClear
+      {/* 简化的搜索和操作栏 */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        borderRadius: '12px',
+        padding: '12px 16px',
+        border: '1px solid rgba(203, 213, 225, 0.6)',
+        backdropFilter: 'blur(8px)'
+      }}>
+        {/* 左侧：搜索框 */}
+        <Input
+          placeholder="搜索任务或图名称"
+          prefix={<SearchOutlined />}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          allowClear
+          style={{ width: '280px', minWidth: '200px' }}
+        />
+
+        {/* 中间：筛选器 */}
+        <Select
+          placeholder="状态"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          allowClear
+          style={{ width: '100px' }}
+          size="middle"
+        >
+          <Option value={TaskStatus.ACTIVE}>运行中</Option>
+          <Option value={TaskStatus.PAUSED}>已暂停</Option>
+          <Option value={TaskStatus.COMPLETED}>已完成</Option>
+          <Option value={TaskStatus.ERROR}>错误</Option>
+        </Select>
+
+        <Select
+          placeholder="类型"
+          value={typeFilter}
+          onChange={setTypeFilter}
+          allowClear
+          style={{ width: '90px' }}
+          size="middle"
+        >
+          <Option value={ScheduleType.SINGLE}>单次</Option>
+          <Option value={ScheduleType.RECURRING}>周期</Option>
+        </Select>
+
+        {/* 右侧：操作按钮组 */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={onCreateTask}
+            size="middle"
+          >
+            创建
+          </Button>
+          
+          <Button
+            icon={<SyncOutlined />}
+            onClick={() => {
+              loadTasks();
+              loadScheduledJobs();
+            }}
+            loading={loading}
+            size="middle"
+            title="刷新数据"
           />
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Select
-            placeholder="状态筛选"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            allowClear
-            style={{ width: '100%' }}
-          >
-            <Option value={TaskStatus.ACTIVE}>运行中</Option>
-            <Option value={TaskStatus.PAUSED}>已暂停</Option>
-            <Option value={TaskStatus.COMPLETED}>已完成</Option>
-            <Option value={TaskStatus.ERROR}>错误</Option>
-          </Select>
-        </Col>
-        <Col xs={12} sm={6} md={4}>
-          <Select
-            placeholder="类型筛选"
-            value={typeFilter}
-            onChange={setTypeFilter}
-            allowClear
-            style={{ width: '100%' }}
-          >
-            <Option value={ScheduleType.SINGLE}>单次任务</Option>
-            <Option value={ScheduleType.RECURRING}>周期任务</Option>
-          </Select>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Space>
-            <Button onClick={handleClearFilter}>
-              清除筛选
-            </Button>
-            <Button
-              icon={<SyncOutlined />}
-              onClick={() => {
-                loadTasks();
-                loadScheduledJobs();
-              }}
-              loading={loading}
+
+          <Button
+            icon={<SyncOutlined />}
+            onClick={onReloadScheduler}
+            loading={loading}
+            size="middle"
+            title="重载调度器"
+            style={{ color: '#8b5cf6' }}
+          />
+
+          {(searchText || statusFilter || typeFilter) && (
+            <Button 
+              onClick={handleClearFilter}
+              size="middle"
+              type="text"
+              style={{ color: '#6b7280' }}
             >
-              刷新
+              清除
             </Button>
-          </Space>
-        </Col>
-      </Row>
+          )}
+
+          {/* 调度器状态指示 */}
+          {scheduledJobsCount > 0 && (
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              whiteSpace: 'nowrap',
+              fontWeight: '500'
+            }}>
+              {scheduledJobsCount} 个活跃
+            </div>
+          )}
+
+          {/* 统计按钮 */}
+          {stats && (
+            <Popover
+              content={renderStatsContent()}
+              title={null}
+              trigger="hover"
+              placement="bottomRight"
+              overlayStyle={{
+                borderRadius: '12px',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              <Button
+                icon={<BarChartOutlined />}
+                size="middle"
+                type="text"
+                style={{ 
+                  color: '#6b7280',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span style={{ fontSize: '12px' }}>统计</span>
+              </Button>
+            </Popover>
+          )}
+        </div>
+      </div>
 
       {/* 任务表格 */}
       <Table
@@ -455,10 +617,12 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
         loading={loading}
         rowKey="id"
         pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
-          showQuickJumper: true,
+          pageSize: 6,
+          showSizeChanger: false,
+          showQuickJumper: false,
           showTotal: (total, range) => `第 ${range[0]}-${range[1]} 项，共 ${total} 项`,
+          style: { textAlign: 'center', marginTop: '16px' },
+          position: ["bottomCenter"]
         }}
         locale={{
           emptyText: (
