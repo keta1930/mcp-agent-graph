@@ -203,34 +203,6 @@ class TaskManager:
             logger.error(f"清理单次任务失败: {str(e)}")
             return 0
 
-    async def get_all_task_executions(self) -> List[Dict[str, Any]]:
-        """获取所有任务执行历史"""
-        try:
-            executions = []
-            async for task in self.tasks_collection.find(
-                {"execution_history": {"$exists": True, "$ne": []}},
-                {
-                    "_id": 1,
-                    "task_name": 1,
-                    "execution_history": 1,
-                    "execution_stats": 1
-                }
-            ):
-                # 构造兼容原格式的返回结构
-                execution_record = {
-                    "_id": task["_id"],
-                    "task_id": task["_id"],
-                    "task_name": task.get("task_name", ""),
-                    "execution_history": task.get("execution_history", []),
-                    "execution_stats": task.get("execution_stats", {})
-                }
-                executions.append(self._convert_objectid_to_str(execution_record))
-            
-            return executions
-        except Exception as e:
-            logger.error(f"获取所有任务执行历史失败: {str(e)}")
-            return []
-
     def _convert_objectid_to_str(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         """将ObjectId转换为字符串"""
         if isinstance(doc.get("_id"), ObjectId):

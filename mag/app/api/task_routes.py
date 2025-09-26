@@ -81,21 +81,6 @@ async def create_task(task: TaskCreate):
             detail=f"创建任务时出错: {str(e)}"
         )
 
-
-@router.get("/tasks/executions", response_model=List[Dict[str, Any]])
-async def get_all_task_executions():
-    """获取所有任务执行历史（优化后从单集合获取）"""
-    try:
-        executions = await task_service.get_all_executions()
-        return executions
-    except Exception as e:
-        logger.error(f"获取所有执行历史时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取所有执行历史时出错: {str(e)}"
-        )
-
-
 @router.get("/tasks/scheduler/jobs", response_model=List[Dict[str, Any]])
 async def get_scheduled_jobs():
     """获取调度器中的任务"""
@@ -126,7 +111,7 @@ async def get_tasks(user_id: Optional[str] = None):
 
 @router.get("/tasks/{task_id}", response_model=Dict[str, Any])
 async def get_task(task_id: str):
-    """获取任务详情和执行历史（优化后从单文档获取）"""
+    """获取任务详情和执行历史"""
     try:
         # 获取任务基本信息（包含执行历史）
         task = await task_service.get_task(task_id)
@@ -135,16 +120,7 @@ async def get_task(task_id: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到任务 '{task_id}'"
             )
-
-        # 为了保持API兼容性，将执行历史单独提取
-        execution_history = task.get("execution_history", [])
-        execution_stats = task.get("execution_stats", {})
-
-        return {
-            "task": task,
-            "execution_history": execution_history,
-            "execution_stats": execution_stats  # 新增：返回统计信息
-        }
+        return task
 
     except HTTPException:
         raise

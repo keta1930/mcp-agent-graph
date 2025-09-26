@@ -220,21 +220,6 @@ class TaskService:
             logger.error(f"获取活跃任务列表失败: {str(e)}")
             return []
 
-    async def get_all_executions(self) -> List[Dict[str, Any]]:
-        """获取所有任务执行历史（从单集合聚合）"""
-        try:
-            if not self.task_manager:
-                await self.initialize()
-
-            if not self.task_manager:
-                return []
-
-            return await self.task_manager.get_all_task_executions()
-
-        except Exception as e:
-            logger.error(f"获取所有执行历史失败: {str(e)}")
-            return []
-
 
 # 创建全局任务服务实例
 task_service = TaskService()
