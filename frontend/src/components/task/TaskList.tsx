@@ -72,6 +72,32 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
     loadTasks();
   }, [queryParams, loadTasks]);
 
+  // 前端筛选逻辑
+  const filteredTasks = React.useMemo(() => {
+    let filtered = tasks;
+
+    // 搜索筛选：任务名称或图名称包含搜索文本
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase().trim();
+      filtered = filtered.filter(task =>
+        task.task_name.toLowerCase().includes(searchLower) ||
+        task.graph_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // 状态筛选
+    if (statusFilter) {
+      filtered = filtered.filter(task => task.status === statusFilter);
+    }
+
+    // 类型筛选（前端处理，因为后端可能不支持）
+    if (typeFilter) {
+      filtered = filtered.filter(task => task.schedule_type === typeFilter);
+    }
+
+    return filtered;
+  }, [tasks, searchText, statusFilter, typeFilter]);
+
   // 获取状态标签配置
   const getStatusTag = (status: TaskStatus) => {
     const configs = {
@@ -128,32 +154,11 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
     navigate(`/chat/${conversationId}`);
   };
 
-  // 搜索处理
-  const handleSearch = () => {
-    setQueryParams({
-      offset: 0,
-      ...(searchText ? {} : {}), // 后端暂不支持关键词搜索，可以在此处添加
-    });
-  };
-
-  // 筛选处理
-  const handleFilter = () => {
-    setQueryParams({
-      offset: 0,
-      task_status: statusFilter,
-      // schedule_type: typeFilter, // 后端暂不支持按调度类型筛选
-    });
-  };
-
   // 清除筛选
   const handleClearFilter = () => {
     setSearchText('');
     setStatusFilter(undefined);
     setTypeFilter(undefined);
-    setQueryParams({
-      offset: 0,
-      task_status: undefined,
-    });
   };
 
   // 表格列定义
@@ -395,7 +400,6 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            onPressEnter={handleSearch}
             allowClear
           />
         </Col>
@@ -427,14 +431,8 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
         </Col>
         <Col xs={24} sm={12} md={8}>
           <Space>
-            <Button onClick={handleSearch} icon={<SearchOutlined />}>
-              搜索
-            </Button>
-            <Button onClick={handleFilter}>
-              应用筛选
-            </Button>
             <Button onClick={handleClearFilter}>
-              清除
+              清除筛选
             </Button>
             <Button
               icon={<SyncOutlined />}
@@ -453,22 +451,14 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
       {/* 任务表格 */}
       <Table
         columns={columns}
-        dataSource={tasks}
+        dataSource={filteredTasks}
         loading={loading}
         rowKey="id"
         pagination={{
-          current: Math.floor((queryParams.offset || 0) / (queryParams.limit || 20)) + 1,
-          pageSize: queryParams.limit || 20,
-          total: tasks.length >= (queryParams.limit || 20) ? (queryParams.offset || 0) + tasks.length + 1 : (queryParams.offset || 0) + tasks.length,
+          pageSize: 20,
           showSizeChanger: true,
           showQuickJumper: true,
           showTotal: (total, range) => `第 ${range[0]}-${range[1]} 项，共 ${total} 项`,
-          onChange: (page, pageSize) => {
-            setQueryParams({
-              offset: (page - 1) * pageSize,
-              limit: pageSize
-            });
-          }
         }}
         locale={{
           emptyText: (
