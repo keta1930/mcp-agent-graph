@@ -203,6 +203,59 @@ class TaskManager:
             logger.error(f"清理单次任务失败: {str(e)}")
             return 0
 
+    async def get_task_summaries(self, user_id: Optional[str] = None, status: Optional[str] = None,
+                                 graph_name: Optional[str] = None, limit: int = 20, offset: int = 0,
+                                 sort_by: str = "created_at", sort_order: str = "desc") -> List[Dict[str, Any]]:
+        """获取任务摘要列表（排除执行历史，大字段）"""
+        try:
+            filter_query: Dict[str, Any] = {}
+            if user_id:
+                filter_query["user_id"] = user_id
+            if status:
+                filter_query["status"] = status
+            if graph_name:
+                filter_query["graph_name"] = graph_name
+
+            order = -1 if str(sort_order).lower() == "desc" else 1
+            projection = {"execution_history": 0}
+
+            cursor = self.tasks_collection.find(filter_query, projection).sort(sort_by, order).skip(offset).limit(limit)
+
+            summaries: List[Dict[str, Any]] = []
+            async for task in cursor:
+                task = self._convert_objectid_to_str(task)
+                stats = task.get("execution_stats", {}) or {}
+                last_time = None
+                try:
+                    last_exec = stats.get("last_executed_at") or {}
+                    last_time = last_exec.get("executed_at")
+                except Exception:
+                    last_time = None
+
+            
+                summaries.append({
+                    "id": task.get("id") or task.get("_id"),
+                    "user_id": task.get("user_id", ""),
+                    "task_name": task.get("task_name", ""),
+                    "graph_name": task.get("graph_name", ""),
+                    "input_text": task.get("input_text", ""),
+                    "execution_count": task.get("execution_count", 1),
+                    "schedule_type": task.get("schedule_type", "single"),
+                    "schedule_config": task.get("schedule_config", {}),
+                    "status": task.get("status", "active"),
+                    "created_at": task.get("created_at"),
+                    "updated_at": task.get("updated_at"),
+                    "execution_stats": {
+                        "total_triggers": stats.get("total_triggers", 0),
+                        "last_executed_at_time": last_time
+                    }
+                })
+
+            return summaries
+        except Exception as e:
+            logger.error(f"获取任务摘要列表失败: {str(e)}")
+            return []
+
     def _convert_objectid_to_str(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         """将ObjectId转换为字符串"""
         if isinstance(doc.get("_id"), ObjectId):

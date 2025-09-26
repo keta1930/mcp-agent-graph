@@ -46,6 +46,11 @@ class ExecutionStats(BaseModel):
     last_executed_at: Optional[TaskExecutionHistory] = Field(None, description="最后执行信息")
 
 
+class ExecutionStatsSummary(BaseModel):
+    total_triggers: int = Field(0, description="总触发次数")
+    last_executed_at_time: Optional[datetime] = Field(None, description="最后一次触发时间")
+
+
 class Task(BaseModel):
     id: str = Field(..., description="任务ID")
     user_id: str = Field(..., description="用户ID")
@@ -58,13 +63,25 @@ class Task(BaseModel):
     status: TaskStatus = Field(TaskStatus.ACTIVE, description="任务状态")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="创建时间")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="更新时间")
-    
-    # 新增：执行历史相关字段
     execution_history: List[TaskExecutionHistory] = Field(default_factory=list, description="执行历史")
     execution_stats: ExecutionStats = Field(default_factory=ExecutionStats, description="执行统计")
 
 
-# 保留TaskExecutionRecord以兼容API返回格式，但实际上已合并到Task中
+class TaskSummary(BaseModel):
+    id: str = Field(..., description="任务ID")
+    user_id: str = Field(..., description="用户ID")
+    task_name: str = Field(..., description="任务名称")
+    graph_name: str = Field(..., description="要执行的图名称")
+    input_text: str = Field(..., description="图的输入文本")
+    execution_count: int = Field(..., description="每次触发时并发执行的数量")
+    schedule_type: ScheduleType = Field(..., description="调度类型")
+    schedule_config: ScheduleConfig = Field(..., description="调度配置")
+    status: TaskStatus = Field(TaskStatus.ACTIVE, description="任务状态")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="创建时间")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="更新时间")
+    execution_stats: ExecutionStatsSummary = Field(default_factory=ExecutionStatsSummary, description="执行统计概览")
+
+
 class TaskExecutionRecord(BaseModel):
     id: str = Field(..., description="记录ID，使用task_id作为_id")
     task_id: str = Field(..., description="任务ID")

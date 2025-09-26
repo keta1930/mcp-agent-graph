@@ -220,6 +220,35 @@ class TaskService:
             logger.error(f"获取活跃任务列表失败: {str(e)}")
             return []
 
+    async def get_task_summaries(self, user_id: Optional[str] = None, status: Optional[Any] = None,
+                                 graph_name: Optional[str] = None, limit: int = 20, offset: int = 0,
+                                 sort_by: str = "created_at", sort_order: str = "desc") -> List[Dict[str, Any]]:
+        """获取任务摘要列表"""
+        try:
+            if not self.task_manager:
+                await self.initialize()
+
+            if not self.task_manager:
+                return []
+
+            status_value = None
+            if status is not None:
+                status_value = getattr(status, "value", status)
+
+            return await self.task_manager.get_task_summaries(
+                user_id=user_id,
+                status=status_value,
+                graph_name=graph_name,
+                limit=limit,
+                offset=offset,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
+
+        except Exception as e:
+            logger.error(f"获取任务摘要失败: {str(e)}")
+            return []
+
 
 # 创建全局任务服务实例
 task_service = TaskService()

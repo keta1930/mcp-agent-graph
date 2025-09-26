@@ -5,7 +5,7 @@ from datetime import datetime
 
 from app.services.task_service import task_service
 from app.services.task_scheduler import task_scheduler
-from app.models.task_schema import TaskCreate, TaskStatusUpdate, TaskResponse
+from app.models.task_schema import TaskCreate, TaskStatusUpdate, TaskResponse, TaskSummary, Task, TaskStatus
 
 logger = logging.getLogger(__name__)
 
@@ -95,11 +95,27 @@ async def get_scheduled_jobs():
         )
 
 
-@router.get("/tasks", response_model=List[Dict[str, Any]])
-async def get_tasks(user_id: Optional[str] = None):
-    """获取任务列表"""
+@router.get("/tasks", response_model=List[TaskSummary])
+async def get_tasks(
+    user_id: Optional[str] = None,
+    task_status: Optional[TaskStatus] = None,
+    graph_name: Optional[str] = None,
+    limit: int = 20,
+    offset: int = 0,
+    sort_by: str = "created_at",
+    sort_order: str = "desc"
+):
+    """获取任务摘要列表"""
     try:
-        tasks = await task_service.get_all_tasks(user_id)
+        tasks = await task_service.get_task_summaries(
+            user_id=user_id,
+            status=task_status,
+            graph_name=graph_name,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
         return tasks
     except Exception as e:
         logger.error(f"获取任务列表时出错: {str(e)}")
@@ -109,7 +125,7 @@ async def get_tasks(user_id: Optional[str] = None):
         )
 
 
-@router.get("/tasks/{task_id}", response_model=Dict[str, Any])
+@router.get("/tasks/{task_id}", response_model=Task)
 async def get_task(task_id: str):
     """获取任务详情和执行历史"""
     try:
