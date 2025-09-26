@@ -130,66 +130,128 @@ const TaskManager: React.FC = () => {
         />
       )}
 
-      {/* 统计卡片 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      {/* 统计卡片 - Minimal风格 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24, display: 'flex', flexWrap: 'wrap' }}>
         <Col xs={12} sm={8} md={4}>
-          <Card size="small">
-            <Statistic
-              title="总任务"
-              value={stats.total}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
+          <div style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            borderRadius: '16px', 
+            padding: '12px 20px',
+            border: '1px solid rgba(203, 213, 225, 0.6)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                backgroundColor: '#94a3b8', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ color: '#475569', fontSize: '14px' }}>总任务</span>
+              <span style={{ fontWeight: 600, color: '#1e293b' }}>{stats.total}</span>
+            </div>
+          </div>
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <Card size="small">
-            <Statistic
-              title="运行中"
-              value={stats.active}
-              valueStyle={{ color: '#3f8600' }}
-              prefix={<PlayCircleOutlined />}
-            />
-          </Card>
+          <div style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            borderRadius: '16px', 
+            padding: '12px 20px',
+            border: '1px solid rgba(203, 213, 225, 0.6)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                backgroundColor: '#10b981', 
+                borderRadius: '50%',
+                animation: 'pulse 2s infinite'
+              }}></div>
+              <span style={{ color: '#475569', fontSize: '14px' }}>运行中</span>
+              <span style={{ fontWeight: 600, color: '#059669' }}>{stats.active}</span>
+            </div>
+          </div>
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <Card size="small">
-            <Statistic
-              title="已暂停"
-              value={stats.paused}
-              valueStyle={{ color: '#fa8c16' }}
-              prefix={<PauseCircleOutlined />}
-            />
-          </Card>
+          <div style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            borderRadius: '16px', 
+            padding: '12px 20px',
+            border: '1px solid rgba(203, 213, 225, 0.6)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                backgroundColor: '#f59e0b', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ color: '#475569', fontSize: '14px' }}>已暂停</span>
+              <span style={{ fontWeight: 600, color: '#d97706' }}>{stats.paused}</span>
+            </div>
+          </div>
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <Card size="small">
-            <Statistic
-              title="已完成"
-              value={stats.completed}
-              valueStyle={{ color: '#1890ff' }}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
+          <div style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            borderRadius: '16px', 
+            padding: '12px 20px',
+            border: '1px solid rgba(203, 213, 225, 0.6)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                backgroundColor: '#3b82f6', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ color: '#475569', fontSize: '14px' }}>已完成</span>
+              <span style={{ fontWeight: 600, color: '#2563eb' }}>{stats.completed}</span>
+            </div>
+          </div>
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <Card size="small">
-            <Statistic
-              title="错误"
-              value={stats.error}
-              valueStyle={{ color: '#cf1322' }}
-              prefix={<ExclamationCircleOutlined />}
-            />
-          </Card>
+          <div style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            borderRadius: '16px', 
+            padding: '12px 20px',
+            border: '1px solid rgba(203, 213, 225, 0.6)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                backgroundColor: '#ef4444', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ color: '#475569', fontSize: '14px' }}>错误</span>
+              <span style={{ fontWeight: 600, color: '#dc2626' }}>{stats.error}</span>
+            </div>
+          </div>
         </Col>
         <Col xs={12} sm={8} md={4}>
-          <Card size="small">
-            <Statistic
-              title="调度中"
-              value={stats.scheduled}
-              valueStyle={{ color: '#722ed1' }}
-              prefix={<SyncOutlined />}
-            />
-          </Card>
+          <div style={{ 
+            backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+            borderRadius: '16px', 
+            padding: '12px 20px',
+            border: '1px solid rgba(203, 213, 225, 0.6)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                backgroundColor: '#8b5cf6', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ color: '#475569', fontSize: '14px' }}>调度中</span>
+              <span style={{ fontWeight: 600, color: '#7c3aed' }}>{stats.scheduled}</span>
+            </div>
+          </div>
         </Col>
       </Row>
 
