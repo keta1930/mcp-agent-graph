@@ -77,6 +77,12 @@ const TaskManager: React.FC = () => {
     loadScheduledJobs();
   };
 
+  // 刷新所有数据
+  const handleRefreshAll = () => {
+    loadTasks();
+    loadScheduledJobs();
+  };
+
   return (
     <div style={{
       padding: '24px',

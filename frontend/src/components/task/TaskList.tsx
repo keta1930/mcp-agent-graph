@@ -56,13 +56,16 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
     setQueryParams,
     loadTasks,
     updateTaskStatus,
-    deleteTask
+    deleteTask,
+    getTaskNextRunTime,
+    loadScheduledJobs
   } = useTaskStore();
 
   // 初始加载
   useEffect(() => {
     loadTasks();
-  }, [loadTasks]);
+    loadScheduledJobs();
+  }, [loadTasks, loadScheduledJobs]);
 
   // 查询参数变化时重新加载
   useEffect(() => {
@@ -217,6 +220,50 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
           );
         }
         return '-';
+      }
+    },
+    {
+      title: '下次运行',
+      key: 'next_run',
+      width: 120,
+      render: (_, task) => {
+        const nextRunTime = getTaskNextRunTime(task.id);
+        if (!nextRunTime) {
+          if (task.status === TaskStatus.ACTIVE) {
+            return <Text type="secondary">未调度</Text>;
+          } else {
+            return <Text type="secondary">-</Text>;
+          }
+        }
+
+        // 处理时区转换，后端返回的时间带有时区信息
+        const nextRun = dayjs(nextRunTime);
+        const now = dayjs();
+        const isOverdue = nextRun.isBefore(now);
+
+        // 判断是否是今天
+        const isToday = nextRun.isSame(now, 'day');
+        const isTomorrow = nextRun.isSame(now.add(1, 'day'), 'day');
+
+        return (
+          <Tooltip
+            title={`完整时间: ${nextRun.format('YYYY-MM-DD HH:mm:ss')}`}
+            placement="left"
+          >
+            <div>
+              <div style={{
+                fontSize: '12px',
+                color: isOverdue ? '#f5222d' : task.status === TaskStatus.ACTIVE ? '#389e0d' : '#666',
+                fontWeight: isToday || isTomorrow ? 'bold' : 'normal'
+              }}>
+                {isToday ? '今天 ' : isTomorrow ? '明天 ' : nextRun.format('MM-DD ')}{nextRun.format('HH:mm')}
+              </div>
+              <div style={{ fontSize: '11px', color: '#666' }}>
+                {isOverdue ? '已过期' : nextRun.fromNow()}
+              </div>
+            </div>
+          </Tooltip>
+        );
       }
     },
     {
@@ -391,7 +438,10 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
             </Button>
             <Button
               icon={<SyncOutlined />}
-              onClick={() => loadTasks()}
+              onClick={() => {
+                loadTasks();
+                loadScheduledJobs();
+              }}
               loading={loading}
             >
               刷新

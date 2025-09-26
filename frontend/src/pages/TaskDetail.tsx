@@ -52,18 +52,21 @@ const TaskDetail: React.FC = () => {
     updateTaskStatus,
     deleteTask,
     clearCurrentTask,
-    clearError
+    clearError,
+    getTaskNextRunTime,
+    loadScheduledJobs
   } = useTaskStore();
 
   // 加载任务详情
   useEffect(() => {
     if (taskId) {
       loadTask(taskId);
+      loadScheduledJobs();
     }
     return () => {
       clearCurrentTask();
     };
-  }, [taskId, loadTask, clearCurrentTask]);
+  }, [taskId, loadTask, loadScheduledJobs, clearCurrentTask]);
 
   // 获取状态标签配置
   const getStatusTag = (status: TaskStatus) => {
@@ -233,6 +236,35 @@ const TaskDetail: React.FC = () => {
                   <Text code>{currentTask.schedule_config.cron_expression}</Text>
                 )}
               </Descriptions.Item>
+              {(() => {
+                const nextRunTime = getTaskNextRunTime(currentTask.id);
+                if (nextRunTime) {
+                  const nextRun = dayjs(nextRunTime);
+                  const now = dayjs();
+                  const isOverdue = nextRun.isBefore(now);
+                  return (
+                    <Descriptions.Item label="下次运行">
+                      <div>
+                        <Text style={{
+                          color: isOverdue ? '#f5222d' : currentTask.status === TaskStatus.ACTIVE ? '#389e0d' : '#666'
+                        }}>
+                          {nextRun.format('YYYY-MM-DD HH:mm:ss')}
+                        </Text>
+                        <Text type="secondary" style={{ marginLeft: '8px' }}>
+                          ({isOverdue ? '已过期' : nextRun.fromNow()})
+                        </Text>
+                      </div>
+                    </Descriptions.Item>
+                  );
+                } else if (currentTask.status === TaskStatus.ACTIVE) {
+                  return (
+                    <Descriptions.Item label="下次运行">
+                      <Text type="secondary">未调度到调度器中</Text>
+                    </Descriptions.Item>
+                  );
+                }
+                return null;
+              })()}
               <Descriptions.Item label="输入文本">
                 {currentTask.input_text ? (
                   <Text style={{ maxWidth: '300px', display: 'block', wordBreak: 'break-word' }}>

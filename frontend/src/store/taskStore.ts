@@ -32,6 +32,9 @@ interface TaskStore {
   reloadScheduler: () => Promise<boolean>;
   clearError: () => void;
   clearCurrentTask: () => void;
+
+  // 获取任务的下次运行时间
+  getTaskNextRunTime: (taskId: string) => string | null;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -228,5 +231,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   // 清除当前任务
   clearCurrentTask: () => {
     set({ currentTask: null });
+  },
+
+  // 获取任务的下次运行时间
+  getTaskNextRunTime: (taskId: string) => {
+    const { scheduledJobs } = get();
+    const job = scheduledJobs.find(job => job.id === taskId);
+    return job?.next_run_time || null;
   }
 }));
