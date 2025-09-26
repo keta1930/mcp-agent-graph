@@ -8,11 +8,13 @@ from .chat_manager import ChatManager
 from .graph_manager import GraphManager
 from .mcp_manager import MCPManager
 from .graph_run_manager import GraphRunManager
+from .task_manager import TaskManager
 
 __all__ = [
     'ConversationManager',
     'ChatManager',
     'GraphManager',
     'MCPManager',
-    'GraphRunManager'
+    'GraphRunManager',
+    'TaskManager'
 ]

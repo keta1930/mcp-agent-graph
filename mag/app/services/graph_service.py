@@ -33,9 +33,16 @@ class GraphService:
         self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
 
+        # 任务管理组件（延迟初始化以避免循环导入）
+        self._task_service = None
+        self._task_scheduler = None
+
     async def initialize(self) -> None:
         """初始化图服务"""
         FileManager.initialize()
+
+        # 初始化任务管理组件
+        await self._initialize_task_components()
 
     def list_graphs(self) -> List[str]:
         """列出所有可用的图"""
@@ -374,6 +381,39 @@ class GraphService:
             "sequential_script": sequential_script,
             "default_script": sequential_script
         }
+
+    # ======= 任务管理集成 =======
+
+    async def _initialize_task_components(self):
+        """初始化任务管理组件"""
+        try:
+            # 延迟导入以避免循环导入
+            from app.services.task_service import task_service
+            from app.services.task_scheduler import task_scheduler
+
+            self._task_service = task_service
+            self._task_scheduler = task_scheduler
+
+            # 初始化任务服务
+            await self._task_service.initialize()
+
+            # 加载活跃任务到调度器
+            await self._task_scheduler.load_active_tasks()
+
+            logger.info("任务管理组件初始化成功")
+
+        except Exception as e:
+            logger.error(f"任务管理组件初始化失败: {str(e)}")
+
+    @property
+    def task_service(self):
+        """获取任务服务实例"""
+        return self._task_service
+
+    @property
+    def task_scheduler(self):
+        """获取任务调度器实例"""
+        return self._task_scheduler
 
 
 graph_service = GraphService()

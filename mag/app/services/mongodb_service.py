@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
 from app.core.file_manager import FileManager
-from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager
+from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class MongoDBService:
         self.graph_messages_collection = None
         self.mcp_messages_collection = None
         self.graph_run_messages_collection = None
+        self.tasks_collection = None
 
         self.is_connected = False
 
@@ -30,6 +31,7 @@ class MongoDBService:
         self.graph_manager = None
         self.mcp_manager = None
         self.graph_run_manager = None
+        self.task_manager = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -48,6 +50,7 @@ class MongoDBService:
             self.graph_messages_collection = self.db.graph_gen
             self.mcp_messages_collection = self.db.mcp_gen
             self.graph_run_messages_collection = self.db.graph_run
+            self.tasks_collection = self.db.tasks
 
             await self.client.admin.command('ping')
 
@@ -93,6 +96,8 @@ class MongoDBService:
             self.conversation_manager
         )
 
+        self.task_manager = TaskManager(self.db)
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -108,6 +113,14 @@ class MongoDBService:
 
             await self.graph_run_messages_collection.create_index([("conversation_id", 1)])
             await self.graph_run_messages_collection.create_index([("graph_name", 1)])
+
+            await self.tasks_collection.create_index([("user_id", 1), ("status", 1), ("created_at", -1)])
+            await self.tasks_collection.create_index([("graph_name", 1)])
+            await self.tasks_collection.create_index([("schedule_type", 1)])
+            await self.tasks_collection.create_index([("status", 1)])
+            await self.tasks_collection.create_index([("user_id", 1), ("task_name", 1), ("schedule_type", 1)], unique=True)
+            await self.tasks_collection.create_index([("execution_stats.last_executed_at.executed_at", -1)])
+            await self.tasks_collection.create_index([("execution_stats.total_triggers", -1)])
 
             logger.info("MongoDB索引创建成功")
 
