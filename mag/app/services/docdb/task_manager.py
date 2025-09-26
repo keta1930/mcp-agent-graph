@@ -225,14 +225,8 @@ class TaskManager:
             async for task in cursor:
                 task = self._convert_objectid_to_str(task)
                 stats = task.get("execution_stats", {}) or {}
-                last_time = None
-                try:
-                    last_exec = stats.get("last_executed_at") or {}
-                    last_time = last_exec.get("executed_at")
-                except Exception:
-                    last_time = None
+                last_exec = stats.get("last_executed_at") or None
 
-            
                 summaries.append({
                     "id": task.get("id") or task.get("_id"),
                     "user_id": task.get("user_id", ""),
@@ -247,7 +241,7 @@ class TaskManager:
                     "updated_at": task.get("updated_at"),
                     "execution_stats": {
                         "total_triggers": stats.get("total_triggers", 0),
-                        "last_executed_at_time": last_time
+                        "last_executed_at": last_exec
                     }
                 })
 

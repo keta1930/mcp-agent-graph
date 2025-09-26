@@ -48,7 +48,7 @@ class ExecutionStats(BaseModel):
 
 class ExecutionStatsSummary(BaseModel):
     total_triggers: int = Field(0, description="总触发次数")
-    last_executed_at_time: Optional[datetime] = Field(None, description="最后一次触发时间")
+    last_executed_at: Optional[TaskExecutionHistory] = Field(None, description="最后一次执行信息（包含executed_at与executions）")
 
 
 class Task(BaseModel):
