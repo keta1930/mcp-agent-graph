@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Select, Input, Space, Tag, Divider } from 'antd';
+import { Select, Input } from 'antd';
 import { CronTemplate } from '../../types/task';
 
 const { Option } = Select;
@@ -12,14 +12,12 @@ interface CronBuilderProps {
 
 // 预设的cron模板
 const CRON_TEMPLATES: CronTemplate[] = [
-  { name: '每分钟', description: '每分钟执行一次', expression: '* * * * *' },
-  { name: '每小时', description: '每小时的第0分钟执行', expression: '0 * * * *' },
-  { name: '每天上午9点', description: '每天上午9:00执行', expression: '0 9 * * *' },
-  { name: '每天下午6点', description: '每天下午18:00执行', expression: '0 18 * * *' },
-  { name: '每周一上午9点', description: '每周一上午9:00执行', expression: '0 9 * * 1' },
-  { name: '每月1号上午9点', description: '每月1号上午9:00执行', expression: '0 9 1 * *' },
-  { name: '工作日上午9点', description: '周一到周五上午9:00执行', expression: '0 9 * * 1-5' },
-  { name: '每天每小时的15分和45分', description: '每小时的第15分钟和第45分钟执行', expression: '15,45 * * * *' }
+  { name: '每小时', description: '', expression: '0 * * * *' },
+  { name: '每天上午9点', description: '', expression: '0 9 * * *' },
+  { name: '每周一上午9点', description: '', expression: '0 9 * * 1' },
+  { name: '每月1号上午9点', description: '', expression: '0 9 1 * *' },
+  { name: '工作日上午9点', description: '', expression: '0 9 * * 1-5' },
+  { name: '每天每小时的15分和45分', description: '', expression: '15,45 * * * *' }
 ];
 
 const CronBuilder: React.FC<CronBuilderProps> = ({
@@ -200,119 +198,342 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
 
   return (
     <div className="cron-builder">
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>快速选择模板：</div>
-        <Space wrap>
+      {/* 自然语言描述 */}
+      <div style={{
+        marginBottom: '20px',
+        padding: '16px',
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '10px'
+      }}>
+        <div style={{
+          fontSize: '14px',
+          color: '#374151',
+          fontWeight: 500,
+          marginBottom: '8px'
+        }}>
+          当前计划
+        </div>
+        <div style={{
+          fontSize: '16px',
+          color: '#1a1a1a',
+          lineHeight: '1.5'
+        }}>
+          {describeCron(value)}
+        </div>
+        <div style={{
+          fontSize: '12px',
+          color: '#6b7280',
+          marginTop: '8px',
+          fontFamily: 'monospace',
+          backgroundColor: '#f8fafc',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          display: 'inline-block'
+        }}>
+          {value}
+        </div>
+      </div>
+
+      {/* 快速模板 */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{
+          fontSize: '14px',
+          fontWeight: 500,
+          color: '#374151',
+          marginBottom: '12px'
+        }}>
+          快速选择
+        </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '8px'
+        }}>
           {CRON_TEMPLATES.map(template => (
-            <Tag.CheckableTag
+            <button
               key={template.name}
-              checked={value === template.expression}
-              onChange={() => handleTemplateSelect(template)}
-              style={{ cursor: 'pointer' }}
+              onClick={() => handleTemplateSelect(template)}
+              style={{
+                padding: '10px 12px',
+                border: value === template.expression ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: value === template.expression ? '#eff6ff' : '#ffffff',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: value === template.expression ? 500 : 400,
+                color: value === template.expression ? '#1d4ed8' : '#374151',
+                textAlign: 'left',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (value !== template.expression) {
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (value !== template.expression) {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }
+              }}
             >
-              {template.name}
-            </Tag.CheckableTag>
+              <div style={{ fontWeight: 500, marginBottom: '2px' }}>
+                {template.name}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: value === template.expression ? '#60a5fa' : '#6b7280',
+                lineHeight: '1.3'
+              }}>
+                {template.description}
+              </div>
+            </button>
           ))}
-          <Tag.CheckableTag
-            checked={customMode}
-            onChange={() => setCustomMode(!customMode)}
-            style={{ cursor: 'pointer', color: '#1890ff', borderColor: '#1890ff' }}
+
+          <button
+            onClick={() => setCustomMode(!customMode)}
+            style={{
+              padding: '10px 12px',
+              border: customMode ? '2px solid #7c3aed' : '1px solid #e5e7eb',
+              borderRadius: '8px',
+              backgroundColor: customMode ? '#faf5ff' : '#ffffff',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: customMode ? 500 : 400,
+              color: customMode ? '#7c3aed' : '#374151',
+              textAlign: 'left',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!customMode) {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.backgroundColor = '#f8fafc';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!customMode) {
+                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.backgroundColor = '#ffffff';
+              }
+            }}
           >
-            自定义
-          </Tag.CheckableTag>
-        </Space>
+            <div style={{ fontWeight: 500, marginBottom: '2px' }}>
+              自定义
+            </div>
+            <div style={{
+              fontSize: '11px',
+              color: customMode ? '#a855f7' : '#6b7280',
+              lineHeight: '1.3'
+            }}>
+              自定义时间表达式
+            </div>
+          </button>
+        </div>
       </div>
 
       {customMode && (
-        <>
-          <Divider />
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ marginBottom: 8, fontWeight: 500 }}>自定义设置：</div>
-            <Space wrap>
-              <div>
-                <div style={{ marginBottom: 4, fontSize: '12px', color: '#666' }}>分钟</div>
-                <Select
-                  value={minute}
-                  onChange={(val) => handleFieldChange('minute', val)}
-                  style={{ width: 80 }}
-                  disabled={disabled}
-                >
-                  <Option value="*">每分钟</Option>
-                  {generateOptions(0, 59)}
-                </Select>
-              </div>
-              <div>
-                <div style={{ marginBottom: 4, fontSize: '12px', color: '#666' }}>小时</div>
-                <Select
-                  value={hour}
-                  onChange={(val) => handleFieldChange('hour', val)}
-                  style={{ width: 80 }}
-                  disabled={disabled}
-                >
-                  <Option value="*">每小时</Option>
-                  {generateOptions(0, 23)}
-                </Select>
-              </div>
-              <div>
-                <div style={{ marginBottom: 4, fontSize: '12px', color: '#666' }}>日期</div>
-                <Select
-                  value={day}
-                  onChange={(val) => handleFieldChange('day', val)}
-                  style={{ width: 80 }}
-                  disabled={disabled}
-                >
-                  <Option value="*">每天</Option>
-                  {generateOptions(1, 31)}
-                </Select>
-              </div>
-              <div>
-                <div style={{ marginBottom: 4, fontSize: '12px', color: '#666' }}>月份</div>
-                <Select
-                  value={month}
-                  onChange={(val) => handleFieldChange('month', val)}
-                  style={{ width: 80 }}
-                  disabled={disabled}
-                >
-                  {monthOptions.map(option => (
-                    <Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <div style={{ marginBottom: 4, fontSize: '12px', color: '#666' }}>星期</div>
-                <Select
-                  value={dayOfWeek}
-                  onChange={(val) => handleFieldChange('dayOfWeek', val)}
-                  style={{ width: 100 }}
-                  disabled={disabled}
-                >
-                  {dayOfWeekOptions.map(option => (
-                    <Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Option>
-                  ))}
-                </Select>
-              </div>
-            </Space>
+        <div style={{
+          marginBottom: '20px',
+          padding: '20px',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px'
+        }}>
+          <div style={{
+            fontSize: '14px',
+            fontWeight: 500,
+            color: '#374151',
+            marginBottom: '16px'
+          }}>
+            自定义设置
           </div>
-        </>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+            gap: '16px',
+            marginBottom: '16px'
+          }}>
+            <div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                fontWeight: 500,
+                marginBottom: '6px'
+              }}>
+                分钟
+              </div>
+              <Select
+                value={minute}
+                onChange={(val) => handleFieldChange('minute', val)}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px'
+                }}
+                disabled={disabled}
+              >
+                <Option value="*">每分钟</Option>
+                {generateOptions(0, 59)}
+              </Select>
+            </div>
+
+            <div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                fontWeight: 500,
+                marginBottom: '6px'
+              }}>
+                小时
+              </div>
+              <Select
+                value={hour}
+                onChange={(val) => handleFieldChange('hour', val)}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px'
+                }}
+                disabled={disabled}
+              >
+                <Option value="*">每小时</Option>
+                {generateOptions(0, 23)}
+              </Select>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+            gap: '16px',
+            marginBottom: '16px'
+          }}>
+            <div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                fontWeight: 500,
+                marginBottom: '6px'
+              }}>
+                日期
+              </div>
+              <Select
+                value={day}
+                onChange={(val) => handleFieldChange('day', val)}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px'
+                }}
+                disabled={disabled}
+              >
+                <Option value="*">每天</Option>
+                {generateOptions(1, 31)}
+              </Select>
+            </div>
+
+            <div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                fontWeight: 500,
+                marginBottom: '6px'
+              }}>
+                月份
+              </div>
+              <Select
+                value={month}
+                onChange={(val) => handleFieldChange('month', val)}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px'
+                }}
+                disabled={disabled}
+              >
+                {monthOptions.map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+
+            <div>
+              <div style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                fontWeight: 500,
+                marginBottom: '6px'
+              }}>
+                星期
+              </div>
+              <Select
+                value={dayOfWeek}
+                onChange={(val) => handleFieldChange('dayOfWeek', val)}
+                style={{
+                  width: '100%',
+                  borderRadius: '8px'
+                }}
+                disabled={disabled}
+              >
+                {dayOfWeekOptions.map(option => (
+                  <Option key={option.value} value={option.value}>
+                    {option.label}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {/* 实时预览 */}
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '8px',
+            fontSize: '13px',
+            color: '#374151'
+          }}>
+            <span style={{ fontWeight: 500, color: '#6b7280' }}>预览：</span>
+            {describeCron(buildCronExpression())}
+          </div>
+        </div>
       )}
 
-      <div style={{ marginTop: 16 }}>
-        <div style={{ marginBottom: 8 }}>
-          <span style={{ fontWeight: 500 }}>Cron表达式：</span>
-          <Input
-            value={value}
-            onChange={(e) => onChange?.(e.target.value)}
-            style={{ width: 150, marginLeft: 8 }}
-            disabled={disabled}
-            placeholder="分 时 日 月 周"
-          />
+      {/* 手动输入 */}
+      <div style={{
+        padding: '16px',
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: '10px'
+      }}>
+        <div style={{
+          fontSize: '14px',
+          fontWeight: 500,
+          color: '#374151',
+          marginBottom: '8px'
+        }}>
+          直接输入 Cron 表达式
         </div>
-        <div style={{ fontSize: '12px', color: '#666' }}>
-          <strong>说明：</strong> {describeCron(value)}
+        <Input
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          disabled={disabled}
+          placeholder="分 时 日 月 周 (例: 0 9 * * *)"
+          style={{
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb',
+            padding: '8px 12px'
+          }}
+        />
+        <div style={{
+          fontSize: '11px',
+          color: '#6b7280',
+          marginTop: '6px',
+          lineHeight: '1.4'
+        }}>
+          格式：分钟(0-59) 小时(0-23) 日期(1-31) 月份(1-12) 星期(0-7)
         </div>
       </div>
     </div>
