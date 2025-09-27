@@ -31,7 +31,7 @@ class GraphManager:
                 return False
 
             # 2. 在graph_messages集合中创建消息文档
-            now = datetime.utcnow()
+            now = datetime.now()
             messages_doc = {
                 "_id": conversation_id,
                 "conversation_id": conversation_id,

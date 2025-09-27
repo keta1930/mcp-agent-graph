@@ -74,7 +74,7 @@ class GraphRunManager:
         """更新图运行数据"""
         try:
             # 添加更新时间
-            update_data["updated_at"] = datetime.utcnow().isoformat()
+            update_data["updated_at"] = datetime.now().isoformat()
 
             result = await self.graph_run_messages_collection.update_one(
                 {"conversation_id": conversation_id},
@@ -98,7 +98,7 @@ class GraphRunManager:
                 {"conversation_id": conversation_id},
                 {
                     "$push": {"rounds": round_data},
-                    "$set": {"updated_at": datetime.utcnow().isoformat()}
+                    "$set": {"updated_at": datetime.now().isoformat()}
                 }
             )
 
@@ -122,7 +122,7 @@ class GraphRunManager:
                 {"conversation_id": conversation_id},
                 {
                     "$push": {f"global_outputs.{node_name}": output},
-                    "$set": {"updated_at": datetime.utcnow().isoformat()}
+                    "$set": {"updated_at": datetime.now().isoformat()}
                 }
             )
             return result.modified_count > 0
@@ -139,7 +139,7 @@ class GraphRunManager:
                 {
                     "$set": {
                         f"handoffs_status.{node_name}": handoffs_data,
-                        "updated_at": datetime.utcnow().isoformat()
+                        "updated_at": datetime.now().isoformat()
                     }
                 }
             )
@@ -156,7 +156,7 @@ class GraphRunManager:
                 {
                     "$set": {
                         "execution_chain": execution_chain,
-                        "updated_at": datetime.utcnow().isoformat()
+                        "updated_at": datetime.now().isoformat()
                     }
                 }
             )
@@ -174,7 +174,7 @@ class GraphRunManager:
                     "$set": {
                         "final_result": final_result,
                         "completed": True,
-                        "updated_at": datetime.utcnow().isoformat()
+                        "updated_at": datetime.now().isoformat()
                     }
                 }
             )

@@ -95,7 +95,7 @@ class ConversationManager:
             result = await self.conversations_collection.update_one(
                 {"_id": conversation_id},
                 {
-                    "$set": {"updated_at": datetime.utcnow()},
+                    "$set": {"updated_at": datetime.now()},
                     "$inc": {"round_count": increment}
                 }
             )
@@ -188,7 +188,7 @@ class ConversationManager:
                                                  title: str = None, tags: List[str] = None) -> bool:
         """更新对话标题和标签（首次生成时调用）"""
         try:
-            update_data = {"updated_at": datetime.utcnow()}
+            update_data = {"updated_at": datetime.now()}
             if title:
                 update_data["title"] = title
             if tags is not None:
@@ -224,7 +224,7 @@ class ConversationManager:
                 {
                     "$set": {
                         "title": title,
-                        "updated_at": datetime.utcnow()
+                        "updated_at": datetime.now()
                     }
                 }
             )
@@ -261,7 +261,7 @@ class ConversationManager:
                 {
                     "$set": {
                         "tags": tags,
-                        "updated_at": datetime.utcnow()
+                        "updated_at": datetime.now()
                     }
                 }
             )
@@ -290,7 +290,7 @@ class ConversationManager:
                         "total_token_usage.prompt_tokens": prompt_tokens,
                         "total_token_usage.completion_tokens": completion_tokens
                     },
-                    "$set": {"updated_at": datetime.utcnow()}
+                    "$set": {"updated_at": datetime.now()}
                 }
             )
 
@@ -345,7 +345,7 @@ class ConversationManager:
                 {
                     "$set": {
                         "status": status,
-                        "updated_at": datetime.utcnow()
+                        "updated_at": datetime.now()
                     }
                 }
             )
@@ -391,7 +391,7 @@ class ConversationManager:
             total_conversations = await self.conversations_collection.count_documents(total_query)
 
             # 今天的对话数
-            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             today_query = total_query.copy()
             today_query["created_at"] = {"$gte": today_start}
             today_conversations = await self.conversations_collection.count_documents(today_query)
