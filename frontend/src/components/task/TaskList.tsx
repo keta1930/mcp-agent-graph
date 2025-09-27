@@ -445,27 +445,34 @@ const TaskList: React.FC<TaskListProps> = ({
               disabled={task.status === TaskStatus.COMPLETED}
             />
           </Tooltip>
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'complete',
-                  label: '标记完成',
-                  disabled: task.status === TaskStatus.COMPLETED,
-                  onClick: () => updateTaskStatus(task.id, TaskStatus.COMPLETED)
-                },
-                {
-                  key: 'delete',
-                  label: '删除',
-                  danger: true,
-                  onClick: () => handleDelete(task)
+          <Tooltip title="删除任务">
+            <Button
+              type="text"
+              size="small"
+              icon={<DeleteOutlined />}
+              danger
+              onClick={async (e) => {
+                e.stopPropagation();
+                
+                // 使用原生确认对话框
+                const confirmed = window.confirm(`确定要删除任务"${task.task_name}"吗？此操作不可撤销。`);
+                
+                if (confirmed) {
+                  try {
+                    const success = await deleteTask(task.id);
+                    if (success) {
+                      message.success('任务删除成功');
+                    } else {
+                      message.error('删除任务失败');
+                    }
+                  } catch (error) {
+                    console.error('删除任务时出错:', error);
+                    message.error('删除任务时出错');
+                  }
                 }
-              ]
-            }}
-            trigger={['click']}
-          >
-            <Button type="text" size="small" icon={<EllipsisOutlined />} />
-          </Dropdown>
+              }}
+            />
+          </Tooltip>
         </Space>
       )
     }
