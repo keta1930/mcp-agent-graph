@@ -69,32 +69,18 @@ const ChatSystem: React.FC = () => {
     info: showInfoNotification
   } = useGlobalNotification();
 
-  // 处理URL参数变化
+  // 处理URL参数变化 - 简化逻辑，避免破坏现有状态管理
   useEffect(() => {
-    if (urlConversationId) {
-      if (urlConversationId !== activeConversationId) {
-        // URL中有conversation_id且与当前不同，加载该对话
+    // 仅在初始加载时处理URL参数，避免运行时的竞态条件
+    if (urlConversationId && urlConversationId !== activeConversationId) {
+      // 使用现有的handleConversationSelect逻辑，但延迟执行避免初始化问题
+      const timer = setTimeout(() => {
         setActiveConversationId(urlConversationId);
         loadConversationDetail(urlConversationId);
-      }
-      return;
+      }, 0);
+      return () => clearTimeout(timer);
     }
-
-    // URL中没有 conversation_id：始终清理旧状态并显示新建界面
-    if (activeConversationId) {
-      setActiveConversationId(undefined);
-    }
-    // 停止SSE连接
-    closeConnection();
-    // 清理界面相关的临时状态
-    setPendingUserMessage(null);
-    setTemporaryConversation(null);
-    setSelectedGraphName('');
-    setInheritedConfig({});
-    // 清理当前对话并重置模式
-    clearCurrentConversation();
-    setCurrentMode('chat');
-  }, [urlConversationId, activeConversationId, loadConversationDetail, clearCurrentConversation, setCurrentMode, closeConnection]);
+  }, [urlConversationId]); // 移除activeConversationId依赖，避免循环
 
   // 获取当前显示的对话（优先临时对话，其次当前对话）
   const getDisplayConversation = useCallback((): ConversationDetail | null => {
@@ -166,7 +152,7 @@ const ChatSystem: React.FC = () => {
 
     // 清除当前对话
     clearCurrentConversation();
-    // setActiveConversationId(undefined); // 移除：避免与URL参数effect竞态导致短暂重新加载旧对话
+    setActiveConversationId(undefined);
 
     // 更新URL到基础聊天页面
     navigate('/chat', { replace: true });
@@ -289,32 +275,41 @@ const ChatSystem: React.FC = () => {
           // Graph模式时更新实际的对话ID和标题
           if (isGraphMode) {
             actualConversationId = backendConversationId;
-            setActiveConversationId(backendConversationId);
-            // 更新URL到新的对话ID
-            navigate(`/chat/${backendConversationId}`, { replace: true });
-            // 更新临时对话的ID和标题
-            setTemporaryConversation(prev => prev ? {
-              ...prev,
-              conversation_id: backendConversationId,
-              title: backendConversationId // 使用conversation_id作为标题
-            } : null);
+            // 异步更新状态，避免在渲染期间调用setState
+            setTimeout(() => {
+              setActiveConversationId(backendConversationId);
+              // 更新URL到新的对话ID
+              navigate(`/chat/${backendConversationId}`, { replace: true });
+              // 更新临时对话的ID和标题
+              setTemporaryConversation(prev => prev ? {
+                ...prev,
+                conversation_id: backendConversationId,
+                title: backendConversationId // 使用conversation_id作为标题
+              } : null);
+            }, 0);
           }
         },
         onComplete: async () => {
-          // 重新加载对话详情以获取最新内容，确保消息不会消失
-          await loadConversationDetail(actualConversationId);
-          // 清除待发送消息状态和临时对话
-          setPendingUserMessage(null);
-          setTemporaryConversation(null);
-          // 静默更新对话列表以显示新对话
-          silentUpdateConversations();
-          message.success('对话完成');
+          // 异步执行状态更新，避免在渲染期间调用setState
+          setTimeout(async () => {
+            // 重新加载对话详情以获取最新内容，确保消息不会消失
+            await loadConversationDetail(actualConversationId);
+            // 清除待发送消息状态和临时对话
+            setPendingUserMessage(null);
+            setTemporaryConversation(null);
+            // 静默更新对话列表以显示新对话
+            silentUpdateConversations();
+            message.success('对话完成');
+          }, 0);
         },
         onError: (error) => {
-          // 清除待发送消息状态和临时对话
-          setPendingUserMessage(null);
-          setTemporaryConversation(null);
-          message.error(`连接错误: ${error}`);
+          // 异步执行状态更新，避免在渲染期间调用setState
+          setTimeout(() => {
+            // 清除待发送消息状态和临时对话
+            setPendingUserMessage(null);
+            setTemporaryConversation(null);
+            message.error(`连接错误: ${error}`);
+          }, 0);
         },
         onAgentCompletion: (completionData: any) => {
           // 处理Agent模式的完成事件
@@ -349,9 +344,12 @@ const ChatSystem: React.FC = () => {
 
     } catch (error) {
       console.error('启动对话失败:', error);
-      message.error('启动对话失败');
-      setPendingUserMessage(null);
-      setTemporaryConversation(null);
+      // 异步执行状态更新，避免在渲染期间调用setState
+      setTimeout(() => {
+        message.error('启动对话失败');
+        setPendingUserMessage(null);
+        setTemporaryConversation(null);
+      }, 0);
     }
   }, [currentMode, agentType, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation, showSuccessNotification, showInfoNotification, navigate]);
 
@@ -373,20 +371,26 @@ const ChatSystem: React.FC = () => {
         conversationId: activeConversationId,
         ...options,
         onComplete: async () => {
-          // 重新加载对话详情以获取最新内容，确保消息不会消失
-          await loadConversationDetail(activeConversationId);
-          // 清除待发送消息状态和临时对话
-          setPendingUserMessage(null);
-          setTemporaryConversation(null);
-          // 注意：不清除 inheritedConfig，保持配置在对话界面中可用
-          // 静默更新对话列表以反映最新状态
-          silentUpdateConversations();
+          // 异步执行状态更新，避免在渲染期间调用setState
+          setTimeout(async () => {
+            // 重新加载对话详情以获取最新内容，确保消息不会消失
+            await loadConversationDetail(activeConversationId);
+            // 清除待发送消息状态和临时对话
+            setPendingUserMessage(null);
+            setTemporaryConversation(null);
+            // 注意：不清除 inheritedConfig，保持配置在对话界面中可用
+            // 静默更新对话列表以反映最新状态
+            silentUpdateConversations();
+          }, 0);
         },
         onError: (error) => {
-          message.error(`发送失败: ${error}`);
-          // 清除待发送消息状态
-          setPendingUserMessage(null);
-          // 出错时保持当前状态，不重新加载对话以避免打断用户体验
+          // 异步执行状态更新，避免在渲染期间调用setState
+          setTimeout(() => {
+            message.error(`发送失败: ${error}`);
+            // 清除待发送消息状态
+            setPendingUserMessage(null);
+            // 出错时保持当前状态，不重新加载对话以避免打断用户体验
+          }, 0);
         },
         onAgentCompletion: (completionData: any) => {
           // 处理Agent模式的完成事件
@@ -415,9 +419,12 @@ const ChatSystem: React.FC = () => {
       });
     } catch (error) {
       console.error('发送消息失败:', error);
-      message.error('发送消息失败');
-      // 清除待发送消息状态
-      setPendingUserMessage(null);
+      // 异步执行状态更新，避免在渲染期间调用setState
+      setTimeout(() => {
+        message.error('发送消息失败');
+        // 清除待发送消息状态
+        setPendingUserMessage(null);
+      }, 0);
     }
   }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail, silentUpdateConversations, showSuccessNotification, showInfoNotification]);
 

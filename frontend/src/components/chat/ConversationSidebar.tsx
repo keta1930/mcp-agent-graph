@@ -205,7 +205,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       >
         <div
           className={`conversation-item ${isActive ? 'active' : ''}`}
-          onClick={() => navigate(`/chat/${conversation._id}`)}
+          onClick={onClick}
         >
           <div className="conversation-header">
             <div className="conversation-info">
@@ -641,7 +641,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               key={conversation._id}
               conversation={conversation}
               isActive={conversation._id === activeConversationId}
-              onClick={() => navigate(`/chat/${conversation._id}`)}
+              onClick={() => onConversationSelect(conversation._id)}
             />
           ))
         )}
