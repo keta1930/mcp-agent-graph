@@ -2760,4 +2760,190 @@
   color: var(--text-primary);
 }
 
+/* 批量选择相关样式 */
+.batch-toolbar {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px var(--shadow-light);
+}
+
+.batch-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.batch-actions .ant-btn {
+  border-radius: 6px;
+  font-size: 12px;
+  height: 28px;
+  padding: 0 12px;
+  transition: all 0.2s ease;
+}
+
+.batch-actions .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px var(--shadow-light);
+}
+
+.batch-mode-btn {
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.batch-mode-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px var(--shadow-light) !important;
+}
+
+/* 批量模式下的对话项样式 */
+.conversation-item.batch-mode {
+  cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+  user-select: none;
+}
+
+.conversation-item.batch-mode:hover {
+  background: rgba(24, 144, 255, 0.05);
+  border-color: rgba(24, 144, 255, 0.2);
+}
+
+.conversation-item.batch-mode.selected {
+  background: rgba(24, 144, 255, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.conversation-item.batch-mode:active {
+  transform: scale(0.98);
+  transition: transform 0.05s ease;
+}
+
+.conversation-checkbox {
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.conversation-checkbox .ant-checkbox-wrapper {
+  margin: 0;
+}
+
+.conversation-item.batch-mode .conversation-info {
+  cursor: pointer;
+  flex: 1;
+}
+
+.conversation-item.batch-mode .conversation-header {
+  align-items: center;
+}
+
+/* 筛选按钮激活状态指示点 */
+.filter-active-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  z-index: 2;
+}
+
+/* 现代化批量选择按钮样式 */
+.modern-batch-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(116, 185, 255, 0.3);
+  border: none;
+  overflow: hidden;
+}
+
+.modern-batch-btn.active {
+  background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+  box-shadow: 0 4px 12px rgba(253, 121, 168, 0.4);
+}
+
+.modern-batch-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modern-batch-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(116, 185, 255, 0.4);
+}
+
+.modern-batch-btn.active:hover {
+  box-shadow: 0 8px 20px rgba(253, 121, 168, 0.5);
+}
+
+.modern-batch-btn:hover::before {
+  opacity: 1;
+}
+
+.modern-batch-btn:active {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.modern-batch-btn svg {
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.modern-batch-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.selection-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff4757;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border: 2px solid white;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
 

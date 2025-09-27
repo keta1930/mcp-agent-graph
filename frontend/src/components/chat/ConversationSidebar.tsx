@@ -10,7 +10,8 @@ import {
   Badge,
   Tooltip,
   Empty,
-  Spin
+  Spin,
+  Checkbox
 } from 'antd';
 import {
   SearchOutlined,
@@ -24,7 +25,10 @@ import {
   UserOutlined,
   PlusOutlined,
   FilterOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  SelectOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useConversationStore } from '../../store/conversationStore';
@@ -39,12 +43,18 @@ interface ConversationItemProps {
   conversation: ConversationSummary;
   isActive: boolean;
   onClick: () => void;
+  isBatchMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (conversationId: string, selected: boolean) => void;
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
   conversation,
   isActive,
-  onClick
+  onClick,
+  isBatchMode = false,
+  isSelected = false,
+  onSelect
 }) => {
   const navigate = useNavigate();
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -204,26 +214,39 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         overlayClassName="conversation-hover-tooltip"
       >
         <div
-          className={`conversation-item ${isActive ? 'active' : ''}`}
-          onClick={onClick}
+          className={`conversation-item ${isActive ? 'active' : ''} ${isBatchMode ? 'batch-mode' : ''} ${isSelected ? 'selected' : ''}`}
+          onClick={isBatchMode ? () => onSelect?.(conversation._id, !isSelected) : onClick}
         >
           <div className="conversation-header">
+            {isBatchMode && (
+              <div className="conversation-checkbox">
+                <Checkbox
+                  checked={isSelected}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onSelect?.(conversation._id, e.target.checked);
+                  }}
+                />
+              </div>
+            )}
             <div className="conversation-info">
               <div className="conversation-title">{conversation.title}</div>
             </div>
 
-            <Dropdown 
-              menu={{ items: menuItems }} 
-              trigger={['click']}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button 
-                type="text" 
-                size="small" 
-                icon={<MoreOutlined />}
-                className="conversation-menu"
-              />
-            </Dropdown>
+            {!isBatchMode && (
+              <Dropdown 
+                menu={{ items: menuItems }} 
+                trigger={['click']}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button 
+                  type="text" 
+                  size="small" 
+                  icon={<MoreOutlined />}
+                  className="conversation-menu"
+                />
+              </Dropdown>
+            )}
           </div>
         </div>
       </Tooltip>
@@ -298,6 +321,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   const [newUserName, setNewUserName] = useState('');
   const [currentUserDisplayName, setCurrentUserDisplayName] = useState(getCurrentUserDisplayName());
   const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const {
     conversations,
@@ -312,7 +337,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     toggleSidebar,
     loadConversations,
     silentUpdateConversations,
-    showNotification
+    showNotification,
+    batchDeleteConversations
   } = useConversationStore();
 
   // 保存滚动位置
@@ -408,6 +434,66 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       setUserEditModalVisible(false);
       // 通知父组件用户名已更新
       onUserNameUpdate?.();
+    }
+  };
+
+  // 批量选择相关处理函数
+  const handleBatchModeToggle = () => {
+    setIsBatchMode(!isBatchMode);
+    setSelectedConversations(new Set());
+  };
+
+  const handleConversationSelect = (conversationId: string, selected: boolean) => {
+    const newSelected = new Set(selectedConversations);
+    if (selected) {
+      newSelected.add(conversationId);
+    } else {
+      newSelected.delete(conversationId);
+    }
+    setSelectedConversations(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    const allIds = new Set(filteredConversations.map(conv => conv._id));
+    setSelectedConversations(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedConversations(new Set());
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedConversations.size === 0) return;
+    
+    console.log('开始批量删除，选中的对话:', Array.from(selectedConversations));
+    
+    try {
+      const selectedIds = Array.from(selectedConversations);
+      const isPermanent = statusFilter === 'deleted';
+      
+      console.log(`执行${isPermanent ? '永久' : '软'}删除模式`);
+      
+      const result = await batchDeleteConversations(selectedIds, isPermanent);
+      
+      // 显示结果通知
+      if (result.success > 0) {
+        const message = isPermanent 
+          ? `已永久删除 ${result.success} 个对话` 
+          : `已将 ${result.success} 个对话移至回收站`;
+        showNotification(message, 'success');
+      }
+      
+      if (result.failed > 0) {
+        showNotification(`${result.failed} 个对话删除失败`, 'error');
+      }
+      
+      console.log(`批量删除完成: 成功 ${result.success} 个，失败 ${result.failed} 个`);
+      
+      setSelectedConversations(new Set());
+      setIsBatchMode(false);
+    } catch (error) {
+      console.error('Batch delete failed:', error);
+      showNotification('批量删除失败', 'error');
     }
   };
 
@@ -607,8 +693,17 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               <Tooltip title="筛选对话">
                 <Button
                   type="text"
-                  icon={<FilterOutlined />}
                   className="filter-btn"
+                  icon={
+                    <div style={{ position: 'relative' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 6h16M7 12h10m-7 6h4"/>
+                      </svg>
+                      {(statusFilter !== 'active' || typeFilter !== 'chat') && (
+                        <span className="filter-active-dot"></span>
+                      )}
+                    </div>
+                  }
                 />
               </Tooltip>
             </Dropdown>
@@ -623,6 +718,42 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         </div>
       </div>
 
+      {/* 批量操作工具栏 */}
+      {isBatchMode && (
+        <div className="batch-toolbar">
+          <div className="batch-info">
+            <span>已选择 {selectedConversations.size} 个对话</span>
+          </div>
+          <div className="batch-actions">
+            <Button
+              type="text"
+              size="small"
+              onClick={handleSelectAll}
+              disabled={selectedConversations.size === filteredConversations.length}
+            >
+              全选
+            </Button>
+            <Button
+              type="text"
+              size="small"
+              onClick={handleDeselectAll}
+              disabled={selectedConversations.size === 0}
+            >
+              取消全选
+            </Button>
+            <Button
+              type="primary"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleBatchDelete}
+              disabled={selectedConversations.size === 0}
+            >
+              {statusFilter === 'deleted' ? '永久删除' : '删除'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 对话列表 */}
       <div className="conversation-list" ref={listRef} onScroll={saveScrollPosition}>
@@ -642,6 +773,9 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               conversation={conversation}
               isActive={conversation._id === activeConversationId}
               onClick={() => onConversationSelect(conversation._id)}
+              isBatchMode={isBatchMode}
+              isSelected={selectedConversations.has(conversation._id)}
+              onSelect={handleConversationSelect}
             />
           ))
         )}
@@ -655,6 +789,26 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         </div>
         
         <div className="footer-actions">
+          <Tooltip title={isBatchMode ? "退出批量选择" : "批量选择"}>
+            <div 
+              className={`modern-batch-btn ${isBatchMode ? 'active' : ''}`}
+              onClick={handleBatchModeToggle}
+            >
+              {isBatchMode ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 12l2 2 4-4"/>
+                  <path d="M21 12c0 1.66-.41 3.22-1.14 4.58-.73 1.36-1.85 2.48-3.21 3.21C15.22 20.59 13.66 21 12 21s-3.22-.41-4.58-1.14c-1.36-.73-2.48-1.85-3.21-3.21C3.41 15.22 3 13.66 3 12s.41-3.22 1.14-4.58c.73-1.36 1.85-2.48 3.21-3.21C8.78 3.41 10.34 3 12 3s3.22.41 4.58 1.14c1.36.73 2.48 1.85 3.21 3.21C20.59 8.78 21 10.34 21 12z"/>
+                </svg>
+              )}
+              {selectedConversations.size > 0 && (
+                <span className="selection-count">{selectedConversations.size}</span>
+              )}
+            </div>
+          </Tooltip>
           <Tooltip title="任务中心">
             <Button
               type="text"
@@ -688,6 +842,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           maxLength={50}
         />
       </Modal>
+
+
     </div>
   );
 };

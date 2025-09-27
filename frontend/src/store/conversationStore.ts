@@ -45,6 +45,7 @@ interface ConversationState {
   updateConversationTitle: (conversationId: string, title: string) => Promise<void>;
   updateConversationTags: (conversationId: string, tags: string[]) => Promise<void>;
   deleteConversationPermanent: (conversationId: string) => Promise<void>;
+  batchDeleteConversations: (conversationIds: string[], isPermanent: boolean) => Promise<{ success: number; failed: number }>;
   
   // 对话操作
   setCurrentMode: (mode: ConversationMode) => void;
@@ -267,6 +268,48 @@ export const useConversationStore = create<ConversationState>()(
         console.error('Failed to delete conversation:', error);
         get().showNotification('删除对话失败', 'error');
       }
+    },
+
+    // 批量删除对话
+    batchDeleteConversations: async (conversationIds: string[], isPermanent: boolean) => {
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const conversationId of conversationIds) {
+        try {
+          if (isPermanent) {
+            await ConversationService.deleteConversationPermanent(conversationId);
+          } else {
+            await ConversationService.updateConversationStatus(conversationId, 'deleted');
+          }
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to delete conversation ${conversationId}:`, error);
+          failCount++;
+        }
+      }
+      
+      // 批量更新本地状态
+      if (isPermanent) {
+        // 永久删除：从列表中移除
+        set(state => ({
+          conversations: state.conversations.filter(conv => !conversationIds.includes(conv._id)),
+          totalCount: state.totalCount - successCount
+        }));
+      } else {
+        // 软删除：更新状态
+        set(state => ({
+          conversations: state.conversations.map(conv =>
+            conversationIds.includes(conv._id) ? { ...conv, status: 'deleted' as const } : conv
+          )
+        }));
+      }
+      
+      // 清除缓存并刷新
+      ConversationStorage.clearConversationListCache();
+      get().silentUpdateConversations();
+      
+      return { success: successCount, failed: failCount };
     },
 
     // 设置当前模式
