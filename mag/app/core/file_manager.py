@@ -204,7 +204,7 @@ class FileManager:
 
     @staticmethod
     def ensure_attachment_dir(conversation_id: str) -> Path:
-        """确保附件目录存在并返回路径 - 使用版本"""
+        """确保附件目录存在并返回路径"""
         return FileManager.ensure_attachment_dir_atomic(conversation_id)
 
     @staticmethod
@@ -277,7 +277,7 @@ class FileManager:
 
     @staticmethod
     def save_node_output_to_file(conversation_id: str, node_name: str, content: str, file_ext: str) -> Optional[str]:
-        """将节点输出保存到文件 - 使用版本"""
+        """将节点输出保存到文件"""   
         return FileManager.save_node_output_to_file_atomic(conversation_id, node_name, content, file_ext)
 
     @staticmethod
