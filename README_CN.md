@@ -138,7 +138,7 @@ Agent复用性，任何图都可作为其他图的节点使用，构建分层智
 ```
 
 ## 微信群
-![alt text](./assets/wechat.png)
+![alt text](./assets/wechat.jpg)
 
 ## ⭐ 星标历史
 

@@ -137,7 +137,7 @@ If you find MCP Agent Graph helpful for your research or work, please consider c
 ```
 
 ## WeChat Group
-![alt text](./assets/wechat.png)
+![alt text](./assets/wechat.jpg)
 
 ## ⭐ Star History
 
