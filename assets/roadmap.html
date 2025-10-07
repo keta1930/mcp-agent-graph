@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP-Agent-Graph Q3 Roadmap</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Palatino Linotype', 'Book Antiqua', serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .header h1 {
+            color: #495057;
+            font-size: 3em;
+            margin-bottom: 15px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .export-btn, .lang-btn {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(73, 80, 87, 0.3);
+            font-weight: 400;
+        }
+        .export-btn:hover, .lang-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(73, 80, 87, 0.4);
+        }
+        #roadmap {
+            background: white;
+            border-radius: 30px;
+            padding: 60px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        #roadmap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, #dee2e6, transparent);
+            transform: translateX(-50%);
+        }
+        .chart-title {
+            font-size: 2.5em;
+            color: #343a40;
+            margin-bottom: 50px;
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 3px;
+            position: relative;
+        }
+        .chart-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #adb5bd, transparent);
+            transform: translateX(-50%);
+        }
+        .roadmap-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 50px;
+            margin-top: 40px;
+        }
+        .roadmap-column {
+            position: relative;
+        }
+        .column-header {
+            text-align: center;
+            margin-bottom: 35px;
+            position: relative;
+        }
+        .column-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .short-term .column-icon {
+            background: linear-gradient(135deg, #93b5d6, #b8d4e8);
+            color: white;
+        }
+        .mid-term .column-icon {
+            background: linear-gradient(135deg, #a8c5a0, #c5ddb8);
+            color: white;
+        }
+        .ongoing .column-icon {
+            background: linear-gradient(135deg, #e6c4a0, #f0dcc4);
+            color: #8b6838;
+        }
+        .column-title {
+            font-size: 0.9em;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .roadmap-item {
+            background: #f8f9fa;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 15px;
+            border-left: 4px solid;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .short-term .roadmap-item {
+            border-color: #93b5d6;
+        }
+        .mid-term .roadmap-item {
+            border-color: #a8c5a0;
+        }
+        .ongoing .roadmap-item {
+            border-color: #e6c4a0;
+        }
+        .roadmap-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+        .item-title {
+            font-size: 1.15em;
+            color: #343a40;
+            margin-bottom: 15px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        .item-list {
+            list-style: none;
+        }
+        .item-list li {
+            color: #495057;
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+        .item-list li::before {
+            content: '•';
+            position: absolute;
+            left: 8px;
+            color: #adb5bd;
+            font-size: 1.3em;
+        }
+        .decorative-line {
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, #dee2e6, transparent);
+            margin: 15px 0;
+        }
+        @media (max-width: 1200px) {
+            .roadmap-container {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="mainTitle">MCP-Agent-Graph Q3 Roadmap</h1>
+            <div class="btn-group">
+                <button class="lang-btn" onclick="switchLang()">Switch to English</button>
+                <button class="export-btn" onclick="exportChart()">导出图片 Export Image</button>
+            </div>
+        </div>
+
+        <div id="roadmap" data-lang="zh">
+            <h2 class="chart-title" data-zh="第三季度规划" data-en="Third Quarter Planning">第三季度规划</h2>
+
+            <div class="roadmap-container">
+                <!-- 短期目标 -->
+                <div class="roadmap-column short-term">
+                    <div class="column-header">
+                        <div class="column-icon">⚡</div>
+                        <div class="column-title" data-zh="短期目标" data-en="Short-term Goals">短期目标</div>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="数据管理架构优化" data-en="Data Management Optimization">数据管理架构优化</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="统一MinIO存储架构" data-en="Unified MinIO storage">统一MinIO存储架构</li>
+                            <li data-zh="迁移graph运行附件到MinIO" data-en="Migrate graph attachments">迁移graph运行附件到MinIO</li>
+                            <li data-zh="对话数据导出功能" data-en="Conversation export">对话数据导出功能</li>
+                            <li data-zh="支持多种导出格式" data-en="Multiple export formats">支持多种导出格式</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="Graph能力边界扩展" data-en="Graph Capability Extension">Graph能力边界扩展</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="增强节点配置灵活性" data-en="Enhanced node flexibility">增强节点配置灵活性</li>
+                            <li data-zh="优化节点参数设计" data-en="Optimized parameters">优化节点参数设计</li>
+                            <li data-zh="支持更复杂协作场景" data-en="Complex collaboration">支持更复杂协作场景</li>
+                            <li data-zh="参考业界最佳实践" data-en="Industry best practices">参考业界最佳实践</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="Agent模式系统级推进" data-en="Agent Mode Advancement">Agent模式系统级推进</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="深度系统集成" data-en="Deep system integration">深度系统集成</li>
+                            <li data-zh="系统资源访问能力" data-en="Resource access">系统资源访问能力</li>
+                            <li data-zh="向智能系统助手演进" data-en="Evolve to assistant">向智能系统助手演进</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 中长期目标 -->
+                <div class="roadmap-column mid-term">
+                    <div class="column-header">
+                        <div class="column-icon">🎯</div>
+                        <div class="column-title" data-zh="中长期目标" data-en="Mid-long-term Goals">中长期目标</div>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="任务调度系统优化" data-en="Task Scheduling Optimization">任务调度系统优化</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="任务完成及时通知" data-en="Task notifications">任务完成及时通知</li>
+                            <li data-zh="任务链式执行" data-en="Task chaining">任务链式执行</li>
+                            <li data-zh="执行历史追溯与统计" data-en="History tracking">执行历史追溯与统计</li>
+                            <li data-zh="简化配置界面" data-en="Simplified interface">简化配置界面</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="用户管理系统建设" data-en="User Management System">用户管理系统建设</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="多用户支持增强" data-en="Multi-user support">多用户支持增强</li>
+                            <li data-zh="用户认证与资源隔离" data-en="Authentication & isolation">用户认证与资源隔离</li>
+                            <li data-zh="权限管理体系" data-en="Permission system">权限管理体系</li>
+                            <li data-zh="用户偏好设置" data-en="User preferences">用户偏好设置</li>
+                        </ul>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="扩展功能探索" data-en="Feature Exploration">扩展功能探索</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="Graph版本控制" data-en="Graph version control">Graph版本控制</li>
+                            <li data-zh="多模态能力增强" data-en="Multimodal enhancement">多模态能力增强</li>
+                            <li data-zh="协作与分享功能" data-en="Collaboration features">协作与分享功能</li>
+                            <li data-zh="在线协作编辑" data-en="Online editing">在线协作编辑</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 持续进行 -->
+                <div class="roadmap-column ongoing">
+                    <div class="column-header">
+                        <div class="column-icon">♾️</div>
+                        <div class="column-title" data-zh="持续进行" data-en="Ongoing">持续进行</div>
+                    </div>
+
+                    <div class="roadmap-item">
+                        <div class="item-title" data-zh="性能与稳定性优化" data-en="Performance & Stability">性能与稳定性优化</div>
+                        <div class="decorative-line"></div>
+                        <ul class="item-list">
+                            <li data-zh="Graph执行性能优化" data-en="Graph performance">Graph执行性能优化</li>
+                            <li data-zh="恢复并行执行能力" data-en="Parallel execution">恢复并行执行能力</li>
+                            <li data-zh="前端渲染优化" data-en="Frontend optimization">前端渲染优化</li>
+                            <li data-zh="完善错误处理" data-en="Error handling">完善错误处理</li>
+                            <li data-zh="API文档与SDK开发" data-en="API docs & SDK">API文档与SDK开发</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLang = 'zh';
+
+        function switchLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            const elements = document.querySelectorAll('[data-zh]');
+
+            elements.forEach(el => {
+                el.textContent = el.getAttribute(`data-${currentLang}`);
+            });
+
+            const btn = document.querySelector('.lang-btn');
+            btn.textContent = currentLang === 'zh' ? 'Switch to English' : '切换到中文';
+
+            const mainTitle = document.getElementById('mainTitle');
+            mainTitle.textContent = currentLang === 'zh' ? 'MCP-Agent-Graph Q3 Roadmap' : 'MCP-Agent-Graph Q3 Roadmap';
+        }
+
+        function exportChart() {
+            const element = document.getElementById('roadmap');
+            const btn = event.target;
+            const langText = currentLang === 'zh' ? '中文' : 'English';
+
+            btn.disabled = true;
+            btn.textContent = currentLang === 'zh' ? '导出中... Exporting...' : 'Exporting... 导出中...';
+
+            html2canvas(element, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `MCP-Agent-Graph-Roadmap-${langText}-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                btn.disabled = false;
+                btn.textContent = currentLang === 'zh' ? '导出图片 Export Image' : 'Export Image 导出图片';
+            });
+        }
+    </script>
+</body>
+</html>
