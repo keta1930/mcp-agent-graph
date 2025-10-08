@@ -333,9 +333,12 @@ class MongoDBService:
         )
 
     async def add_round_to_conversation(self, conversation_id: str, round_number: int,
-                                        messages: List[Dict[str, Any]]) -> bool:
+                                        messages: List[Dict[str, Any]],
+                                        tools_schema: Optional[List[Dict[str, Any]]] = None) -> bool:
         """向聊天对话添加新的轮次"""
-        success = await self.chat_manager.add_round_to_chat(conversation_id, round_number, messages)
+        success = await self.chat_manager.add_round_to_chat(
+            conversation_id, round_number, messages, tools_schema
+        )
 
         if success:
             await self.conversation_manager.update_conversation_round_count(conversation_id, 1)

@@ -44,7 +44,8 @@ class ChatManager:
             return None
 
     async def add_round_to_chat(self, conversation_id: str, round_number: int,
-                                messages: List[Dict[str, Any]]) -> bool:
+                                messages: List[Dict[str, Any]],
+                                tools_schema: Optional[List[Dict[str, Any]]] = None) -> bool:
         """向聊天添加新的轮次"""
         try:
             # 确保消息文档存在
@@ -55,6 +56,10 @@ class ChatManager:
                 "round": round_number,
                 "messages": messages
             }
+
+            # 保存本轮使用的完整工具列表（tools_schema）
+            if tools_schema is not None:
+                round_data["tools"] = tools_schema
 
             result = await self.chat_messages_collection.update_one(
                 {"conversation_id": conversation_id},

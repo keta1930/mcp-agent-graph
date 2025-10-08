@@ -269,14 +269,16 @@ class ChatService:
             if iteration >= max_iterations:
                 logger.warning(f"达到最大迭代次数 {max_iterations} ({chat_type})")
 
-            # 只有持久对话才保存到数据库
+            # 持久对话保存到数据库
+            tools_schema = tools or []
             if conversation_id is not None:
                 await self._save_complete_round(
                     conversation_id=conversation_id,
                     round_messages=all_round_messages,
                     token_usage=round_token_usage,
                     user_id=user_id,
-                    model_config=model_config
+                    model_config=model_config,
+                    tools_schema=tools_schema
                 )
             else:
                 logger.info(f"临时对话完成，跳过数据库保存。Token使用量: {round_token_usage}")
@@ -294,7 +296,8 @@ class ChatService:
                                    round_messages: List[Dict[str, Any]],
                                    token_usage: Dict[str, int],
                                    user_id: str,
-                                   model_config):
+                                   model_config,
+                                   tools_schema: Optional[List[Dict[str, Any]]] = None):
         """保存完整轮次到数据库"""
         try:
             # 获取轮次编号
@@ -302,7 +305,7 @@ class ChatService:
 
             # 保存轮次消息到数据库
             await mongodb_service.add_round_to_conversation(
-                conversation_id, round_number, round_messages
+                conversation_id, round_number, round_messages, tools_schema
             )
 
             # 更新对话总token统计
