@@ -23,7 +23,7 @@
 
 ## 1. 路线图
 
-![路线图](assets/roadmap-zh.png)
+[查看路线图](assets/roadmap_zh.md)
 
 ## 2. 部署指南
 

@@ -23,7 +23,7 @@ English | [中文](README_CN.md)
 
 ## 1. Roadmap
 
-![Roadmap](assets/roadmap-en.png)
+[View the Roadmap](assets/roadmap_en.md)
 
 ## 2. Deployment Guide
 
