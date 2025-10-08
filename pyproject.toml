@@ -47,6 +47,8 @@ dependencies = [
     "motor>=3.7.1",
     "minio>=7.2.16",
     "apscheduler>=3.11.0",
+    "pyarrow>=21.0.0",
+    "python-docx>=1.2.0",
 ]
 
 [project.urls]
