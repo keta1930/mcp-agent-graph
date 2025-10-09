@@ -132,7 +132,8 @@ class ChatService:
                 base_params = {
                     "model": model_config["model"],
                     "messages": filtered_messages,
-                    "stream": True
+                    "stream": True,
+                    "stream_options": {"include_usage": True}
                 }
 
                 if tools:

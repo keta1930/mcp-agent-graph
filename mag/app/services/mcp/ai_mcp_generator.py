@@ -125,7 +125,8 @@ class AIMCPGenerator:
             base_params = {
                 "model": model_config["model"],
                 "messages": messages,
-                "stream": True
+                "stream": True,
+                "stream_options": {"include_usage": True}
             }
 
             params, extra_kwargs = model_service.prepare_api_params(base_params, model_config)
