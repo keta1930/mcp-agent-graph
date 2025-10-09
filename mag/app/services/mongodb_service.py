@@ -151,9 +151,12 @@ class MongoDBService:
         """更新图运行数据"""
         return await self.graph_run_manager.update_graph_run_data(conversation_id, update_data)
 
-    async def add_round_to_graph_run(self, conversation_id: str, round_data: Dict[str, Any]) -> bool:
+    async def add_round_to_graph_run(self, conversation_id: str, round_data: Dict[str, Any],
+                                  tools_schema: Optional[List[Dict[str, Any]]] = None) -> bool:
         """向图运行对话添加新的轮次"""
-        return await self.graph_run_manager.add_round_to_graph_run(conversation_id, round_data)
+        return await self.graph_run_manager.add_round_to_graph_run(
+            conversation_id, round_data, tools_schema
+        )
 
     async def update_graph_run_global_outputs(self, conversation_id: str, node_name: str, output: str) -> bool:
         """更新图运行全局输出"""

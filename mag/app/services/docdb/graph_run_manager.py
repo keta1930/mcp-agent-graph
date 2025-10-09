@@ -91,9 +91,27 @@ class GraphRunManager:
             logger.error(f"更新图运行数据失败: {str(e)}")
             return False
 
-    async def add_round_to_graph_run(self, conversation_id: str, round_data: Dict[str, Any]) -> bool:
-        """向图运行对话添加新的轮次"""
+    async def add_round_to_graph_run(self, conversation_id: str, round_data: Dict[str, Any],
+                                     tools_schema: Optional[List[Dict[str, Any]]] = None) -> bool:
+        """
+        向图运行对话添加新的轮次
+
+        Args:
+            conversation_id: 对话ID
+            round_data: 轮次数据，应包含round编号和messages列表
+            tools_schema: 本轮使用的工具schema列表（可选，默认为空数组）
+
+        Returns:
+            bool: 是否添加成功
+        """
         try:
+            round_data["tools"] = tools_schema if tools_schema is not None else []
+
+            if round_data["tools"]:
+                logger.debug(f"向图运行轮次添加了 {len(round_data['tools'])} 个工具schema")
+            else:
+                logger.debug(f"向图运行轮次添加了空工具列表")
+
             result = await self.graph_run_messages_collection.update_one(
                 {"conversation_id": conversation_id},
                 {
@@ -103,9 +121,8 @@ class GraphRunManager:
             )
 
             if result.modified_count > 0:
-                # 更新conversations集合的轮次计数
                 await self.conversation_manager.update_conversation_round_count(conversation_id, 1)
-                logger.debug(f"向图运行对话添加轮次成功: {conversation_id}")
+                logger.info(f"向图运行对话添加轮次成功: {conversation_id}, round: {round_data.get('round', 'unknown')}")
                 return True
             else:
                 logger.error(f"向图运行对话添加轮次失败: {conversation_id}")

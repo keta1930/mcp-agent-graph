@@ -366,7 +366,7 @@ class BackgroundExecutor:
             conversation["rounds"].append(round_data)
 
             from app.services.mongodb_service import mongodb_service
-            await mongodb_service.add_round_to_graph_run(conversation_id, round_data)
+            await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=round_data,tools_schema=all_tools)
 
             # 保存全局输出
             if output_enabled and final_output:
@@ -402,7 +402,7 @@ class BackgroundExecutor:
         conversation["rounds"].append(start_round)
 
         from app.services.mongodb_service import mongodb_service
-        await mongodb_service.add_round_to_graph_run(conversation_id, start_round)
+        await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=start_round,tools_schema=[])
         await mongodb_service.update_graph_run_global_outputs(conversation_id, "start", input_text)
 
         if "global_outputs" not in conversation:
