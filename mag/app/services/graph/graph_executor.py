@@ -8,6 +8,7 @@ from app.core.file_manager import FileManager
 from app.utils.sse_helper import SSEHelper
 from app.utils.output_tools import GraphPromptTemplate
 from app.services.mongodb_service import mongodb_service
+from app.services.model_service import StreamAccumulator, model_service
 logger = logging.getLogger(__name__)
 
 
@@ -380,14 +381,12 @@ class GraphExecutor:
                     yield SSEHelper.send_error(f"模型客户端未初始化: {model_name}")
                     return
 
-                filtered_messages = []
-                for msg in current_messages:
-                    clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
-                    filtered_messages.append(clean_msg)
+                # 过滤reasoning_content字段
+                messages = model_service.filter_reasoning_content(current_messages)
 
                 base_params = {
                     "model": model_config["model"],
-                    "messages": filtered_messages,
+                    "messages": messages,
                     "stream": True,
                     "stream_options": {"include_usage": True}
                 }
@@ -399,58 +398,21 @@ class GraphExecutor:
 
                 stream = await client.chat.completions.create(**params, **extra_kwargs)
 
-                accumulated_content = ""
-                accumulated_reasoning = ""
-                current_tool_calls = []
-                tool_calls_dict = {}
-                iteration_usage = None
+                # 使用StreamAccumulator处理流式响应
+                accumulator = StreamAccumulator()
 
                 async for chunk in stream:
                     chunk_dict = chunk.model_dump()
                     yield SSEHelper.send_openai_chunk(chunk_dict)
 
-                    if chunk.choices and chunk.choices[0].delta:
-                        delta = chunk.choices[0].delta
+                    # 使用累积器处理chunk
+                    accumulator.process_chunk(chunk)
 
-                        if delta.content:
-                            accumulated_content += delta.content
-
-                        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
-                            accumulated_reasoning += delta.reasoning_content
-
-                        if delta.tool_calls:
-                            for tool_call_delta in delta.tool_calls:
-                                index = tool_call_delta.index
-
-                                if index not in tool_calls_dict:
-                                    tool_calls_dict[index] = {
-                                        "id": tool_call_delta.id or "",
-                                        "type": "function",
-                                        "function": {
-                                            "name": "",
-                                            "arguments": ""
-                                        }
-                                    }
-
-                                if tool_call_delta.id:
-                                    tool_calls_dict[index]["id"] = tool_call_delta.id
-
-                                if tool_call_delta.function:
-                                    if tool_call_delta.function.name:
-                                        tool_calls_dict[index]["function"]["name"] += tool_call_delta.function.name
-                                    if tool_call_delta.function.arguments:
-                                        tool_calls_dict[index]["function"][
-                                            "arguments"] += tool_call_delta.function.arguments
-
-                    if hasattr(chunk, "usage") and chunk.usage is not None:
-                        iteration_usage = {
-                            "total_tokens": chunk.usage.total_tokens,
-                            "prompt_tokens": chunk.usage.prompt_tokens,
-                            "completion_tokens": chunk.usage.completion_tokens
-                        }
-
-                    if chunk.choices and chunk.choices[0].finish_reason:
-                        current_tool_calls = list(tool_calls_dict.values())
+                # 获取累积的结果
+                accumulated_content = accumulator.accumulated_content
+                accumulated_reasoning = accumulator.accumulated_reasoning
+                current_tool_calls = accumulator.get_tool_calls_list()
+                iteration_usage = accumulator.api_usage
 
                 if iteration_usage:
                     node_token_usage["total_tokens"] += iteration_usage["total_tokens"]

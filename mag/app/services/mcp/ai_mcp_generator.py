@@ -9,7 +9,7 @@ from pathlib import Path
 
 from app.core.file_manager import FileManager
 from app.services.mongodb_service import mongodb_service
-from app.services.model_service import model_service
+from app.services.model_service import model_service, StreamAccumulator
 from app.utils.text_parser import parse_ai_mcp_generation_response
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class AIMCPGenerator:
                 return
 
             messages = conversation_data.get("messages", [])
-            messages = self._filter_reasoning_content(messages)
+            messages = model_service.filter_reasoning_content(messages)
 
             # 获取模型客户端
             client = model_service.clients.get(model_name)
@@ -134,31 +134,24 @@ class AIMCPGenerator:
             # 调用模型进行流式生成
             stream = await client.chat.completions.create(**params, **extra_kwargs)
 
-            accumulated_content = ""
-            accumulated_reasoning = ""
-            api_usage = None
+            # 使用StreamAccumulator处理流式响应
+            accumulator = StreamAccumulator()
 
             # 处理流式响应
             async for chunk in stream:
                 chunk_dict = chunk.model_dump()
                 yield f"data: {json.dumps(chunk_dict)}\n\n"
 
-                if chunk.choices and chunk.choices[0].delta:
-                    delta = chunk.choices[0].delta
-                    if delta.content:
-                        accumulated_content += delta.content
-                    if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
-                        accumulated_reasoning += delta.reasoning_content
-
-                if hasattr(chunk, "usage") and chunk.usage is not None:
-                    api_usage = {
-                        "total_tokens": chunk.usage.total_tokens,
-                        "prompt_tokens": chunk.usage.prompt_tokens,
-                        "completion_tokens": chunk.usage.completion_tokens
-                    }
+                # 使用累积器处理chunk
+                accumulator.process_chunk(chunk)
 
                 if chunk.choices and chunk.choices[0].finish_reason:
                     logger.info(f"API调用完成，finish_reason: {chunk.choices[0].finish_reason}")
+
+            # 获取累积的结果
+            accumulated_content = accumulator.accumulated_content
+            accumulated_reasoning = accumulator.accumulated_reasoning
+            api_usage = accumulator.api_usage
 
             # 构建assistant消息
             assistant_message = {
@@ -201,14 +194,6 @@ class AIMCPGenerator:
             }
             yield f"data: {json.dumps(error_chunk)}\n\n"
             yield "data: [DONE]\n\n"
-
-    def _filter_reasoning_content(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """过滤掉消息中的reasoning_content字段"""
-        filtered_messages = []
-        for msg in messages:
-            clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
-            filtered_messages.append(clean_msg)
-        return filtered_messages
 
     async def _handle_end_instruction(self, conversation_id: Optional[str]) -> AsyncGenerator[str, None]:
         """处理结束指令"""

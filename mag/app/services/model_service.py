@@ -11,6 +11,76 @@ from app.models.model_schema import ModelConfig
 logger = logging.getLogger(__name__)
 
 
+class StreamAccumulator:
+    """流式响应累积器 - 用于处理和累积流式API响应"""
+
+    def __init__(self):
+        self.accumulated_content = ""
+        self.accumulated_reasoning = ""
+        self.tool_calls_dict = {}
+        self.api_usage = None
+
+    def process_chunk(self, chunk):
+        """处理单个chunk并累积数据
+
+        Args:
+            chunk: API返回的chunk对象
+        """
+        if chunk.choices and chunk.choices[0].delta:
+            delta = chunk.choices[0].delta
+
+            # 累积content
+            if delta.content:
+                self.accumulated_content += delta.content
+
+            # 累积reasoning_content
+            if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                self.accumulated_reasoning += delta.reasoning_content
+
+            # 累积tool_calls
+            if delta.tool_calls:
+                for tool_call_delta in delta.tool_calls:
+                    index = tool_call_delta.index
+
+                    if index not in self.tool_calls_dict:
+                        self.tool_calls_dict[index] = {
+                            "id": tool_call_delta.id or "",
+                            "type": "function",
+                            "function": {"name": "", "arguments": ""}
+                        }
+
+                    if tool_call_delta.id:
+                        self.tool_calls_dict[index]["id"] = tool_call_delta.id
+
+                    if tool_call_delta.function:
+                        if tool_call_delta.function.name:
+                            self.tool_calls_dict[index]["function"]["name"] += tool_call_delta.function.name
+                        if tool_call_delta.function.arguments:
+                            self.tool_calls_dict[index]["function"]["arguments"] += tool_call_delta.function.arguments
+
+        # 收集usage信息
+        if hasattr(chunk, "usage") and chunk.usage is not None:
+            self.api_usage = {
+                "total_tokens": chunk.usage.total_tokens,
+                "prompt_tokens": chunk.usage.prompt_tokens,
+                "completion_tokens": chunk.usage.completion_tokens
+            }
+
+    def get_tool_calls_list(self):
+        """获取tool_calls列表"""
+        return list(self.tool_calls_dict.values())
+
+    def get_result(self):
+        """获取累积的结果"""
+        return {
+            "accumulated_content": self.accumulated_content,
+            "accumulated_reasoning": self.accumulated_reasoning,
+            "tool_calls_dict": self.tool_calls_dict,
+            "tool_calls_list": self.get_tool_calls_list(),
+            "api_usage": self.api_usage
+        }
+
+
 class ModelService:
     """模型服务管理"""
 
@@ -395,6 +465,11 @@ class ModelService:
         cleaned_content = re.sub(think_pattern, "", content, flags=re.DOTALL)
         
         return cleaned_content.strip()
+
+    @staticmethod
+    def filter_reasoning_content(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """过滤消息中的reasoning_content字段"""
+        return [{k: v for k, v in msg.items() if k != "reasoning_content"} for msg in messages]
 
 
 # 创建全局模型服务实例

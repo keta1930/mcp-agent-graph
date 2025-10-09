@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, AsyncGenerator
 import traceback
 from app.services.mongodb_service import mongodb_service
-from app.services.model_service import model_service
+from app.services.model_service import model_service, StreamAccumulator
 from app.services.mcp_service import mcp_service
 from app.services.mcp.tool_executor import ToolExecutor
 from app.services.chat.message_builder import MessageBuilder
@@ -123,15 +123,13 @@ class ChatService:
                 iteration += 1
                 logger.info(f"开始第 {iteration} 轮模型调用 ({chat_type})")
 
-                filtered_messages = []
-                for msg in current_messages:
-                    clean_msg = {k: v for k, v in msg.items() if k != "reasoning_content"}
-                    filtered_messages.append(clean_msg)
+                # 过滤reasoning_content字段
+                messages = model_service.filter_reasoning_content(current_messages)
 
                 # 准备基本API调用参数
                 base_params = {
                     "model": model_config["model"],
-                    "messages": filtered_messages,
+                    "messages": messages,
                     "stream": True,
                     "stream_options": {"include_usage": True}
                 }
@@ -145,60 +143,26 @@ class ChatService:
                 # 流式调用模型
                 stream = await client.chat.completions.create(**params, **extra_kwargs)
 
-                # 收集响应数据
-                accumulated_content = ""
-                accumulated_reasoning = ""
-                current_tool_calls = []
-                tool_calls_dict = {}
-                api_usage = None
+                # 使用StreamAccumulator处理流式响应
+                accumulator = StreamAccumulator()
 
                 # 处理流式响应
                 async for chunk in stream:
                     chunk_dict = chunk.model_dump()
                     yield f"data: {json.dumps(chunk_dict)}\n\n"
 
-                    if chunk.choices and chunk.choices[0].delta:
-                        delta = chunk.choices[0].delta
-
-                        if delta.content:
-                            accumulated_content += delta.content
-                        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
-                            accumulated_reasoning += delta.reasoning_content
-                        if delta.tool_calls:
-                            for tool_call_delta in delta.tool_calls:
-                                index = tool_call_delta.index
-
-                                if index not in tool_calls_dict:
-                                    tool_calls_dict[index] = {
-                                        "id": tool_call_delta.id or "",
-                                        "type": "function",
-                                        "function": {
-                                            "name": "",
-                                            "arguments": ""
-                                        }
-                                    }
-
-                                if tool_call_delta.id:
-                                    tool_calls_dict[index]["id"] = tool_call_delta.id
-
-                                if tool_call_delta.function:
-                                    if tool_call_delta.function.name:
-                                        tool_calls_dict[index]["function"]["name"] += tool_call_delta.function.name
-                                    if tool_call_delta.function.arguments:
-                                        tool_calls_dict[index]["function"][
-                                            "arguments"] += tool_call_delta.function.arguments
-
-                    if hasattr(chunk, "usage") and chunk.usage is not None:
-                        api_usage = {
-                            "total_tokens": chunk.usage.total_tokens,
-                            "prompt_tokens": chunk.usage.prompt_tokens,
-                            "completion_tokens": chunk.usage.completion_tokens
-                        }
+                    # 使用累积器处理chunk
+                    accumulator.process_chunk(chunk)
 
                     if chunk.choices and chunk.choices[0].finish_reason:
-                        current_tool_calls = list(tool_calls_dict.values())
                         logger.info(
                             f"第 {iteration} 轮完成，finish_reason: {chunk.choices[0].finish_reason} ({chat_type})")
+
+                # 获取累积的结果
+                accumulated_content = accumulator.accumulated_content
+                accumulated_reasoning = accumulator.accumulated_reasoning
+                current_tool_calls = accumulator.get_tool_calls_list()
+                api_usage = accumulator.api_usage
 
                 if api_usage:
                     round_token_usage["total_tokens"] += api_usage["total_tokens"]
