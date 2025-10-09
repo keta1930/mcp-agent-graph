@@ -188,33 +188,17 @@ class ChatService:
                                         tool_calls_dict[index]["function"][
                                             "arguments"] += tool_call_delta.function.arguments
 
-                    # 检查finish_reason和usage
+                    if hasattr(chunk, "usage") and chunk.usage is not None:
+                        api_usage = {
+                            "total_tokens": chunk.usage.total_tokens,
+                            "prompt_tokens": chunk.usage.prompt_tokens,
+                            "completion_tokens": chunk.usage.completion_tokens
+                        }
+
                     if chunk.choices and chunk.choices[0].finish_reason:
                         current_tool_calls = list(tool_calls_dict.values())
                         logger.info(
                             f"第 {iteration} 轮完成，finish_reason: {chunk.choices[0].finish_reason} ({chat_type})")
-
-                        # 收集token使用量
-                        if chunk.usage is not None:
-                            api_usage = {
-                                "total_tokens": chunk.usage.total_tokens,
-                                "prompt_tokens": chunk.usage.prompt_tokens,
-                                "completion_tokens": chunk.usage.completion_tokens
-                            }
-                            reasoning_tokens = 0
-                            if (chunk.usage.completion_tokens_details is not None and
-                                    chunk.usage.completion_tokens_details.reasoning_tokens is not None):
-                                reasoning_tokens = chunk.usage.completion_tokens_details.reasoning_tokens
-
-                            if reasoning_tokens > 0:
-                                logger.info(
-                                    f"第 {iteration} 轮API调用token使用量: {api_usage} (包含reasoning_tokens: {reasoning_tokens}) ({chat_type})")
-                            else:
-                                logger.info(f"第 {iteration} 轮API调用token使用量: {api_usage} ({chat_type})")
-                        else:
-                            logger.warning(f"第 {iteration} 轮在finish_reason时chunk.usage为None ({chat_type})")
-
-                        break
 
                 if api_usage:
                     round_token_usage["total_tokens"] += api_usage["total_tokens"]

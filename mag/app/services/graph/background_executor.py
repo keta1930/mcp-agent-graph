@@ -224,6 +224,11 @@ class BackgroundExecutor:
 
             current_messages = conversation_messages.copy()
             max_iterations = 10
+            node_token_usage = {
+                "total_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0
+            }
 
             for iteration in range(max_iterations):
                 model_config = model_service.get_model(model_name)
@@ -255,6 +260,7 @@ class BackgroundExecutor:
                 accumulated_content = ""
                 accumulated_reasoning = ""
                 tool_calls_dict = {}
+                iteration_usage = None
 
                 # 处理流式响应
                 async for chunk in stream:
@@ -287,8 +293,17 @@ class BackgroundExecutor:
                                         tool_calls_dict[index]["function"][
                                             "arguments"] += tool_call_delta.function.arguments
 
-                    if chunk.choices and chunk.choices[0].finish_reason:
-                        break
+                    if hasattr(chunk, "usage") and chunk.usage is not None:
+                        iteration_usage = {
+                            "total_tokens": chunk.usage.total_tokens,
+                            "prompt_tokens": chunk.usage.prompt_tokens,
+                            "completion_tokens": chunk.usage.completion_tokens
+                        }
+
+                if iteration_usage:
+                    node_token_usage["total_tokens"] += iteration_usage["total_tokens"]
+                    node_token_usage["prompt_tokens"] += iteration_usage["prompt_tokens"]
+                    node_token_usage["completion_tokens"] += iteration_usage["completion_tokens"]
 
                 current_tool_calls = list(tool_calls_dict.values())
 
@@ -369,7 +384,14 @@ class BackgroundExecutor:
             from app.services.mongodb_service import mongodb_service
             await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=round_data,tools_schema=all_tools)
 
-            # 保存全局输出
+            if node_token_usage["total_tokens"] > 0:
+                await mongodb_service.update_conversation_token_usage(
+                    conversation_id=conversation_id,
+                    prompt_tokens=node_token_usage["prompt_tokens"],
+                    completion_tokens=node_token_usage["completion_tokens"]
+                )
+                logger.info(f"节点 '{node_name}' token使用量: {node_token_usage}")
+
             if output_enabled and final_output:
                 await self.conversation_manager._add_global_output(conversation_id, node_name, final_output)
             elif not output_enabled and tool_results_content:

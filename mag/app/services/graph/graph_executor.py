@@ -361,6 +361,11 @@ class GraphExecutor:
 
             current_messages = conversation_messages.copy()
             max_iterations = 10
+            node_token_usage = {
+                "total_tokens": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0
+            }
 
             for iteration in range(max_iterations):
                 logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
@@ -398,6 +403,7 @@ class GraphExecutor:
                 accumulated_reasoning = ""
                 current_tool_calls = []
                 tool_calls_dict = {}
+                iteration_usage = None
 
                 async for chunk in stream:
                     chunk_dict = chunk.model_dump()
@@ -436,9 +442,20 @@ class GraphExecutor:
                                         tool_calls_dict[index]["function"][
                                             "arguments"] += tool_call_delta.function.arguments
 
+                    if hasattr(chunk, "usage") and chunk.usage is not None:
+                        iteration_usage = {
+                            "total_tokens": chunk.usage.total_tokens,
+                            "prompt_tokens": chunk.usage.prompt_tokens,
+                            "completion_tokens": chunk.usage.completion_tokens
+                        }
+
                     if chunk.choices and chunk.choices[0].finish_reason:
                         current_tool_calls = list(tool_calls_dict.values())
-                        break
+
+                if iteration_usage:
+                    node_token_usage["total_tokens"] += iteration_usage["total_tokens"]
+                    node_token_usage["prompt_tokens"] += iteration_usage["prompt_tokens"]
+                    node_token_usage["completion_tokens"] += iteration_usage["completion_tokens"]
 
                 assistant_msg = {
                     "role": "assistant",
@@ -534,7 +551,14 @@ class GraphExecutor:
 
             await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=round_data,tools_schema=all_tools)
 
-            # 所有节点保存全局输出
+            if node_token_usage["total_tokens"] > 0:
+                await mongodb_service.update_conversation_token_usage(
+                    conversation_id=conversation_id,
+                    prompt_tokens=node_token_usage["prompt_tokens"],
+                    completion_tokens=node_token_usage["completion_tokens"]
+                )
+                logger.info(f"节点 '{node_name}' token使用量: {node_token_usage}")
+
             if output_enabled:
                 # 对于output_enabled=True的节点，保存assistant的最终输出
                 if final_output:

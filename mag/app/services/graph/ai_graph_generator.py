@@ -24,13 +24,13 @@ class AIGraphGenerator:
         pass
 
     async def ai_generate_stream(self,
-                                 requirement: str,
-                                 model_name: str,
-                                 mcp_servers: List[str],
-                                 conversation_id: Optional[str] = None,
-                                 user_id: str = "default_user",
-                                 graph_config: Optional[Dict[str, Any]] = None
-                                 ) -> AsyncGenerator[str, None]:
+                                requirement: str,
+                                model_name: str,
+                                mcp_servers: List[str],
+                                conversation_id: Optional[str] = None,
+                                user_id: str = "default_user",
+                                graph_config: Optional[Dict[str, Any]] = None
+                                ) -> AsyncGenerator[str, None]:
         """AI生成图的流式接口"""
         try:
             # 检查是否为结束指令
@@ -86,7 +86,7 @@ class AIGraphGenerator:
                 else:
                     # 对话不存在，使用该conversation_id创建新对话
                     success = await self._create_conversation(user_id, requirement, graph_config, mcp_servers,
-                                                              conversation_id)
+                                                            conversation_id)
                     if not success:
                         error_chunk = {
                             "error": {
@@ -157,34 +157,16 @@ class AIGraphGenerator:
                     if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
                         accumulated_reasoning += delta.reasoning_content
 
+                if hasattr(chunk, "usage") and chunk.usage is not None:
+                    api_usage = {
+                        "total_tokens": chunk.usage.total_tokens,
+                        "prompt_tokens": chunk.usage.prompt_tokens,
+                        "completion_tokens": chunk.usage.completion_tokens
+                    }
+
                 if chunk.choices and chunk.choices[0].finish_reason:
                     logger.info(f"API调用完成，finish_reason: {chunk.choices[0].finish_reason}")
 
-                    # 收集token使用量
-                    if chunk.usage is not None:
-                        api_usage = {
-                            "total_tokens": chunk.usage.total_tokens,
-                            "prompt_tokens": chunk.usage.prompt_tokens,
-                            "completion_tokens": chunk.usage.completion_tokens
-                        }
-                        reasoning_tokens = 0
-                        if (chunk.usage.completion_tokens_details is not None and
-                                chunk.usage.completion_tokens_details.reasoning_tokens is not None):
-                            reasoning_tokens = chunk.usage.completion_tokens_details.reasoning_tokens
-
-                        if reasoning_tokens > 0:
-                            logger.info(f"API调用token使用量: {api_usage} (包含reasoning_tokens: {reasoning_tokens})")
-                        else:
-                            logger.info(f"API调用token使用量: {api_usage}")
-                    else:
-                        logger.warning("在finish_reason时chunk.usage为None")
-
-                    break
-
-                if chunk.choices and chunk.choices[0].finish_reason:
-                    break
-
-            # 构建assistant消息
             assistant_message = {
                 "role": "assistant"
             }
