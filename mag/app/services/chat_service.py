@@ -254,7 +254,7 @@ class ChatService:
 
             # 保存轮次消息到数据库
             await mongodb_service.add_round_to_conversation(
-                conversation_id, round_number, round_messages, tools_schema
+                conversation_id, round_number, round_messages, tools_schema, model_config["model"]
             )
 
             # 更新对话总token统计

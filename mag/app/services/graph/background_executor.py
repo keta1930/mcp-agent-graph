@@ -341,7 +341,8 @@ class BackgroundExecutor:
                 "node_name": node_name,
                 "level": node_level,
                 "output_enabled": output_enabled,
-                "messages": round_messages
+                "messages": round_messages,
+                "model": model_name
             }
 
             if mcp_servers:

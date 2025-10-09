@@ -181,6 +181,8 @@ class GraphManager:
                         "round": 1,
                         "messages": [message]
                     }
+                    if model_name:
+                        round_data["model"] = model_name
                     result = await self.graph_messages_collection.update_one(
                         {"conversation_id": conversation_id},
                         {"$push": {"rounds": round_data}}
@@ -189,9 +191,13 @@ class GraphManager:
                 else:
                     # 添加到最后一个round
                     last_round_index = len(current_rounds) - 1
+                    update_operations = {"$push": {f"rounds.{last_round_index}.messages": message}}
+                    # 如果提供了model_name，同时更新model字段
+                    if model_name:
+                        update_operations["$set"] = {f"rounds.{last_round_index}.model": model_name}
                     result = await self.graph_messages_collection.update_one(
                         {"conversation_id": conversation_id},
-                        {"$push": {f"rounds.{last_round_index}.messages": message}}
+                        update_operations
                     )
 
             else:
