@@ -100,10 +100,5 @@ class Settings:
         """获取Agent目录中的配置文件路径"""
         return self.get_agent_dir(agent_name) / "config.json"
 
-    def get_agent_prompt_dir(self, agent_name: str) -> Path:
-        """获取Agent的提示词文件目录路径"""
-        return self.get_agent_dir(agent_name) / "prompts"
-
-
 # 创建全局设置实例
 settings = Settings()

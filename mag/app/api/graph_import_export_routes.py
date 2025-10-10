@@ -259,19 +259,6 @@ async def import_graph_package(data: GraphFilePath):
                     detail="保存图配置失败"
                 )
 
-            # 复制提示词文件（如果存在）
-            prompts_dir = temp_path / "prompts"
-            if prompts_dir.exists() and prompts_dir.is_dir():
-                try:
-                    target_prompts_dir = settings.get_agent_prompt_dir(graph_name)
-                    target_prompts_dir.mkdir(parents=True, exist_ok=True)
-
-                    for prompt_file in prompts_dir.glob("*"):
-                        if prompt_file.is_file():
-                            shutil.copy2(prompt_file, target_prompts_dir / prompt_file.name)
-                except Exception as e:
-                    logger.error(f"复制提示词文件时出错: {str(e)}")
-
             # 复制README文件（如果存在）
             readme_path = temp_path / "readme.md"
             if readme_path.exists() and readme_path.is_file():
@@ -430,8 +417,6 @@ async def export_graph(graph_name: str):
             temp_path = Path(temp_dir)
 
             # 创建必要的子目录
-            prompts_dir = temp_path / "prompts"
-            prompts_dir.mkdir()
             attachment_dir = temp_path / "attachment"
             attachment_dir.mkdir()
 
@@ -455,14 +440,7 @@ async def export_graph(graph_name: str):
                     logger.info(f"使用现有的README文件: {readme_path}")
                     break
 
-            # 3. 提取并复制提示词文件
-            source_prompts_dir = settings.get_agent_prompt_dir(graph_name)
-            if source_prompts_dir.exists():
-                for prompt_file in source_prompts_dir.glob("*"):
-                    if prompt_file.is_file():
-                        shutil.copy2(prompt_file, prompts_dir / prompt_file.name)
-
-            # 4. 从图配置中提取服务器和模型信息
+            # 3. 从图配置中提取服务器和模型信息
             used_servers = set()
             used_models = set()
 
@@ -476,7 +454,7 @@ async def export_graph(graph_name: str):
                 if node.get("model_name"):
                     used_models.add(node.get("model_name"))
 
-            # 5. 提取服务器配置
+            # 4. 提取服务器配置
             mcp_config = FileManager.load_mcp_config()
             filtered_mcp_config = {"mcpServers": {}}
 
@@ -489,7 +467,7 @@ async def export_graph(graph_name: str):
             with open(mcp_path, 'w', encoding='utf-8') as f:
                 json.dump(filtered_mcp_config, f, ensure_ascii=False, indent=2)
 
-            # 6. 提取模型配置（清空API密钥）
+            # 5. 提取模型配置（清空API密钥）
             model_configs = []
             all_models = model_service.get_all_models()
 
@@ -505,7 +483,7 @@ async def export_graph(graph_name: str):
             with open(model_path, 'w', encoding='utf-8') as f:
                 json.dump({"models": model_configs}, f, ensure_ascii=False, indent=2)
 
-            # 6.5. 检查并打包AI生成的MCP工具
+            # 6. 检查并打包AI生成的MCP工具
             ai_mcp_tools = set()
             for server_name in used_servers:
                 if FileManager.mcp_tool_exists(server_name):
@@ -545,12 +523,6 @@ async def export_graph(graph_name: str):
                     file_path = temp_path / file_name
                     if file_path.exists() and file_path.is_file():
                         zipf.write(file_path, arcname=file_name)
-
-                # 添加prompts目录
-                if prompts_dir.exists():
-                    for file in prompts_dir.glob("*"):
-                        if file.is_file():
-                            zipf.write(file, arcname=f"prompts/{file.name}")
 
                 # 添加attachment目录
                 if attachment_dir.exists():
