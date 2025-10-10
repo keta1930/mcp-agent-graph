@@ -108,7 +108,7 @@ class ChatService:
         current_messages = messages.copy()
         max_iterations = 10
         iteration = 0
-        all_round_messages = []
+        round_messages = []
         round_token_usage = {
             "total_tokens": 0,
             "prompt_tokens": 0,
@@ -189,8 +189,14 @@ class ChatService:
                 # 添加到消息列表
                 current_messages.append(assistant_message)
                 if iteration == 1:
-                    all_round_messages.append(messages[-1])
-                all_round_messages.append(assistant_message)
+                    # 第一轮时，检查是否有system消息需要记录
+                    for msg in messages:
+                        if msg.get("role") == "system":
+                            round_messages.append(msg)
+                            break  # 只添加第一条system消息
+                    # 添加用户消息
+                    round_messages.append(messages[-1])
+                round_messages.append(assistant_message)
 
                 # 如果没有工具调用，结束循环
                 if not current_tool_calls:
@@ -209,7 +215,7 @@ class ChatService:
                         "content": tool_result["content"]
                     }
                     current_messages.append(tool_message)
-                    all_round_messages.append(tool_message)
+                    round_messages.append(tool_message)
                     yield f"data: {json.dumps(tool_message)}\n\n"
 
                 # 继续下一轮循环
@@ -223,7 +229,7 @@ class ChatService:
             if conversation_id is not None:
                 await self._save_complete_round(
                     conversation_id=conversation_id,
-                    round_messages=all_round_messages,
+                    round_messages=round_messages,
                     token_usage=round_token_usage,
                     user_id=user_id,
                     model_config=model_config,

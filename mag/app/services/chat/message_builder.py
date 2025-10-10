@@ -46,6 +46,7 @@ class MessageBuilder:
             })
         
         return messages
+
     def build_temporary_chat_messages(self,
                                       user_prompt: str,
                                       system_prompt: str = "") -> List[Dict[str, Any]]:
