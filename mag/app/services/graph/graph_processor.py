@@ -43,65 +43,30 @@ class GraphProcessor:
                 # 递归展开子图（处理嵌套子图）
                 subgraph_flattened = await self._flatten_all_subgraphs(subgraph_config)
 
-                # 找出子图中的输出节点（连接到"end"的节点或标记为is_end的节点）
+                # 找出子图中的输出节点
                 subgraph_output_nodes = []
                 for sub_node in subgraph_flattened.get("nodes", []):
                     if "end" in sub_node.get("output_nodes", []) or sub_node.get("is_end", False):
                         subgraph_output_nodes.append(sub_node["name"])
 
-                # 记录此子图的输出节点（添加前缀后）
-                prefixed_output_nodes = [f"{node_name}.{output_node}" for output_node in subgraph_output_nodes]
-                subgraph_outputs[node_name] = prefixed_output_nodes
+                subgraph_outputs[node_name] = subgraph_output_nodes
 
-                # 给子图内的节点添加前缀并处理连接关系
-                prefix = f"{node_name}."
+                # 展开子图内的节点
                 for sub_node in subgraph_flattened.get("nodes", []):
-                    # 复制节点并更新名称
                     sub_node_copy = copy.deepcopy(sub_node)
-                    original_name = sub_node["name"]
-                    sub_node_copy["name"] = prefix + original_name
-
-                    # 更新内部连接关系，添加前缀
-                    if "input_nodes" in sub_node_copy:
-                        new_inputs = []
-                        for input_node in sub_node_copy["input_nodes"]:
-                            if input_node == "start":
-                                # 保留start，稍后处理
-                                new_inputs.append(input_node)
-                            else:
-                                # 为子图内部节点添加前缀
-                                new_inputs.append(prefix + input_node)
-                        sub_node_copy["input_nodes"] = new_inputs
-
-                    if "output_nodes" in sub_node_copy:
-                        new_outputs = []
-                        for output_node in sub_node_copy["output_nodes"]:
-                            if output_node == "end":
-                                # 保留end，稍后处理
-                                new_outputs.append(output_node)
-                            else:
-                                # 为子图内部节点添加前缀
-                                new_outputs.append(prefix + output_node)
-                        sub_node_copy["output_nodes"] = new_outputs
 
                     # 处理与外部图的连接
-                    # 将"start"替换为父图中指向子图的节点
                     if "input_nodes" in sub_node_copy and "start" in sub_node_copy["input_nodes"]:
                         input_idx = sub_node_copy["input_nodes"].index("start")
                         sub_node_copy["input_nodes"][input_idx:input_idx + 1] = parent_inputs
 
-                    # 将"end"替换为父图中子图指向的节点
                     if "output_nodes" in sub_node_copy and "end" in sub_node_copy["output_nodes"]:
                         output_idx = sub_node_copy["output_nodes"].index("end")
                         sub_node_copy["output_nodes"][output_idx:output_idx + 1] = parent_outputs
-
-                        # 重置子图内的end节点标志，除非这是最外层图
                         if sub_node_copy.get("is_end", False):
                             sub_node_copy["is_end"] = False
 
-                    # 记录原始信息用于结果展示
-                    sub_node_copy["_original_name"] = original_name
-                    sub_node_copy["_node_path"] = prefix
+                    sub_node_copy["_from_subgraph"] = node_name
                     sub_node_copy["_subgraph_name"] = subgraph_name
 
                     flattened_nodes.append(sub_node_copy)
@@ -109,21 +74,14 @@ class GraphProcessor:
                 # 普通节点直接添加
                 flattened_nodes.append(copy.deepcopy(node))
 
-        # 第二阶段：更新所有节点的输入引用，将引用整个子图的改为引用具体输出节点
+        # 第二阶段：更新节点的输入引用，将引用子图的改为引用子图的输出节点
         for node in flattened_nodes:
             if "input_nodes" in node:
                 updated_inputs = []
                 for input_node in node["input_nodes"]:
                     if input_node in subgraph_outputs:
-                        # 如果引用了子图，替换为子图的实际输出节点
                         updated_inputs.extend(subgraph_outputs[input_node])
-                        # 记录这是从子图引用转换而来
-                        node["_input_from_subgraph"] = {
-                            "original": input_node,
-                            "expanded": subgraph_outputs[input_node]
-                        }
                     else:
-                        # 保持原有引用
                         updated_inputs.append(input_node)
                 node["input_nodes"] = updated_inputs
 
