@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
 from app.core.file_manager import FileManager
-from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager
+from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager,GraphConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class MongoDBService:
         self.mcp_messages_collection = None
         self.graph_run_messages_collection = None
         self.tasks_collection = None
+        self.agent_graphs_collection = None
 
         self.is_connected = False
 
@@ -32,6 +33,7 @@ class MongoDBService:
         self.mcp_manager = None
         self.graph_run_manager = None
         self.task_manager = None
+        self.graph_config_manager = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -51,6 +53,7 @@ class MongoDBService:
             self.mcp_messages_collection = self.db.mcp_gen
             self.graph_run_messages_collection = self.db.graph_run
             self.tasks_collection = self.db.tasks
+            self.agent_graphs_collection = self.db.agent_graphs
 
             await self.client.admin.command('ping')
 
@@ -98,6 +101,11 @@ class MongoDBService:
 
         self.task_manager = TaskManager(self.db)
 
+        self.graph_config_manager = GraphConfigManager(
+            self.db,
+            self.agent_graphs_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -122,6 +130,9 @@ class MongoDBService:
             await self.tasks_collection.create_index([("execution_stats.last_executed_at.executed_at", -1)])
             await self.tasks_collection.create_index([("execution_stats.total_triggers", -1)])
 
+            await self.agent_graphs_collection.create_index([("user_id", 1), ("updated_at", -1)])
+            await self.agent_graphs_collection.create_index([("name", 1)])
+
             logger.info("MongoDB索引创建成功")
 
         except Exception as e:
@@ -133,6 +144,37 @@ class MongoDBService:
             self.client.close()
             self.is_connected = False
             logger.info("MongoDB连接已断开")
+
+    # === graph config管理方法 ===
+
+    async def create_graph_config(self, graph_name: str, graph_config: Dict[str, Any],
+                                  user_id: str = "default_user") -> bool:
+        """创建图配置"""
+        return await self.graph_config_manager.create_graph(graph_name, graph_config, user_id)
+
+    async def get_graph_config(self, graph_name: str) -> Optional[Dict[str, Any]]:
+        """获取图配置"""
+        return await self.graph_config_manager.get_graph(graph_name)
+
+    async def update_graph_config(self, graph_name: str, graph_config: Dict[str, Any]) -> bool:
+        """更新图配置"""
+        return await self.graph_config_manager.update_graph(graph_name, graph_config)
+
+    async def delete_graph_config(self, graph_name: str) -> bool:
+        """删除图配置"""
+        return await self.graph_config_manager.delete_graph(graph_name)
+
+    async def list_graph_configs(self, user_id: str = "default_user") -> List[str]:
+        """列出所有图"""
+        return await self.graph_config_manager.list_graphs(user_id)
+
+    async def rename_graph_config(self, old_name: str, new_name: str) -> bool:
+        """重命名图"""
+        return await self.graph_config_manager.rename_graph(old_name, new_name)
+
+    async def graph_config_exists(self, graph_name: str) -> bool:
+        """检查图是否存在"""
+        return await self.graph_config_manager.graph_exists(graph_name)
 
     # === 图运行管理方法 ===
 

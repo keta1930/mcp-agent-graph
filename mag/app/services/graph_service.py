@@ -6,7 +6,6 @@ import re
 import copy
 from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import os
-
 from app.core.file_manager import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
@@ -18,6 +17,7 @@ from app.services.graph.graph_executor import GraphExecutor
 from app.services.graph.ai_graph_generator import AIGraphGenerator
 from app.utils.sse_helper import SSEHelper
 from app.services.graph.background_executor import BackgroundExecutor
+from app.services.mongodb_service import mongodb_service
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,7 @@ class GraphService:
         self.background_executor = BackgroundExecutor(self.conversation_manager, mcp_service)
         self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
-
-        # 任务管理组件（延迟初始化以避免循环导入）
+        self.mongodb_service = mongodb_service
         self._task_service = None
         self._task_scheduler = None
 
@@ -44,26 +43,28 @@ class GraphService:
         # 初始化任务管理组件
         await self._initialize_task_components()
 
-    def list_graphs(self) -> List[str]:
+    async def list_graphs(self) -> List[str]:
         """列出所有可用的图"""
-        return FileManager.list_agents()
+        return await self.mongodb_service.list_graph_configs()
 
-    def get_graph(self, graph_name: str) -> Optional[Dict[str, Any]]:
+    async def get_graph(self, graph_name: str) -> Optional[Dict[str, Any]]:
         """获取图配置"""
-        return FileManager.load_agent(graph_name)
+        return await self.mongodb_service.get_graph_config(graph_name)
 
-    def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
+    async def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
         """保存图配置"""
-        print("save_graph", graph_name, config)
-        return FileManager.save_agent(graph_name, config)
+        existing = await self.mongodb_service.graph_config_exists(graph_name)
+        if existing:
+            return await self.mongodb_service.update_graph_config(graph_name, config)
+        return await self.mongodb_service.create_graph_config(graph_name, config)
 
-    def delete_graph(self, graph_name: str) -> bool:
+    async def delete_graph(self, graph_name: str) -> bool:
         """删除图配置"""
-        return FileManager.delete_agent(graph_name)
+        return await self.mongodb_service.delete_graph_config(graph_name)
 
-    def rename_graph(self, old_name: str, new_name: str) -> bool:
+    async def rename_graph(self, old_name: str, new_name: str) -> bool:
         """重命名图"""
-        return FileManager.rename_agent(old_name, new_name)
+        return await self.mongodb_service.rename_graph_config(old_name, new_name)
 
     def _extract_prompt_references(self, text: str) -> Set[str]:
         """
@@ -161,29 +162,29 @@ class GraphService:
         logger.info("提示词预处理完成")
         return processed_config
 
-    def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
         """将图中所有子图完全展开为扁平结构，并更新节点引用关系"""
-        return self.processor._flatten_all_subgraphs(graph_config)
+        return await self.processor._flatten_all_subgraphs(graph_config)
 
     def _calculate_node_levels(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
         """重新设计的层级计算算法，正确处理所有依赖关系"""
         return self.processor._calculate_node_levels(graph_config)
 
-    def preprocess_graph(self, graph_config: Dict[str, Any], prefix_path: str = "") -> Dict[str, Any]:
+    async def preprocess_graph(self, graph_config: Dict[str, Any], prefix_path: str = "") -> Dict[str, Any]:
         """将包含子图的复杂图展开为扁平化结构"""
-        return self.processor.preprocess_graph(graph_config, prefix_path)
+        return await self.processor.preprocess_graph(graph_config, prefix_path)
 
-    def _expand_subgraph_node(self, subgraph_node: Dict[str, Any], prefix_path: str) -> List[Dict[str, Any]]:
+    async def _expand_subgraph_node(self, subgraph_node: Dict[str, Any], prefix_path: str) -> List[Dict[str, Any]]:
         """将子图节点展开为多个普通节点"""
-        return self.processor._expand_subgraph_node(subgraph_node, prefix_path)
+        return await self.processor._expand_subgraph_node(subgraph_node, prefix_path)
 
-    def detect_graph_cycles(self, graph_name: str, visited: List[str] = None) -> Optional[List[str]]:
+    async def detect_graph_cycles(self, graph_name: str, visited: List[str] = None) -> Optional[List[str]]:
         """检测图引用中的循环"""
-        return self.processor.detect_graph_cycles(graph_name, visited)
+        return await self.processor.detect_graph_cycles(graph_name, visited)
 
-    def validate_graph(self, graph_config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    async def validate_graph(self, graph_config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         """验证图配置是否有效"""
-        return self.processor.validate_graph(
+        return await self.processor.validate_graph(
             graph_config,
             model_service.get_model,
             mcp_service.get_server_status_sync
@@ -223,7 +224,7 @@ class GraphService:
         """后台异步执行图，执行到创建conversation_id后立即返回，图在后台继续运行"""
         try:
             # 检测图循环（和SSE版本一样的前期检查）
-            cycle = self.detect_graph_cycles(graph_name)
+            cycle = await self.detect_graph_cycles(graph_name)
             if cycle:
                 return {
                     "status": "error",
@@ -250,7 +251,7 @@ class GraphService:
                 preprocessed_config = await self._preprocess_graph_prompts(graph_config)
 
                 # 展开子图和计算层级
-                flattened_config = self.processor._flatten_all_subgraphs(preprocessed_config)
+                flattened_config = await self.processor._flatten_all_subgraphs(preprocessed_config)
                 flattened_config = self.processor._calculate_node_levels(flattened_config)
 
                 # 使用后台执行器执行图
@@ -269,7 +270,7 @@ class GraphService:
     async def execute_graph_stream(self, graph_name: str, input_text: str, graph_config) -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""
         try:
-            cycle = self.detect_graph_cycles(graph_name)
+            cycle = await self.detect_graph_cycles(graph_name)
             if cycle:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
                 return
@@ -279,7 +280,7 @@ class GraphService:
             preprocessed_config = await self._preprocess_graph_prompts(graph_config)
 
             # 第二步：展开子图和计算层级
-            flattened_config = self.processor._flatten_all_subgraphs(preprocessed_config)
+            flattened_config = await self.processor._flatten_all_subgraphs(preprocessed_config)
             flattened_config = self.processor._calculate_node_levels(flattened_config)
 
             # 第三步：执行图

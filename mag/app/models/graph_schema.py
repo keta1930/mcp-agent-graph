@@ -62,7 +62,8 @@ class GraphConfig(BaseModel):
     name: str = Field(..., description="图名称")
     description: str = Field(default="", description="图描述")
     nodes: List[AgentNode] = Field(default_factory=list, description="节点列表")
-    end_template: Optional[str] = Field(default=None, description="终止节点输出模板，支持{node_name}格式的占位符引用其他节点的输出")
+    end_template: Optional[str] = Field(default=None, description="终止节点输出模板")
+    readme: Optional[str] = Field(default=None, description="图的README文档")
 
     @validator('name')
     def name_must_be_valid(cls, v):

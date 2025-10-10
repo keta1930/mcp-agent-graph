@@ -51,11 +51,6 @@ class Settings:
             return home / ".mag"
 
     @property
-    def AGENT_DIR(self) -> Path:
-        """获取Agent配置目录"""
-        return self.MAG_DIR / "agent"
-
-    @property
     def MODEL_PATH(self) -> Path:
         """获取模型配置文件路径"""
         return self.MAG_DIR / "model.json"
@@ -83,7 +78,6 @@ class Settings:
     def ensure_directories(self) -> None:
         """确保所有必要的目录存在"""
         self.MAG_DIR.mkdir(exist_ok=True)
-        self.AGENT_DIR.mkdir(exist_ok=True)
         self.CONVERSATION_DIR.mkdir(exist_ok=True)
         self.EXPORTS_DIR.mkdir(exist_ok=True)
         self.MCP_TOOLS_DIR.mkdir(exist_ok=True)
@@ -91,14 +85,6 @@ class Settings:
     def get_mcp_tool_dir(self, tool_name: str) -> Path:
         """获取指定MCP工具的目录路径"""
         return self.MCP_TOOLS_DIR / tool_name
-
-    def get_agent_dir(self, agent_name: str) -> Path:
-        """获取指定Agent的配置目录路径"""
-        return self.AGENT_DIR / agent_name
-
-    def get_agent_config_path(self, agent_name: str) -> Path:
-        """获取Agent目录中的配置文件路径"""
-        return self.get_agent_dir(agent_name) / "config.json"
 
 # 创建全局设置实例
 settings = Settings()

@@ -15,7 +15,7 @@ class GraphProcessor:
         self.get_graph = get_graph_func
 
 
-    def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
         """将图中所有子图完全展开为扁平结构，并更新节点引用关系"""
         flattened_config = copy.deepcopy(graph_config)
         flattened_nodes = []
@@ -31,7 +31,7 @@ class GraphProcessor:
                 if not subgraph_name:
                     continue
 
-                subgraph_config = self.get_graph(subgraph_name)
+                subgraph_config = await self.get_graph(subgraph_name)
                 if not subgraph_config:
                     continue
 
@@ -41,7 +41,7 @@ class GraphProcessor:
                 parent_outputs = node.get("output_nodes", [])
 
                 # 递归展开子图（处理嵌套子图）
-                subgraph_flattened = self._flatten_all_subgraphs(subgraph_config)
+                subgraph_flattened = await self._flatten_all_subgraphs(subgraph_config)
 
                 # 找出子图中的输出节点（连接到"end"的节点或标记为is_end的节点）
                 subgraph_output_nodes = []
@@ -340,7 +340,7 @@ class GraphProcessor:
                     pass
             return graph_config
 
-    def preprocess_graph(self, graph_config: Dict[str, Any], prefix_path: str = "") -> Dict[str, Any]:
+    async def preprocess_graph(self, graph_config: Dict[str, Any], prefix_path: str = "") -> Dict[str, Any]:
         """将包含子图的复杂图展开为扁平化结构"""
         # 首先计算原始图的层级
         graph_config = self._calculate_node_levels(graph_config)
@@ -351,7 +351,7 @@ class GraphProcessor:
         for node in processed_config.get("nodes", []):
             if node.get("is_subgraph", False):
                 # 展开子图节点
-                expanded_nodes = self._expand_subgraph_node(
+                expanded_nodes = await self._expand_subgraph_node(
                     node,
                     prefix_path + node["name"] + "."
                 )
@@ -391,13 +391,13 @@ class GraphProcessor:
         processed_config = self._calculate_node_levels(processed_config)
         return processed_config
 
-    def _expand_subgraph_node(self, subgraph_node: Dict[str, Any], prefix_path: str) -> List[Dict[str, Any]]:
+    async def _expand_subgraph_node(self, subgraph_node: Dict[str, Any], prefix_path: str) -> List[Dict[str, Any]]:
         """将子图节点展开为多个普通节点"""
         subgraph_name = subgraph_node.get("subgraph_name")
         if not subgraph_name:
             raise ValueError(f"子图节点 '{subgraph_node['name']}' 未指定子图名称")
 
-        subgraph_config = self.get_graph(subgraph_name)
+        subgraph_config = await self.get_graph(subgraph_name)
         if not subgraph_config:
             raise ValueError(f"找不到子图 '{subgraph_name}'")
 
@@ -406,7 +406,7 @@ class GraphProcessor:
         parent_output_connections = subgraph_node.get("output_nodes", [])
 
         # 递归处理子图配置
-        expanded_config = self.preprocess_graph(subgraph_config, prefix_path)
+        expanded_config = await self.preprocess_graph(subgraph_config, prefix_path)
         expanded_nodes = expanded_config["nodes"]
 
         # 处理连接关系
@@ -432,7 +432,7 @@ class GraphProcessor:
 
         return expanded_nodes
 
-    def detect_graph_cycles(self, graph_name: str, visited: List[str] = None) -> Optional[List[str]]:
+    async def detect_graph_cycles(self, graph_name: str, visited: List[str] = None) -> Optional[List[str]]:
         """检测图引用中的循环"""
         if visited is None:
             visited = []
@@ -442,7 +442,7 @@ class GraphProcessor:
             return visited + [graph_name]
 
         # 获取图配置
-        graph_config = self.get_graph(graph_name)
+        graph_config = await self.get_graph(graph_name)
         if not graph_config:
             return None
 
@@ -455,13 +455,13 @@ class GraphProcessor:
                 subgraph_name = node.get("subgraph_name")
                 if subgraph_name:
                     # 递归检查
-                    cycle = self.detect_graph_cycles(subgraph_name, current_path)
+                    cycle = await self.detect_graph_cycles(subgraph_name, current_path)
                     if cycle:
                         return cycle
 
         return None
 
-    def validate_graph(self, graph_config: Dict[str, Any],
+    async def validate_graph(self, graph_config: Dict[str, Any],
                       get_model_func, get_servers_status_func) -> Tuple[bool, Optional[str]]:
         """验证图配置是否有效"""
         try:
@@ -501,7 +501,7 @@ class GraphProcessor:
                         return False, f"子图节点 '{node['name']}' 未指定子图名称"
 
                     # 检查子图是否存在
-                    subgraph_config = self.get_graph(subgraph_name)
+                    subgraph_config = await self.get_graph(subgraph_name)
                     if not subgraph_config:
                         return False, f"子图节点 '{node['name']}' 引用了不存在的子图 '{subgraph_name}'"
 
@@ -510,7 +510,7 @@ class GraphProcessor:
                         return False, f"子图节点 '{node['name']}' 引用了自身，形成循环引用"
 
                     # 检查深层次循环引用
-                    cycle = self.detect_graph_cycles(subgraph_name, [graph_config.get("name")])
+                    cycle = await self.detect_graph_cycles(subgraph_name, [graph_config.get("name")])
                     if cycle:
                         return False, f"检测到循环引用链: {' -> '.join(cycle)}"
                 else:

@@ -40,7 +40,7 @@ class TaskService:
             task_data = task_create.dict()
 
             # 验证图是否存在
-            graph_config = graph_service.get_graph(task_create.graph_name)
+            graph_config = await graph_service.get_graph(task_create.graph_name)
             if not graph_config:
                 raise Exception(f"图 '{task_create.graph_name}' 不存在")
 
@@ -165,7 +165,7 @@ class TaskService:
             input_text = task.get("input_text")
 
             # 获取图配置
-            graph_config = graph_service.get_graph(graph_name)
+            graph_config = await graph_service.get_graph(graph_name)
             if not graph_config:
                 raise Exception(f"图 '{graph_name}' 不存在")
 

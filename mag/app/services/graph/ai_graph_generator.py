@@ -521,9 +521,9 @@ class AIGraphGenerator:
             except Exception as e:
                 return {"success": False, "error": f"图配置验证失败: {str(e)}"}
 
-            # 保存图配置到文件系统
+            # 保存图配置到数据库
             from app.services.graph_service import graph_service
-            save_success = graph_service.save_graph(validated_config.name, validated_config.dict())
+            save_success = await graph_service.save_graph(validated_config.name, validated_config.dict())
 
             if not save_success:
                 return {"success": False, "error": "保存图配置到文件系统失败"}

@@ -21,7 +21,7 @@ async def get_prompt_template(request: PromptTemplateRequest):
         # 获取图配置（如果提供了graph_name）
         graph_config = None
         if request.graph_name:
-            graph_config = graph_service.get_graph(request.graph_name)
+            graph_config = await graph_service.get_graph(request.graph_name)
             if not graph_config:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -78,7 +78,7 @@ async def generate_graph(request: GraphGenerationRequest):
         # 获取graph配置（如果提供了graph_name）
         graph_config = None
         if request.graph_name:
-            graph_config = graph_service.get_graph(request.graph_name)
+            graph_config = await graph_service.get_graph(request.graph_name)
             if not graph_config:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,

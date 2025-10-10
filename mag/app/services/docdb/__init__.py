@@ -9,6 +9,7 @@ from .graph_manager import GraphManager
 from .mcp_manager import MCPManager
 from .graph_run_manager import GraphRunManager
 from .task_manager import TaskManager
+from .graph_config_manager import GraphConfigManager
 
 __all__ = [
     'ConversationManager',
@@ -16,5 +17,6 @@ __all__ = [
     'GraphManager',
     'MCPManager',
     'GraphRunManager',
-    'TaskManager'
+    'TaskManager',
+    'GraphConfigManager'
 ]
