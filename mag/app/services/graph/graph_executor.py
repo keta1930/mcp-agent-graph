@@ -4,7 +4,7 @@ import time
 import json
 from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import copy
-from app.core.file_manager import FileManager
+from app.core.graph_run_storage import graph_run_storage
 from app.utils.sse_helper import SSEHelper
 from app.utils.output_tools import GraphPromptTemplate
 from app.services.mongodb_service import mongodb_service
@@ -542,11 +542,15 @@ class GraphExecutor:
 
             save_ext = node.get("save")
             if save_ext and final_output.strip():
-                FileManager.save_node_output_to_file(
-                    conversation_id,
-                    node_name,
-                    final_output,
-                    save_ext
+                # 从 conversation 获取 graph_name
+                graph_name = conversation.get("graph_name", "unknown")
+                # 使用 MinIO 存储节点输出
+                graph_run_storage.save_node_output(
+                    graph_name=graph_name,
+                    graph_run_id=conversation_id,
+                    node_name=node_name,
+                    content=final_output,
+                    file_ext=save_ext
                 )
 
             await self._update_execution_chain(conversation)

@@ -61,11 +61,6 @@ class Settings:
         return self.MAG_DIR / "mcp.json"
 
     @property
-    def CONVERSATION_DIR(self) -> Path:
-        """获取会话存储目录"""
-        return self.MAG_DIR / "conversation"
-
-    @property
     def EXPORTS_DIR(self) -> Path:
         """获取导出文件存储目录"""
         return self.MAG_DIR / "exports"
@@ -78,7 +73,6 @@ class Settings:
     def ensure_directories(self) -> None:
         """确保所有必要的目录存在"""
         self.MAG_DIR.mkdir(exist_ok=True)
-        self.CONVERSATION_DIR.mkdir(exist_ok=True)
         self.EXPORTS_DIR.mkdir(exist_ok=True)
         self.MCP_TOOLS_DIR.mkdir(exist_ok=True)
 

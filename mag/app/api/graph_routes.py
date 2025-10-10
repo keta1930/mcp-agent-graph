@@ -2,11 +2,12 @@ import json
 import logging
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse,JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, Response
 from typing import Dict, List, Any, Optional
 
 from app.core.config import settings
 from app.core.file_manager import FileManager
+from app.core.graph_run_storage import graph_run_storage
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.templates.flow_diagram import FlowDiagram
@@ -312,4 +313,125 @@ async def execute_graph(input_data: GraphInput):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"初始化执行图时出错: {str(e)}"
+        )
+
+
+# ======= Graph Run 附件管理 =======
+@router.get("/graphs/{graph_name}/runs/{graph_run_id}/attachments", response_model=List[Dict[str, Any]])
+async def get_graph_run_attachments(graph_name: str, graph_run_id: str):
+    """获取特定 graph run 的所有附件信息"""
+    try:
+        attachments = graph_run_storage.get_run_attachments(graph_name, graph_run_id)
+        return attachments
+    except Exception as e:
+        logger.error(f"获取 graph run 附件时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取附件时出错: {str(e)}"
+        )
+
+
+@router.get("/graphs/attachments/download")
+async def download_graph_run_attachment(object_path: str):
+    """下载特定附件"""
+    try:
+        # 验证对象路径格式
+        if not object_path.startswith(graph_run_storage.STORAGE_PREFIX):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="无效的对象路径"
+            )
+
+        # 获取附件内容
+        content = graph_run_storage.get_attachment_content(object_path)
+
+        if content is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="附件不存在或已被删除"
+            )
+
+        # 从对象路径提取文件名
+        filename = object_path.split("/")[-1]
+
+        # 根据文件扩展名确定 content type
+        file_ext = filename.split(".")[-1] if "." in filename else ""
+        content_type = graph_run_storage._get_content_type(file_ext)
+
+        return Response(
+            content=content.encode('utf-8'),
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"下载附件时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"下载附件时出错: {str(e)}"
+        )
+
+
+@router.delete("/graphs/{graph_name}/runs/{graph_run_id}/attachments")
+async def delete_graph_run_attachments(graph_name: str, graph_run_id: str):
+    """删除特定 graph run 的所有附件"""
+    try:
+        success = graph_run_storage.delete_run_attachments(graph_name, graph_run_id)
+
+        if success:
+            return {
+                "status": "success",
+                "message": f"成功删除 graph run {graph_run_id} 的所有附件"
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="删除附件失败"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除 graph run 附件时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"删除附件时出错: {str(e)}"
+        )
+
+
+@router.delete("/graphs/attachments")
+async def delete_attachment(object_path: str):
+    """删除单个附件"""
+    try:
+        # 验证对象路径格式
+        if not object_path.startswith(graph_run_storage.STORAGE_PREFIX):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="无效的对象路径"
+            )
+
+        success = graph_run_storage.delete_attachment(object_path)
+
+        if success:
+            return {
+                "status": "success",
+                "message": f"成功删除附件 {object_path}"
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="附件不存在或已被删除"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除附件时出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"删除附件时出错: {str(e)}"
         )
