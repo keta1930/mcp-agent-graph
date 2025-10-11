@@ -62,7 +62,7 @@ class PromptInfo(BaseModel):
     """提示词信息响应模型（只包含元数据）"""
     name: str = Field(..., description="提示词名称")
     category: Optional[str] = Field(None, description="提示词分类")
-    size: int = Field(..., description="文件大小（字节）")
+    size: int = Field(..., description="内容大小（字节）")
     created_time: str = Field(..., description="创建时间（YYYY-MM-DD格式）")
     modified_time: str = Field(..., description="最后修改时间（YYYY-MM-DD格式）")
 

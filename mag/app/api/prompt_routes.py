@@ -137,7 +137,7 @@ async def delete_prompt(name: str):
 @router.get("/list", response_model=PromptResponse, summary="获取提示词列表")
 async def list_prompts():
     """
-    获取所有提示词列表
+    获取提示词列表
     """
     try:
         result = await prompt_service.list_prompts()

@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
 from app.core.file_manager import FileManager
-from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager,GraphConfigManager
+from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager, GraphConfigManager, PromptManager
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ class MongoDBService:
         self.graph_run_messages_collection = None
         self.tasks_collection = None
         self.agent_graphs_collection = None
+        self.prompts_collection = None
 
         self.is_connected = False
 
@@ -34,6 +35,7 @@ class MongoDBService:
         self.graph_run_manager = None
         self.task_manager = None
         self.graph_config_manager = None
+        self.prompt_manager = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -54,6 +56,7 @@ class MongoDBService:
             self.graph_run_messages_collection = self.db.graph_run
             self.tasks_collection = self.db.tasks
             self.agent_graphs_collection = self.db.agent_graphs
+            self.prompts_collection = self.db.prompts
 
             await self.client.admin.command('ping')
 
@@ -106,6 +109,11 @@ class MongoDBService:
             self.agent_graphs_collection
         )
 
+        self.prompt_manager = PromptManager(
+            self.db,
+            self.prompts_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -132,6 +140,10 @@ class MongoDBService:
 
             await self.agent_graphs_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.agent_graphs_collection.create_index([("name", 1)])
+
+            await self.prompts_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
+            await self.prompts_collection.create_index([("user_id", 1), ("updated_at", -1)])
+            await self.prompts_collection.create_index([("category", 1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -478,6 +490,40 @@ class MongoDBService:
     async def get_conversation_stats(self, user_id: str = "default_user") -> Dict[str, Any]:
         """获取用户的对话统计信息"""
         return await self.conversation_manager.get_conversation_stats(user_id)
+
+    # === Prompt管理方法 ===
+
+    async def create_prompt(self, prompt_data):
+        """创建提示词"""
+        return await self.prompt_manager.create_prompt(prompt_data)
+
+    async def get_prompt(self, name: str):
+        """获取提示词"""
+        return await self.prompt_manager.get_prompt(name)
+
+    async def update_prompt(self, name: str, update_data):
+        """更新提示词"""
+        return await self.prompt_manager.update_prompt(name, update_data)
+
+    async def delete_prompt(self, name: str):
+        """删除提示词"""
+        return await self.prompt_manager.delete_prompt(name)
+
+    async def list_prompts(self):
+        """列出所有提示词"""
+        return await self.prompt_manager.list_prompts()
+
+    async def batch_delete_prompts(self, names: List[str]):
+        """批量删除提示词"""
+        return await self.prompt_manager.batch_delete_prompts(names)
+
+    async def import_prompt_by_file(self, file, import_request):
+        """通过文件导入提示词"""
+        return await self.prompt_manager.import_prompt_by_file(file, import_request)
+
+    async def export_prompts(self, export_request):
+        """批量导出提示词"""
+        return await self.prompt_manager.export_prompts(export_request)
 
 
 mongodb_service = MongoDBService()
