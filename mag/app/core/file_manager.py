@@ -67,8 +67,6 @@ class FileManager:
         return FileManager.save_json(settings.MCP_PATH, config)
 
     # ===== MCP 工具管理 =====
-    # 注意: Graph run 结果存储已迁移到 MinIO，由 graph_run_storage.py 管理
-
     @staticmethod
     def list_mcp_tools() -> List[str]:
         """列出所有AI生成的MCP工具"""
