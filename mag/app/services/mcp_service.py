@@ -141,10 +141,6 @@ class MCPService:
         """注册AI生成的MCP工具到配置"""
         return await self.ai_mcp_generator.register_ai_mcp_tool_stdio(tool_name)
 
-    async def unregister_ai_mcp_tool(self, tool_name: str) -> bool:
-        """从配置中注销AI生成的MCP工具"""
-        return await self.ai_mcp_generator.unregister_ai_mcp_tool_stdio(tool_name)
-
     async def cleanup(self, force=True):
         """清理资源"""
         # 清理server_manager的资源

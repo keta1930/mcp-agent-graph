@@ -270,8 +270,6 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
         if servers_to_remove:
             for server_name in ai_generated_servers:
                 try:
-                    await mcp_service.unregister_ai_mcp_tool(server_name)
-
                     if FileManager.mcp_tool_exists(server_name):
                         success = FileManager.delete_mcp_tool(server_name)
                         if not success:
