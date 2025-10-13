@@ -71,8 +71,8 @@ async def startup_event():
         FileManager.initialize()
         logger.info("文件系统初始化成功")
 
-        # 初始化模型服务
-        model_service.initialize()
+        # 初始化模型服务 (需要在MongoDB之后)
+        await model_service.initialize(mongodb_service)
         logger.info("模型服务初始化成功")
 
         # 初始化图服务

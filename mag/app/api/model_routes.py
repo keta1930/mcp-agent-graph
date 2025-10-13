@@ -16,7 +16,7 @@ router = APIRouter(tags=["model"])
 async def get_models():
     """获取所有模型配置（不包含API密钥）"""
     try:
-        return model_service.get_all_models()
+        return await model_service.get_all_models()
     except Exception as e:
         logger.error(f"获取模型列表时出错: {str(e)}")
         raise HTTPException(
@@ -30,8 +30,8 @@ async def get_model_for_edit(model_name: str):
     try:
         model_name = unquote(model_name)
         logger.info(f"获取模型配置用于编辑: '{model_name}'")
-        
-        model_config = model_service.get_model_for_edit(model_name)
+
+        model_config = await model_service.get_model_for_edit(model_name)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -53,7 +53,7 @@ async def add_model(model: ModelConfig):
     """添加新模型配置"""
     try:
         # 检查是否已存在同名模型
-        existing_model = model_service.get_model(model.name)
+        existing_model = await model_service.get_model(model.name)
         if existing_model:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -61,7 +61,7 @@ async def add_model(model: ModelConfig):
             )
 
         # 添加模型
-        success = model_service.add_model(model.dict())
+        success = await model_service.add_model(model.dict())
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -84,7 +84,7 @@ async def update_model(model_name: str, model: ModelConfig):
     """更新模型配置"""
     try:
         # 检查模型是否存在
-        existing_model = model_service.get_model(model_name)
+        existing_model = await model_service.get_model(model_name)
         if not existing_model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -93,7 +93,7 @@ async def update_model(model_name: str, model: ModelConfig):
 
         # 如果模型名称已更改，检查新名称是否已存在
         if model_name != model.name:
-            existing_model_with_new_name = model_service.get_model(model.name)
+            existing_model_with_new_name = await model_service.get_model(model.name)
             if existing_model_with_new_name:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -101,7 +101,7 @@ async def update_model(model_name: str, model: ModelConfig):
                 )
 
         # 更新模型
-        success = model_service.update_model(model_name, model.dict())
+        success = await model_service.update_model(model_name, model.dict())
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -127,7 +127,7 @@ async def delete_model(model_name: str):
         logger.info(f"尝试删除模型: '{model_name}'")
 
         # 检查模型是否存在
-        existing_model = model_service.get_model(model_name)
+        existing_model = await model_service.get_model(model_name)
         if not existing_model:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -135,7 +135,7 @@ async def delete_model(model_name: str):
             )
 
         # 删除模型
-        success = model_service.delete_model(model_name)
+        success = await model_service.delete_model(model_name)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -11,6 +11,7 @@ from .graph_run_manager import GraphRunManager
 from .task_manager import TaskManager
 from .graph_config_manager import GraphConfigManager
 from .prompt_manager import PromptManager
+from .model_config_manager import ModelConfigManager
 
 __all__ = [
     'ConversationManager',
@@ -20,5 +21,6 @@ __all__ = [
     'GraphRunManager',
     'TaskManager',
     'GraphConfigManager',
-    'PromptManager'
+    'PromptManager',
+    'ModelConfigManager'
 ]

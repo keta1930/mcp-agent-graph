@@ -31,11 +31,6 @@ class FileManager:
             FileManager.save_mcp_config({"mcpServers": {}})
             logger.info(f"Created default MCP config at {settings.MCP_PATH}")
 
-        # 初始化默认模型配置（如果不存在）
-        if not settings.MODEL_PATH.exists():
-            FileManager.save_model_config([])
-            logger.info(f"Created default model config at {settings.MODEL_PATH}")
-
     @staticmethod
     def load_json(file_path: Path) -> Dict[str, Any]:
         """从文件加载JSON配置"""
@@ -70,17 +65,6 @@ class FileManager:
     def save_mcp_config(config: Dict[str, Any]) -> bool:
         """保存MCP配置"""
         return FileManager.save_json(settings.MCP_PATH, config)
-
-    @staticmethod
-    def load_model_config() -> List[Dict[str, Any]]:
-        """加载模型配置"""
-        data = FileManager.load_json(settings.MODEL_PATH)
-        return data.get("models", []) if isinstance(data, dict) else []
-
-    @staticmethod
-    def save_model_config(models: List[Dict[str, Any]]) -> bool:
-        """保存模型配置"""
-        return FileManager.save_json(settings.MODEL_PATH, {"models": models})
 
     # ===== MCP 工具管理 =====
     # 注意: Graph run 结果存储已迁移到 MinIO，由 graph_run_storage.py 管理

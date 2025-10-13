@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
 from app.core.file_manager import FileManager
-from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager, GraphConfigManager, PromptManager
+from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager, GraphConfigManager, PromptManager, ModelConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class MongoDBService:
         self.tasks_collection = None
         self.agent_graphs_collection = None
         self.prompts_collection = None
+        self.model_configs_collection = None
 
         self.is_connected = False
 
@@ -36,6 +37,7 @@ class MongoDBService:
         self.task_manager = None
         self.graph_config_manager = None
         self.prompt_manager = None
+        self.model_config_manager = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -57,6 +59,7 @@ class MongoDBService:
             self.tasks_collection = self.db.tasks
             self.agent_graphs_collection = self.db.agent_graphs
             self.prompts_collection = self.db.prompts
+            self.model_configs_collection = self.db.model_configs
 
             await self.client.admin.command('ping')
 
@@ -114,6 +117,11 @@ class MongoDBService:
             self.prompts_collection
         )
 
+        self.model_config_manager = ModelConfigManager(
+            self.db,
+            self.model_configs_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -144,6 +152,9 @@ class MongoDBService:
             await self.prompts_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.prompts_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.prompts_collection.create_index([("category", 1)])
+
+            await self.model_configs_collection.create_index([("name", 1)], unique=True)
+            await self.model_configs_collection.create_index([("updated_at", -1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -524,6 +535,32 @@ class MongoDBService:
     async def export_prompts(self, export_request):
         """批量导出提示词"""
         return await self.prompt_manager.export_prompts(export_request)
+
+    # === 模型配置管理方法 ===
+
+    async def create_model_config(self, model_config: Dict[str, Any]):
+        """创建模型配置"""
+        return await self.model_config_manager.create_model(model_config)
+
+    async def get_model_config(self, model_name: str, include_api_key: bool = True):
+        """获取模型配置"""
+        return await self.model_config_manager.get_model(model_name, include_api_key)
+
+    async def update_model_config(self, model_name: str, model_config: Dict[str, Any]):
+        """更新模型配置"""
+        return await self.model_config_manager.update_model(model_name, model_config)
+
+    async def delete_model_config(self, model_name: str):
+        """删除模型配置"""
+        return await self.model_config_manager.delete_model(model_name)
+
+    async def list_model_configs(self, include_api_key: bool = False):
+        """列出所有模型配置"""
+        return await self.model_config_manager.list_models(include_api_key)
+
+    async def model_config_exists(self, model_name: str):
+        """检查模型配置是否存在"""
+        return await self.model_config_manager.model_exists(model_name)
 
 
 mongodb_service = MongoDBService()
