@@ -40,7 +40,7 @@ async def chat_completions(request: ChatCompletionRequest):
             )
 
         # 验证模型是否存在
-        model_config = model_service.get_model(request.model_name)
+        model_config = await model_service.get_model(request.model_name)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -389,7 +389,7 @@ async def compact_conversation(conversation_id: str, request: ConversationCompac
             )
 
         # 验证模型名称
-        model_config = model_service.get_model(request.model_name)
+        model_config = await model_service.get_model(request.model_name)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

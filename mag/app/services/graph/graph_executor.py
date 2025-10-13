@@ -371,7 +371,7 @@ class GraphExecutor:
             for iteration in range(max_iterations):
                 logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
 
-                model_config = model_service.get_model(model_name)
+                model_config = await model_service.get_model(model_name)
                 if not model_config:
                     yield SSEHelper.send_error(f"找不到模型配置: {model_name}")
                     return

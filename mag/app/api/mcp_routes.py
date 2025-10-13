@@ -488,7 +488,7 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
             )
 
         # 验证模型是否存在
-        model_config = model_service.get_model(request.model_name)
+        model_config = await model_service.get_model(request.model_name)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

@@ -80,7 +80,7 @@ async def import_graph(data: GraphFilePath):
                     used_models.add(node.get("model_name"))
 
             model_configs = []
-            all_models = model_service.get_all_models()
+            all_models = await model_service.get_all_models()
             for model in all_models:
                 if model["name"] in used_models:
                     model_configs.append(model)
@@ -194,7 +194,7 @@ async def import_graph_package(data: GraphFilePath):
                     with open(model_path, 'r', encoding='utf-8') as f:
                         import_models = json.load(f).get("models", [])
 
-                    current_models = model_service.get_all_models()
+                    current_models = await model_service.get_all_models()
                     current_model_names = {model["name"] for model in current_models}
 
                     for model in import_models:
@@ -205,7 +205,7 @@ async def import_graph_package(data: GraphFilePath):
                             if not model.get("api_key"):
                                 models_need_api_key.append(model["name"])
 
-                            model_service.add_model(model)
+                            await model_service.add_model(model)
                             current_model_names.add(model["name"])
 
                     if models_need_api_key:
@@ -405,7 +405,7 @@ async def export_graph(graph_name: str):
                 json.dump(filtered_mcp_config, f, ensure_ascii=False, indent=2)
 
             model_configs = []
-            all_models = model_service.get_all_models()
+            all_models = await model_service.get_all_models()
 
             for model in all_models:
                 if model["name"] in used_models:

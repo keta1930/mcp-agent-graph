@@ -41,7 +41,7 @@ class AIGraphGenerator:
                 return
 
             # 验证模型是否存在
-            model_config = model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name)
             if not model_config:
                 error_chunk = {
                     "error": {
@@ -204,7 +204,7 @@ class AIGraphGenerator:
         """构建系统提示词"""
         try:
             # 获取可用模型列表
-            models = model_service.get_all_models()
+            models = await model_service.get_all_models()
             models_description = "当前可用的模型：\n"
             for model in models:
                 models_description += f"- {model['name']}: {model.get('model', 'N/A')}\n"
@@ -556,7 +556,7 @@ class AIGraphGenerator:
 
                 # 获取模型配置
                 model_configs = []
-                all_models = model_service.get_all_models()
+                all_models = await model_service.get_all_models()
 
                 for model in all_models:
                     if model["name"] in used_models:

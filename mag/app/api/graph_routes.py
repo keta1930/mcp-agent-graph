@@ -113,7 +113,7 @@ async def create_graph(graph: GraphConfig):
                 used_models.add(node.get("model_name"))
 
         model_configs = []
-        all_models = model_service.get_all_models()
+        all_models = await model_service.get_all_models()
         for model in all_models:
             if model["name"] in used_models:
                 model_configs.append(model)

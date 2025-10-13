@@ -244,7 +244,7 @@ class MCPManager:
                     model_config = None
                     if model_name:
                         from app.services.model_service import model_service
-                        model_config = model_service.get_model(model_name)
+                        model_config = await model_service.get_model(model_name)
 
                     if not model_config:
                         # 回退到第一个可用模型
@@ -253,7 +253,7 @@ class MCPManager:
                         if not available_models:
                             logger.warning("没有可用的模型进行标题生成")
                             return
-                        model_config = model_service.get_model(available_models[0])
+                        model_config = await model_service.get_model(available_models[0])
 
                     if not model_config:
                         return

@@ -64,7 +64,7 @@ class ChatService:
             tools = await mcp_service.prepare_chat_tools(mcp_servers)
 
             # 获取模型配置和客户端
-            model_config = model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name)
             if not model_config:
                 raise ValueError(f"找不到模型配置: {model_name}")
 
@@ -309,7 +309,7 @@ class ChatService:
                 return {"status": "error", "error": "压缩类型必须是 'brutal' 或 'precise'"}
             
             # 验证模型是否存在
-            model_config = model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name)
             if not model_config:
                 return {"status": "error", "error": f"找不到模型配置: {model_name}"}
 

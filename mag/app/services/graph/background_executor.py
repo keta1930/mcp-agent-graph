@@ -232,7 +232,7 @@ class BackgroundExecutor:
             }
 
             for iteration in range(max_iterations):
-                model_config = model_service.get_model(model_name)
+                model_config = await model_service.get_model(model_name)
                 if not model_config:
                     raise Exception(f"找不到模型配置: {model_name}")
 

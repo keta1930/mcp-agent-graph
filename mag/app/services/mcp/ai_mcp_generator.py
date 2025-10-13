@@ -36,7 +36,7 @@ class AIMCPGenerator:
                 return
 
             # 验证模型是否存在
-            model_config = model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name)
             if not model_config:
                 error_chunk = {
                     "error": {
