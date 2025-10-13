@@ -30,11 +30,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'         # 4 CPU cores, adjust as needed
-          memory: 4G        # 4GB memory, adjust as needed
+          cpus: '1.5'        # 允许使用 1.5 核（数据库需要更多 CPU）
+          memory: 4G         # 最多 4GB（MongoDB 需要足够内存做缓存）
         reservations:
-          cpus: '2'         # 2 CPU cores, adjust as needed
-          memory: 4G        # 4GB memory, adjust as needed
+          cpus: '0.5'        # 预留 0.5 核
+          memory: 1G         # 预留 2GB
 
   # MongoDB Express Web interface
   mongo-express:
@@ -63,11 +63,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'         # 1 CPU core, adjust as needed
-          memory: 512M      # 512MB memory, adjust as needed
+          cpus: '0.5'         # 0.5 CPU core, adjust as needed
+          memory: 256M      # 256M memory, adjust as needed
         reservations:
-          cpus: '0.5'       # 0.5 CPU core, adjust as needed
-          memory: 256M      # 256MB memory, adjust as needed
+          cpus: '0.25'       # 0.25 CPU core, adjust as needed
+          memory: 128M      # 128M memory, adjust as needed
 
   # MinIO object storage service
   minio:
@@ -99,11 +99,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2'         # 2 CPU cores, adjust as needed
-          memory: 2G        # 2GB memory, adjust as needed
+          cpus: '1'          # 最多 1 核
+          memory: 2G         # 最多 2GB（对象存储需要一定内存）
         reservations:
-          cpus: '1'         # 1 CPU core, adjust as needed
-          memory: 1G        # 1GB memory, adjust as needed
+          cpus: '0.5'        # 预留 0.5 核
+          memory: 1G         # 预留 1GB
 
 networks:
   mag_network:
