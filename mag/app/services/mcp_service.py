@@ -1,12 +1,5 @@
-import asyncio
-import json
 import logging
-import os
 from typing import Dict, List, Any, Optional, AsyncGenerator
-
-from app.core.config import settings
-from app.core.file_manager import FileManager
-from app.services.model_service import model_service
 from app.services.mcp.client_manager import MCPClientManager
 from app.services.mcp.server_manager import MCPServerManager
 from app.services.mcp.ai_mcp_generator import AIMCPGenerator
@@ -35,8 +28,13 @@ class MCPService:
 
     async def initialize(self) -> Dict[str, Dict[str, Any]]:
         """初始化MCP服务，启动客户端进程"""
-        config_path = str(settings.MCP_PATH)
-        result = await self.client_manager.initialize(config_path)
+
+        config = await mongodb_service.get_mcp_config()
+        if not config:
+            config = {"mcpServers": {}}
+            await mongodb_service.create_mcp_config(config)
+
+        result = await self.client_manager.initialize(config)
         self.client_process = self.client_manager.client_process
         self.client_started = self.client_manager.client_started
         return result
@@ -53,9 +51,16 @@ class MCPService:
         """通知客户端配置已更改"""
         return self.client_manager._notify_config_change(config_path)
 
-    async def update_config(self, config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    async def update_config(self, config: Dict[str, Any], expected_version: int = None) -> Dict[str, Dict[str, Any]]:
         """更新MCP配置并通知客户端"""
-        return await self.client_manager.update_config(config)
+        if expected_version is None:
+            current_config_data = await mongodb_service.get_mcp_config()
+            if current_config_data:
+                expected_version = current_config_data.get("version", 1)
+            else:
+                expected_version = 0
+
+        return await self.client_manager.update_config(config, expected_version)
 
     async def get_server_status(self) -> Dict[str, Dict[str, Any]]:
         """获取所有服务器的状态"""
@@ -84,7 +89,8 @@ class MCPService:
                 "servers": {},
                 "tools": {}
             }
-        current_config = FileManager.load_mcp_config()
+
+        current_config = await mongodb_service.get_mcp_config()
         return await self.server_manager.connect_all_servers(current_config)
 
     async def disconnect_server(self, server_name: str) -> Dict[str, Any]:

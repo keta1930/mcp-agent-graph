@@ -27,8 +27,6 @@ logger = logging.getLogger("mcp_client")
 app = FastAPI(title="MCP Client", description="MCP Client for MAG")
 
 # 全局状态
-CONFIG_PATH = None
-FILE_WATCHER_TASK = None
 SERVERS = {}
 CONFIG = {}
 
@@ -422,7 +420,7 @@ class ToolCallData(BaseModel):
 
 # 配置更新通知数据模型
 class ConfigUpdateNotification(BaseModel):
-    config_path: str
+    config: Dict[str, Any]
 
 
 # 服务器连接请求数据模型
@@ -441,20 +439,18 @@ async def root():
 @app.post("/load_config")
 async def load_config(notification: ConfigUpdateNotification, background_tasks: BackgroundTasks):
     """加载MCP配置"""
-    global CONFIG_PATH, CONFIG
+    global CONFIG
 
     try:
-        CONFIG_PATH = notification.config_path
-        logger.info(f"收到配置更新通知，将加载: {CONFIG_PATH}")
+        new_config = notification.config
+        logger.info("收到配置更新通知")
 
-        # 在后台任务中执行配置加载和服务器连接
-        background_tasks.add_task(process_config_update, CONFIG_PATH)
+        background_tasks.add_task(process_config_update, new_config)
 
         return {"status": "accepted", "message": "配置加载请求已接受"}
     except Exception as e:
         logger.error(f"处理配置加载请求时出错: {str(e)}")
         raise HTTPException(status_code=500, detail=f"配置加载失败: {str(e)}")
-
 
 @app.get("/servers")
 async def get_servers():
@@ -590,45 +586,35 @@ async def disconnect_server(request: ServerConnectRequest):
             "message": f"断开服务器连接时出错: {str(e)}"
         }
 
-async def process_config_update(config_path: str):
+
+async def process_config_update(new_config: Dict[str, Any]):
     """处理配置更新"""
     global CONFIG
 
     try:
-        # 加载配置
-        with open(config_path, 'r', encoding='utf-8') as f:
-            new_config = json.load(f)
-
         if 'mcpServers' not in new_config:
             logger.error("无效配置: 未找到 'mcpServers' 部分")
             return False
 
-        # 记录新配置
         CONFIG = new_config
 
-        # 找出需要添加、更新和删除的服务器
         current_servers = set(SERVERS.keys())
         new_servers = set(new_config['mcpServers'].keys())
 
-        # 需要添加的服务器
         servers_to_add = new_servers - current_servers
 
-        # 需要更新的服务器
         servers_to_update = []
         for server_name in current_servers.intersection(new_servers):
             if SERVERS[server_name].config != new_config['mcpServers'][server_name]:
                 servers_to_update.append(server_name)
 
-        # 需要删除的服务器
         servers_to_remove = current_servers - new_servers
 
-        # 删除旧服务器
         for server_name in servers_to_remove:
             logger.info(f"删除服务器: {server_name}")
             await SERVERS[server_name].cleanup()
             del SERVERS[server_name]
 
-        # 更新服务器
         for server_name in servers_to_update:
             logger.info(f"更新服务器: {server_name}")
             await SERVERS[server_name].cleanup()
@@ -636,14 +622,11 @@ async def process_config_update(config_path: str):
 
             server = MCPServer(server_name, new_config['mcpServers'][server_name])
             SERVERS[server_name] = server
-            # 注意：不立即连接，等到需要时再连接
 
-        # 添加新服务器
         for server_name in servers_to_add:
             logger.info(f"添加服务器: {server_name}")
             server = MCPServer(server_name, new_config['mcpServers'][server_name])
             SERVERS[server_name] = server
-            # 注意：不立即连接，等到需要时再连接
 
         logger.info(f"配置更新完成，当前已有 {len(SERVERS)} 个服务器配置")
         return True
@@ -701,36 +684,6 @@ async def connect_single_server(server_name: str) -> bool:
         logger.error(f"服务器 '{server_name}' 连接失败: {server.error}")
         return False
 
-
-async def start_file_watcher():
-    """启动配置文件监视器"""
-    global CONFIG_PATH, FILE_WATCHER_TASK
-
-    if not CONFIG_PATH:
-        logger.warning("未设置配置文件路径，跳过文件监视")
-        return
-
-    logger.info(f"开始监视配置文件变化: {CONFIG_PATH}")
-
-    last_modified = None
-    if os.path.exists(CONFIG_PATH):
-        last_modified = os.path.getmtime(CONFIG_PATH)
-
-    while True:
-        await asyncio.sleep(5)  # 每5秒检查一次
-
-        try:
-            if os.path.exists(CONFIG_PATH):
-                current_modified = os.path.getmtime(CONFIG_PATH)
-
-                if last_modified is None or current_modified > last_modified:
-                    logger.info(f"检测到配置文件变化: {CONFIG_PATH}")
-                    last_modified = current_modified
-                    await process_config_update(CONFIG_PATH)
-        except Exception as e:
-            logger.error(f"监视配置文件时出错: {str(e)}")
-
-
 @app.post("/shutdown")
 async def shutdown_client():
     """优雅关闭MCP客户端"""
@@ -756,19 +709,10 @@ async def _perform_client_shutdown():
         if cleanup_tasks:
             await asyncio.gather(*cleanup_tasks, return_exceptions=True)
 
-        # 2. 取消文件监视器任务
-        if FILE_WATCHER_TASK:
-            logger.info("正在取消文件监视器任务")
-            FILE_WATCHER_TASK.cancel()
-            try:
-                await FILE_WATCHER_TASK
-            except asyncio.CancelledError:
-                pass
-
-        # 3. 等待一段时间确保资源释放
+        # 2. 等待一段时间确保资源释放
         await asyncio.sleep(1)
 
-        # 4. 停止FastAPI应用
+        # 3. 停止FastAPI应用
         logger.info("即将关闭MCP客户端...")
         import signal
         import os
@@ -779,30 +723,14 @@ async def _perform_client_shutdown():
 @app.on_event("startup")
 async def startup_event():
     """启动事件"""
-    global FILE_WATCHER_TASK
-
     logger.info("MCP客户端启动...")
-
-    # 启动文件监视器
-    FILE_WATCHER_TASK = asyncio.create_task(start_file_watcher())
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """关闭事件"""
-    global FILE_WATCHER_TASK
-
     logger.info("MCP客户端关闭...")
 
-    # 取消文件监视器
-    if FILE_WATCHER_TASK:
-        FILE_WATCHER_TASK.cancel()
-        try:
-            await FILE_WATCHER_TASK
-        except asyncio.CancelledError:
-            pass
-
-    # 清理所有服务器
     cleanup_tasks = []
     for server in SERVERS.values():
         cleanup_tasks.append(server.cleanup())
@@ -817,19 +745,12 @@ def run_client(host="127.0.0.1", port=8765):
 
 
 if __name__ == "__main__":
-    # 可以从命令行参数获取主机和端口
     import argparse
 
     parser = argparse.ArgumentParser(description="MCP Client for MAG")
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind")
     parser.add_argument("--port", type=int, default=8765, help="Port to bind")
-    parser.add_argument("--config", help="Initial config file path")
 
     args = parser.parse_args()
-
-    if args.config:
-        CONFIG_PATH = args.config
-        # 确保配置立即加载
-        asyncio.run(process_config_update(CONFIG_PATH))
 
     run_client(host=args.host, port=args.port)

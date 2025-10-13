@@ -3,14 +3,12 @@ import json
 import logging
 import uuid
 from typing import Dict, List, Any, Optional, AsyncGenerator
-from datetime import datetime
 import os
 from pathlib import Path
-
 from app.core.file_manager import FileManager
-from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service, StreamAccumulator
 from app.utils.text_parser import parse_ai_mcp_generation_response
+from app.services.mongodb_service import mongodb_service
 
 logger = logging.getLogger(__name__)
 
@@ -482,67 +480,85 @@ class AIMCPGenerator:
             raise
 
     async def register_ai_mcp_tool_stdio(self, tool_name: str) -> bool:
-        """注册AI生成的MCP工具到配置（使用stdio）"""
-        try:
-            # 获取当前MCP配置
-            current_config = FileManager.load_mcp_config()
+        """注册AI生成的MCP工具到配置（使用stdio，乐观锁）"""
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                current_config_data = await mongodb_service.get_mcp_config()
+                current_config = current_config_data.get("config", {"mcpServers": {}})
+                current_version = current_config_data.get("version", 1)
 
-            # 获取工具的虚拟环境Python路径和主脚本路径
-            venv_python = FileManager.get_mcp_tool_venv_python(tool_name)
-            main_script = FileManager.get_mcp_tool_main_script(tool_name)
+                venv_python = FileManager.get_mcp_tool_venv_python(tool_name)
+                main_script = FileManager.get_mcp_tool_main_script(tool_name)
 
-            if not venv_python or not main_script:
-                logger.error(f"找不到工具 {tool_name} 的Python解释器或主脚本")
+                if not venv_python or not main_script:
+                    logger.error(f"找不到工具 {tool_name} 的Python解释器或主脚本")
+                    return False
+
+                current_config.setdefault("mcpServers", {})[tool_name] = {
+                    "autoApprove": [],
+                    "disabled": False,
+                    "timeout": 60,
+                    "command": str(venv_python),
+                    "args": [str(main_script)],
+                    "transportType": "stdio",
+                    "ai_generated": True
+                }
+                from app.services.mcp_service import mcp_service
+                success = await mcp_service.update_config(current_config, current_version)
+
+                if success.get("status", {}).get("error") == "version_conflict":
+                    logger.warning(f"注册MCP工具时版本冲突，重试 {attempt + 1}/{max_retries}")
+                    await asyncio.sleep(0.1)
+                    continue
+
+                if success.get("status", {}).get("message"):
+                    logger.info(f"成功注册AI生成的MCP工具: {tool_name}")
+                    return True
+                else:
+                    logger.error(f"注册MCP工具失败: {success}")
+                    return False
+
+            except Exception as e:
+                logger.error(f"注册AI生成的MCP工具时出错: {str(e)}")
                 return False
 
-            # 添加新的MCP服务器配置
-            current_config.setdefault("mcpServers", {})[tool_name] = {
-                "autoApprove": [],
-                "disabled": False,
-                "timeout": 60,
-                "command": str(venv_python),
-                "args": [str(main_script)],
-                "transportType": "stdio",
-                "ai_generated": True
-            }
-
-            # 保存配置
-            from app.services.mcp_service import mcp_service
-            success = await mcp_service.update_config(current_config)
-            if success.get("status", {}).get("message"):
-                logger.info(f"成功注册AI生成的MCP工具: {tool_name}")
-                return True
-            else:
-                logger.error(f"注册MCP工具失败: {success}")
-                return False
-
-        except Exception as e:
-            logger.error(f"注册AI生成的MCP工具时出错: {str(e)}")
-            return False
+        logger.error(f"注册MCP工具超过最大重试次数: {tool_name}")
+        return False
 
     async def unregister_ai_mcp_tool_stdio(self, tool_name: str) -> bool:
         """从配置中注销AI生成的MCP工具"""
-        try:
-            # 获取当前MCP配置
-            current_config = FileManager.load_mcp_config()
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                current_config_data = await mongodb_service.get_mcp_config()
+                current_config = current_config_data.get("config", {"mcpServers": {}})
+                current_version = current_config_data.get("version", 1)
 
-            # 删除MCP服务器配置
-            if tool_name in current_config.get("mcpServers", {}):
-                del current_config["mcpServers"][tool_name]
+                if tool_name in current_config.get("mcpServers", {}):
+                    del current_config["mcpServers"][tool_name]
 
-                # 保存配置
-                from app.services.mcp_service import mcp_service
-                success = await mcp_service.update_config(current_config)
-                if success.get("status", {}).get("message"):
-                    logger.info(f"成功注销AI生成的MCP工具: {tool_name}")
-                    return True
+                    from app.services.mcp_service import mcp_service
+                    success = await mcp_service.update_config(current_config, current_version)
+
+                    if success.get("status", {}).get("error") == "version_conflict":
+                        logger.warning(f"注销MCP工具时版本冲突，重试 {attempt + 1}/{max_retries}")
+                        await asyncio.sleep(0.1)
+                        continue
+
+                    if success.get("status", {}).get("message"):
+                        logger.info(f"成功注销AI生成的MCP工具: {tool_name}")
+                        return True
+                    else:
+                        logger.error(f"注销MCP工具失败: {success}")
+                        return False
                 else:
-                    logger.error(f"注销MCP工具失败: {success}")
-                    return False
-            else:
-                logger.warning(f"MCP工具 {tool_name} 在配置中不存在")
-                return True
+                    logger.warning(f"MCP工具 {tool_name} 在配置中不存在")
+                    return True
 
-        except Exception as e:
-            logger.error(f"注销AI生成的MCP工具时出错: {str(e)}")
-            return False
+            except Exception as e:
+                logger.error(f"注销AI生成的MCP工具时出错: {str(e)}")
+                return False
+
+        logger.error(f"注销MCP工具超过最大重试次数: {tool_name}")
+        return False

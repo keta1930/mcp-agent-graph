@@ -1,19 +1,15 @@
-import asyncio
 import json
 import logging
 import uuid
 from typing import Dict, List, Any, Optional, AsyncGenerator
-from datetime import datetime
 import os
-
-from app.services.mongodb_service import mongodb_service
 from app.services.mcp_service import mcp_service
 from app.utils.text_parser import parse_ai_generation_response
-from app.models.graph_schema import GraphConfig, AgentNode
-from app.core.file_manager import FileManager
+from app.models.graph_schema import GraphConfig
 from app.services.model_service import model_service, StreamAccumulator
 from app.templates.flow_diagram import FlowDiagram
 from app.core.config import settings
+from app.services.mongodb_service import mongodb_service
 logger = logging.getLogger(__name__)
 
 
@@ -534,7 +530,8 @@ class AIGraphGenerator:
                 agent_dir.mkdir(parents=True, exist_ok=True)
 
                 # 获取MCP配置
-                mcp_config = FileManager.load_mcp_config()
+                mcp_config_data = await mongodb_service.get_mcp_config()
+                mcp_config = mcp_config_data.get("config", {"mcpServers": {}}) if mcp_config_data else {"mcpServers": {}}
                 filtered_mcp_config = {"mcpServers": {}}
 
                 # 获取使用的服务器

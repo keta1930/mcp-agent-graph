@@ -1,19 +1,14 @@
-import json
 import logging
-from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse, JSONResponse, Response
-from typing import Dict, List, Any, Optional
-
-from app.core.config import settings
-from app.core.file_manager import FileManager
+from typing import Dict, List, Any
 from app.core.graph_run_storage import graph_run_storage
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.templates.flow_diagram import FlowDiagram
 from app.utils.sse_helper import SSEHelper
 from app.models.graph_schema import GraphConfig, GraphInput
-
+from app.services.mongodb_service import mongodb_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["graph"])
@@ -94,8 +89,8 @@ async def create_graph(graph: GraphConfig):
             )
 
         graph_dict = graph.dict()
-
-        mcp_config = FileManager.load_mcp_config()
+        mcp_config_data = await mongodb_service.get_mcp_config()
+        mcp_config = mcp_config_data.get("config", {"mcpServers": {}}) if mcp_config_data else {"mcpServers": {}}
         filtered_mcp_config = {"mcpServers": {}}
 
         used_servers = set()

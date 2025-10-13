@@ -24,47 +24,43 @@ class MCPServerConfig(BaseModel):
                 values['transportType'] = 'stdio'
             elif type_value in ['streamable_http', 'streamable-http']:
                 values['transportType'] = 'streamable_http'
-        
-        # 规范化 transportType 字段
+
         transport_type = values.get('transportType', '').lower().replace('-', '_')
         if transport_type in ['streamable_http', 'streamablehttp']:
             values['transportType'] = 'streamable_http'
-        
+
         if not values.get('transportType') or values.get('transportType') == 'stdio':
             if values.get('url'):
-                # 如果有URL但没有明确指定类型，默认为streamable_http
                 values['transportType'] = 'streamable_http'
             elif values.get('command'):
                 values['transportType'] = 'stdio'
-        
+
         transport_type = values.get('transportType', 'stdio')
         if transport_type in ['sse', 'streamable_http'] and not values.get('url'):
             raise ValueError(f'{transport_type}传输类型必须提供url字段')
         if transport_type == 'stdio' and not values.get('command'):
             raise ValueError('stdio传输类型必须提供command字段')
-        
+
         return values
 
     def dict(self, **kwargs):
         """dict方法，根据传输类型过滤字段"""
         data = super().dict(exclude_none=True, **kwargs)
-        
-        transport_type = data.get('transportType', 'stdio')
 
+        transport_type = data.get('transportType', 'stdio')
         data.pop('type', None)
-        
-        # 根据传输类型过滤字段
+
         if transport_type in ['sse', 'streamable_http']:
             data.pop('command', None)
             data.pop('args', None)
             if 'args' in data and not data['args']:
                 del data['args']
         elif transport_type == 'stdio':
-            data.pop('url', None)       
+            data.pop('url', None)
         if 'args' in data and (not data['args'] or data['args'] == []):
             del data['args']
         if 'autoApprove' in data and (not data['autoApprove'] or data['autoApprove'] == []):
-            data['autoApprove'] = []  
+            data['autoApprove'] = []
         if 'env' in data and (not data['env']):
             del data['env']
         return data
@@ -79,11 +75,11 @@ class MCPConfig(BaseModel):
         default_factory=dict,
         description="MCP服务器配置，键为服务器名称"
     )
-    
+
     def dict(self, **kwargs):
         """dict方法确保服务器配置正确过滤"""
         data = super().dict(**kwargs)
-        
+
         if 'mcpServers' in data:
             filtered_servers = {}
             for server_name, server_config in data['mcpServers'].items():
@@ -93,14 +89,36 @@ class MCPConfig(BaseModel):
                     server_obj = MCPServerConfig(**server_config)
                     filtered_servers[server_name] = server_obj.dict()
             data['mcpServers'] = filtered_servers
-        
+
         return data
+
+
+class MCPConfigWithVersion(BaseModel):
+    """MCP配置"""
+    config: MCPConfig = Field(..., description="MCP配置内容")
+    version: int = Field(..., description="配置版本号")
+
+
+class MCPServerAddRequest(BaseModel):
+    """添加MCP服务器请求"""
+    mcpServers: Dict[str, MCPServerConfig] = Field(
+        ...,
+        description="要添加的服务器配置"
+    )
+    version: int = Field(..., description="客户端读取时的版本号")
+
+
+class MCPServerRemoveRequest(BaseModel):
+    """删除MCP服务器请求"""
+    server_names: List[str] = Field(..., description="要删除的服务器名称列表")
+    version: int = Field(..., description="客户端读取时的版本号")
+
 
 class MCPGenerationRequest(BaseModel):
     """MCP生成请求"""
-    requirement: str  # 用户的MCP生成需求
-    model_name: str   # 指定的模型名称
-    conversation_id: Optional[str] = None  # 对话ID，为空时创建新对话
+    requirement: str
+    model_name: str
+    conversation_id: Optional[str] = None
     user_id: str = Field(default="default_user", description="用户ID")
     stream: bool = Field(default=True, description="是否使用流式响应")
 
@@ -108,15 +126,17 @@ class MCPGenerationRequest(BaseModel):
 class MCPToolRegistration(BaseModel):
     """MCP工具注册请求"""
     folder_name: str
-    script_files: Dict[str, str]  # 文件名: 文件内容
+    script_files: Dict[str, str]
     readme: str
     dependencies: str
+
 
 class MCPToolTestRequest(BaseModel):
     """MCP工具测试请求"""
     server_name: str = Field(..., description="服务器名称")
     tool_name: str = Field(..., description="工具名称")
     params: Dict[str, Any] = Field(default_factory=dict, description="工具参数")
+
 
 class MCPToolTestResponse(BaseModel):
     """MCP工具测试响应"""

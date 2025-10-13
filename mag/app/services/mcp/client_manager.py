@@ -5,9 +5,10 @@ import platform
 import signal
 import subprocess
 import sys
-import time
 import aiohttp
-from typing import Dict, Any, Optional
+from app.core.config import settings
+from app.services.mongodb_service import mongodb_service
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,18 +23,16 @@ class MCPClientManager:
         self.startup_retries = 5
         self.retry_delay = 1
 
-    async def initialize(self, config_path: str) -> Dict[str, Dict[str, Any]]:
+    async def initialize(self, config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """初始化MCP客户端进程"""
         try:
-            # 检查是否已有进程在运行
             if await self._check_existing_client():
                 self.client_started = True
                 logger.info("发现现有MCP Client已在运行")
-                self._notify_config_change(config_path)
+                await self._notify_config_change(config)
                 return {"status": {"message": "MCP Client已连接"}}
 
-            # 启动新的客户端进程
-            return await self._start_new_client(config_path)
+            return await self._start_new_client(config)
 
         except Exception as e:
             logger.error(f"启动MCP Client进程时出错: {str(e)}")
@@ -52,9 +51,8 @@ class MCPClientManager:
             pass
         return False
 
-    async def _start_new_client(self, config_path: str) -> Dict[str, Dict[str, Any]]:
+    async def _start_new_client(self, config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """启动新的客户端进程"""
-        # 构建客户端脚本路径
         script_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
         client_script = os.path.join(project_root, "mcp_client.py")
@@ -64,16 +62,13 @@ class MCPClientManager:
             logger.error(error_msg)
             return {"status": {"error": error_msg}}
 
-        # 构建启动命令
         python_executable = sys.executable
-        full_command = [python_executable, client_script, "--config", config_path]
+        full_command = [python_executable, client_script]
         logger.info(f"启动MCP Client，完整命令: {' '.join(full_command)}")
 
-        # 创建日志文件
-        stdout_file = os.path.join(os.path.dirname(config_path), "mcp_client_stdout.log")
-        stderr_file = os.path.join(os.path.dirname(config_path), "mcp_client_stderr.log")
+        stdout_file = os.path.join(str(settings.MAG_DIR), "mcp_client_stdout.log")
+        stderr_file = os.path.join(str(settings.MAG_DIR), "mcp_client_stderr.log")
 
-        # 启动进程
         try:
             with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
                 system = platform.system()
@@ -93,11 +88,9 @@ class MCPClientManager:
                     )
 
             logger.info(f"MCP Client进程已启动，PID: {self.client_process.pid}")
-            logger.info(f"标准输出记录到: {stdout_file}")
-            logger.info(f"错误输出记录到: {stderr_file}")
 
-            # 等待客户端启动
             if await self._wait_for_client_startup(stderr_file):
+                await self._notify_config_change(config)
                 return {"status": {"message": "MCP Client已启动"}}
             else:
                 return {"status": {"error": "MCP Client启动失败，请检查日志文件"}}
@@ -138,56 +131,70 @@ class MCPClientManager:
         logger.error("无法连接到MCP Client，超过最大重试次数")
         return False
 
-    def _notify_config_change(self, config_path: str) -> bool:
+    async def _notify_config_change(self, config: Dict[str, Any]) -> bool:
         """通知客户端配置已更改"""
         try:
             if not self.client_started:
                 logger.warning("MCP Client未启动，无法通知配置变更")
                 return False
 
-            import requests
-            response = requests.post(
-                f"{self.client_url}/load_config",
-                json={"config_path": config_path}
-            )
+            # 只发送 mcpServers 配置，过滤掉 version 和 updated_at 等字段
+            clean_config = config.get("mcpServers", config.get("config", {}).get("mcpServers", {}))
 
-            if response.status_code == 200:
-                logger.info("已通知MCP Client加载新配置")
-                return True
-            else:
-                logger.error(f"通知MCP Client失败: {response.status_code} {response.text}")
-                return False
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                        f"{self.client_url}/load_config",
+                        json={"config": {"mcpServers": clean_config}}
+                ) as response:
+                    if response.status == 200:
+                        logger.info("已通知MCP Client加载新配置")
+                        return True
+                    else:
+                        text = await response.text()
+                        logger.error(f"通知MCP Client失败: {response.status} {text}")
+                        return False
 
         except Exception as e:
             logger.error(f"通知MCP Client时出错: {str(e)}")
             return False
 
-    async def update_config(self, config: Dict[str, Any], config_path: str = None) -> Dict[str, Dict[str, Any]]:
+    async def update_config(self, config: Dict[str, Any], expected_version: int) -> Dict[str, Dict[str, Any]]:
         """更新MCP配置并通知客户端"""
         try:
-            # 导入必要的模块
-            from app.core.file_manager import FileManager
-            from app.core.config import settings
-            
-            # 确定配置文件路径
-            if config_path is None:
-                config_path = str(settings.MCP_PATH)
-            
-            # 保存配置到文件
-            save_success = FileManager.save_mcp_config(config)
-            if not save_success:
-                logger.error("保存MCP配置到文件失败")
-                return {"status": {"error": "保存配置文件失败"}}
+            result = await mongodb_service.update_mcp_config(config, expected_version)
 
-            logger.info("MCP配置已保存到文件")
+            if not result.get("success"):
+                error_type = result.get("error")
+                if error_type == "version_conflict":
+                    return {
+                        "status": {
+                            "error": "version_conflict",
+                            "message": result.get("message"),
+                            "current_version": result.get("current_version"),
+                            "expected_version": result.get("expected_version")
+                        }
+                    }
+                else:
+                    return {"status": {"error": f"保存配置失败: {result.get('error')}"}}
 
-            # 通知客户端
-            success = self._notify_config_change(config_path)
+            logger.info(f"MCP配置已保存到MongoDB，新版本: {result.get('version')}")
+
+            success = await self._notify_config_change(config)
 
             if success:
-                return {"status": {"message": "配置已更新并通知MCP Client"}}
+                return {
+                    "status": {
+                        "message": "配置已更新并通知MCP Client",
+                        "version": result.get("version")
+                    }
+                }
             else:
-                return {"status": {"warning": "配置已保存但无法通知MCP Client"}}
+                return {
+                    "status": {
+                        "warning": "配置已保存但无法通知MCP Client",
+                        "version": result.get("version")
+                    }
+                }
 
         except Exception as e:
             logger.error(f"更新MCP配置时出错: {str(e)}")

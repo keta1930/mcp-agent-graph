@@ -26,11 +26,6 @@ class FileManager:
         # 确保目录存在
         settings.ensure_directories()
 
-        # 初始化默认MCP配置（如果不存在）
-        if not settings.MCP_PATH.exists():
-            FileManager.save_mcp_config({"mcpServers": {}})
-            logger.info(f"Created default MCP config at {settings.MCP_PATH}")
-
     @staticmethod
     def load_json(file_path: Path) -> Dict[str, Any]:
         """从文件加载JSON配置"""
@@ -55,16 +50,6 @@ class FileManager:
         except Exception as e:
             logger.error(f"Error saving JSON to {file_path}: {str(e)}")
             return False
-
-    @staticmethod
-    def load_mcp_config() -> Dict[str, Any]:
-        """加载MCP配置"""
-        return FileManager.load_json(settings.MCP_PATH)
-
-    @staticmethod
-    def save_mcp_config(config: Dict[str, Any]) -> bool:
-        """保存MCP配置"""
-        return FileManager.save_json(settings.MCP_PATH, config)
 
     # ===== MCP 工具管理 =====
     @staticmethod

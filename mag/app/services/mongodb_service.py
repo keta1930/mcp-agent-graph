@@ -5,7 +5,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
 from app.core.file_manager import FileManager
-from app.services.docdb import ConversationManager, ChatManager, GraphManager, MCPManager, GraphRunManager, TaskManager, GraphConfigManager, PromptManager, ModelConfigManager
+from app.services.docdb import (ConversationManager, ChatManager,
+                                GraphManager, MCPManager, GraphRunManager, TaskManager,
+                                GraphConfigManager, PromptManager, ModelConfigManager,MCPConfigManager)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class MongoDBService:
         self.agent_graphs_collection = None
         self.prompts_collection = None
         self.model_configs_collection = None
+        self.mcp_configs_collection = None
 
         self.is_connected = False
 
@@ -38,6 +41,7 @@ class MongoDBService:
         self.graph_config_manager = None
         self.prompt_manager = None
         self.model_config_manager = None
+        self.mcp_config_manager = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -60,6 +64,7 @@ class MongoDBService:
             self.agent_graphs_collection = self.db.agent_graphs
             self.prompts_collection = self.db.prompts
             self.model_configs_collection = self.db.model_configs
+            self.mcp_configs_collection = self.db.mcp_configs
 
             await self.client.admin.command('ping')
 
@@ -122,6 +127,11 @@ class MongoDBService:
             self.model_configs_collection
         )
 
+        self.mcp_config_manager = MCPConfigManager(
+            self.db,
+            self.mcp_configs_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -155,6 +165,8 @@ class MongoDBService:
 
             await self.model_configs_collection.create_index([("name", 1)], unique=True)
             await self.model_configs_collection.create_index([("updated_at", -1)])
+
+            await self.mcp_configs_collection.create_index([("updated_at", -1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -561,6 +573,18 @@ class MongoDBService:
     async def model_config_exists(self, model_name: str):
         """检查模型配置是否存在"""
         return await self.model_config_manager.model_exists(model_name)
+
+    async def get_mcp_config(self) -> Optional[Dict[str, Any]]:
+        """获取MCP配置"""
+        return await self.mcp_config_manager.get_mcp_config()
+
+    async def update_mcp_config(self, config: Dict[str, Any], expected_version: int) -> Dict[str, Any]:
+        """更新MCP配置"""
+        return await self.mcp_config_manager.update_mcp_config(config, expected_version)
+
+    async def create_mcp_config(self, initial_config: Dict[str, Any] = None) -> bool:
+        """创建初始MCP配置"""
+        return await self.mcp_config_manager.create_mcp_config(initial_config)
 
 
 mongodb_service = MongoDBService()

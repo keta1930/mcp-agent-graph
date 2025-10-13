@@ -51,11 +51,6 @@ class Settings:
             return home / ".mag"
 
     @property
-    def MCP_PATH(self) -> Path:
-        """获取MCP配置文件路径"""
-        return self.MAG_DIR / "mcp.json"
-
-    @property
     def EXPORTS_DIR(self) -> Path:
         """获取导出文件存储目录"""
         return self.MAG_DIR / "exports"

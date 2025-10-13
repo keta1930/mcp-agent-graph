@@ -12,7 +12,7 @@ from .task_manager import TaskManager
 from .graph_config_manager import GraphConfigManager
 from .prompt_manager import PromptManager
 from .model_config_manager import ModelConfigManager
-
+from .mcp_config_manager import MCPConfigManager
 __all__ = [
     'ConversationManager',
     'ChatManager',
@@ -22,5 +22,6 @@ __all__ = [
     'TaskManager',
     'GraphConfigManager',
     'PromptManager',
-    'ModelConfigManager'
+    'ModelConfigManager',
+    'MCPConfigManager'
 ]

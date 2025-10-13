@@ -1,20 +1,18 @@
-import asyncio
 import time
 import json
 import logging
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
-from typing import Dict, List, Any, Optional
-
+from typing import Dict, List, Any
 from app.core.file_manager import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
+from app.services.mongodb_service import mongodb_service
 from app.models.mcp_schema import (
-    MCPServerConfig, MCPConfig, MCPGenerationRequest,
-    MCPToolRegistration, MCPToolTestRequest,
-    MCPToolTestResponse
+    MCPGenerationRequest,
+    MCPToolRegistration, MCPToolTestRequest, MCPToolTestResponse,
+    MCPConfigWithVersion, MCPServerAddRequest, MCPServerRemoveRequest
 )
-from app.models.chat_schema import MCPGenerationSession
 
 logger = logging.getLogger(__name__)
 
@@ -25,29 +23,53 @@ router = APIRouter(tags=["mcp"])
 @router.get("/mcp/config")
 async def get_mcp_config():
     """获取MCP配置"""
-    from app.core.file_manager import FileManager
-    return FileManager.load_mcp_config()
+    config_data = await mongodb_service.get_mcp_config()
+    if config_data:
+        return {
+            "mcpServers": config_data.get("config", {}).get("mcpServers", {}),
+            "version": config_data.get("version"),
+            "updated_at": config_data.get("updated_at")
+        }
+    return {"mcpServers": {}, "version": 1}
 
 
-@router.post("/mcp/config", response_model=Dict[str, Dict[str, Any]])
-async def update_mcp_config(config: MCPConfig):
+@router.post("/mcp/config", response_model=Dict[str, Any])
+async def update_mcp_config(request: MCPConfigWithVersion):
     """更新MCP配置并重新连接服务器"""
     try:
-        config_dict = config.dict()
-            
+        config_dict = request.config.dict()
+        expected_version = request.version
+
         if 'mcpServers' in config_dict:
             for server_name, server_config in config_dict['mcpServers'].items():
-                logger.info(f"服务器 '{server_name}' 配置已规范化，传输类型: {server_config.get('transportType', 'stdio')}")
-        
-        results = await mcp_service.update_config(config_dict)
+                logger.info(
+                    f"服务器 '{server_name}' 配置已规范化，传输类型: {server_config.get('transportType', 'stdio')}")
+
+        results = await mcp_service.update_config(config_dict, expected_version)
+
+        logger.info(f"更新配置结果: {results}")
+
+        if results.get("status", {}).get("error") == "version_conflict":
+            logger.error(f"检测到版本冲突，返回409: {results['status']}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "version_conflict",
+                    "message": results["status"]["message"],
+                    "current_version": results["status"]["current_version"],
+                    "expected_version": results["status"]["expected_version"]
+                }
+            )
+
         return results
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"更新MCP配置时出错: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"更新MCP配置时出错: {str(e)}"
         )
-
 
 @router.get("/mcp/status", response_model=Dict[str, Dict[str, Any]])
 async def get_mcp_status():
@@ -61,22 +83,14 @@ async def get_mcp_status():
             detail=f"获取MCP状态时出错: {str(e)}"
         )
 
+
 @router.post("/mcp/add", response_model=Dict[str, Any])
-async def add_mcp_server(config: Dict[str, Any]):
+async def add_mcp_server(request: MCPServerAddRequest):
     """添加新的MCP服务器"""
     try:
-        # 验证配置格式
-        if "mcpServers" not in config:
-            return {
-                "status": "error",
-                "message": "配置必须包含 'mcpServers' 字段",
-                "added_servers": [],
-                "duplicate_servers": [],
-                "skipped_servers": []
-            }
-        
-        # 获取要添加的服务器
-        servers_to_add = config["mcpServers"]
+        servers_to_add = request.mcpServers
+        expected_version = request.version
+
         if not servers_to_add:
             return {
                 "status": "error",
@@ -85,51 +99,66 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "duplicate_servers": [],
                 "skipped_servers": []
             }
-        
-        # 获取当前MCP配置
-        current_config = FileManager.load_mcp_config()
+
+        current_config_data = await mongodb_service.get_mcp_config()
+        current_config = current_config_data.get("config", {"mcpServers": {}})
+        current_version = current_config_data.get("version", 1)
+
+        if current_version != expected_version:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "version_conflict",
+                    "message": "配置已被其他用户修改，请刷新后重试",
+                    "current_version": current_version,
+                    "expected_version": expected_version
+                }
+            )
+
         current_servers = current_config.get("mcpServers", {})
-        
-        # 分类处理服务器
+
         duplicate_servers = []
         servers_to_actually_add = {}
-        
+
         for server_name, server_config in servers_to_add.items():
             if server_name in current_servers:
                 duplicate_servers.append(server_name)
             else:
                 try:
-                    logger.info(f"处理服务器 '{server_name}' 的原始配置: {server_config}")
-                    validated_config = MCPServerConfig(**server_config)
-                    normalized_config = validated_config.dict()
-
-                    logger.info(f"服务器 '{server_name}' 规范化后配置: {normalized_config}")
+                    normalized_config = server_config.dict()
                     servers_to_actually_add[server_name] = normalized_config
-                except ValueError as e:
-                    logger.error(f"服务器 '{server_name}' 配置验证失败: {str(e)}")
+                except Exception as e:
+                    logger.error(f"服务器 '{server_name}' 配置处理失败: {str(e)}")
                     return {
                         "status": "error",
-                        "message": f"服务器 '{server_name}' 配置验证失败: {str(e)}",
+                        "message": f"服务器 '{server_name}' 配置处理失败: {str(e)}",
                         "added_servers": [],
                         "duplicate_servers": [],
                         "skipped_servers": []
                     }
-        
-        # 如果有可以添加的服务器，执行添加操作
+
         added_servers = []
         update_result = None
-        
+
         if servers_to_actually_add:
-            # 合并配置
             for server_name, server_config in servers_to_actually_add.items():
                 current_servers[server_name] = server_config
                 added_servers.append(server_name)
-            
-            # 更新配置
+
             updated_config = {"mcpServers": current_servers}
-            update_result = await mcp_service.update_config(updated_config)
-        
-        # 构建响应
+            update_result = await mcp_service.update_config(updated_config, expected_version)
+
+            if update_result.get("status", {}).get("error") == "version_conflict":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": "version_conflict",
+                        "message": update_result["status"]["message"],
+                        "current_version": update_result["status"]["current_version"],
+                        "expected_version": update_result["status"]["expected_version"]
+                    }
+                )
+
         if added_servers and not duplicate_servers:
             return {
                 "status": "success",
@@ -137,7 +166,8 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "added_servers": added_servers,
                 "duplicate_servers": [],
                 "skipped_servers": [],
-                "update_result": update_result
+                "update_result": update_result,
+                "new_version": update_result.get("status", {}).get("version")
             }
         elif added_servers and duplicate_servers:
             return {
@@ -146,7 +176,8 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "added_servers": added_servers,
                 "duplicate_servers": duplicate_servers,
                 "skipped_servers": duplicate_servers,
-                "update_result": update_result
+                "update_result": update_result,
+                "new_version": update_result.get("status", {}).get("version")
             }
         elif duplicate_servers and not added_servers:
             return {
@@ -155,7 +186,8 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "added_servers": [],
                 "duplicate_servers": duplicate_servers,
                 "skipped_servers": duplicate_servers,
-                "update_result": None
+                "update_result": None,
+                "current_version": current_version
             }
         else:
             return {
@@ -164,9 +196,12 @@ async def add_mcp_server(config: Dict[str, Any]):
                 "added_servers": [],
                 "duplicate_servers": [],
                 "skipped_servers": [],
-                "update_result": None
+                "update_result": None,
+                "current_version": current_version
             }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"添加MCP服务器时出错: {str(e)}")
         return {
@@ -179,10 +214,12 @@ async def add_mcp_server(config: Dict[str, Any]):
 
 
 @router.post("/mcp/remove", response_model=Dict[str, Any])
-async def remove_mcp_servers(server_names: List[str]):
+async def remove_mcp_servers(request: MCPServerRemoveRequest):
     """批量删除指定的MCP服务器（支持传统MCP和AI生成的MCP）"""
     try:
-        # 验证输入
+        server_names = request.server_names
+        expected_version = request.version
+
         if not server_names:
             return {
                 "status": "error",
@@ -191,22 +228,33 @@ async def remove_mcp_servers(server_names: List[str]):
                 "not_found_servers": [],
                 "total_requested": 0
             }
-        
-        # 获取当前MCP配置
-        current_config = FileManager.load_mcp_config()
+
+        current_config_data = await mongodb_service.get_mcp_config()
+        current_config = current_config_data.get("config", {"mcpServers": {}})
+        current_version = current_config_data.get("version", 1)
+
+        if current_version != expected_version:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "version_conflict",
+                    "message": "配置已被其他用户修改，请刷新后重试",
+                    "current_version": current_version,
+                    "expected_version": expected_version
+                }
+            )
+
         current_servers = current_config.get("mcpServers", {})
-        
-        # 分类处理服务器
+
         servers_to_remove = []
         not_found_servers = []
         ai_generated_servers = []
         traditional_servers = []
-        
+
         for server_name in server_names:
             if server_name in current_servers:
                 servers_to_remove.append(server_name)
-                
-                # 检查是否为AI生成的MCP工具
+
                 server_config = current_servers[server_name]
                 if server_config.get("ai_generated", False) or FileManager.mcp_tool_exists(server_name):
                     ai_generated_servers.append(server_name)
@@ -214,39 +262,33 @@ async def remove_mcp_servers(server_names: List[str]):
                     traditional_servers.append(server_name)
             else:
                 not_found_servers.append(server_name)
-        
-        # 执行删除操作
+
         removed_servers = []
         failed_removals = []
         update_result = None
-        
+
         if servers_to_remove:
-            # 删除AI生成的MCP工具
             for server_name in ai_generated_servers:
                 try:
-                    # 从配置中注销
                     await mcp_service.unregister_ai_mcp_tool(server_name)
-                    
-                    # 删除工具文件
+
                     if FileManager.mcp_tool_exists(server_name):
                         success = FileManager.delete_mcp_tool(server_name)
                         if not success:
                             logger.error(f"删除AI生成的MCP工具文件失败: {server_name}")
                             failed_removals.append(server_name)
                             continue
-                    
-                    # 从配置中删除
+
                     if server_name in current_servers:
                         del current_servers[server_name]
-                    
+
                     removed_servers.append(server_name)
                     logger.info(f"成功删除AI生成的MCP工具: {server_name}")
-                    
+
                 except Exception as e:
                     logger.error(f"删除AI生成的MCP工具 {server_name} 时出错: {str(e)}")
                     failed_removals.append(server_name)
-            
-            # 删除传统MCP服务器
+
             for server_name in traditional_servers:
                 try:
                     del current_servers[server_name]
@@ -255,15 +297,23 @@ async def remove_mcp_servers(server_names: List[str]):
                 except Exception as e:
                     logger.error(f"删除传统MCP服务器 {server_name} 时出错: {str(e)}")
                     failed_removals.append(server_name)
-            
-            # 如果有成功删除的服务器，更新配置
+
             if removed_servers:
                 updated_config = {"mcpServers": current_servers}
-                update_result = await mcp_service.update_config(updated_config)
-        
-        # 构建响应
+                update_result = await mcp_service.update_config(updated_config, expected_version)
+
+                if update_result.get("status", {}).get("error") == "version_conflict":
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail={
+                            "error": "version_conflict",
+                            "message": update_result["status"]["message"],
+                            "current_version": update_result["status"]["current_version"],
+                            "expected_version": update_result["status"]["expected_version"]
+                        }
+                    )
+
         if removed_servers and not not_found_servers and not failed_removals:
-            # 全部成功删除
             return {
                 "status": "success",
                 "message": f"成功删除 {len(removed_servers)} 个服务器",
@@ -273,10 +323,10 @@ async def remove_mcp_servers(server_names: List[str]):
                 "ai_generated_count": len(ai_generated_servers),
                 "traditional_count": len(traditional_servers),
                 "total_requested": len(server_names),
-                "update_result": update_result
+                "update_result": update_result,
+                "new_version": update_result.get("status", {}).get("version")
             }
         elif removed_servers and (not_found_servers or failed_removals):
-            # 部分成功
             return {
                 "status": "partial_success",
                 "message": f"成功删除 {len(removed_servers)} 个服务器，{len(not_found_servers)} 个服务器不存在，{len(failed_removals)} 个删除失败",
@@ -286,10 +336,10 @@ async def remove_mcp_servers(server_names: List[str]):
                 "ai_generated_count": len([s for s in ai_generated_servers if s in removed_servers]),
                 "traditional_count": len([s for s in traditional_servers if s in removed_servers]),
                 "total_requested": len(server_names),
-                "update_result": update_result
+                "update_result": update_result,
+                "new_version": update_result.get("status", {}).get("version")
             }
         elif not_found_servers and not removed_servers:
-            # 全部不存在
             return {
                 "status": "no_changes",
                 "message": f"所有 {len(not_found_servers)} 个服务器都不存在，未删除任何服务器",
@@ -299,10 +349,10 @@ async def remove_mcp_servers(server_names: List[str]):
                 "ai_generated_count": 0,
                 "traditional_count": 0,
                 "total_requested": len(server_names),
-                "update_result": None
+                "update_result": None,
+                "current_version": current_version
             }
         else:
-            # 其他情况
             return {
                 "status": "error" if failed_removals else "no_changes",
                 "message": "删除操作完成，但存在问题",
@@ -312,9 +362,12 @@ async def remove_mcp_servers(server_names: List[str]):
                 "ai_generated_count": len([s for s in ai_generated_servers if s in removed_servers]),
                 "traditional_count": len([s for s in traditional_servers if s in removed_servers]),
                 "total_requested": len(server_names),
-                "update_result": update_result
+                "update_result": update_result,
+                "new_version": update_result.get("status", {}).get("version") if update_result else None
             }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"删除MCP服务器时出错: {str(e)}")
         return {
@@ -323,7 +376,7 @@ async def remove_mcp_servers(server_names: List[str]):
             "removed_servers": [],
             "not_found_servers": [],
             "failed_removals": [],
-            "total_requested": len(server_names) if server_names else 0
+            "total_requested": len(request.server_names) if request.server_names else 0
         }
 
 

@@ -7,7 +7,8 @@ import os
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from typing import Dict, Any
-
+from app.services.mongodb_service import mongodb_service
+from app.services.mcp_service import mcp_service
 from app.core.config import settings
 from app.core.file_manager import FileManager
 from app.services.model_service import model_service
@@ -62,7 +63,8 @@ async def import_graph(data: GraphFilePath):
             )
 
         try:
-            mcp_config = FileManager.load_mcp_config()
+            mcp_config_data = await mongodb_service.get_mcp_config()
+            mcp_config = mcp_config_data.get("config", {"mcpServers": {}}) if mcp_config_data else {"mcpServers": {}}
             filtered_mcp_config = {"mcpServers": {}}
 
             used_servers = set()
@@ -171,7 +173,9 @@ async def import_graph_package(data: GraphFilePath):
                     with open(mcp_path, 'r', encoding='utf-8') as f:
                         import_mcp_config = json.load(f)
 
-                    current_mcp_config = FileManager.load_mcp_config()
+                    current_mcp_config_data = await mongodb_service.get_mcp_config()
+                    current_mcp_config = current_mcp_config_data.get("config", {"mcpServers": {}}) if current_mcp_config_data else {"mcpServers": {}}
+                    current_version = current_mcp_config_data.get("version", 1) if current_mcp_config_data else 1
 
                     for server_name, server_config in import_mcp_config.get("mcpServers", {}).items():
                         if server_name in current_mcp_config.get("mcpServers", {}):
@@ -180,7 +184,7 @@ async def import_graph_package(data: GraphFilePath):
                         else:
                             current_mcp_config.setdefault("mcpServers", {})[server_name] = server_config
 
-                    FileManager.save_mcp_config(current_mcp_config)
+                    await mcp_service.update_config(current_mcp_config, current_version)
                     logger.info("已合并导入的MCP服务器配置")
                 except Exception as e:
                     logger.error(f"导入MCP配置时出错: {str(e)}")
@@ -393,7 +397,8 @@ async def export_graph(graph_name: str):
                 if node.get("model_name"):
                     used_models.add(node.get("model_name"))
 
-            mcp_config = FileManager.load_mcp_config()
+            mcp_config_data = await mongodb_service.get_mcp_config()
+            mcp_config = mcp_config_data.get("config", {"mcpServers": {}}) if mcp_config_data else {"mcpServers": {}}
             filtered_mcp_config = {"mcpServers": {}}
 
             for server_name in used_servers:
