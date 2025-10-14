@@ -111,8 +111,15 @@ const MCPManager: React.FC = () => {
         message.success(`服务器 "${serverName}" 添加成功`);
       }
       setModalVisible(false);
-    } catch (err) {
-      message.error('操作失败: ' + (err instanceof Error ? err.message : String(err)));
+    } catch (err: any) {
+      if (err.isVersionConflict) {
+        message.error({
+          content: `版本冲突：${err.message}。配置已自动刷新，请重新检查后再保存。`,
+          duration: 5
+        });
+      } else {
+        message.error('操作失败: ' + (err instanceof Error ? err.message : String(err)));
+      }
     }
   };
 
@@ -120,8 +127,15 @@ const MCPManager: React.FC = () => {
     try {
       await deleteServer(serverName);
       message.success(`服务器 "${serverName}" 删除成功`);
-    } catch (err) {
-      message.error('删除失败: ' + (err instanceof Error ? err.message : String(err)));
+    } catch (err: any) {
+      if (err.isVersionConflict) {
+        message.error({
+          content: `版本冲突：${err.message}。配置已自动刷新，请重新检查后再操作。`,
+          duration: 5
+        });
+      } else {
+        message.error('删除失败: ' + (err instanceof Error ? err.message : String(err)));
+      }
     }
   };
 

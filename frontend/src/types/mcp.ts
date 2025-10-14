@@ -16,6 +16,12 @@ export interface MCPConfig {
   mcpServers: Record<string, MCPServerConfig>;
 }
 
+export interface MCPConfigWithVersion {
+  mcpServers: Record<string, MCPServerConfig>;
+  version: number;
+  updated_at?: string;
+}
+
 export interface MCPStatus {
   [serverName: string]: {
     connected: boolean;

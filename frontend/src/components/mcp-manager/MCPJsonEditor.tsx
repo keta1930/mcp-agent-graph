@@ -142,10 +142,18 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
         onSave(cleanedConfig as MCPConfig),
         new Promise(resolve => setTimeout(resolve, 800))
       ]);
-      
-    } catch (err) {
-      const errorMsg = `保存配置失败: ${err instanceof Error ? err.message : String(err)}`;
-      setError(errorMsg);
+
+    } catch (err: any) {
+      if (err.isVersionConflict) {
+        const errorMsg = `版本冲突：配置已被其他用户修改。页面已自动刷新最新配置，请重新检查后再保存。`;
+        message.error({
+          content: errorMsg,
+          duration: 5
+        });
+      } else {
+        const errorMsg = `保存配置失败: ${err instanceof Error ? err.message : String(err)}`;
+        setError(errorMsg);
+      }
       await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
       setSaving(false);

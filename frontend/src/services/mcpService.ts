@@ -1,28 +1,35 @@
 // src/services/mcpService.ts
 import api from './api';
-import { MCPConfig, MCPServerConfig } from '../types/mcp';
+import { MCPConfig, MCPServerConfig, MCPConfigWithVersion } from '../types/mcp';
 
-export const getMCPConfig = async () => {
+export const getMCPConfig = async (): Promise<MCPConfigWithVersion> => {
   const response = await api.get('/mcp/config');
   return response.data;
 };
 
-export const updateMCPConfig = async (config: MCPConfig) => {
-  const response = await api.post('/mcp/config', config);
-  return response.data;
-};
-
-export const addMCPServer = async (serverName: string, serverConfig: MCPServerConfig) => {
-  const response = await api.post('/mcp/add', {
-    mcpServers: {
-      [serverName]: serverConfig
-    }
+export const updateMCPConfig = async (config: MCPConfig, version: number) => {
+  const response = await api.post('/mcp/config', {
+    config,
+    version
   });
   return response.data;
 };
 
-export const removeMCPServers = async (serverNames: string[]) => {
-  const response = await api.post('/mcp/remove', serverNames);
+export const addMCPServer = async (serverName: string, serverConfig: MCPServerConfig, version: number) => {
+  const response = await api.post('/mcp/add', {
+    mcpServers: {
+      [serverName]: serverConfig
+    },
+    version
+  });
+  return response.data;
+};
+
+export const removeMCPServers = async (serverNames: string[], version: number) => {
+  const response = await api.post('/mcp/remove', {
+    server_names: serverNames,
+    version
+  });
   return response.data;
 };
 

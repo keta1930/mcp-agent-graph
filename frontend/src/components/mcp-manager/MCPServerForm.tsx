@@ -51,8 +51,9 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
     }
   }, [visible, initialValues, form]);
 
-  const handleSubmit = () => {
-    form.validateFields().then((values) => {
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
       const { serverName, envText, ...serverConfig } = values;
 
       // Convert string arrays
@@ -95,9 +96,14 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         delete serverConfig.base_url;
       }
 
-      onSubmit(serverName, serverConfig as MCPServerConfig);
+      // 等待异步 onSubmit 完成，如果抛出错误会被外层 catch 捕获
+      await onSubmit(serverName, serverConfig as MCPServerConfig);
       form.resetFields();
-    });
+    } catch (error) {
+      // 表单验证错误或 onSubmit 抛出的错误（包括版本冲突）
+      // 错误已在父组件处理（MCPManager），这里不重复处理
+      // 不重置表单，保留用户输入
+    }
   };
 
   return (

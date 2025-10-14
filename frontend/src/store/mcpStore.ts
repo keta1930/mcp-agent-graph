@@ -1,10 +1,11 @@
 // src/store/mcpStore.ts
 import { create } from 'zustand';
-import { MCPConfig, MCPServerConfig } from '../types/mcp';
+import { MCPConfig, MCPServerConfig, MCPConfigWithVersion } from '../types/mcp';
 import * as mcpService from '../services/mcpService';
 
 interface MCPState {
   config: MCPConfig;
+  version: number;
   status: Record<string, any>;
   tools: Record<string, any[]>;
   loading: boolean;
@@ -31,6 +32,7 @@ interface MCPState {
 
 export const useMCPStore = create<MCPState>((set, get) => ({
   config: { mcpServers: {} },
+  version: 1,
   status: {},
   tools: {},
   loading: false,
@@ -39,8 +41,12 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   fetchConfig: async () => {
     try {
       set({ loading: true, error: undefined });
-      const config = await mcpService.getMCPConfig();
-      set({ config, loading: false });
+      const data: MCPConfigWithVersion = await mcpService.getMCPConfig();
+      set({
+        config: { mcpServers: data.mcpServers },
+        version: data.version,
+        loading: false
+      });
     } catch (error) {
       set({
         loading: false,
@@ -52,14 +58,47 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   updateConfig: async (config) => {
     try {
       set({ loading: true, error: undefined });
-      await mcpService.updateMCPConfig(config);
+      const currentVersion = get().version;
+      const result = await mcpService.updateMCPConfig(config, currentVersion);
+
+      if (result.status?.version) {
+        set({
+          config,
+          version: result.status.version,
+          loading: false
+        });
+        return;
+      }
+
       set({ config, loading: false });
-    } catch (error) {
-      set({
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to update MCP config'
-      });
-      throw error;
+      return;
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        // 版本冲突：刷新配置但不自动重试
+        await get().fetchConfig();
+
+        const detail = error.response?.data?.detail;
+        const errorMsg = detail?.message || '配置已被其他用户修改，请刷新页面查看最新配置后再保存';
+
+        set({
+          loading: false,
+          error: errorMsg
+        });
+
+        // 抛出包含详细信息的错误
+        const versionError: any = new Error(errorMsg);
+        versionError.isVersionConflict = true;
+        versionError.currentVersion = detail?.current_version;
+        versionError.expectedVersion = detail?.expected_version;
+        throw versionError;
+      } else {
+        const errorMsg = error.response?.data?.detail || error.message || 'Failed to update MCP config';
+        set({
+          loading: false,
+          error: errorMsg
+        });
+        throw new Error(errorMsg);
+      }
     }
   },
 
@@ -158,8 +197,30 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   },
 
   addServer: async (serverName, serverConfig) => {
-    await mcpService.addMCPServer(serverName, serverConfig);
-    await get().fetchConfig();
+    try {
+      const currentVersion = get().version;
+      const result = await mcpService.addMCPServer(serverName, serverConfig, currentVersion);
+
+      await get().fetchConfig();
+      return;
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        // 版本冲突：刷新配置但不自动重试
+        await get().fetchConfig();
+
+        const detail = error.response?.data?.detail;
+        const errorMsg = detail?.message || '配置已被其他用户修改，请刷新页面查看最新配置后再保存';
+
+        const versionError: any = new Error(errorMsg);
+        versionError.isVersionConflict = true;
+        versionError.currentVersion = detail?.current_version;
+        versionError.expectedVersion = detail?.expected_version;
+        throw versionError;
+      } else {
+        const errorMsg = error.response?.data?.detail || error.message || 'Failed to add server';
+        throw new Error(errorMsg);
+      }
+    }
   },
 
   updateServer: async (serverName, serverConfig) => {
@@ -175,8 +236,30 @@ export const useMCPStore = create<MCPState>((set, get) => ({
   },
 
   deleteServer: async (serverName) => {
-    await mcpService.removeMCPServers([serverName]);
-    await get().fetchConfig();
+    try {
+      const currentVersion = get().version;
+      const result = await mcpService.removeMCPServers([serverName], currentVersion);
+
+      await get().fetchConfig();
+      return;
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        // 版本冲突：刷新配置但不自动重试
+        await get().fetchConfig();
+
+        const detail = error.response?.data?.detail;
+        const errorMsg = detail?.message || '配置已被其他用户修改，请刷新页面查看最新配置后再保存';
+
+        const versionError: any = new Error(errorMsg);
+        versionError.isVersionConflict = true;
+        versionError.currentVersion = detail?.current_version;
+        versionError.expectedVersion = detail?.expected_version;
+        throw versionError;
+      } else {
+        const errorMsg = error.response?.data?.detail || error.message || 'Failed to delete server';
+        throw new Error(errorMsg);
+      }
+    }
   },
 
   registerMCPTool: async (toolData) => {
