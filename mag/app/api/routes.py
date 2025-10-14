@@ -10,6 +10,7 @@ from .graph_routes import router as graph_router
 from .system_routes import router as system_router
 from .prompt_routes import router as prompt_router
 from .task_routes import router as task_router
+from .export_routes import router as export_router
 
 # 创建主路由器
 router = APIRouter()
@@ -24,3 +25,4 @@ router.include_router(graph_router)
 router.include_router(system_router)
 router.include_router(prompt_router)
 router.include_router(task_router)
+router.include_router(export_router)
