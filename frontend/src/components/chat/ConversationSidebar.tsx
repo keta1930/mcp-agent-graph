@@ -31,6 +31,7 @@ import { ConversationSummary } from '../../types/conversation';
 import { getCurrentUserDisplayName, setUserConfig, getUserConfig } from '../../config/user';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import ExportManagerButton from './ExportManagerButton';
 
 const { TextArea } = Input;
 
@@ -580,6 +581,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 />
               </Tooltip>
             )}
+            {/* 解耦式导出按钮 */}
+            <ExportManagerButton />
             {/* 已移除筛选按钮，仅保留新建与折叠操作 */}
             <Button
               type="text"
@@ -596,7 +599,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       {isBatchMode && (
         <div className="batch-toolbar">
           <div className="batch-info">
-            <span>已选择 {selectedConversations.size} 个对话</span>
+            <span>选择 {selectedConversations.size}</span>
           </div>
           <div className="batch-actions">
             <Button
