@@ -2,12 +2,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Input, 
-  Menu, 
   Dropdown, 
   Button, 
   Modal, 
   Tag, 
-  Badge,
   Tooltip,
   Empty,
   Spin,
@@ -24,11 +22,8 @@ import {
   HomeOutlined,
   UserOutlined,
   PlusOutlined,
-  FilterOutlined,
   ClockCircleOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  SelectOutlined
+  CheckOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useConversationStore } from '../../store/conversationStore';
@@ -124,6 +119,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     }
   };
 
+  const handleRestore = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      await updateConversationStatus(conversation._id, 'active');
+      showNotification('已恢复为普通', 'success');
+    } catch (error) {
+      console.error('Restore failed:', error);
+      showNotification('恢复失败', 'error');
+    }
+  };
+
   const handleEditTitle = async () => {
     if (newTitle.trim() && newTitle !== conversation.title) {
       await updateConversationTitle(conversation._id, newTitle.trim());
@@ -144,6 +150,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   };
 
   const menuItems = [
+    ...(conversation.status === 'deleted' ? [
+      {
+        key: 'restore',
+        icon: <CheckOutlined />,
+        label: '恢复为普通',
+        onClick: (e: any) => {
+          e.domEvent?.stopPropagation();
+          handleRestore();
+        }
+      } as const
+    ] : []),
     {
       key: 'star',
       icon: conversation.status === 'favorite' ? <StarFilled /> : <StarOutlined />,
@@ -214,7 +231,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         overlayClassName="conversation-hover-tooltip"
       >
         <div
-          className={`conversation-item ${isActive ? 'active' : ''} ${isBatchMode ? 'batch-mode' : ''} ${isSelected ? 'selected' : ''}`}
+          className={`conversation-item status-${conversation.status} ${isActive ? 'active' : ''} ${isBatchMode ? 'batch-mode' : ''} ${isSelected ? 'selected' : ''}`}
           onClick={isBatchMode ? () => onSelect?.(conversation._id, !isSelected) : onClick}
         >
           <div className="conversation-header">
@@ -320,7 +337,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   const [userEditModalVisible, setUserEditModalVisible] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [currentUserDisplayName, setCurrentUserDisplayName] = useState(getCurrentUserDisplayName());
-  const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
@@ -328,12 +344,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     conversations,
     loading,
     searchQuery,
-    statusFilter,
-    typeFilter,
     sidebarCollapsed,
     setSearchQuery,
-    setStatusFilter,
-    setTypeFilter,
     toggleSidebar,
     loadConversations,
     silentUpdateConversations,
@@ -378,42 +390,17 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     }
   }, [conversations, loading]);
 
-  const filteredConversations = useMemo(() => {
+  const visibleConversations = useMemo(() => {
     return conversations.filter(conv => {
-      // 状态筛选 - 现在statusFilter总是有具体值
-      if (conv.status !== statusFilter) {
-        return false;
-      }
-      
-      // 类型筛选 - 现在typeFilter总是有具体值
-      if (conv.type !== typeFilter) {
-        return false;
-      }
-      
-      // 搜索筛选
+      // 搜索过滤
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return conv.title.toLowerCase().includes(query) ||
                conv.tags.some(tag => tag.toLowerCase().includes(query));
       }
-      
       return true;
     });
-  }, [conversations, searchQuery, statusFilter, typeFilter]);
-
-  const statusCounts = useMemo(() => {
-    return conversations.reduce((acc, conv) => {
-      acc[conv.status] = (acc[conv.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-  }, [conversations]);
-
-  const typeCounts = useMemo(() => {
-    return conversations.reduce((acc, conv) => {
-      acc[conv.type] = (acc[conv.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-  }, [conversations]);
+  }, [conversations, searchQuery]);
 
   // 处理用户名编辑
   const handleUserNameEdit = () => {
@@ -465,30 +452,23 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   const handleBatchDelete = async () => {
     if (selectedConversations.size === 0) return;
     
-    console.log('开始批量删除，选中的对话:', Array.from(selectedConversations));
-    
     try {
-      const selectedIds = Array.from(selectedConversations);
-      const isPermanent = statusFilter === 'deleted';
-      
-      console.log(`执行${isPermanent ? '永久' : '软'}删除模式`);
-      
-      const result = await batchDeleteConversations(selectedIds, isPermanent);
-      
-      // 显示结果通知
-      if (result.success > 0) {
-        const message = isPermanent 
-          ? `已永久删除 ${result.success} 个对话` 
-          : `已将 ${result.success} 个对话移至回收站`;
-        showNotification(message, 'success');
+      const selectedList = conversations.filter(conv => selectedConversations.has(conv._id));
+      const toPermanent = selectedList.filter(conv => conv.status === 'deleted').map(conv => conv._id);
+      const toSoft = selectedList.filter(conv => conv.status !== 'deleted').map(conv => conv._id);
+
+      if (toSoft.length > 0) {
+        const res = await batchDeleteConversations(toSoft, false);
+        if (res.success > 0) showNotification(`已将 ${res.success} 个对话移至回收站`, 'success');
+        if (res.failed > 0) showNotification(`${res.failed} 个对话软删除失败`, 'error');
       }
-      
-      if (result.failed > 0) {
-        showNotification(`${result.failed} 个对话删除失败`, 'error');
+
+      if (toPermanent.length > 0) {
+        const res2 = await batchDeleteConversations(toPermanent, true);
+        if (res2.success > 0) showNotification(`已永久删除 ${res2.success} 个对话`, 'success');
+        if (res2.failed > 0) showNotification(`${res2.failed} 个对话永久删除失败`, 'error');
       }
-      
-      console.log(`批量删除完成: 成功 ${result.success} 个，失败 ${result.failed} 个`);
-      
+
       setSelectedConversations(new Set());
       setIsBatchMode(false);
     } catch (error) {
@@ -498,8 +478,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   };
 
   if (sidebarCollapsed) {
-    const favoriteCount = statusCounts.favorite || 0;
-    const totalCount = conversations.length;
 
     return (
       <div className="conversation-sidebar collapsed">
@@ -515,47 +493,8 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           </button>
         </div>
 
-        {/* 主导航区域 */}
+        {/* 主导航区域 - 移除类型筛选入口，仅保留功能入口 */}
         <div className="collapsed-navigation">
-          {/* Chat对话 - 狐狸 */}
-          <button
-            className={`collapsed-nav-item ${typeFilter === 'chat' ? 'active' : ''}`}
-            onClick={() => setTypeFilter('chat')}
-            title="Chat对话"
-          >
-            <span className="animal-icon">🦊</span>
-            {typeCounts.chat > 0 && (
-              <span className="collapsed-badge">{typeCounts.chat}</span>
-            )}
-            <div className="collapsed-tooltip">Chat对话 ({typeCounts.chat || 0})</div>
-          </button>
-
-          {/* Agent对话 - 猫咪 */}
-          <button
-            className={`collapsed-nav-item ${typeFilter === 'agent' ? 'active' : ''}`}
-            onClick={() => setTypeFilter('agent')}
-            title="Agent对话"
-          >
-            <span className="animal-icon">🐱</span>
-            {typeCounts.agent > 0 && (
-              <span className="collapsed-badge">{typeCounts.agent}</span>
-            )}
-            <div className="collapsed-tooltip">Agent对话 ({typeCounts.agent || 0})</div>
-          </button>
-
-          {/* Graph对话 - 浣熊 */}
-          <button
-            className={`collapsed-nav-item ${typeFilter === 'graph' ? 'active' : ''}`}
-            onClick={() => setTypeFilter('graph')}
-            title="Graph对话"
-          >
-            <span className="animal-icon">🦝</span>
-            {typeCounts.graph > 0 && (
-              <span className="collapsed-badge">{typeCounts.graph}</span>
-            )}
-            <div className="collapsed-tooltip">Graph对话 ({typeCounts.graph || 0})</div>
-          </button>
-
           {/* 新建对话 */}
           {onNewConversation && (
             <button
@@ -634,79 +573,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 />
               </Tooltip>
             )}
-            <Dropdown
-              open={filterDropdownVisible}
-              onOpenChange={setFilterDropdownVisible}
-              trigger={['click']}
-              menu={{
-                items: [
-                  {
-                    key: 'status',
-                    label: '按状态筛选',
-                    type: 'group',
-                    children: [
-                      {
-                        key: 'active',
-                        label: `普通 (${statusCounts.active || 0})`,
-                        onClick: () => setStatusFilter('active')
-                      },
-                      {
-                        key: 'favorite',
-                        label: `收藏 (${statusCounts.favorite || 0})`,
-                        onClick: () => setStatusFilter('favorite')
-                      },
-                      {
-                        key: 'deleted',
-                        label: `移除 (${statusCounts.deleted || 0})`,
-                        onClick: () => setStatusFilter('deleted')
-                      }
-                    ]
-                  },
-                  {
-                    type: 'divider'
-                  },
-                  {
-                    key: 'type',
-                    label: '按类型筛选',
-                    type: 'group',
-                    children: [
-                      {
-                        key: 'chat',
-                        label: `Chat (${typeCounts.chat || 0})`,
-                        onClick: () => setTypeFilter('chat')
-                      },
-                      {
-                        key: 'agent',
-                        label: `Agent (${typeCounts.agent || 0})`,
-                        onClick: () => setTypeFilter('agent')
-                      },
-                      {
-                        key: 'graph',
-                        label: `Graph (${typeCounts.graph || 0})`,
-                        onClick: () => setTypeFilter('graph')
-                      }
-                    ]
-                  }
-                ]
-              }}
-            >
-              <Tooltip title="筛选对话">
-                <Button
-                  type="text"
-                  className="filter-btn"
-                  icon={
-                    <div style={{ position: 'relative' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 6h16M7 12h10m-7 6h4"/>
-                      </svg>
-                      {(statusFilter !== 'active' || typeFilter !== 'chat') && (
-                        <span className="filter-active-dot"></span>
-                      )}
-                    </div>
-                  }
-                />
-              </Tooltip>
-            </Dropdown>
+            {/* 已移除筛选按钮，仅保留新建与折叠操作 */}
             <Button
               type="text"
               onClick={toggleSidebar}
@@ -729,7 +596,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               type="text"
               size="small"
               onClick={handleSelectAll}
-              disabled={selectedConversations.size === filteredConversations.length}
+              disabled={selectedConversations.size === visibleConversations.length}
             >
               全选
             </Button>
@@ -749,7 +616,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               onClick={handleBatchDelete}
               disabled={selectedConversations.size === 0}
             >
-              {statusFilter === 'deleted' ? '永久删除' : '删除'}
+              删除
             </Button>
           </div>
         </div>
@@ -761,13 +628,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           <div className="loading-container">
             <Spin size="large" />
           </div>
-        ) : filteredConversations.length === 0 ? (
+        ) : visibleConversations.length === 0 ? (
           <Empty
             description={searchQuery ? "没有找到匹配的对话" : "暂无对话"}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
-          filteredConversations.map(conversation => (
+          visibleConversations.map(conversation => (
             <ConversationItem
               key={conversation._id}
               conversation={conversation}

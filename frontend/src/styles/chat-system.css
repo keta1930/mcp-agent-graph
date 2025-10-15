@@ -1013,6 +1013,16 @@
   letter-spacing: 0.2px;
 }
 
+/* 按状态区分样式：删除为删除线、收藏为黄色字 */
+.conversation-item.status-deleted .conversation-title {
+  text-decoration: line-through;
+  color: var(--text-tertiary);
+}
+
+.conversation-item.status-favorite .conversation-title {
+  color: #faad14;
+}
+
 .conversation-meta {
   display: flex;
   gap: 8px;
