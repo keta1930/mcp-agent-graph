@@ -655,3 +655,32 @@ h1.text-2xl.font-bold {
     margin: 0 auto;
   }
 }
+
+/* RawPreviewModal 专属覆盖，避免全局 .ant-modal 限制影响预览弹窗 */
+.raw-preview-modal.ant-modal {
+  width: 1280px !important;
+  max-width: none !important;
+  top: 32px;
+}
+
+.raw-preview-modal .ant-modal-body {
+  padding: 0 !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
+/* 让外层弹窗负责滚动（使用默认的 .ant-modal-wrap 行为） */
+.raw-preview-root .ant-modal-wrap {
+  overflow: auto !important;
+}
+
+/* 详情弹窗：只保留外层滚动 */
+.raw-preview-detail-modal .ant-modal-body {
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding: 24px !important;
+}
+
+.raw-preview-detail-root .ant-modal-wrap {
+  overflow: auto !important;
+}
