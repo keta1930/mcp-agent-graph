@@ -10,6 +10,9 @@ from .export.formatters.standard import StandardFormatter
 from .export.writers.jsonl_writer import JSONLWriter
 from .export.writers.parquet_writer import ParquetWriter
 from .export.writers.csv_writer import CSVWriter
+from .export.preview.jsonl_reader import JSONLPreviewReader
+from .export.preview.parquet_reader import ParquetPreviewReader
+from .export.preview.csv_reader import CSVPreviewReader
 from .export.dataset_info_generator import DatasetInfoGenerator
 
 logger = logging.getLogger(__name__)
@@ -29,6 +32,13 @@ class ExportService:
             "jsonl": JSONLWriter(),
             "parquet": ParquetWriter(),
             "csv": CSVWriter()
+        }
+
+        # 注册预览读取器
+        self.preview_readers = {
+            "jsonl": JSONLPreviewReader(),
+            "parquet": ParquetPreviewReader(),
+            "csv": CSVPreviewReader()
         }
 
     def _get_storage_path(self, data_format: str, dataset_name: str) -> str:
@@ -188,29 +198,39 @@ class ExportService:
             import json
             dataset_info = json.loads(info_content)
 
-            # 查找数据文件
-            objects = minio_client.list_objects(storage_path)
+            # 查找数据文件：优先从dataset_info中获取文件名
+            target_file_name = dataset_info.get(dataset_name, {}).get("file_name")
             data_file = None
-            for obj in objects:
-                object_name = obj["object_name"]
-                if not object_name.endswith("dataset_info.json"):
-                    data_file = object_name
-                    break
+            if target_file_name:
+                candidate = storage_path + target_file_name
+                if minio_client.object_exists(candidate):
+                    data_file = candidate
+            if not data_file:
+                # 回退：遍历目录选择第一个非dataset_info.json文件
+                objects = minio_client.list_objects(storage_path)
+                for obj in objects:
+                    object_name = obj["object_name"]
+                    if not object_name.endswith("dataset_info.json"):
+                        data_file = object_name
+                        break
 
             if not data_file:
                 return {"success": False, "message": "未找到数据文件"}
 
-            # 读取部分数据进行预览
-            preview_data = []
-            if data_file.endswith(".jsonl"):
-                content = minio_client.download_content(data_file)
-                if content:
-                    lines = content.strip().split('\n')[:20]  # 前20行
-                    for line in lines:
-                        try:
-                            preview_data.append(json.loads(line))
-                        except:
-                            continue
+            # 根据文件扩展名选择预览读取器
+            _, ext = os.path.splitext(data_file)
+            ext = ext.lower()
+            ext_map = {
+                ".jsonl": "jsonl",
+                ".parquet": "parquet",
+                ".csv": "csv",
+            }
+            reader_key = ext_map.get(ext)
+            if not reader_key or reader_key not in self.preview_readers:
+                return {"success": False, "message": f"不支持的预览格式: {ext}"}
+
+            reader = self.preview_readers[reader_key]
+            preview_data = reader.preview(data_file, max_records=20)
 
             return {
                 "success": True,
