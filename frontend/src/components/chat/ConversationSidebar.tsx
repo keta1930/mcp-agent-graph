@@ -391,14 +391,21 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   }, [conversations, loading]);
 
   const visibleConversations = useMemo(() => {
-    return conversations.filter(conv => {
-      // 搜索过滤
+    const filtered = conversations.filter(conv => {
+      // 搜索过滤（不按状态与类型过滤）
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return conv.title.toLowerCase().includes(query) ||
                conv.tags.some(tag => tag.toLowerCase().includes(query));
       }
       return true;
+    });
+
+    // 按创建时间倒序（最新创建的在顶部）
+    return filtered.sort((a, b) => {
+      const ta = new Date(a.created_at).getTime() || 0;
+      const tb = new Date(b.created_at).getTime() || 0;
+      return tb - ta;
     });
   }, [conversations, searchQuery]);
 
