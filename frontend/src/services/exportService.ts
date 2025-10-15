@@ -6,7 +6,7 @@ export interface ExportRequest {
   file_name: string;
   conversation_ids: string[];
   file_format?: 'jsonl' | 'csv' | 'parquet';
-  data_format?: 'standard';
+  data_format?: 'standard' | 'coming';
 }
 
 export interface FileInfo {

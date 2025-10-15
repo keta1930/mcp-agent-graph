@@ -11,6 +11,7 @@ import GraphEditor from './pages/GraphEditor';
 import ModelManager from './pages/ModelManager';
 import MCPManager from './pages/MCPManager';
 import PromptManager from './pages/PromptManager';
+import ExportManager from './pages/ExportManager';
 import TaskManager from './pages/TaskManager';
 import TaskDetail from './pages/TaskDetail';
 
@@ -33,7 +34,10 @@ const App: React.FC = () => {
         {/* 任务管理 */}
         <Route path="/tasks" element={<TaskManager />} />
         <Route path="/tasks/:taskId" element={<TaskDetail />} />
-        
+
+        {/* 导出管理 - 独立页面，与对话系统平级 */}
+        <Route path="/export" element={<ExportManager />} />
+
         {/* 工作台入口 */}
         <Route path="/workspace" element={<Workspace />} />
         
