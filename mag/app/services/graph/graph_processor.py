@@ -477,7 +477,7 @@ class GraphProcessor:
                         return False, f"节点 '{node['name']}' 未指定模型"
 
                     # 检查模型是否存在
-                    model_config = get_model_func(node["model_name"])
+                    model_config = await get_model_func(node["model_name"])
                     if not model_config:
                         return False, f"节点 '{node['name']}' 使用了不存在的模型 '{node['model_name']}'"
 
