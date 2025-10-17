@@ -1,13 +1,15 @@
 import logging
 import asyncio
 from typing import Dict, List, Any, Optional, Callable
+from datetime import datetime, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from bson import ObjectId
 from app.core.file_manager import FileManager
 from app.services.docdb import (ConversationManager, ChatManager,
                                 GraphManager, MCPManager, GraphRunManager, TaskManager,
-                                GraphConfigManager, PromptManager, ModelConfigManager,MCPConfigManager)
+                                GraphConfigManager, PromptManager, ModelConfigManager,MCPConfigManager,
+                                PreviewManager)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ class MongoDBService:
         self.prompts_collection = None
         self.model_configs_collection = None
         self.mcp_configs_collection = None
+        self.preview_shares_collection = None
 
         self.is_connected = False
 
@@ -42,6 +45,7 @@ class MongoDBService:
         self.prompt_manager = None
         self.model_config_manager = None
         self.mcp_config_manager = None
+        self.preview_manager = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -65,6 +69,7 @@ class MongoDBService:
             self.prompts_collection = self.db.prompts
             self.model_configs_collection = self.db.model_configs
             self.mcp_configs_collection = self.db.mcp_configs
+            self.preview_shares_collection = self.db.preview_shares
 
             await self.client.admin.command('ping')
 
@@ -132,6 +137,11 @@ class MongoDBService:
             self.mcp_configs_collection
         )
 
+        self.preview_manager = PreviewManager(
+            self.db,
+            self.preview_shares_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -167,6 +177,11 @@ class MongoDBService:
             await self.model_configs_collection.create_index([("updated_at", -1)])
 
             await self.mcp_configs_collection.create_index([("updated_at", -1)])
+
+            await self.preview_shares_collection.create_index([("key", 1)], unique=True)
+            await self.preview_shares_collection.create_index([("created_at", -1)])
+            await self.preview_shares_collection.create_index([("content_hash", 1)], unique=True)
+            await self.preview_shares_collection.create_index([("expires_at", 1)], expireAfterSeconds=0)
 
             logger.info("MongoDB索引创建成功")
 
@@ -210,6 +225,17 @@ class MongoDBService:
     async def graph_config_exists(self, graph_name: str) -> bool:
         """检查图是否存在"""
         return await self.graph_config_manager.graph_exists(graph_name)
+
+        # === 预览短链管理 ===
+
+    async def create_preview_share(self, lang: str, title: Optional[str], content: str,
+                                       expire_hours: Optional[int] = 144) -> Dict[str, Any]:
+        """创建预览短链"""
+        return await self.preview_manager.create_preview_share(lang, title, content, expire_hours)
+
+    async def get_preview_share(self, key: str) -> Optional[Dict[str, Any]]:
+        """获取预览短链内容"""
+        return await self.preview_manager.get_preview_share(key)
 
     # === 图运行管理方法 ===
 
