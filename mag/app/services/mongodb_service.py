@@ -472,8 +472,7 @@ class MongoDBService:
             elif conversation_type == "graph":
                 # 图运行类型
                 await self.graph_run_manager.delete_graph_run_messages(conversation_id)
-                # 删除本地attachment目录
-                FileManager.delete_conversation(conversation_id)
+                # TODO：删除MINIO当中的附件
             elif conversation_type == "agent":
                 await self.graph_manager.delete_graph_generation_messages(conversation_id)
                 await self.mcp_manager.delete_mcp_generation_messages(conversation_id)
