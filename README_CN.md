@@ -75,12 +75,12 @@ cd mcp-agent-graph
 # 使用 uv（推荐）
 uv sync
 cd mag
-uv run python main.py
+nohup uv run python main.py > app.log 2>&1 &
 
 # 或使用 pip
 pip install -r requirements.txt
 cd mag
-python main.py
+nohup python main.py > app.log 2>&1 &
 ```
 
 **服务地址：**
