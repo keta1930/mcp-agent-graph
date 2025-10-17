@@ -1,6 +1,7 @@
 // src/components/common/CodeBlockPreview.tsx
 import React, { useState, useEffect } from 'react';
 import { Button, Tooltip, message } from 'antd';
+import { previewService } from '../../services/previewService';
 import { EyeOutlined } from '@ant-design/icons';
 
 interface CodeBlockPreviewProps {
@@ -52,65 +53,25 @@ const CodeBlockPreview: React.FC<CodeBlockPreviewProps> = ({ language, content, 
     }
   }, [isStreaming, storageKey, content, language, hasBeenReady]);
 
-  const handlePreview = () => {
-    // 创建新窗口显示HTML或Mermaid内容
-    const newWindow = window.open('', '_blank');
-    if (!newWindow) {
-      message.error('无法打开新窗口，请检查浏览器设置');
-      return;
-    }
+  const handlePreview = async () => {
+    // 调用后端生成短链ID，打开短链预览页面
+    try {
+      const resp = await previewService.createShare({
+        lang: language || 'text',
+        content,
+        title: `${(language || 'text').toUpperCase()} 预览`
+      });
 
-    if (language === 'html') {
-      // 渲染HTML内容
-      newWindow.document.write(content);
-      newWindow.document.close();
-    } else if (language === 'svg') {
-      // 渲染SVG内容
-      const svgHtml = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>SVG图像预览</title>
-          </head>
-          <body>
-            <div class="svg-container">
-              ${content}
-            </div>
-          </body>
-        </html>
-      `;
-      newWindow.document.write(svgHtml);
-      newWindow.document.close();
-    } else if (language === 'mermaid') {
-      // 渲染Mermaid图表
-      const mermaidHtml = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Mermaid图表预览</title>
-            <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-          </head>
-          <body>
-            <div class="mermaid">
-              ${content}
-            </div>
-            <script>
-              try {
-                mermaid.initialize({ 
-                  startOnLoad: true,
-                  theme: 'default',
-                  securityLevel: 'loose',
-                  fontFamily: 'Segoe UI, Arial, sans-serif'
-                });
-              } catch (error) {
-                document.body.innerHTML = '<div class="error">图表渲染失败: ' + error.message + '</div>';
-              }
-            </script>
-          </body>
-        </html>
-      `;
-      newWindow.document.write(mermaidHtml);
-      newWindow.document.close();
+      const origin = window.location.origin;
+      const shareUrl = `${origin}/preview?id=${encodeURIComponent(resp.id)}`;
+      const win = window.open(shareUrl, '_blank');
+      if (!win) {
+        message.error('无法打开预览窗口，请检查浏览器设置');
+      } else {
+        message.success('短链已生成，可分享该链接');
+      }
+    } catch (e: any) {
+      message.error('生成短链失败：' + (e?.message || String(e)));
     }
   };
 
@@ -122,7 +83,7 @@ const CodeBlockPreview: React.FC<CodeBlockPreviewProps> = ({ language, content, 
   }
 
   return (
-    <Tooltip title="在新窗口中预览">
+    <Tooltip title="在新窗口中预览（可分享链接）">
       <Button
         type="text"
         size="small"

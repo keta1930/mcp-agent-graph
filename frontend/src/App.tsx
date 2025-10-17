@@ -14,6 +14,7 @@ import PromptManager from './pages/PromptManager';
 import ExportManager from './pages/ExportManager';
 import TaskManager from './pages/TaskManager';
 import TaskDetail from './pages/TaskDetail';
+import PreviewPage from './pages/PreviewPage';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -37,6 +38,9 @@ const App: React.FC = () => {
 
         {/* 导出管理 - 独立页面，与对话系统平级 */}
         <Route path="/export" element={<ExportManager />} />
+
+        {/* 可分享预览页面 */}
+        <Route path="/preview" element={<PreviewPage />} />
 
         {/* 工作台入口 */}
         <Route path="/workspace" element={<Workspace />} />
