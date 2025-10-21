@@ -125,7 +125,7 @@ const PreviewPage: React.FC = () => {
         <iframe
           title="HTML 预览"
           srcDoc={content}
-          sandbox="allow-scripts allow-popups"
+          sandbox="allow-scripts allow-popups allow-same-origin"
           style={{ width: '100%', height: '80vh', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}
         />
       );
@@ -137,7 +137,7 @@ const PreviewPage: React.FC = () => {
         <iframe
           title="SVG 预览"
           srcDoc={svgDoc}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin"
           style={{ width: '100%', height: '80vh', border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff' }}
         />
       );
