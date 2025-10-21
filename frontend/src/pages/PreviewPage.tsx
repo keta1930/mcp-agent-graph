@@ -1,7 +1,8 @@
 // src/pages/PreviewPage.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Space, Typography, message, Tooltip, Alert } from 'antd';
+import { CheckOutlined } from '@ant-design/icons';
 import { previewService } from '../services/previewService';
 
 const { Title, Text } = Typography;
@@ -17,7 +18,6 @@ const decodeParam = (value: string | null): string => {
 };
 
 const PreviewPage: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const shareId = searchParams.get('id');
@@ -32,12 +32,15 @@ const PreviewPage: React.FC = () => {
 
   const [copying, setCopying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const handleCopyLink = async () => {
     try {
       setCopying(true);
       await navigator.clipboard.writeText(window.location.href);
-      message.success('分享链接已复制到剪贴板');
+      message.success('Copy Success');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 500);
     } catch (e: any) {
       message.error('复制失败：' + (e?.message || String(e)));
     } finally {
@@ -169,21 +172,19 @@ const PreviewPage: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>{title}</Title>
         <Space>
-          <Tooltip title="复制当前分享链接">
-            <Button onClick={handleCopyLink} loading={copying}>
-              复制分享链接
+          <Tooltip title="Copy URL">
+            <Button onClick={handleCopyLink} icon={copied ? <CheckOutlined /> : undefined} style={copied ? { color: '#52c41a', borderColor: '#52c41a' } : undefined}>
+              URL
             </Button>
           </Tooltip>
-          <Button onClick={() => navigate(-1)}>返回</Button>
         </Space>
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <Text type="secondary">类型：{lang}</Text>
-        {loading && (
+      {loading && (
+        <div style={{ marginBottom: 12 }}>
           <span style={{ marginLeft: 8 }}><Text type="secondary">加载中...</Text></span>
-        )}
-      </div>
+        </div>
+      )}
 
       {renderContent()}
     </div>
