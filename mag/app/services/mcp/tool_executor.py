@@ -92,6 +92,59 @@ class ToolExecutor:
                 "error": error_msg
             }
 
+    async def execute_tool_for_graph(self, tool_name: str, tool_args: Dict[str, Any], 
+                                    mcp_servers: List[str]) -> Dict[str, Any]:
+        """为图执行器执行单个工具
+        
+        专门为 graph_executor 和 background_executor 设计的方法。
+        返回包含 tool_name, content, server_name 的标准格式。
+        
+        Args:
+            tool_name: 工具名称
+            tool_args: 工具参数
+            mcp_servers: MCP服务器列表
+            
+        Returns:
+            包含工具执行结果的字典
+        """
+        # 查找工具所属服务器
+        server_name = await self._find_tool_server(tool_name, mcp_servers)
+        if not server_name:
+            return {
+                "tool_name": tool_name,
+                "content": f"找不到工具 '{tool_name}' 所属的服务器",
+                "error": "工具不存在"
+            }
+
+        try:
+            # 执行工具
+            result = await self.execute_single_tool(server_name, tool_name, tool_args)
+
+            # 处理结果
+            if result.get("error"):
+                content = f"工具 {tool_name} 执行失败：{result['error']}"
+            else:
+                # 格式化结果内容
+                result_content = result.get("content", "")
+                if isinstance(result_content, (dict, list)):
+                    content = json.dumps(result_content, ensure_ascii=False)
+                else:
+                    content = str(result_content)
+
+            return {
+                "tool_name": tool_name,
+                "content": content,
+                "server_name": server_name
+            }
+
+        except Exception as e:
+            logger.error(f"执行工具 {tool_name} 时出错: {str(e)}")
+            return {
+                "tool_name": tool_name,
+                "content": f"工具执行异常: {str(e)}",
+                "error": str(e)
+            }
+
     async def execute_model_tools(self, model_tool_calls: List[Dict], mcp_servers: List[str]) -> List[Dict[str, Any]]:
         """执行模型返回的工具调用"""
         tool_results = []

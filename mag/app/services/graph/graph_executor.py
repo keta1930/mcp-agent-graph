@@ -13,6 +13,7 @@ from app.services.graph.graph_helper import GraphHelper
 from app.services.graph.handoffs_manager import HandoffsManager
 from app.services.graph.message_creator import MessageCreator
 from app.services.graph.execution_chain_manager import ExecutionChainManager
+from app.services.mcp.tool_executor import ToolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class GraphExecutor:
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
         self.message_creator = MessageCreator(conversation_manager)
+        self.tool_executor = ToolExecutor(mcp_service)
 
     async def execute_graph_stream(self,
                                    graph_name: str,
@@ -470,7 +472,7 @@ class GraphExecutor:
                         except json.JSONDecodeError:
                             tool_args = {}
 
-                        tool_result = await self._execute_single_tool(tool_name, tool_args, mcp_servers)
+                        tool_result = await self.tool_executor.execute_tool_for_graph(tool_name, tool_args, mcp_servers)
                         tool_content = tool_result.get("content", "")
 
                         yield SSEHelper.send_tool_message(tool_call["id"], tool_content)
@@ -558,55 +560,3 @@ class GraphExecutor:
         except Exception as e:
             logger.error(f"执行节点 '{node['name']}' 流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"执行节点时出错: {str(e)}")
-
-
-    async def _execute_single_tool(self, tool_name: str, tool_args: Dict[str, Any], mcp_servers: List[str]) -> Dict[
-        str, Any]:
-        """执行单个工具"""
-        server_name = await self._find_tool_server(tool_name, mcp_servers)
-        if not server_name:
-            return {
-                "tool_name": tool_name,
-                "content": f"找不到工具 '{tool_name}' 所属的服务器",
-                "error": "工具不存在"
-            }
-
-        try:
-            result = await self.mcp_service.call_tool(server_name, tool_name, tool_args)
-
-            if result.get("error"):
-                content = f"工具 {tool_name} 执行失败：{result['error']}"
-            else:
-                result_content = result.get("content", "")
-                if isinstance(result_content, (dict, list)):
-                    content = json.dumps(result_content, ensure_ascii=False)
-                else:
-                    content = str(result_content)
-
-            return {
-                "tool_name": tool_name,
-                "content": content,
-                "server_name": server_name
-            }
-
-        except Exception as e:
-            logger.error(f"执行工具 {tool_name} 时出错: {str(e)}")
-            return {
-                "tool_name": tool_name,
-                "content": f"工具执行异常: {str(e)}",
-                "error": str(e)
-            }
-
-    async def _find_tool_server(self, tool_name: str, mcp_servers: List[str]) -> Optional[str]:
-        """查找工具所属的服务器"""
-        try:
-            all_tools = await self.mcp_service.get_all_tools()
-            for server_name in mcp_servers:
-                if server_name in all_tools:
-                    for tool in all_tools[server_name]:
-                        if tool["name"] == tool_name:
-                            return server_name
-            return None
-        except Exception as e:
-            logger.error(f"查找工具服务器时出错: {str(e)}")
-            return None
