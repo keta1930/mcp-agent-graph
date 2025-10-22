@@ -229,19 +229,20 @@ class ModelService:
                         model_name: str,
                         messages: List[Dict[str, Any]],
                         tools: List[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """调用模型API（非SSE场景，用于生成标题等静态调用）
+        """调用模型API（非SSE场景，用于生成标题、压缩对话等静态调用）
+
+        注意：此方法不支持工具调用，tools参数保留仅为兼容性考虑。
+        如需工具调用支持，请使用 stream_chat_with_tools() 方法。
 
         Args:
             model_name: 模型名称
             messages: 消息列表
-            tools: 工具列表（可选）
+            tools: 工具列表（保留参数，但不会被使用）
 
         Returns:
             {
                 "status": "success" | "error",
-                "content": str,
-                "tool_calls": List[Dict],  # 简化的工具调用
-                "raw_tool_calls": List[Dict]  # 原始工具调用
+                "content": str
             }
         """
         client = self.clients.get(model_name)
@@ -287,8 +288,6 @@ class ModelService:
             stream = await client.chat.completions.create(**stream_params, **extra_kwargs)
 
             content_parts = []
-            tool_calls = []
-            current_tool_calls = {}
 
             async for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta:
@@ -297,42 +296,12 @@ class ModelService:
                     if delta.content:
                         content_parts.append(delta.content)
 
-                    if delta.tool_calls:
-                        for tool_call_delta in delta.tool_calls:
-                            index = tool_call_delta.index
-
-                            if index not in current_tool_calls:
-                                current_tool_calls[index] = {
-                                    "id": tool_call_delta.id or "",
-                                    "type": tool_call_delta.type or "function",
-                                    "function": {
-                                        "name": "",
-                                        "arguments": ""
-                                    }
-                                }
-
-                            if tool_call_delta.id:
-                                current_tool_calls[index]["id"] = tool_call_delta.id
-                            if tool_call_delta.type:
-                                current_tool_calls[index]["type"] = tool_call_delta.type
-
-                            if tool_call_delta.function:
-                                if tool_call_delta.function.name:
-                                    current_tool_calls[index]["function"]["name"] += tool_call_delta.function.name
-                                if tool_call_delta.function.arguments:
-                                    current_tool_calls[index]["function"]["arguments"] += tool_call_delta.function.arguments
-
-            raw_tool_calls = list(current_tool_calls.values())
-            simplified_calls, _ = self.response_parser.parse_tool_calls(raw_tool_calls)
-
             full_content = "".join(content_parts)
             cleaned_content = self.response_parser.clean_content(full_content)
 
             return {
                 "status": "success",
-                "content": cleaned_content,
-                "tool_calls": simplified_calls,
-                "raw_tool_calls": raw_tool_calls
+                "content": cleaned_content
             }
 
         except Exception as e:
@@ -345,27 +314,9 @@ class ModelService:
             message_content = response.choices[0].message.content or ""
             cleaned_content = self.response_parser.clean_content(message_content)
 
-            tool_calls = []
-            raw_tool_calls = []
-            if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
-                for tool_call in response.choices[0].message.tool_calls:
-                    raw_tool_calls.append({
-                        "id": tool_call.id,
-                        "type": tool_call.type,
-                        "function": {
-                            "name": tool_call.function.name,
-                            "arguments": tool_call.function.arguments
-                        }
-                    })
-
-                simplified_calls, _ = self.response_parser.parse_tool_calls(raw_tool_calls)
-                tool_calls = simplified_calls
-
             return {
                 "status": "success",
-                "content": cleaned_content,
-                "tool_calls": tool_calls,
-                "raw_tool_calls": raw_tool_calls
+                "content": cleaned_content
             }
 
         except Exception as e:
