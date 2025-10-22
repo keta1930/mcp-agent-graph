@@ -1,93 +1,27 @@
 import logging
 import json
-import re
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, AsyncGenerator
 from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletion
+
+# 导入组件
+from app.services.model.param_builder import ParamBuilder
+from app.services.model.stream_handler import StreamAccumulator, StreamHandler
+from app.services.model.response_parser import ResponseParser
 
 logger = logging.getLogger(__name__)
 
 
-class StreamAccumulator:
-    """流式响应累积器 - 用于处理和累积流式API响应"""
-
-    def __init__(self):
-        self.accumulated_content = ""
-        self.accumulated_reasoning = ""
-        self.tool_calls_dict = {}
-        self.api_usage = None
-
-    def process_chunk(self, chunk):
-        """处理单个chunk并累积数据
-
-        Args:
-            chunk: API返回的chunk对象
-        """
-        if chunk.choices and chunk.choices[0].delta:
-            delta = chunk.choices[0].delta
-
-            # 累积content
-            if delta.content:
-                self.accumulated_content += delta.content
-
-            # 累积reasoning_content
-            if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
-                self.accumulated_reasoning += delta.reasoning_content
-
-            # 累积tool_calls
-            if delta.tool_calls:
-                for tool_call_delta in delta.tool_calls:
-                    index = tool_call_delta.index
-
-                    if index not in self.tool_calls_dict:
-                        self.tool_calls_dict[index] = {
-                            "id": tool_call_delta.id or "",
-                            "type": "function",
-                            "function": {"name": "", "arguments": ""}
-                        }
-
-                    if tool_call_delta.id:
-                        self.tool_calls_dict[index]["id"] = tool_call_delta.id
-
-                    if tool_call_delta.function:
-                        if tool_call_delta.function.name:
-                            self.tool_calls_dict[index]["function"]["name"] += tool_call_delta.function.name
-                        if tool_call_delta.function.arguments:
-                            self.tool_calls_dict[index]["function"]["arguments"] += tool_call_delta.function.arguments
-
-        # 收集usage信息
-        if hasattr(chunk, "usage") and chunk.usage is not None:
-            self.api_usage = {
-                "total_tokens": chunk.usage.total_tokens,
-                "prompt_tokens": chunk.usage.prompt_tokens,
-                "completion_tokens": chunk.usage.completion_tokens
-            }
-
-    def get_tool_calls_list(self):
-        """获取tool_calls列表"""
-        return list(self.tool_calls_dict.values())
-
-    def get_result(self):
-        """获取累积的结果"""
-        return {
-            "accumulated_content": self.accumulated_content,
-            "accumulated_reasoning": self.accumulated_reasoning,
-            "tool_calls_dict": self.tool_calls_dict,
-            "tool_calls_list": self.get_tool_calls_list(),
-            "api_usage": self.api_usage
-        }
-
-
 class ModelService:
-    """模型服务管理 - MongoDB版本"""
+    """模型服务管理 - 提供模型调用能力（SSE流式 + 非SSE）"""
 
     def __init__(self):
         self.mongodb_service = None
         self.clients: Dict[str, AsyncOpenAI] = {}
+        self.param_builder = ParamBuilder()
+        self.response_parser = ResponseParser()
 
     async def initialize(self, mongodb_service) -> None:
-        """
-        初始化模型服务
+        """初始化模型服务
 
         Args:
             mongodb_service: MongoDB服务实例
@@ -111,11 +45,12 @@ class ModelService:
         except Exception as e:
             logger.error(f"初始化模型客户端列表时出错: {str(e)}")
 
+    # ========== 模型配置管理方法 ==========
+
     async def get_all_models(self) -> List[Dict[str, Any]]:
         """获取所有模型配置（不包含API密钥）"""
         try:
             models = await self.mongodb_service.list_model_configs(include_api_key=False)
-            # 只返回基本信息
             return [{
                 "name": model["name"],
                 "base_url": model["base_url"],
@@ -130,7 +65,6 @@ class ModelService:
         try:
             model = await self.mongodb_service.get_model_config(model_name, include_api_key=False)
             if model:
-                # 移除时间戳字段
                 model.pop('created_at', None)
                 model.pop('updated_at', None)
             return model
@@ -149,17 +83,14 @@ class ModelService:
     async def add_model(self, model_config: Dict[str, Any]) -> bool:
         """添加新模型配置"""
         try:
-            # 验证配置是否有效
             client = AsyncOpenAI(
                 api_key=model_config["api_key"],
                 base_url=model_config["base_url"]
             )
 
-            # 添加到MongoDB
             result = await self.mongodb_service.create_model_config(model_config)
 
             if result.get("success"):
-                # 添加客户端
                 self.clients[model_config["name"]] = client
                 logger.info(f"模型 '{model_config['name']}' 添加成功")
                 return True
@@ -174,17 +105,14 @@ class ModelService:
     async def update_model(self, model_name: str, model_config: Dict[str, Any]) -> bool:
         """更新现有模型配置"""
         try:
-            # 验证配置是否有效
             client = AsyncOpenAI(
                 api_key=model_config["api_key"],
                 base_url=model_config["base_url"]
             )
 
-            # 更新MongoDB
             result = await self.mongodb_service.update_model_config(model_name, model_config)
 
             if result.get("success"):
-                # 更新客户端映射
                 old_name = model_name
                 new_name = model_config.get("name", model_name)
 
@@ -205,11 +133,9 @@ class ModelService:
     async def delete_model(self, model_name: str) -> bool:
         """删除模型配置"""
         try:
-            # 从MongoDB删除
             result = await self.mongodb_service.delete_model_config(model_name)
 
             if result.get("success"):
-                # 移除客户端
                 if model_name in self.clients:
                     del self.clients[model_name]
                 logger.info(f"模型 '{model_name}' 删除成功")
@@ -222,54 +148,102 @@ class ModelService:
             logger.error(f"删除模型 '{model_name}' 时出错: {str(e)}")
             return False
 
-    # === 模型参数处理方法 ===
+    # ========== 参数处理方法 ==========
 
-    def add_model_params(self, params: Dict[str, Any], model_config: Dict[str, Any]) -> None:
-        """添加模型配置参数到API调用参数中"""
-        optional_params = [
-            'temperature', 'max_tokens', 'max_completion_tokens',
-            'top_p', 'frequency_penalty', 'presence_penalty', 'n',
-            'stop', 'seed', 'logprobs', 'top_logprobs'
-        ]
-
-        for param in optional_params:
-            if param in model_config and model_config[param] is not None:
-                if param in ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty']:
-                    params[param] = float(model_config[param])
-                elif param in ['max_tokens', 'max_completion_tokens', 'n', 'seed', 'top_logprobs']:
-                    params[param] = int(model_config[param])
-                else:
-                    params[param] = model_config[param]
-
-    def get_extra_kwargs(self, model_config: Dict[str, Any]) -> Dict[str, Any]:
-        """获取额外的请求参数"""
-        extra_kwargs = {}
-        if model_config.get('extra_headers'):
-            extra_kwargs['extra_headers'] = model_config['extra_headers']
-        if model_config.get('timeout'):
-            extra_kwargs['timeout'] = model_config['timeout']
-        if model_config.get('extra_body'):
-            extra_kwargs['extra_body'] = model_config['extra_body']
-        return extra_kwargs
-
-    def prepare_api_params(self, base_params: Dict[str, Any], model_config: Dict[str, Any]) -> Dict[str, Any]:
+    def prepare_api_params(self, base_params: Dict[str, Any], model_config: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
         """准备完整的API调用参数"""
-        # 复制基础参数以避免修改原始字典
-        params = base_params.copy()
+        return self.param_builder.prepare_api_params(base_params, model_config)
 
-        # 添加模型配置参数
-        self.add_model_params(params, model_config)
+    @staticmethod
+    def filter_reasoning_content(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """过滤消息中的reasoning_content字段"""
+        return ResponseParser.filter_reasoning_content(messages)
 
-        # 获取额外参数
-        extra_kwargs = self.get_extra_kwargs(model_config)
+    # ========== SSE流式调用方法 ==========
 
-        return params, extra_kwargs
+    async def stream_chat_with_tools(self,
+                                     model_name: str,
+                                     messages: List[Dict[str, Any]],
+                                     tools: Optional[List[Dict[str, Any]]] = None,
+                                     yield_chunks: bool = True) -> AsyncGenerator[str | Dict[str, Any], None]:
+        """SSE流式调用模型（用于chat/graph/mcp的流式场景）
+
+        Args:
+            model_name: 模型名称
+            messages: 消息列表
+            tools: 工具列表（可选）
+            yield_chunks: 是否实时yield SSE chunk数据
+
+        Yields:
+            如果 yield_chunks=True:
+                - 中间yield: SSE格式字符串 "data: {...}\\n\\n"
+                - 最后yield: 累积结果字典
+            如果 yield_chunks=False:
+                - 只在最后yield累积结果字典
+
+        最后一条累积结果格式:
+            {
+                "accumulated_content": str,
+                "accumulated_reasoning": str,
+                "tool_calls": List[Dict],
+                "api_usage": Dict
+            }
+        """
+        client = self.clients.get(model_name)
+        if not client:
+            raise ValueError(f"模型 '{model_name}' 未配置或初始化失败")
+
+        model_config = await self.get_model(model_name)
+        if not model_config:
+            raise ValueError(f"找不到模型 '{model_name}' 的配置")
+
+        try:
+            # 准备基本调用参数
+            base_params = {
+                "model": model_config["model"],
+                "messages": messages,
+                "stream": True,
+                "stream_options": {"include_usage": True}
+            }
+
+            if tools:
+                base_params["tools"] = tools
+
+            # 使用参数构建器准备参数
+            params, extra_kwargs = self.param_builder.prepare_api_params(base_params, model_config)
+
+            # 调用模型获取流
+            stream = await client.chat.completions.create(**params, **extra_kwargs)
+
+            # 使用流处理器处理流式响应
+            async for item in StreamHandler.stream_and_accumulate(stream, yield_chunks):
+                yield item
+
+        except Exception as e:
+            logger.error(f"SSE流式调用模型 '{model_name}' 时出错: {str(e)}")
+            raise
+
+    # ========== 非SSE调用方法 ==========
 
     async def call_model(self,
                         model_name: str,
                         messages: List[Dict[str, Any]],
                         tools: List[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """调用模型API，支持所有配置参数和流式返回"""
+        """调用模型API（非SSE场景，用于生成标题等静态调用）
+
+        Args:
+            model_name: 模型名称
+            messages: 消息列表
+            tools: 工具列表（可选）
+
+        Returns:
+            {
+                "status": "success" | "error",
+                "content": str,
+                "tool_calls": List[Dict],  # 简化的工具调用
+                "raw_tool_calls": List[Dict]  # 原始工具调用
+            }
+        """
         client = self.clients.get(model_name)
         if not client:
             return {"status": "error", "error": f"模型 '{model_name}' 未配置或初始化失败"}
@@ -285,21 +259,18 @@ class ModelService:
                 "messages": messages
             }
 
-            # 如果提供了工具，添加到参数中
             if tools:
                 base_params["tools"] = tools
 
-            # 使用新的参数准备方法
-            params, extra_kwargs = self.prepare_api_params(base_params, model_config)
+            # 使用参数构建器准备参数
+            params, extra_kwargs = self.param_builder.prepare_api_params(base_params, model_config)
 
             # 检查是否启用流式返回
             is_stream = model_config.get('stream', False)
 
             if is_stream:
-                # 处理流式返回
                 return await self._handle_stream_response(client, params, **extra_kwargs)
             else:
-                # 处理普通返回
                 response = await client.chat.completions.create(**params, **extra_kwargs)
                 return await self._handle_normal_response(response)
 
@@ -308,9 +279,8 @@ class ModelService:
             return {"status": "error", "error": str(e)}
 
     async def _handle_stream_response(self, client, params, **extra_kwargs):
-        """处理流式响应"""
+        """处理流式响应（非SSE场景）"""
         try:
-            # 为流式响应设置stream参数
             stream_params = params.copy()
             stream_params["stream"] = True
 
@@ -318,17 +288,15 @@ class ModelService:
 
             content_parts = []
             tool_calls = []
-            current_tool_calls = {}  # 用于跟踪正在构建的工具调用
+            current_tool_calls = {}
 
             async for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta:
                     delta = chunk.choices[0].delta
 
-                    # 收集内容
                     if delta.content:
                         content_parts.append(delta.content)
 
-                    # 收集工具调用
                     if delta.tool_calls:
                         for tool_call_delta in delta.tool_calls:
                             index = tool_call_delta.index
@@ -343,7 +311,6 @@ class ModelService:
                                     }
                                 }
 
-                            # 更新工具调用信息
                             if tool_call_delta.id:
                                 current_tool_calls[index]["id"] = tool_call_delta.id
                             if tool_call_delta.type:
@@ -355,43 +322,16 @@ class ModelService:
                                 if tool_call_delta.function.arguments:
                                     current_tool_calls[index]["function"]["arguments"] += tool_call_delta.function.arguments
 
-            # 保存原始工具调用信息（用于构造标准消息格式）
             raw_tool_calls = list(current_tool_calls.values())
+            simplified_calls, _ = self.response_parser.parse_tool_calls(raw_tool_calls)
 
-            # 处理完整的工具调用
-            for tool_call_data in current_tool_calls.values():
-                tool_name = tool_call_data["function"]["name"]
-
-                if tool_name:
-                    try:
-                        tool_args = json.loads(tool_call_data["function"]["arguments"] or "{}")
-                    except json.JSONDecodeError:
-                        logger.error(f"工具参数JSON无效: {tool_call_data['function']['arguments']}")
-                        tool_args = {}
-
-                    # 处理handoffs工具
-                    if tool_name.startswith("transfer_to_"):
-                        selected_node = tool_name[len("transfer_to_"):]
-                        tool_calls.append({
-                            "tool_name": tool_name,
-                            "content": f"选择了节点: {selected_node}",
-                            "selected_node": selected_node
-                        })
-                    else:
-                        # 普通工具调用
-                        tool_calls.append({
-                            "tool_name": tool_name,
-                            "params": tool_args
-                        })
-
-            # 清理内容
             full_content = "".join(content_parts)
-            cleaned_content = self._clean_content(full_content)
+            cleaned_content = self.response_parser.clean_content(full_content)
 
             return {
                 "status": "success",
                 "content": cleaned_content,
-                "tool_calls": tool_calls,
+                "tool_calls": simplified_calls,
                 "raw_tool_calls": raw_tool_calls
             }
 
@@ -400,19 +340,14 @@ class ModelService:
             return {"status": "error", "error": str(e)}
 
     async def _handle_normal_response(self, response):
-        """处理普通响应"""
+        """处理普通响应（非SSE场景）"""
         try:
-            # 提取消息内容
             message_content = response.choices[0].message.content or ""
+            cleaned_content = self.response_parser.clean_content(message_content)
 
-            # 清理内容
-            cleaned_content = self._clean_content(message_content)
-
-            # 处理工具调用
             tool_calls = []
             raw_tool_calls = []
             if hasattr(response.choices[0].message, 'tool_calls') and response.choices[0].message.tool_calls:
-                # 保存原始工具调用信息
                 for tool_call in response.choices[0].message.tool_calls:
                     raw_tool_calls.append({
                         "id": tool_call.id,
@@ -423,30 +358,8 @@ class ModelService:
                         }
                     })
 
-                # 处理简化的工具调用信息
-                for tool_call in response.choices[0].message.tool_calls:
-                    try:
-                        tool_args = json.loads(tool_call.function.arguments)
-                    except json.JSONDecodeError:
-                        logger.error(f"工具参数JSON无效: {tool_call.function.arguments}")
-                        tool_args = {}
-
-                    tool_name = tool_call.function.name
-
-                    # 处理handoffs工具
-                    if tool_name.startswith("transfer_to_"):
-                        selected_node = tool_name[len("transfer_to_"):]
-                        tool_calls.append({
-                            "tool_name": tool_name,
-                            "content": f"选择了节点: {selected_node}",
-                            "selected_node": selected_node
-                        })
-                    else:
-                        # 普通工具调用
-                        tool_calls.append({
-                            "tool_name": tool_name,
-                            "params": tool_args
-                        })
+                simplified_calls, _ = self.response_parser.parse_tool_calls(raw_tool_calls)
+                tool_calls = simplified_calls
 
             return {
                 "status": "success",
@@ -458,22 +371,6 @@ class ModelService:
         except Exception as e:
             logger.error(f"处理普通响应时出错: {str(e)}")
             return {"status": "error", "error": str(e)}
-
-    def _clean_content(self, content: str) -> str:
-        """清理模型输出内容"""
-        if not content:
-            return ""
-
-        # 清理</think>之前的文本
-        think_pattern = r".*?</think>"
-        cleaned_content = re.sub(think_pattern, "", content, flags=re.DOTALL)
-
-        return cleaned_content.strip()
-
-    @staticmethod
-    def filter_reasoning_content(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """过滤消息中的reasoning_content字段"""
-        return [{k: v for k, v in msg.items() if k != "reasoning_content"} for msg in messages]
 
 
 # 创建全局模型服务实例

@@ -6,7 +6,7 @@ from typing import Dict, List, Any, Optional, AsyncGenerator
 import os
 from pathlib import Path
 from app.core.file_manager import FileManager
-from app.services.model_service import model_service, StreamAccumulator
+from app.services.model_service import model_service
 from app.utils.text_parser import parse_ai_mcp_generation_response
 from app.services.mongodb_service import mongodb_service
 
@@ -106,12 +106,25 @@ class AIMCPGenerator:
             messages = conversation_data.get("messages", [])
             messages = model_service.filter_reasoning_content(messages)
 
-            # 获取模型客户端
-            client = model_service.clients.get(model_name)
-            if not client:
+            # 使用model_service进行SSE流式调用
+            accumulated_result = None
+            async for item in model_service.stream_chat_with_tools(
+                model_name=model_name,
+                messages=messages,
+                tools=None,
+                yield_chunks=True
+            ):
+                if isinstance(item, str):
+                    # SSE chunk，直接转发
+                    yield item
+                else:
+                    # 累积结果
+                    accumulated_result = item
+
+            if not accumulated_result:
                 error_chunk = {
                     "error": {
-                        "message": f"模型客户端未初始化: {model_name}",
+                        "message": "未收到模型响应",
                         "type": "model_error"
                     }
                 }
@@ -119,37 +132,10 @@ class AIMCPGenerator:
                 yield "data: [DONE]\n\n"
                 return
 
-            # 准备API调用参数
-            base_params = {
-                "model": model_config["model"],
-                "messages": messages,
-                "stream": True,
-                "stream_options": {"include_usage": True}
-            }
-
-            params, extra_kwargs = model_service.prepare_api_params(base_params, model_config)
-
-            # 调用模型进行流式生成
-            stream = await client.chat.completions.create(**params, **extra_kwargs)
-
-            # 使用StreamAccumulator处理流式响应
-            accumulator = StreamAccumulator()
-
-            # 处理流式响应
-            async for chunk in stream:
-                chunk_dict = chunk.model_dump()
-                yield f"data: {json.dumps(chunk_dict)}\n\n"
-
-                # 使用累积器处理chunk
-                accumulator.process_chunk(chunk)
-
-                if chunk.choices and chunk.choices[0].finish_reason:
-                    logger.info(f"API调用完成，finish_reason: {chunk.choices[0].finish_reason}")
-
             # 获取累积的结果
-            accumulated_content = accumulator.accumulated_content
-            accumulated_reasoning = accumulator.accumulated_reasoning
-            api_usage = accumulator.api_usage
+            accumulated_content = accumulated_result["accumulated_content"]
+            accumulated_reasoning = accumulated_result.get("accumulated_reasoning", "")
+            api_usage = accumulated_result.get("api_usage")
 
             # 构建assistant消息
             assistant_message = {

@@ -5,7 +5,7 @@ import json
 from typing import Dict, List, Any, Optional, Set, Tuple
 import copy
 from app.core.graph_run_storage import graph_run_storage
-from app.services.model_service import StreamAccumulator, model_service
+from app.services.model_service import model_service
 
 logger = logging.getLogger(__name__)
 
@@ -232,43 +232,29 @@ class BackgroundExecutor:
             }
 
             for iteration in range(max_iterations):
-                model_config = await model_service.get_model(model_name)
-                if not model_config:
-                    raise Exception(f"找不到模型配置: {model_name}")
-
-                client = model_service.clients.get(model_name)
-                if not client:
-                    raise Exception(f"模型客户端未初始化: {model_name}")
-
                 # 过滤reasoning_content字段
                 messages = model_service.filter_reasoning_content(current_messages)
 
-                base_params = {
-                    "model": model_config["model"],
-                    "messages": messages,
-                    "stream": True,
-                    "stream_options": {"include_usage": True}
-                }
+                # 使用model_service进行流式调用（不yield chunks，只获取累积结果）
+                accumulated_result = None
+                async for item in model_service.stream_chat_with_tools(
+                    model_name=model_name,
+                    messages=messages,
+                    tools=all_tools if all_tools else None,
+                    yield_chunks=False  # 后台执行不需要实时yield
+                ):
+                    if not isinstance(item, str):
+                        # 累积结果
+                        accumulated_result = item
 
-                if all_tools:
-                    base_params["tools"] = all_tools
-
-                params, extra_kwargs = model_service.prepare_api_params(base_params, model_config)
-                stream = await client.chat.completions.create(**params, **extra_kwargs)
-
-                # 使用StreamAccumulator处理流式响应
-                accumulator = StreamAccumulator()
-
-                # 处理流式响应
-                async for chunk in stream:
-                    # 使用累积器处理chunk
-                    accumulator.process_chunk(chunk)
+                if not accumulated_result:
+                    raise Exception("未收到模型响应")
 
                 # 获取累积的结果
-                accumulated_content = accumulator.accumulated_content
-                accumulated_reasoning = accumulator.accumulated_reasoning
-                current_tool_calls = accumulator.get_tool_calls_list()
-                iteration_usage = accumulator.api_usage
+                accumulated_content = accumulated_result["accumulated_content"]
+                accumulated_reasoning = accumulated_result.get("accumulated_reasoning", "")
+                current_tool_calls = accumulated_result.get("tool_calls", [])
+                iteration_usage = accumulated_result.get("api_usage")
 
                 if iteration_usage:
                     node_token_usage["total_tokens"] += iteration_usage["total_tokens"]

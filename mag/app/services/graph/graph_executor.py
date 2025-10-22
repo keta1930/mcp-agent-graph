@@ -8,7 +8,7 @@ from app.core.graph_run_storage import graph_run_storage
 from app.utils.sse_helper import SSEHelper
 from app.utils.output_tools import GraphPromptTemplate
 from app.services.mongodb_service import mongodb_service
-from app.services.model_service import StreamAccumulator, model_service
+from app.services.model_service import model_service
 logger = logging.getLogger(__name__)
 
 
@@ -371,48 +371,40 @@ class GraphExecutor:
             for iteration in range(max_iterations):
                 logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
 
-                model_config = await model_service.get_model(model_name)
-                if not model_config:
-                    yield SSEHelper.send_error(f"找不到模型配置: {model_name}")
-                    return
-
-                client = model_service.clients.get(model_name)
-                if not client:
-                    yield SSEHelper.send_error(f"模型客户端未初始化: {model_name}")
-                    return
-
                 # 过滤reasoning_content字段
                 messages = model_service.filter_reasoning_content(current_messages)
 
-                base_params = {
-                    "model": model_config["model"],
-                    "messages": messages,
-                    "stream": True,
-                    "stream_options": {"include_usage": True}
-                }
+                # 使用model_service进行SSE流式调用
+                accumulated_result = None
+                async for item in model_service.stream_chat_with_tools(
+                    model_name=model_name,
+                    messages=messages,
+                    tools=all_tools if all_tools else None,
+                    yield_chunks=True  # 图执行需要实时yield SSE chunks
+                ):
+                    if isinstance(item, str):
+                        # SSE chunk，通过SSEHelper包装后转发
+                        # 从 "data: {...}\n\n" 中提取JSON
+                        if item.startswith("data: ") and item.endswith("\n\n"):
+                            chunk_json = item[6:-2]  # 去掉 "data: " 和 "\n\n"
+                            try:
+                                chunk_dict = json.loads(chunk_json)
+                                yield SSEHelper.send_openai_chunk(chunk_dict)
+                            except:
+                                pass  # 忽略解析错误
+                    else:
+                        # 累积结果
+                        accumulated_result = item
 
-                if all_tools:
-                    base_params["tools"] = all_tools
-
-                params, extra_kwargs = model_service.prepare_api_params(base_params, model_config)
-
-                stream = await client.chat.completions.create(**params, **extra_kwargs)
-
-                # 使用StreamAccumulator处理流式响应
-                accumulator = StreamAccumulator()
-
-                async for chunk in stream:
-                    chunk_dict = chunk.model_dump()
-                    yield SSEHelper.send_openai_chunk(chunk_dict)
-
-                    # 使用累积器处理chunk
-                    accumulator.process_chunk(chunk)
+                if not accumulated_result:
+                    yield SSEHelper.send_error("未收到模型响应")
+                    return
 
                 # 获取累积的结果
-                accumulated_content = accumulator.accumulated_content
-                accumulated_reasoning = accumulator.accumulated_reasoning
-                current_tool_calls = accumulator.get_tool_calls_list()
-                iteration_usage = accumulator.api_usage
+                accumulated_content = accumulated_result["accumulated_content"]
+                accumulated_reasoning = accumulated_result.get("accumulated_reasoning", "")
+                current_tool_calls = accumulated_result.get("tool_calls", [])
+                iteration_usage = accumulated_result.get("api_usage")
 
                 if iteration_usage:
                     node_token_usage["total_tokens"] += iteration_usage["total_tokens"]
