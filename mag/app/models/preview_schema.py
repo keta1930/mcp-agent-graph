@@ -10,7 +10,7 @@ class PreviewShareRequest(BaseModel):
     lang: str = Field(..., description="语言类型")
     content: str = Field(..., description="预览内容", min_length=1)
     title: Optional[str] = Field(None, description="预览标题")
-    expire_hours: Optional[int] = Field(144, description="过期时间（小时）", ge=1)
+    expire_hours: Optional[int] = Field(144, description="过期时间（小时）", ge=1) # 过期时间默认144小时, 最小1小时
 
 
 class PreviewShareResponse(BaseModel):
