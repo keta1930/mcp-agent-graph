@@ -12,6 +12,7 @@ from app.services.model_service import model_service
 from app.services.graph.graph_helper import GraphHelper
 from app.services.graph.handoffs_manager import HandoffsManager
 from app.services.graph.message_creator import MessageCreator
+from app.services.graph.execution_chain_manager import ExecutionChainManager
 
 logger = logging.getLogger(__name__)
 
@@ -549,8 +550,7 @@ class GraphExecutor:
                     file_ext=save_ext
                 )
 
-            await self._update_execution_chain(conversation)
-
+            await ExecutionChainManager.update_execution_chain(conversation)
             await self.conversation_manager.update_conversation_file(conversation_id)
 
             yield SSEHelper.send_node_end(node_name)
@@ -610,41 +610,3 @@ class GraphExecutor:
         except Exception as e:
             logger.error(f"查找工具服务器时出错: {str(e)}")
             return None
-
-    async def _update_execution_chain(self, conversation: Dict[str, Any]):
-        """更新execution_chain - 按level合并相邻节点"""
-        rounds = conversation.get("rounds", [])
-
-        if not rounds:
-            conversation["execution_chain"] = []
-            return
-
-        execution_chain = []
-        current_level_group = []
-        current_level = None
-
-        for round_data in rounds:
-            node_name = round_data.get("node_name", "")
-            level = round_data.get("level", 0)
-
-            if current_level is None:
-                current_level = level
-                current_level_group = [node_name]
-            elif level == current_level:
-                if node_name not in current_level_group:
-                    current_level_group.append(node_name)
-            else:
-                if current_level_group:
-                    execution_chain.append(current_level_group)
-                current_level = level
-                current_level_group = [node_name]
-
-        if current_level_group:
-            execution_chain.append(current_level_group)
-
-        conversation["execution_chain"] = execution_chain
-
-        from app.services.mongodb_service import mongodb_service
-        await mongodb_service.update_graph_run_execution_chain(
-            conversation["conversation_id"], execution_chain
-        )
