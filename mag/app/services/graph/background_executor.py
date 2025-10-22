@@ -8,6 +8,7 @@ from app.core.graph_run_storage import graph_run_storage
 from app.services.model_service import model_service
 from app.services.graph.graph_helper import GraphHelper
 from app.services.graph.handoffs_manager import HandoffsManager
+from app.services.graph.message_creator import MessageCreator
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class BackgroundExecutor:
     def __init__(self, conversation_manager, mcp_service):
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
+        self.message_creator = MessageCreator(conversation_manager)
 
     async def execute_graph_background(self, graph_name: str, flattened_config: Dict[str, Any],
                                        input_text: str, model_service=None) -> Dict[str, Any]:
@@ -31,7 +33,7 @@ class BackgroundExecutor:
             conversation["graph_name"] = graph_name
 
             # 记录用户输入
-            await self._record_user_input(conversation_id, input_text)
+            await self.message_creator.record_user_input(conversation_id, input_text)
 
             # 启动后台任务执行图
             asyncio.create_task(
@@ -71,7 +73,7 @@ class BackgroundExecutor:
                 conversation["execution_chain"] = []
                 conversation["handoffs_status"] = {}
 
-                await self._record_user_input(conversation_id, input_text)
+                await self.message_creator.record_user_input(conversation_id, input_text)
 
             # 启动后台继续执行任务
             asyncio.create_task(
@@ -202,7 +204,7 @@ class BackgroundExecutor:
             node_copy = copy.deepcopy(node)
             node_copy["_conversation_id"] = conversation_id
 
-            conversation_messages = await self._create_agent_messages(node_copy)
+            conversation_messages = await self.message_creator.create_agent_messages(node_copy)
 
             handoffs_limit = node.get("handoffs")
             handoffs_status = await self.conversation_manager.get_handoffs_status(conversation_id, node_name)
@@ -373,59 +375,6 @@ class BackgroundExecutor:
         except Exception as e:
             logger.error(f"后台执行节点 '{node['name']}' 时出错: {str(e)}")
             raise
-
-    async def _record_user_input(self, conversation_id: str, input_text: str):
-        """记录用户输入为round格式"""
-        conversation = await self.conversation_manager.get_conversation(conversation_id)
-        conversation["_current_round"] += 1
-        current_round = conversation["_current_round"]
-        conversation["input"] = input_text
-
-        start_round = {
-            "round": current_round,
-            "node_name": "start",
-            "level": 0,
-            "messages": [{"role": "user", "content": input_text}]
-        }
-        conversation["rounds"].append(start_round)
-
-        from app.services.mongodb_service import mongodb_service
-        await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=start_round,tools_schema=[])
-        await mongodb_service.update_graph_run_global_outputs(conversation_id, "start", input_text)
-
-        if "global_outputs" not in conversation:
-            conversation["global_outputs"] = {}
-        if "start" not in conversation["global_outputs"]:
-            conversation["global_outputs"]["start"] = []
-
-        conversation["global_outputs"]["start"].append(input_text)
-
-    async def _create_agent_messages(self, node: Dict[str, Any]) -> List[Dict[str, str]]:
-        """创建Agent的消息列表"""
-        messages = []
-        conversation_id = node.get("_conversation_id", "")
-        conversation = None
-        if conversation_id:
-            conversation = await self.conversation_manager.get_conversation(conversation_id)
-
-        from app.utils.output_tools import GraphPromptTemplate
-        template_processor = GraphPromptTemplate()
-
-        global_outputs = {}
-        if conversation:
-            global_outputs = conversation.get("global_outputs", {})
-
-        system_prompt = node.get("system_prompt", "")
-        if system_prompt:
-            system_prompt = template_processor.render_template(system_prompt, global_outputs)
-            messages.append({"role": "system", "content": system_prompt})
-
-        user_prompt = node.get("user_prompt", "")
-        if user_prompt:
-            user_prompt = template_processor.render_template(user_prompt, global_outputs)
-            messages.append({"role": "user", "content": user_prompt})
-
-        return messages
 
     async def _execute_single_tool(self, tool_name: str, tool_args: Dict[str, Any], mcp_servers: List[str]) -> Dict[
         str, Any]:

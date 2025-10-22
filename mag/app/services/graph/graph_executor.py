@@ -11,6 +11,7 @@ from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service
 from app.services.graph.graph_helper import GraphHelper
 from app.services.graph.handoffs_manager import HandoffsManager
+from app.services.graph.message_creator import MessageCreator
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class GraphExecutor:
     def __init__(self, conversation_manager, mcp_service):
         self.conversation_manager = conversation_manager
         self.mcp_service = mcp_service
+        self.message_creator = MessageCreator(conversation_manager)
 
     async def execute_graph_stream(self,
                                    graph_name: str,
@@ -43,7 +45,7 @@ class GraphExecutor:
             # 发送start节点开始事件
             yield SSEHelper.send_node_start("start", 0)
 
-            await self._record_user_input(conversation_id, input_text)
+            await self.message_creator.record_user_input(conversation_id, input_text)
 
             # 发送start节点结束事件
             yield SSEHelper.send_node_end("start")
@@ -106,7 +108,7 @@ class GraphExecutor:
                 conversation["handoffs_status"] = {}
 
                 if input_text:
-                    await self._record_user_input(conversation_id, input_text)
+                    await self.message_creator.record_user_input(conversation_id, input_text)
 
                 async for sse_data in self._execute_graph_by_level_sequential_stream(conversation_id, model_service):
                     yield sse_data
@@ -339,7 +341,7 @@ class GraphExecutor:
             node_copy = copy.deepcopy(node)
             node_copy["_conversation_id"] = conversation_id
 
-            conversation_messages = await self._create_agent_messages(node_copy)
+            conversation_messages = await self.message_creator.create_agent_messages(node_copy)
 
             handoffs_limit = node.get("handoffs")
             handoffs_status = await self.conversation_manager.get_handoffs_status(conversation_id, node_name)
@@ -557,37 +559,6 @@ class GraphExecutor:
             logger.error(f"执行节点 '{node['name']}' 流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"执行节点时出错: {str(e)}")
 
-    async def _create_agent_messages(self, node: Dict[str, Any]) -> List[Dict[str, str]]:
-        """
-        创建Agent的消息列表
-        """
-        messages = []
-
-        conversation_id = node.get("_conversation_id", "")
-        conversation = None
-        if conversation_id:
-            conversation = await self.conversation_manager.get_conversation(conversation_id)
-
-        # 创建简化的模板处理器
-        template_processor = GraphPromptTemplate()
-
-        # 获取全局输出历史
-        global_outputs = {}
-        if conversation:
-            global_outputs = conversation.get("global_outputs", {})
-
-        system_prompt = node.get("system_prompt", "")
-        if system_prompt:
-            # 使用模板处理器渲染动态节点引用
-            system_prompt = template_processor.render_template(system_prompt, global_outputs)
-            messages.append({"role": "system", "content": system_prompt})
-
-        user_prompt = node.get("user_prompt", "")
-        if user_prompt:
-            user_prompt = template_processor.render_template(user_prompt, global_outputs)
-            messages.append({"role": "user", "content": user_prompt})
-
-        return messages
 
     async def _execute_single_tool(self, tool_name: str, tool_args: Dict[str, Any], mcp_servers: List[str]) -> Dict[
         str, Any]:
@@ -639,39 +610,6 @@ class GraphExecutor:
         except Exception as e:
             logger.error(f"查找工具服务器时出错: {str(e)}")
             return None
-
-    async def _record_user_input(self, conversation_id: str, input_text: str):
-        """记录用户输入为round格式"""
-        conversation = await self.conversation_manager.get_conversation(conversation_id)
-
-        conversation["_current_round"] += 1
-        current_round = conversation["_current_round"]
-
-        conversation["input"] = input_text
-
-        start_round = {
-            "round": current_round,
-            "node_name": "start",
-            "level": 0,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": input_text
-                }
-            ]
-        }
-        conversation["rounds"].append(start_round)
-
-        await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=start_round,tools_schema=[])
-        await mongodb_service.update_graph_run_global_outputs(conversation_id, "start", input_text)
-
-        if "global_outputs" not in conversation:
-            conversation["global_outputs"] = {}
-
-        if "start" not in conversation["global_outputs"]:
-            conversation["global_outputs"]["start"] = []
-
-        conversation["global_outputs"]["start"].append(input_text)
 
     async def _update_execution_chain(self, conversation: Dict[str, Any]):
         """更新execution_chain - 按level合并相邻节点"""
