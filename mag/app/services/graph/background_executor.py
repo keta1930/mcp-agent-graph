@@ -7,6 +7,7 @@ import copy
 from app.core.graph_run_storage import graph_run_storage
 from app.services.model_service import model_service
 from app.services.graph.graph_helper import GraphHelper
+from app.services.graph.handoffs_manager import HandoffsManager
 
 logger = logging.getLogger(__name__)
 
@@ -166,8 +167,8 @@ class BackgroundExecutor:
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
-                    if self._check_handoffs_in_round(last_round, node):
-                        selected_node_name = self._extract_handoffs_selection(last_round)
+                    if HandoffsManager.check_handoffs_in_round(last_round, node):
+                        selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                         if selected_node_name:
                             logger.info(f"检测到handoffs选择: {selected_node_name}，跳转执行")
                             await self._continue_from_handoffs_background(
@@ -211,7 +212,7 @@ class BackgroundExecutor:
 
             handoffs_tools = []
             if handoffs_enabled:
-                handoffs_tools = self._create_handoffs_tools(node, conversation["graph_config"])
+                handoffs_tools = HandoffsManager.create_handoffs_tools(node, conversation["graph_config"])
 
             mcp_tools = []
             if mcp_servers:
@@ -464,41 +465,6 @@ class BackgroundExecutor:
             logger.error(f"查找工具服务器时出错: {str(e)}")
             return None
 
-    def _create_handoffs_tools(self, node: Dict[str, Any], graph_config: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """为handoffs节点创建工具选择列表"""
-        tools = []
-        for output_node_name in node.get("output_nodes", []):
-            if output_node_name == "end":
-                continue
-
-            target_node = None
-            for n in graph_config["nodes"]:
-                if n["name"] == output_node_name:
-                    target_node = n
-                    break
-
-            if not target_node:
-                continue
-
-            node_description = target_node.get("description", "")
-            tool_description = f"Transfer to {output_node_name}. {node_description}"
-
-            tool = {
-                "type": "function",
-                "function": {
-                    "name": f"transfer_to_{output_node_name}",
-                    "description": tool_description,
-                    "parameters": {
-                        "additionalProperties": False,
-                        "type": "object",
-                        "properties": {},
-                        "required": []
-                    }
-                }
-            }
-            tools.append(tool)
-        return tools
-
     async def _update_execution_chain(self, conversation: Dict[str, Any]):
         """更新execution_chain - 按level合并相邻节点"""
         rounds = conversation.get("rounds", [])
@@ -534,37 +500,6 @@ class BackgroundExecutor:
         from app.services.mongodb_service import mongodb_service
         await mongodb_service.update_graph_run_execution_chain(conversation["conversation_id"], execution_chain)
 
-    def _check_handoffs_in_round(self, round_data: Dict[str, Any], node: Dict[str, Any]) -> bool:
-        """检查round中是否有handoffs选择"""
-        if not round_data or not round_data.get("messages"):
-            return False
-
-        handoffs_limit = node.get("handoffs")
-        if handoffs_limit is None:
-            return False
-
-        for message in round_data["messages"]:
-            if message.get("role") == "assistant" and message.get("tool_calls"):
-                for tool_call in message["tool_calls"]:
-                    tool_name = tool_call.get("function", {}).get("name", "")
-                    if tool_name.startswith("transfer_to_"):
-                        return True
-        return False
-
-    def _extract_handoffs_selection(self, round_data: Dict[str, Any]) -> Optional[str]:
-        """从round中提取handoffs选择"""
-        if not round_data or not round_data.get("messages"):
-            return None
-
-        for message in round_data["messages"]:
-            if message.get("role") == "assistant" and message.get("tool_calls"):
-                for tool_call in message["tool_calls"]:
-                    tool_name = tool_call.get("function", {}).get("name", "")
-                    if tool_name.startswith("transfer_to_"):
-                        selected_node = tool_name[len("transfer_to_"):]
-                        return selected_node
-        return None
-
     async def _continue_from_handoffs_background(self, conversation_id: str, target_node: str, model_service=None):
         """从handoffs选择后台继续执行"""
         try:
@@ -597,8 +532,8 @@ class BackgroundExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
-            if self._check_handoffs_in_round(last_round, current_node_obj):
-                selected_node_name = self._extract_handoffs_selection(last_round)
+            if HandoffsManager.check_handoffs_in_round(last_round, current_node_obj):
+                selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                 if selected_node_name:
                     await self._continue_from_handoffs_background(conversation_id, selected_node_name, model_service)
             else:
@@ -631,8 +566,8 @@ class BackgroundExecutor:
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
-                    if self._check_handoffs_in_round(last_round, restart_node_obj):
-                        selected_node_name = self._extract_handoffs_selection(last_round)
+                    if HandoffsManager.check_handoffs_in_round(last_round, restart_node_obj):
+                        selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                         if selected_node_name:
                             await self._continue_graph_by_level_background(
                                 conversation_id, current_level, selected_node_name, model_service
@@ -650,8 +585,8 @@ class BackgroundExecutor:
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
 
-                    if self._check_handoffs_in_round(last_round, node):
-                        selected_node_name = self._extract_handoffs_selection(last_round)
+                    if HandoffsManager.check_handoffs_in_round(last_round, node):
+                        selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                         if selected_node_name:
                             await self._continue_graph_by_level_background(
                                 conversation_id, current_level, selected_node_name, model_service
