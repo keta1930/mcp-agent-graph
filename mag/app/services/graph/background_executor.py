@@ -6,9 +6,9 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 import copy
 from app.core.graph_run_storage import graph_run_storage
 from app.services.model_service import model_service
+from app.services.graph.graph_helper import GraphHelper
 
 logger = logging.getLogger(__name__)
-
 
 class BackgroundExecutor:
     """后台执行器 - 处理图的后台异步执行"""
@@ -151,13 +151,13 @@ class BackgroundExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            max_level = self._get_max_level(graph_config)
+            max_level = GraphHelper.get_max_level(graph_config)
             current_level = 0
 
             while current_level <= max_level:
                 logger.info(f"后台执行层级 {current_level}")
 
-                nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
+                nodes_to_execute = GraphHelper.get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes_to_execute:
                     # 执行节点
@@ -565,32 +565,13 @@ class BackgroundExecutor:
                         return selected_node
         return None
 
-    def _get_max_level(self, graph_config: Dict[str, Any]) -> int:
-        """获取图中的最大层级"""
-        max_level = 0
-        for node in graph_config.get("nodes", []):
-            level = node.get("level", 0)
-            max_level = max(max_level, level)
-        return max_level
-
-    def _get_nodes_at_level(self, graph_config: Dict[str, Any], level: int) -> List[Dict[str, Any]]:
-        """获取指定层级的所有节点"""
-        return [node for node in graph_config.get("nodes", []) if node.get("level", 0) == level]
-
-    def _find_node_by_name(self, graph_config: Dict[str, Any], node_name: str) -> Optional[Dict[str, Any]]:
-        """通过名称查找节点"""
-        for node in graph_config.get("nodes", []):
-            if node["name"] == node_name:
-                return node
-        return None
-
     async def _continue_from_handoffs_background(self, conversation_id: str, target_node: str, model_service=None):
         """从handoffs选择后台继续执行"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            target_node_obj = self._find_node_by_name(graph_config, target_node)
+            target_node_obj = GraphHelper.find_node_by_name(graph_config, target_node)
             if not target_node_obj:
                 raise Exception(f"找不到handoffs目标节点: {target_node}")
 
@@ -607,7 +588,7 @@ class BackgroundExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            current_node_obj = self._find_node_by_name(graph_config, current_node)
+            current_node_obj = GraphHelper.find_node_by_name(graph_config, current_node)
             if not current_node_obj:
                 raise Exception(f"找不到当前节点: {current_node}")
 
@@ -622,7 +603,7 @@ class BackgroundExecutor:
                     await self._continue_from_handoffs_background(conversation_id, selected_node_name, model_service)
             else:
                 current_level = current_node_obj.get("level", 0) + 1
-                max_level = self._get_max_level(graph_config)
+                max_level = GraphHelper.get_max_level(graph_config)
 
                 if current_level <= max_level:
                     await self._continue_graph_by_level_background(conversation_id, current_level, None, model_service)
@@ -638,11 +619,11 @@ class BackgroundExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            max_level = self._get_max_level(graph_config)
+            max_level = GraphHelper.get_max_level(graph_config)
             current_level = start_level
 
             if restart_node:
-                restart_node_obj = self._find_node_by_name(graph_config, restart_node)
+                restart_node_obj = GraphHelper.find_node_by_name(graph_config, restart_node)
                 if restart_node_obj:
                     current_level = restart_node_obj.get("level", 0)
                     await self._execute_node_background(restart_node_obj, conversation_id, model_service)
@@ -661,7 +642,7 @@ class BackgroundExecutor:
                     current_level += 1
 
             while current_level <= max_level:
-                nodes = self._get_nodes_at_level(graph_config, current_level)
+                nodes = GraphHelper.get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes:
                     await self._execute_node_background(node, conversation_id, model_service)

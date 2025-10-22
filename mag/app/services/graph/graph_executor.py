@@ -9,8 +9,9 @@ from app.utils.sse_helper import SSEHelper
 from app.utils.output_tools import GraphPromptTemplate
 from app.services.mongodb_service import mongodb_service
 from app.services.model_service import model_service
-logger = logging.getLogger(__name__)
+from app.utils.graph_helper import GraphHelper
 
+logger = logging.getLogger(__name__)
 
 class GraphExecutor:
     """图执行服务 - 处理图和节点的实际执行流程"""
@@ -128,13 +129,13 @@ class GraphExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            max_level = self._get_max_level(graph_config)
+            max_level = GraphHelper.get_max_level(graph_config)
             current_level = 0
 
             while current_level <= max_level:
                 logger.info(f"开始执行层级 {current_level}")
 
-                nodes_to_execute = self._get_nodes_at_level(graph_config, current_level)
+                nodes_to_execute = GraphHelper.get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes_to_execute:
                     async for sse_data in self._execute_node_stream(node, conversation_id, model_service):
@@ -146,7 +147,7 @@ class GraphExecutor:
                     if self._check_handoffs_in_round(last_round, node):
                         selected_node_name = self._extract_handoffs_selection(last_round)
                         if selected_node_name:
-                            selected_node = self._find_node_by_name(graph_config, selected_node_name)
+                            selected_node = GraphHelper.find_node_by_name(graph_config, selected_node_name)
                             if selected_node:
                                 logger.info(f"检测到handoffs选择: {selected_node_name}，跳转执行")
                                 async for sse_data in self._continue_from_handoffs_selection_stream(
@@ -173,11 +174,11 @@ class GraphExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            max_level = self._get_max_level(graph_config)
+            max_level = GraphHelper.get_max_level(graph_config)
             current_level = start_level
 
             if restart_node:
-                restart_node_obj = self._find_node_by_name(graph_config, restart_node)
+                restart_node_obj = GraphHelper.find_node_by_name(graph_config, restart_node)
                 if restart_node_obj:
                     current_level = restart_node_obj.get("level", 0)
                     async for sse_data in self._execute_node_stream(restart_node_obj, conversation_id,
@@ -202,7 +203,7 @@ class GraphExecutor:
                     current_level += 1
 
             while current_level <= max_level:
-                nodes = self._get_nodes_at_level(graph_config, current_level)
+                nodes = GraphHelper.get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes:
                     async for sse_data in self._execute_node_stream(node, conversation_id, model_service):
@@ -238,7 +239,7 @@ class GraphExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            target_node_obj = self._find_node_by_name(graph_config, target_node)
+            target_node_obj = GraphHelper.find_node_by_name(graph_config, target_node)
             if not target_node_obj:
                 yield SSEHelper.send_error(f"找不到handoffs目标节点: {target_node}")
                 return
@@ -267,7 +268,7 @@ class GraphExecutor:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             graph_config = conversation["graph_config"]
 
-            current_node_obj = self._find_node_by_name(graph_config, current_node)
+            current_node_obj = GraphHelper.find_node_by_name(graph_config, current_node)
             if not current_node_obj:
                 yield SSEHelper.send_error(f"找不到当前节点: {current_node}")
                 return
@@ -295,8 +296,8 @@ class GraphExecutor:
                     logger.warning("handoffs节点完成但未找到选择的目标节点")
             else:
                 current_level = current_node_obj.get("level", 0) + 1
-                max_level = self._get_max_level(graph_config)
-
+                max_level = GraphHelper.get_max_level(graph_config)
+                
                 if current_level <= max_level:
                     logger.info(f"handoffs节点完成，继续执行后续层级: {current_level}")
                     async for sse_data in self._continue_graph_by_level_sequential_stream(
@@ -778,24 +779,4 @@ class GraphExecutor:
                         selected_node = tool_name[len("transfer_to_"):]
                         return selected_node
 
-        return None
-
-    def _get_max_level(self, graph_config: Dict[str, Any]) -> int:
-        """获取图中的最大层级"""
-        max_level = 0
-        for node in graph_config.get("nodes", []):
-            level = node.get("level", 0)
-            max_level = max(max_level, level)
-        return max_level
-
-    def _get_nodes_at_level(self, graph_config: Dict[str, Any], level: int) -> List[Dict[str, Any]]:
-        """获取指定层级的所有节点"""
-        return [node for node in graph_config.get("nodes", [])
-                if node.get("level", 0) == level]
-
-    def _find_node_by_name(self, graph_config: Dict[str, Any], node_name: str) -> Optional[Dict[str, Any]]:
-        """通过名称查找节点"""
-        for node in graph_config.get("nodes", []):
-            if node["name"] == node_name:
-                return node
         return None
