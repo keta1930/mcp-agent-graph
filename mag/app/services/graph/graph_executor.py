@@ -14,6 +14,7 @@ from app.services.graph.handoffs_manager import HandoffsManager
 from app.services.graph.message_creator import MessageCreator
 from app.services.graph.execution_chain_manager import ExecutionChainManager
 from app.services.mcp.tool_executor import ToolExecutor
+from app.services.graph.node_executor_core import NodeExecutorCore
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,9 @@ class GraphExecutor:
         self.mcp_service = mcp_service
         self.message_creator = MessageCreator(conversation_manager)
         self.tool_executor = ToolExecutor(mcp_service)
+        self.node_executor_core = NodeExecutorCore(
+        conversation_manager, self.tool_executor, self.message_creator
+    )
 
     async def execute_graph_stream(self,
                                    graph_name: str,
@@ -318,245 +322,27 @@ class GraphExecutor:
             logger.error(f"继续等待handoffs流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"继续等待handoffs时出错: {str(e)}")
 
-    async def _execute_node_stream(self,
-                                   node: Dict[str, Any],
-                                   conversation_id: str,
-                                   model_service) -> AsyncGenerator[str, None]:
-        """执行单个节点"""
-        try:
-            conversation = await self.conversation_manager.get_conversation(conversation_id)
-            if not conversation:
-                yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
-                return
-
-            node_name = node["name"]
-            node_level = node.get("level", 0)
-
-            yield SSEHelper.send_node_start(node_name, node_level)
-
-            conversation["_current_round"] += 1
-            current_round = conversation["_current_round"]
-
-            model_name = node["model_name"]
-            mcp_servers = node.get("mcp_servers", [])
-            output_enabled = node.get("output_enabled", True)
-
-            node_copy = copy.deepcopy(node)
-            node_copy["_conversation_id"] = conversation_id
-
-            conversation_messages = await self.message_creator.create_agent_messages(node_copy)
-
-            handoffs_limit = node.get("handoffs")
-            handoffs_status = await self.conversation_manager.get_handoffs_status(conversation_id, node_name)
-            current_handoffs_count = handoffs_status.get("used_count", 0)
-
-            handoffs_enabled = handoffs_limit is not None and current_handoffs_count < handoffs_limit
-
-            handoffs_tools = []
-            if handoffs_enabled:
-                handoffs_tools = HandoffsManager.create_handoffs_tools(node, conversation["graph_config"])
-
-            mcp_tools = []
-            if mcp_servers:
-                mcp_tools = await self.mcp_service.prepare_chat_tools(mcp_servers)
-
-            all_tools = handoffs_tools + mcp_tools
-
-            round_messages = conversation_messages.copy()
-            assistant_final_output = ""
-            tool_results_content = []
-            selected_handoff = None
-
-            current_messages = conversation_messages.copy()
-            max_iterations = 10
-            node_token_usage = {
-                "total_tokens": 0,
-                "prompt_tokens": 0,
-                "completion_tokens": 0
-            }
-
-            for iteration in range(max_iterations):
-                logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
-
-                # 过滤reasoning_content字段
-                messages = model_service.filter_reasoning_content(current_messages)
-
-                # 使用model_service进行SSE流式调用
-                accumulated_result = None
-                async for item in model_service.stream_chat_with_tools(
-                    model_name=model_name,
-                    messages=messages,
-                    tools=all_tools if all_tools else None,
-                    yield_chunks=True  # 图执行需要实时yield SSE chunks
-                ):
-                    if isinstance(item, str):
-                        # SSE chunk，通过SSEHelper包装后转发
-                        # 从 "data: {...}\n\n" 中提取JSON
-                        if item.startswith("data: ") and item.endswith("\n\n"):
-                            chunk_json = item[6:-2]  # 去掉 "data: " 和 "\n\n"
-                            try:
-                                chunk_dict = json.loads(chunk_json)
-                                yield SSEHelper.send_openai_chunk(chunk_dict)
-                            except:
-                                pass  # 忽略解析错误
-                    else:
-                        # 累积结果
-                        accumulated_result = item
-
-                if not accumulated_result:
-                    yield SSEHelper.send_error("未收到模型响应")
-                    return
-
-                # 获取累积的结果
-                accumulated_content = accumulated_result["accumulated_content"]
-                accumulated_reasoning = accumulated_result.get("accumulated_reasoning", "")
-                current_tool_calls = accumulated_result.get("tool_calls", [])
-                iteration_usage = accumulated_result.get("api_usage")
-
-                if iteration_usage:
-                    node_token_usage["total_tokens"] += iteration_usage["total_tokens"]
-                    node_token_usage["prompt_tokens"] += iteration_usage["prompt_tokens"]
-                    node_token_usage["completion_tokens"] += iteration_usage["completion_tokens"]
-
-                assistant_msg = {
-                    "role": "assistant",
-                }
-
-                if accumulated_reasoning:
-                    assistant_msg["reasoning_content"] = accumulated_reasoning
-
-                assistant_msg["content"] = accumulated_content or ""
-
-                if current_tool_calls:
-                    assistant_msg["tool_calls"] = current_tool_calls
-
-                round_messages.append(assistant_msg)
-                current_messages.append(assistant_msg)
-
-                if not current_tool_calls:
-                    assistant_final_output = accumulated_content
-                    break
-
-                has_handoffs = False
-
-                for tool_call in current_tool_calls:
-                    tool_name = tool_call["function"]["name"]
-
-                    if tool_name.startswith("transfer_to_"):
-                        selected_node = tool_name[len("transfer_to_"):]
-                        if selected_node in node.get("output_nodes", []):
-                            selected_handoff = selected_node
-                            has_handoffs = True
-
-                            if handoffs_limit is not None:
-                                await self.conversation_manager.update_handoffs_status(
-                                    conversation_id, node_name, handoffs_limit, current_handoffs_count + 1,
-                                    selected_handoff
-                                )
-
-                            tool_content = f"已选择节点: {selected_node}"
-
-                            yield SSEHelper.send_tool_message(tool_call["id"], tool_content)
-
-                            tool_result_msg = {
-                                "role": "tool",
-                                "tool_call_id": tool_call["id"],
-                                "content": tool_content
-                            }
-                            round_messages.append(tool_result_msg)
-                            current_messages.append(tool_result_msg)
-                    else:
-                        try:
-                            tool_args = json.loads(tool_call["function"]["arguments"]) if tool_call["function"][
-                                "arguments"] else {}
-                        except json.JSONDecodeError:
-                            tool_args = {}
-
-                        tool_result = await self.tool_executor.execute_tool_for_graph(tool_name, tool_args, mcp_servers)
-                        tool_content = tool_result.get("content", "")
-
-                        yield SSEHelper.send_tool_message(tool_call["id"], tool_content)
-
-                        if tool_content and not tool_name.startswith("transfer_to_"):
-                            tool_results_content.append(tool_content)
-
-                        tool_result_msg = {
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "content": tool_content
-                        }
-                        round_messages.append(tool_result_msg)
-                        current_messages.append(tool_result_msg)
-
-                if has_handoffs:
-                    assistant_final_output = accumulated_content
-                    break
-
-            if output_enabled:
-                final_output = assistant_final_output
+    async def _execute_node_stream(self, node: Dict[str, Any], conversation_id: str, model_service) -> AsyncGenerator[str, None]:
+        """执行单个节点（流式模式）"""
+        node_name = node["name"]
+        node_level = node.get("level", 0)
+        
+        # 发送节点开始事件
+        yield SSEHelper.send_node_start(node_name, node_level)
+        
+        # 执行节点并转发所有SSE消息
+        result = None
+        async for item in self.node_executor_core.execute_node(
+            node=node,
+            conversation_id=conversation_id,
+            yield_sse=True  # 流式模式
+        ):
+            if isinstance(item, str):
+                # SSE消息，直接转发
+                yield item
             else:
-                final_output = "\n".join(tool_results_content) if tool_results_content else ""
-
-            round_data = {
-                "round": current_round,
-                "node_name": node_name,
-                "level": node_level,
-                "output_enabled": output_enabled,
-                "messages": round_messages,
-                "model": model_name
-            }
-
-            if mcp_servers:
-                round_data["mcp_servers"] = mcp_servers
-
-            conversation["rounds"].append(round_data)
-
-            await mongodb_service.add_round_to_graph_run(conversation_id=conversation_id,round_data=round_data,tools_schema=all_tools)
-
-            if node_token_usage["total_tokens"] > 0:
-                await mongodb_service.update_conversation_token_usage(
-                    conversation_id=conversation_id,
-                    prompt_tokens=node_token_usage["prompt_tokens"],
-                    completion_tokens=node_token_usage["completion_tokens"]
-                )
-                logger.info(f"节点 '{node_name}' token使用量: {node_token_usage}")
-
-            if output_enabled:
-                # 对于output_enabled=True的节点，保存assistant的最终输出
-                if final_output:
-                    await self.conversation_manager._add_global_output(
-                        conversation_id,
-                        node_name,
-                        final_output
-                    )
-            else:
-                # 对于output_enabled=False的节点，保存工具调用结果
-                if tool_results_content:
-                    tool_output = "\n".join(tool_results_content)
-                    await self.conversation_manager._add_global_output(
-                        conversation_id,
-                        node_name,
-                        tool_output
-                    )
-
-            save_ext = node.get("save")
-            if save_ext and final_output.strip():
-                # 从 conversation 获取 graph_name
-                graph_name = conversation.get("graph_name", "unknown")
-                # 使用 MinIO 存储节点输出
-                graph_run_storage.save_node_output(
-                    graph_name=graph_name,
-                    graph_run_id=conversation_id,
-                    node_name=node_name,
-                    content=final_output,
-                    file_ext=save_ext
-                )
-
-            await ExecutionChainManager.update_execution_chain(conversation)
-            await self.conversation_manager.update_conversation_file(conversation_id)
-
-            yield SSEHelper.send_node_end(node_name)
-
-        except Exception as e:
-            logger.error(f"执行节点 '{node['name']}' 流式处理时出错: {str(e)}")
-            yield SSEHelper.send_error(f"执行节点时出错: {str(e)}")
+                # 最后一条是结果字典
+                result = item
+        
+        # 发送节点结束事件
+        yield SSEHelper.send_node_end(node_name)
