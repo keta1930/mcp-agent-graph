@@ -1,0 +1,1195 @@
+/* MessageDisplay 组件样式 */
+
+/* 消息显示区域 */
+.message-display {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.message-display::-webkit-scrollbar {
+  width: 8px;
+}
+
+.message-display::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.message-display::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+.messages-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.message-item {
+  margin-bottom: 24px;
+  display: block;
+}
+
+/* 用户消息底色 */
+.message-item.user-message .message-content {
+  max-height: 30rem;
+  overflow: auto;
+  overflow-x: unset;
+  background-color: hsl(48deg 25% 92.16%);
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(189, 195, 199, 0.3);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* 用户消息容器悬停效果 */
+.message-item.user-message .message-content:hover {
+  border-color: rgba(189, 195, 199, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 用户消息滚动条样式 */
+.message-item.user-message .message-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-track {
+  background: rgba(189, 195, 199, 0.1);
+  border-radius: 6px;
+  margin: 4px;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.4) 0%, rgba(189, 195, 199, 0.6) 100%);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: all 0.3s ease;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.6) 0%, rgba(189, 195, 199, 0.8) 100%);
+  border: 1px solid transparent;
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgba(189, 195, 199, 0.7) 0%, rgba(189, 195, 199, 0.9) 100%);
+}
+
+.message-item.user-message .message-content::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.message-body {
+  width: 100%;
+}
+
+.message-text {
+  background: transparent;
+  color: var(--text-primary);
+  padding: 0;
+  border-radius: 12px;
+  line-height: 1.6;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+}
+
+.message-content-body {
+  flex: 1;
+  line-height: 1.6;
+}
+
+/* Markdown标题样式重写 - 统一字体大小并加粗 */
+.message-text h1,
+.message-text h2,
+.message-text h3,
+.message-text h4,
+.message-text h5,
+.message-text h6,
+.message-content-body h1,
+.message-content-body h2,
+.message-content-body h3,
+.message-content-body h4,
+.message-content-body h5,
+.message-content-body h6 {
+  font-weight: bold !important;
+  font-size: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: inherit !important;
+  display: inline !important;
+}
+
+/* Graph模式节点显示 */
+.node-round {
+  margin-bottom: 32px;
+  border-left: 3px solid var(--glass-border);
+  padding-left: 16px;
+}
+
+.node-round:last-child {
+  margin-bottom: 16px;
+}
+
+/* 工具调用样式 */
+.tool-call-container {
+  margin: 12px 0;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+  transition: all 0.2s ease;
+}
+
+.tool-call-container:hover {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+/* 确保glass-card类不会覆盖边框 */
+.tool-call-container.glass-card {
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+}
+
+.tool-call-container.glass-card:hover {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+.tool-call-header {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tool-call-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-icon {
+  color: #1890ff;
+}
+
+.tool-call-details {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--glass-border);
+  max-height: 400px;
+  overflow: auto;
+}
+
+.tool-call-section {
+  margin-bottom: 12px;
+}
+
+.tool-call-section:last-child {
+  margin-bottom: 0;
+}
+
+.tool-call-arguments,
+.tool-call-result {
+  margin-top: 8px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* 推理过程样式 */
+.reasoning-container {
+  margin: 12px 0;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+  transition: all 0.2s ease;
+}
+
+.reasoning-container:hover {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+/* 确保glass-card类不会覆盖边框 */
+.reasoning-container.glass-card {
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+}
+
+.reasoning-container.glass-card:hover {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+.reasoning-header {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reasoning-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reasoning-icon {
+  color: #722ed1;
+}
+
+.reasoning-content {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--glass-border);
+  max-height: 400px;
+  overflow: auto;
+}
+
+/* 节点执行信息 */
+.node-execution-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.node-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breathing-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: breathing 2s ease-in-out infinite;
+}
+
+.breathing-indicator.running {
+  background-color: #1890ff;
+  animation: runningBreathing 2s ease-in-out infinite;
+}
+
+.breathing-indicator.completed {
+  background-color: #52c41a;
+  animation: completedBreathing 2s ease-in-out infinite;
+}
+
+.breathing-indicator.pending {
+  background-color: #faad14;
+  animation: breathing 2s ease-in-out infinite;
+}
+
+@keyframes breathing {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@keyframes runningBreathing {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.3);
+    box-shadow: 0 0 0 8px rgba(24, 144, 255, 0);
+  }
+}
+
+@keyframes completedBreathing {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.3);
+    box-shadow: 0 0 0 8px rgba(82, 196, 26, 0);
+  }
+}
+
+.status-icon {
+  font-size: 14px;
+}
+
+.status-icon.running {
+  color: #1890ff;
+  animation: spin 1s linear infinite;
+}
+
+.status-icon.completed {
+  color: #52c41a;
+}
+
+.status-icon.pending {
+  color: #faad14;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.node-details {
+  color: var(--text-primary);
+}
+
+.node-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 执行总结 */
+.execution-summary {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.summary-header {
+  margin-bottom: 16px;
+}
+
+.execution-chain {
+  margin-bottom: 16px;
+}
+
+.chain-visualization {
+  margin-top: 8px;
+}
+
+.chain-level {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.final-result {
+  margin-top: 16px;
+}
+
+/* 消息呼吸灯效果 - 位于消息块上方左对齐 */
+.message-breathing-indicator {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  margin-left: 0;
+  height: auto;
+}
+
+.breathing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+  animation: messageBreathing 2s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+.breathing-dot.user-indicator {
+  background-color: #52c41a; /* 用户消息：绿色 */
+}
+
+.breathing-dot.assistant-indicator {
+  background-color: #fa8c16; /* 助手消息：橙色 */
+}
+
+.breathing-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+@keyframes messageBreathing {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+}
+
+/* 流式块样式 - 现代 OpenAI 风格 */
+.enhanced-streaming-message {
+  margin: 0;
+  animation: streamingFadeIn 0.3s ease-out;
+}
+
+.streaming-block {
+  margin: 16px 0;
+  animation: blockSlideIn 0.2s ease-out;
+  transform-origin: left top;
+}
+
+.streaming-block:first-child {
+  margin-top: 0;
+}
+
+.streaming-block:last-child {
+  margin-bottom: 0;
+}
+
+/* 节点块特殊样式 */
+.streaming-block.node_start-block {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 20px 0;
+  position: relative;
+  overflow: visible;
+}
+
+.streaming-block.node_start-block::before {
+  display: none;
+}
+
+.streaming-block.node_start-block .node-execution-info {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 流式块内容样式 */
+.streaming-content-block {
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.tool-calls-block,
+.tool-result-block {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  box-shadow: none;
+  padding: 12px;
+}
+
+.reasoning-block .reasoning-container,
+.tool_calls-block .tool-call-container {
+  margin: 0;
+}
+
+/* 打字机效果增强 */
+.streaming-content-block .message-content-body {
+  position: relative;
+}
+
+.streaming-content-block .message-content-body::after {
+  content: '▋';
+  animation: typingCursor 1s infinite;
+  color: #1890ff;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+.streaming-content-block .message-content-body.completed::after {
+  display: none;
+}
+
+/* 流入动画 */
+@keyframes streamingFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blockSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes typingCursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* 玻璃拟态代码块样式 - 更新为折叠模式 */
+.glass-code-block {
+  position: relative;
+  margin: 12px 0;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.glass-code-block:hover {
+  border-color: rgba(24, 144, 255, 0.5);
+}
+
+.glass-code-block .code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.glass-code-block .code-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.glass-code-block .code-language {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+}
+
+.glass-code-block .code-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.glass-code-block .copy-button {
+  color: var(--text-tertiary);
+  border: none;
+  background: transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.glass-code-block .copy-button:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.glass-code-block .copy-button:active {
+  transform: scale(0.95);
+}
+
+.glass-code-block .code-content {
+  border-top: 1px solid var(--glass-border);
+  max-height: 400px;
+  overflow: auto;
+}
+
+.glass-code-block .code-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.glass-code-block .code-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-code-block .code-content::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+
+.glass-code-block .react-syntax-highlighter {
+  background: transparent !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.glass-code-block pre {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 12px 16px !important;
+  border-radius: 0 !important;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, monospace !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.glass-code-block code {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  font-family: inherit !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+}
+
+.glass-code-block .react-syntax-highlighter code {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+}
+
+/* 代码块样式 */
+.glass-code-block {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.glass-code-block .code-header {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* 玻璃拟态表格样式 */
+.message-text table,
+.message-content-body table,
+.reasoning-content table,
+.streaming-content-block table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 16px 0;
+  background: transparent;
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  table-layout: fixed;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* 表格容器包装，处理水平滚动 */
+.message-text,
+.message-content-body,
+.reasoning-content,
+.streaming-content-block {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* 多列表格的特殊处理 */
+.message-text table:has(th:nth-child(6)),
+.message-content-body table:has(th:nth-child(6)),
+.reasoning-content table:has(th:nth-child(6)),
+.streaming-content-block table:has(th:nth-child(6)) {
+  min-width: 600px;
+  font-size: 12px;
+}
+
+.message-text table:has(th:nth-child(8)),
+.message-content-body table:has(th:nth-child(8)),
+.reasoning-content table:has(th:nth-child(8)),
+.streaming-content-block table:has(th:nth-child(8)) {
+  min-width: 800px;
+  font-size: 11px;
+}
+
+.message-text table:hover,
+.message-content-body table:hover,
+.reasoning-content table:hover,
+.streaming-content-block table:hover {
+  border-color: rgba(24, 144, 255, 0.5);
+}
+
+.message-text thead,
+.message-content-body thead,
+.reasoning-content thead,
+.streaming-content-block thead {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+}
+
+.message-text th,
+.message-content-body th,
+.reasoning-content th,
+.streaming-content-block th {
+  padding: 14px 18px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--glass-border);
+  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(24, 144, 255, 0.08) 100%);
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.5px;
+  position: relative;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+  max-width: 80px;
+}
+
+.message-text th:first-child,
+.message-content-body th:first-child,
+.reasoning-content th:first-child,
+.streaming-content-block th:first-child {
+  border-top-left-radius: 7px;
+}
+
+.message-text th:last-child,
+.message-content-body th:last-child,
+.reasoning-content th:last-child,
+.streaming-content-block th:last-child {
+  border-top-right-radius: 7px;
+}
+
+.message-text td,
+.message-content-body td,
+.reasoning-content td,
+.streaming-content-block td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+  min-width: 80px;
+}
+
+.message-text tbody tr:last-child td,
+.message-content-body tbody tr:last-child td,
+.reasoning-content tbody tr:last-child td,
+.streaming-content-block tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.message-text tbody tr:last-child td:first-child,
+.message-content-body tbody tr:last-child td:first-child,
+.reasoning-content tbody tr:last-child td:first-child,
+.streaming-content-block tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 7px;
+}
+
+.message-text tbody tr:last-child td:last-child,
+.message-content-body tbody tr:last-child td:last-child,
+.reasoning-content tbody tr:last-child td:last-child,
+.streaming-content-block tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 7px;
+}
+
+.message-text tbody tr:hover,
+.message-content-body tbody tr:hover,
+.reasoning-content tbody tr:hover,
+.streaming-content-block tbody tr:hover {
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.message-text tbody tr:hover td,
+.message-content-body tbody tr:hover td,
+.reasoning-content tbody tr:hover td,
+.streaming-content-block tbody tr:hover td {
+  background: rgba(24, 144, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* 折叠窗口滚动条样式 */
+.tool-call-details::-webkit-scrollbar,
+.reasoning-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tool-call-details::-webkit-scrollbar-track,
+.reasoning-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tool-call-details::-webkit-scrollbar-thumb,
+.reasoning-content::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+
+/* 确保代码块在折叠内容中的长行处理 */
+.tool-call-details pre,
+.reasoning-content pre {
+  margin: 8px 0 0 0 !important;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: pre;
+  word-wrap: normal;
+  word-break: normal;
+  box-sizing: border-box;
+}
+
+/* SyntaxHighlighter容器约束 */
+.tool-call-details .react-syntax-highlighter,
+.reasoning-content .react-syntax-highlighter {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* SyntaxHighlighter代码容器 */
+.tool-call-details .react-syntax-highlighter > code,
+.reasoning-content .react-syntax-highlighter > code {
+  max-width: 100% !important;
+  width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+.tool-call-details pre::-webkit-scrollbar,
+.reasoning-content pre::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tool-call-details pre::-webkit-scrollbar-track,
+.reasoning-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tool-call-details pre::-webkit-scrollbar-thumb,
+.reasoning-content pre::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 2px;
+}
+
+/* JSON内容包装器样式 */
+.json-content-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+}
+
+.json-content-wrapper .react-syntax-highlighter {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.json-content-wrapper pre {
+  width: 100% !important;
+  max-width: 100% !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.json-content-wrapper code {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Agent XML渲染器样式 */
+.agent-xml-renderer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.xml-tag-container {
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+  transition: all 0.2s ease;
+}
+
+.xml-tag-container:hover {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+/* 确保glass-card类不会覆盖边框 */
+.xml-tag-container.glass-card {
+  border: 1px solid rgba(24, 144, 255, 0.3) !important;
+}
+
+.xml-tag-container.glass-card:hover {
+  border-color: rgba(24, 144, 255, 0.5) !important;
+}
+
+.xml-tag-header {
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.xml-tag-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-icon {
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.xml-tag-content {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--glass-border);
+  max-height: 400px;
+  overflow: auto;
+  background: transparent;
+}
+
+.xml-tag-content .ant-typography {
+  margin-bottom: 0;
+}
+
+/* XML标签特定样式 */
+.xml-tag-container[data-tag="delete_script_file"] .tag-icon,
+.xml-tag-container[data-tag="delete_node"] .tag-icon {
+  color: #ff4d4f;
+}
+
+.xml-tag-container[data-tag="analysis"] .tag-icon {
+  color: #722ed1;
+}
+
+.xml-tag-container[data-tag="todo"] .tag-icon {
+  color: #fa8c16;
+}
+
+.xml-tag-container[data-tag="script_file"] .tag-icon,
+.xml-tag-container[data-tag="node"] .tag-icon {
+  color: #1890ff;
+}
+
+/* XML标签内容滚动条样式 */
+.xml-tag-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.xml-tag-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xml-tag-content::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+
+/* XML标签内容中的代码块 */
+.xml-tag-content pre {
+  margin: 8px 0 0 0 !important;
+  max-width: 100%;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: pre;
+  word-wrap: normal;
+  word-break: normal;
+  box-sizing: border-box;
+}
+
+/* XML标签内容的SyntaxHighlighter容器 */
+.xml-tag-content .react-syntax-highlighter {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* XML标签内容的SyntaxHighlighter代码容器 */
+.xml-tag-content .react-syntax-highlighter > code {
+  max-width: 100% !important;
+  width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
+}
+
+.xml-tag-content pre::-webkit-scrollbar {
+  height: 4px;
+}
+
+.xml-tag-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xml-tag-content pre::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 2px;
+}
+
+/* 特别处理Markdown渲染的内容 */
+.xml-tag-content .ant-typography-paragraph {
+  margin-bottom: 0 !important;
+}
+
+/* XML标签表格样式 */
+.xml-tag-content table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 16px 0;
+  background: transparent;
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  table-layout: fixed;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.xml-tag-content {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.xml-tag-content table:has(th:nth-child(6)) {
+  min-width: 600px;
+  font-size: 12px;
+}
+
+.xml-tag-content table:has(th:nth-child(8)) {
+  min-width: 800px;
+  font-size: 11px;
+}
+
+.xml-tag-content table:hover {
+  border-color: rgba(24, 144, 255, 0.5);
+}
+
+.xml-tag-content thead {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+}
+
+.xml-tag-content th {
+  padding: 14px 18px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--glass-border);
+  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(24, 144, 255, 0.08) 100%);
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: 0.5px;
+  position: relative;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+  max-width: 80px;
+}
+
+.xml-tag-content th:first-child {
+  border-top-left-radius: 7px;
+}
+
+.xml-tag-content th:last-child {
+  border-top-right-radius: 7px;
+}
+
+.xml-tag-content td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s ease;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 0;
+  min-width: 80px;
+}
+
+.xml-tag-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.xml-tag-content tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 7px;
+}
+
+.xml-tag-content tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 7px;
+}
+
+.xml-tag-content tbody tr:hover {
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.xml-tag-content tbody tr:hover td {
+  background: rgba(24, 144, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .message-display {
+    padding: 16px;
+  }
+}

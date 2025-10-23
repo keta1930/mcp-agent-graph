@@ -1,6 +1,7 @@
 // src/components/chat/MessageDisplay.tsx
 import React, { useState, useEffect } from 'react';
 import { Typography, Tag, Button, Space, Tooltip, message } from 'antd';
+import './MessageDisplay.css';
 import {
   UserOutlined,
   RobotOutlined,

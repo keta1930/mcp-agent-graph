@@ -1,16 +1,17 @@
 // src/components/chat/ConversationSidebar.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Input, 
-  Dropdown, 
-  Button, 
-  Modal, 
-  Tag, 
+import {
+  Input,
+  Dropdown,
+  Button,
+  Modal,
+  Tag,
   Tooltip,
   Empty,
   Spin,
   Checkbox
 } from 'antd';
+import './ConversationSidebar.css';
 import {
   SearchOutlined,
   MoreOutlined,

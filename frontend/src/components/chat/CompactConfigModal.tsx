@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Form, Typography, Divider } from 'antd';
 import { useModelStore } from '../../store/modelStore';
+import './CompactConfigModal.css';
 
 const { Option } = Select;
 const { Text } = Typography;

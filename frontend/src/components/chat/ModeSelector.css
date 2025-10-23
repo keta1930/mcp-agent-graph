@@ -1,0 +1,139 @@
+/* ModeSelector 组件样式 */
+
+/* 模式选择器容器 */
+.mode-selector-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+
+.mode-selector-content {
+  max-width: 800px;
+  width: 100%;
+}
+
+/* 简洁的模式选择器 */
+.mode-selector-simple {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.mode-selector-label {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-weight: 500;
+  font-family: var(--modern-font);
+}
+
+.mode-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+
+.mode-button {
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-family: var(--modern-font);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.mode-button:hover {
+  color: var(--text-primary);
+}
+
+.mode-button.active {
+  color: #2980b9;
+  border-bottom-color: #2980b9;
+}
+
+.mode-button-icon {
+  font-size: 16px;
+}
+
+.mode-config-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.mode-config-header h4 {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.config-section {
+  margin-bottom: 16px;
+}
+
+.agent-type-selector {
+  margin-top: 8px;
+}
+
+.input-container {
+  margin-top: 8px;
+}
+
+.mode-input {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.mode-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.start-button-container {
+  text-align: center;
+}
+
+.start-button {
+  min-width: 120px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .mode-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mode-button {
+    padding: 10px 16px;
+    font-size: 14px;
+    width: auto;
+    min-width: 120px;
+    justify-content: center;
+  }
+
+  .mode-selector-label {
+    font-size: 15px;
+  }
+}

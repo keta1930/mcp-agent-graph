@@ -1,6 +1,7 @@
 // src/components/chat/ModeSelector.tsx
 import React, { useRef, useEffect } from 'react';
 import { Card, Select, Button, Space, Typography, Row, Col, Switch, Tooltip } from 'antd';
+import './ModeSelector.css';
 import {
   MessageOutlined,
   RobotOutlined,

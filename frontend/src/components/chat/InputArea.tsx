@@ -1,6 +1,7 @@
 // src/components/chat/InputArea.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, Select, Switch, Tooltip, Typography } from 'antd';
+import './InputArea.css';
 import {
   ArrowUpOutlined,
   ToolOutlined,

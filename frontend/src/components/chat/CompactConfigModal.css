@@ -1,0 +1,63 @@
+/* CompactConfigModal 组件样式 */
+
+/* 压缩配置内容 */
+.compact-config-content {
+  padding: 8px 0;
+}
+
+.compact-type-info {
+  margin-bottom: 16px;
+}
+
+.compact-type-info .ant-typography {
+  margin-bottom: 8px;
+}
+
+.compact-warning {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Modal样式覆盖 */
+.ant-modal-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ant-modal-footer {
+  border-top: 1px solid var(--border-color);
+}
+
+/* Form样式 */
+.compact-config-content .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.compact-config-content .ant-form-item-label {
+  padding-bottom: 4px;
+}
+
+.compact-config-content .ant-form-item-label > label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.compact-config-content .ant-select,
+.compact-config-content .ant-input-number {
+  width: 100%;
+}
+
+.compact-config-content .ant-form-item-explain-error {
+  font-size: 12px;
+}
+
+/* 帮助文本 */
+.compact-config-content .ant-form-item-extra {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
