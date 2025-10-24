@@ -4,19 +4,19 @@ import { Button, Tooltip } from 'antd';
 import './InputArea.css';
 import {
   ArrowUpOutlined,
-  CheckOutlined,
-  SwapOutlined,
-  NodeIndexOutlined
+  CheckOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import { useModelStore } from '../../store/modelStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
-import { ConversationMode, AgentType } from '../../types/conversation';
+import { ConversationMode } from '../../types/conversation';
 import MCPToolSelector from './MCPToolSelector';
 import PromptSelector from './PromptSelector';
 import ModelSelector from './ModelSelector';
 import GraphSelector from './GraphSelector';
+import AgentTypeToggle from './AgentTypeToggle';
+import SystemPromptToggle from './SystemPromptToggle';
 
 interface InputAreaProps {
   onSendMessage: (message: string, options?: any) => void;
@@ -103,9 +103,22 @@ const InputArea: React.FC<InputAreaProps> = ({
     }
   }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph, inheritedConfig]);
 
-  // 处理提示词选择
+  /**
+   * 处理提示词选择
+   * 根据当前模式和系统提示词模式状态，将提示词内容设置到正确的状态中
+   */
   const handlePromptSelect = (content: string) => {
-    setInputValue(content);
+    // Chat 模式下需要根据系统提示词模式决定设置到哪个状态
+    if (mode === 'chat') {
+      if (isSystemPromptMode) {
+        setSystemPrompt(content);
+      } else {
+        setInputValue(content);
+      }
+    } else {
+      // 其他模式直接设置到输入值
+      setInputValue(content);
+    }
   };
 
   const handleSend = () => {
@@ -249,17 +262,11 @@ const InputArea: React.FC<InputAreaProps> = ({
           <div className="input-bottom-left">
             {/* Chat模式的系统提示词切换按钮 */}
             {mode === 'chat' && (
-              <Tooltip title={isSystemPromptMode ? "切换到用户消息" : "切换到系统提示词"}>
-                <Button
-                  type="text"
-                  icon={<SwapOutlined />}
-                  className={`system-prompt-toggle ${isSystemPromptMode ? 'active' : ''}`}
-                  onClick={handleToggleSystemPrompt}
-                  size="small"
-                >
-                  {isSystemPromptMode ? '系统' : '用户'}
-                </Button>
-              </Tooltip>
+              <SystemPromptToggle
+                isSystemPromptMode={isSystemPromptMode}
+                onToggle={handleToggleSystemPrompt}
+                size="small"
+              />
             )}
 
             {/* Chat模式的MCP工具选择器 */}
@@ -283,17 +290,11 @@ const InputArea: React.FC<InputAreaProps> = ({
 
             {/* Agent模式的类型切换按钮 */}
             {mode === 'agent' && (
-              <Tooltip title={agentType === 'mcp' ? "切换到Graph生成" : "切换到MCP工具生成"}>
-                <Button
-                  type="text"
-                  icon={agentType === 'mcp' ? <ToolOutlined /> : <NodeIndexOutlined />}
-                  className={`agent-type-toggle ${agentType === 'graph' ? 'active' : ''}`}
-                  onClick={() => setAgentType(agentType === 'mcp' ? 'graph' : 'mcp')}
-                  size="small"
-                >
-                  {agentType === 'mcp' ? 'MCP' : 'Graph'}
-                </Button>
-              </Tooltip>
+              <AgentTypeToggle
+                agentType={agentType}
+                onToggle={setAgentType}
+                size="small"
+              />
             )}
 
             {/* Agent模式完成创建按钮 */}
