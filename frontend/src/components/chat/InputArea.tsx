@@ -15,9 +15,8 @@ import { useModelStore } from '../../store/modelStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { ConversationMode, AgentType } from '../../types/conversation';
-import { promptService } from '../../services/promptService';
-import { PromptInfo } from '../../types/prompt';
 import MCPToolSelector from './MCPToolSelector';
+import PromptSelector from './PromptSelector';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -46,11 +45,7 @@ const InputArea: React.FC<InputAreaProps> = ({
   const [selectedModel, setSelectedModel] = useState<string>(inheritedConfig.selectedModel || '');
   const [selectedGraph, setSelectedGraph] = useState<string>(inheritedConfig.selectedGraph || '');
   const [mcpServerStates, setMcpServerStates] = useState<Record<string, boolean>>({});
-  const [showPrompts, setShowPrompts] = useState(false);
-  const [availablePrompts, setAvailablePrompts] = useState<PromptInfo[]>([]);
-  const [loadingPrompts, setLoadingPrompts] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const promptDropdownRef = useRef<HTMLDivElement>(null);
 
   const { agentType, setAgentType } = useConversationStore();
   const { models: availableModels } = useModelStore();
@@ -111,54 +106,9 @@ const InputArea: React.FC<InputAreaProps> = ({
     }
   }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph, inheritedConfig]);
 
-  // 点击外部关闭面板
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (promptDropdownRef.current && !promptDropdownRef.current.contains(event.target as Node)) {
-        setShowPrompts(false);
-      }
-    };
-
-    if (showPrompts) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showPrompts]);
-
-  // 获取提示词列表
-  const fetchPrompts = async () => {
-    setLoadingPrompts(true);
-    try {
-      const response = await promptService.listPrompts();
-      if (response.success && response.data) {
-        setAvailablePrompts(response.data.prompts);
-      }
-    } catch (error) {
-      console.error('获取提示词列表失败:', error);
-    } finally {
-      setLoadingPrompts(false);
-    }
-  };
-
-  // 处理提示词按钮点击
-  const handlePromptButtonClick = () => {
-    if (!showPrompts && availablePrompts.length === 0) {
-      fetchPrompts();
-    }
-    setShowPrompts(!showPrompts);
-  };
-
-  // 选择提示词
-  const handleSelectPrompt = async (promptName: string) => {
-    try {
-      const response = await promptService.getPromptContent(promptName);
-      if (response.success && response.data) {
-        setInputValue(response.data.content);
-        setShowPrompts(false);
-      }
-    } catch (error) {
-      console.error('获取提示词内容失败:', error);
-    }
+  // 处理提示词选择
+  const handlePromptSelect = (content: string) => {
+    setInputValue(content);
   };
 
   const handleSend = () => {
@@ -326,47 +276,12 @@ const InputArea: React.FC<InputAreaProps> = ({
               />
             )}
 
-            {/* Chat模式的提示词按钮 */}
+            {/* Chat模式的提示词选择器 */}
             {mode === 'chat' && (
-              <div className="prompt-selector-container" ref={promptDropdownRef}>
-                <Tooltip title="选择提示词">
-                  <Button
-                    type="text"
-                    icon={<FileTextOutlined />}
-                    className={`prompt-selector-button ${showPrompts ? 'active' : ''}`}
-                    onClick={handlePromptButtonClick}
-                    size="small"
-                    loading={loadingPrompts}
-                  />
-                </Tooltip>
-
-                {/* 提示词面板 */}
-                {showPrompts && (
-                  <div className="prompt-selector-panel">
-                    <div className="prompt-selector-header">
-                      <Text strong>选择提示词</Text>
-                    </div>
-                    <div className="prompt-selector-list">
-                      {availablePrompts.length === 0 ? (
-                        <div className="prompt-empty">暂无提示词</div>
-                      ) : (
-                        availablePrompts.map(prompt => (
-                          <div
-                            key={prompt.name}
-                            className="prompt-item"
-                            onClick={() => handleSelectPrompt(prompt.name)}
-                          >
-                            <div className="prompt-item-name">{prompt.name}</div>
-                            {prompt.category && (
-                              <div className="prompt-item-category">{prompt.category}</div>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <PromptSelector
+                onSelectPrompt={handlePromptSelect}
+                size="small"
+              />
             )}
 
             {/* Agent模式的类型切换按钮 */}
