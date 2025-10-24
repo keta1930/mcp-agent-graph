@@ -1,4 +1,4 @@
-// src/components/chat/RawPreviewModal.tsx
+// src/components/chat/modal/RawPreviewModal.tsx
 import React, { useMemo, useState } from 'react';
 import { Modal, Spin, Table } from 'antd';
 

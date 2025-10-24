@@ -1,4 +1,4 @@
-// src/components/chat/MessageDisplay.tsx
+// src/components/chat/message/MessageDisplay.tsx
 import React, { useState, useEffect } from 'react';
 import { Typography, Tag, Button, Space, Tooltip, message } from 'antd';
 import './MessageDisplay.css';
@@ -18,10 +18,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock } from '../../types/conversation';
-import { getCurrentUserDisplayName } from '../../config/user';
+import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock } from '../../../types/conversation';
+import { getCurrentUserDisplayName } from '../../../config/user';
 import AgentXMLRenderer from './AgentXMLRenderer';
-import CodeBlockPreview from '../common/CodeBlockPreview';
+import CodeBlockPreview from '../../common/CodeBlockPreview';
 
 const { Text, Paragraph } = Typography;
 

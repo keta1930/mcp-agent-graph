@@ -1,8 +1,8 @@
-// src/components/chat/ExportModal.tsx
+// src/components/chat/modal/ExportModal.tsx
 import React, { useState } from 'react';
 import { Modal, Form, Input, Select, Alert, Button, Divider } from 'antd';
 import { ExportOutlined, DownloadOutlined } from '@ant-design/icons';
-import exportService, { ExportResponse } from '../../services/exportService';
+import exportService, { ExportResponse } from '../../../services/exportService';
 
 interface ExportModalProps {
   visible: boolean;

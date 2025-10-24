@@ -1,9 +1,9 @@
-// src/components/chat/PromptSelector.tsx
+// src/components/chat/controls/PromptSelector.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { Button, Tooltip, Typography } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
-import { promptService } from '../../services/promptService';
-import { PromptInfo } from '../../types/prompt';
+import { promptService } from '../../../services/promptService';
+import { PromptInfo } from '../../../types/prompt';
 
 const { Text } = Typography;
 

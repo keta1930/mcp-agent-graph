@@ -1,4 +1,4 @@
-// src/components/chat/ModeSelector.tsx
+// src/components/chat/input/ModeSelector.tsx
 import React, { useRef, useEffect } from 'react';
 import { Button, Typography, Tooltip } from 'antd';
 import './ModeSelector.css';
@@ -9,17 +9,17 @@ import {
   NodeIndexOutlined,
   ArrowUpOutlined
 } from '@ant-design/icons';
-import { useConversationStore } from '../../store/conversationStore';
-import { useModelStore } from '../../store/modelStore';
-import { useGraphEditorStore } from '../../store/graphEditorStore';
-import { useMCPStore } from '../../store/mcpStore';
-import { ConversationMode } from '../../types/conversation';
-import MCPToolSelector from './MCPToolSelector';
-import PromptSelector from './PromptSelector';
-import ModelSelector from './ModelSelector';
-import GraphSelector from './GraphSelector';
-import AgentTypeToggle from './AgentTypeToggle';
-import SystemPromptToggle from './SystemPromptToggle';
+import { useConversationStore } from '../../../store/conversationStore';
+import { useModelStore } from '../../../store/modelStore';
+import { useGraphEditorStore } from '../../../store/graphEditorStore';
+import { useMCPStore } from '../../../store/mcpStore';
+import { ConversationMode } from '../../../types/conversation';
+import MCPToolSelector from '../controls/MCPToolSelector';
+import PromptSelector from '../controls/PromptSelector';
+import ModelSelector from '../controls/ModelSelector';
+import GraphSelector from '../controls/GraphSelector';
+import AgentTypeToggle from '../controls/AgentTypeToggle';
+import SystemPromptToggle from '../controls/SystemPromptToggle';
 
 const { Text } = Typography;
 

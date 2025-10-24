@@ -1,4 +1,4 @@
-// src/components/chat/ModelSelector.tsx
+// src/components/chat/controls/GraphSelector.tsx
 import React from 'react';
 import { Select } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
@@ -6,15 +6,15 @@ import { DownOutlined } from '@ant-design/icons';
 const { Option } = Select;
 
 /**
- * 模型选择器组件属性
+ * 图选择器组件属性
  */
-interface ModelSelectorProps {
-  /** 当前选中的模型 */
+interface GraphSelectorProps {
+  /** 当前选中的图 */
   value: string;
-  /** 模型变更回调 */
+  /** 图变更回调 */
   onChange: (value: string) => void;
-  /** 可用的模型列表 */
-  availableModels: Array<{ name: string; alias?: string }>;
+  /** 可用的图列表 */
+  availableGraphs: string[];
   /** 占位符文本 */
   placeholder?: string;
   /** 组件大小 */
@@ -24,21 +24,21 @@ interface ModelSelectorProps {
 }
 
 /**
- * 模型选择器组件
+ * 图选择器组件
  *
- * 用于在对话输入区域选择 AI 模型。
- * 提供搜索功能，支持按模型名称或别名过滤。
+ * 用于在对话输入区域选择 Graph 工作流。
+ * 提供搜索功能，支持按图名称过滤。
  */
-const ModelSelector: React.FC<ModelSelectorProps> = ({
+const GraphSelector: React.FC<GraphSelectorProps> = ({
   value,
   onChange,
-  availableModels,
-  placeholder = '点击选择AI模型',
+  availableGraphs,
+  placeholder = '点击选择Graph',
   size = 'small',
-  className = 'model-select-dropdown'
+  className = 'graph-select-dropdown'
 }) => {
   return (
-    <div className="model-selector-new">
+    <div className="graph-selector-new">
       <Select
         value={value}
         onChange={onChange}
@@ -56,10 +56,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
             .indexOf(input.toLowerCase()) >= 0
         }
       >
-        {availableModels && availableModels.length > 0 && (
-          availableModels.map(model => (
-            <Option key={model.name} value={model.name}>
-              {model.alias || model.name}
+        {availableGraphs && availableGraphs.length > 0 && (
+          availableGraphs.map(graph => (
+            <Option key={graph} value={graph}>
+              {graph}
             </Option>
           ))
         )}
@@ -68,4 +68,4 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   );
 };
 
-export default ModelSelector;
+export default GraphSelector;

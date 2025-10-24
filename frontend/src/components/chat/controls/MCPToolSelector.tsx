@@ -1,4 +1,4 @@
-// src/components/chat/MCPToolSelector.tsx
+// src/components/chat/controls/MCPToolSelector.tsx
 import React, { useRef, useEffect } from 'react';
 import { Button, Switch, Tooltip, Typography } from 'antd';
 import { ToolOutlined } from '@ant-design/icons';

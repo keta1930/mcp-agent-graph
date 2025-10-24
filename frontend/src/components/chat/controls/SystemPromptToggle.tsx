@@ -1,4 +1,4 @@
-// src/components/chat/SystemPromptToggle.tsx
+// src/components/chat/controls/SystemPromptToggle.tsx
 import React from 'react';
 import { Button, Tooltip } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';

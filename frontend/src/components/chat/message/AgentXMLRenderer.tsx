@@ -1,4 +1,4 @@
-// src/components/chat/AgentXMLRenderer.tsx
+// src/components/chat/message/AgentXMLRenderer.tsx
 import React, { useState } from 'react';
 import { Typography, Tag, Button } from 'antd';
 import {

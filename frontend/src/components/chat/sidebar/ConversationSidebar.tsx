@@ -1,4 +1,4 @@
-// src/components/chat/ConversationSidebar.tsx
+// src/components/chat/sidebar/ConversationSidebar.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Input,
@@ -27,12 +27,12 @@ import {
   CheckOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useConversationStore } from '../../store/conversationStore';
-import { ConversationSummary } from '../../types/conversation';
-import { getCurrentUserDisplayName, setUserConfig, getUserConfig } from '../../config/user';
+import { useConversationStore } from '../../../store/conversationStore';
+import { ConversationSummary } from '../../../types/conversation';
+import { getCurrentUserDisplayName, setUserConfig, getUserConfig } from '../../../config/user';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import ExportManagerButton from './ExportManagerButton';
+import ExportManagerButton from '../modal/ExportManagerButton';
 
 const { TextArea } = Input;
 

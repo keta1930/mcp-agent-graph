@@ -1,7 +1,7 @@
-// src/components/chat/CompactConfigModal.tsx
+// src/components/chat/modal/CompactConfigModal.tsx
 import React, { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Form, Typography, Divider } from 'antd';
-import { useModelStore } from '../../store/modelStore';
+import { useModelStore } from '../../../store/modelStore';
 import './CompactConfigModal.css';
 
 const { Option } = Select;

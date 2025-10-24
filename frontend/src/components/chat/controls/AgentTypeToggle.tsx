@@ -1,8 +1,8 @@
-// src/components/chat/AgentTypeToggle.tsx
+// src/components/chat/controls/AgentTypeToggle.tsx
 import React from 'react';
 import { Button, Tooltip } from 'antd';
 import { ToolOutlined, NodeIndexOutlined } from '@ant-design/icons';
-import { AgentType } from '../../types/conversation';
+import { AgentType } from '../../../types/conversation';
 
 /**
  * Agent 类型切换按钮组件属性
