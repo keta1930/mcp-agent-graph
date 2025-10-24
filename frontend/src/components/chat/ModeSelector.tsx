@@ -1,6 +1,6 @@
 // src/components/chat/ModeSelector.tsx
 import React, { useRef, useEffect } from 'react';
-import { Card, Select, Button, Space, Typography, Row, Col, Tooltip } from 'antd';
+import { Button, Typography, Tooltip } from 'antd';
 import './ModeSelector.css';
 import {
   MessageOutlined,
@@ -8,10 +8,8 @@ import {
   ShareAltOutlined,
   ToolOutlined,
   NodeIndexOutlined,
-  DownOutlined,
   ArrowUpOutlined,
-  SwapOutlined,
-  FileTextOutlined
+  SwapOutlined
 } from '@ant-design/icons';
 import { useConversationStore } from '../../store/conversationStore';
 import { useModelStore } from '../../store/modelStore';
@@ -20,9 +18,10 @@ import { useMCPStore } from '../../store/mcpStore';
 import { ConversationMode, AgentType } from '../../types/conversation';
 import MCPToolSelector from './MCPToolSelector';
 import PromptSelector from './PromptSelector';
+import ModelSelector from './ModelSelector';
+import GraphSelector from './GraphSelector';
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+const { Text } = Typography;
 
 interface ModeSelectorProps {
   onModeSelect: (mode: ConversationMode) => void;
@@ -390,64 +389,20 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                 <div className="input-bottom-right">
                   {/* 模型选择器 (Chat和Agent模式) */}
                   {(currentMode === 'chat' || currentMode === 'agent') && (
-                    <div className="model-selector-new">
-                      <Select
-                        value={selectedModel}
-                        onChange={setSelectedModel}
-                        placeholder="点击选择AI模型"
-                        size="small"
-                        bordered={false}
-                        className="model-select-dropdown"
-                        suffixIcon={<DownOutlined />}
-                        showSearch
-                        placement="topRight"
-                        dropdownStyle={{ minWidth: '220px' }}
-                        filterOption={(input, option) =>
-                          (option?.children as string)
-                            ?.toLowerCase()
-                            .indexOf(input.toLowerCase()) >= 0
-                        }
-                      >
-                        {availableModels && availableModels.length > 0 && (
-                          availableModels.map(model => (
-                            <Option key={model.name} value={model.name}>
-                              {model.alias || model.name}
-                            </Option>
-                          ))
-                        )}
-                      </Select>
-                    </div>
+                    <ModelSelector
+                      value={selectedModel}
+                      onChange={setSelectedModel}
+                      availableModels={availableModels}
+                    />
                   )}
 
                   {/* Graph选择器 (Graph模式) */}
                   {currentMode === 'graph' && (
-                    <div className="graph-selector-new">
-                      <Select
-                        value={selectedGraph}
-                        onChange={setSelectedGraph}
-                        placeholder="点击选择Graph"
-                        size="small"
-                        bordered={false}
-                        className="graph-select-dropdown"
-                        suffixIcon={<DownOutlined />}
-                        showSearch
-                        placement="topRight"
-                        dropdownStyle={{ minWidth: '220px' }}
-                        filterOption={(input, option) =>
-                          (option?.children as string)
-                            ?.toLowerCase()
-                            .indexOf(input.toLowerCase()) >= 0
-                        }
-                      >
-                        {availableGraphs && availableGraphs.length > 0 && (
-                          availableGraphs.map(graph => (
-                            <Option key={graph} value={graph}>
-                              {graph}
-                            </Option>
-                          ))
-                        )}
-                      </Select>
-                    </div>
+                    <GraphSelector
+                      value={selectedGraph}
+                      onChange={setSelectedGraph}
+                      availableGraphs={availableGraphs}
+                    />
                   )}
 
                   {/* 开始按钮 */}
