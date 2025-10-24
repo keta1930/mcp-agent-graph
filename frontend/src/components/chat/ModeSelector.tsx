@@ -1,6 +1,6 @@
 // src/components/chat/ModeSelector.tsx
 import React, { useRef, useEffect } from 'react';
-import { Card, Select, Button, Space, Typography, Row, Col, Switch, Tooltip } from 'antd';
+import { Card, Select, Button, Space, Typography, Row, Col, Tooltip } from 'antd';
 import './ModeSelector.css';
 import {
   MessageOutlined,
@@ -20,6 +20,7 @@ import { useMCPStore } from '../../store/mcpStore';
 import { ConversationMode, AgentType } from '../../types/conversation';
 import { promptService } from '../../services/promptService';
 import { PromptInfo } from '../../types/prompt';
+import MCPToolSelector from './MCPToolSelector';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -65,12 +66,10 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [userPrompt, setUserPrompt] = React.useState('');
   const [inputText, setInputText] = React.useState('');
   const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
-  const [showMcpTools, setShowMcpTools] = React.useState(false);
   const [showGraphSelector, setShowGraphSelector] = React.useState(false);
   const [showPrompts, setShowPrompts] = React.useState(false);
   const [availablePrompts, setAvailablePrompts] = React.useState<PromptInfo[]>([]);
   const [loadingPrompts, setLoadingPrompts] = React.useState(false);
-  const mcpDropdownRef = useRef<HTMLDivElement>(null);
   const graphDropdownRef = useRef<HTMLDivElement>(null);
   const promptDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -85,7 +84,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setUserPrompt('');
     setInputText('');
     setPromptMode('user'); // 重置为用户提示词模式
-    setShowMcpTools(false);
     setShowGraphSelector(false);
     setShowPrompts(false);
     // 设置Agent模式的默认类型
@@ -114,9 +112,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   // 点击外部关闭面板
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (mcpDropdownRef.current && !mcpDropdownRef.current.contains(event.target as Node)) {
-        setShowMcpTools(false);
-      }
       if (graphDropdownRef.current && !graphDropdownRef.current.contains(event.target as Node)) {
         setShowGraphSelector(false);
       }
@@ -125,11 +120,11 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       }
     };
 
-    if (showMcpTools || showGraphSelector || showPrompts) {
+    if (showGraphSelector || showPrompts) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showMcpTools, showGraphSelector, showPrompts]);
+  }, [showGraphSelector, showPrompts]);
 
   const handleStart = () => {
     const content = currentMode === 'chat' && userPrompt.trim() ? userPrompt.trim() : inputText.trim();
@@ -248,8 +243,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
   ];
 
-  const enabledMcpCount = Object.values(selectedMCPServers).filter(Boolean).length;
-
   const getCurrentInputValue = () => {
     if (currentMode === 'chat') {
       return promptMode === 'user' ? userPrompt : systemPrompt;
@@ -332,51 +325,15 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                     </Tooltip>
                   )}
 
-                  {/* Chat模式的MCP工具图标 */}
-                  {currentMode === 'chat' && availableMCPServers.length > 0 && (
-                    <div className="mcp-tools-container" ref={mcpDropdownRef}>
-                      <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
-                        <Button
-                          type="text"
-                          icon={<ToolOutlined />}
-                          className={`mcp-tools-button ${showMcpTools ? 'active' : ''} ${enabledMcpCount > 0 ? 'has-enabled' : ''}`}
-                          onClick={() => setShowMcpTools(!showMcpTools)}
-                          size="small"
-                        />
-                      </Tooltip>
-
-                      {/* MCP工具面板 */}
-                      {showMcpTools && (
-                        <div className="mcp-tools-panel">
-                          <div className="mcp-tools-header">
-                            <Text strong>MCP工具</Text>
-                          </div>
-                          <div className="mcp-tools-list">
-                            {availableMCPServers.map(serverName => {
-                              const isConnected = getServerConnectionStatus(serverName);
-                              return (
-                                <div key={serverName} className="mcp-tool-item">
-                                  <div className="mcp-tool-info">
-                                    <div
-                                      className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
-                                      title={isConnected ? '已连接' : '未连接'}
-                                    />
-                                    <Tooltip title={serverName} placement="top">
-                                      <span className="mcp-tool-name">{serverName}</span>
-                                    </Tooltip>
-                                  </div>
-                                  <Switch
-                                    size="small"
-                                    checked={selectedMCPServers[serverName] || false}
-                                    onChange={(checked) => toggleMcpServer(serverName, checked)}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  {/* Chat模式的MCP工具选择器 */}
+                  {currentMode === 'chat' && (
+                    <MCPToolSelector
+                      availableMCPServers={availableMCPServers}
+                      selectedMCPServers={selectedMCPServers}
+                      onToggleMCPServer={toggleMcpServer}
+                      getServerConnectionStatus={getServerConnectionStatus}
+                      size="small"
+                    />
                   )}
 
                   {/* Chat模式的提示词按钮 */}
@@ -438,50 +395,14 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                   )}
 
                   {/* Agent Graph模式的MCP工具选择 */}
-                  {currentMode === 'agent' && agentType === 'graph' && availableMCPServers.length > 0 && (
-                    <div className="mcp-tools-container" ref={mcpDropdownRef}>
-                      <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
-                        <Button
-                          type="text"
-                          icon={<ToolOutlined />}
-                          className={`mcp-tools-button ${showMcpTools ? 'active' : ''} ${enabledMcpCount > 0 ? 'has-enabled' : ''}`}
-                          onClick={() => setShowMcpTools(!showMcpTools)}
-                          size="small"
-                        />
-                      </Tooltip>
-
-                      {/* MCP工具面板 */}
-                      {showMcpTools && (
-                        <div className="mcp-tools-panel">
-                          <div className="mcp-tools-header">
-                            <Text strong>MCP工具</Text>
-                          </div>
-                          <div className="mcp-tools-list">
-                            {availableMCPServers.map(serverName => {
-                              const isConnected = getServerConnectionStatus(serverName);
-                              return (
-                                <div key={serverName} className="mcp-tool-item">
-                                  <div className="mcp-tool-info">
-                                    <div
-                                      className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
-                                      title={isConnected ? '已连接' : '未连接'}
-                                    />
-                                    <Tooltip title={serverName} placement="top">
-                                      <span className="mcp-tool-name">{serverName}</span>
-                                    </Tooltip>
-                                  </div>
-                                  <Switch
-                                    size="small"
-                                    checked={selectedMCPServers[serverName] || false}
-                                    onChange={(checked) => toggleMcpServer(serverName, checked)}
-                                  />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                  {currentMode === 'agent' && agentType === 'graph' && (
+                    <MCPToolSelector
+                      availableMCPServers={availableMCPServers}
+                      selectedMCPServers={selectedMCPServers}
+                      onToggleMCPServer={toggleMcpServer}
+                      getServerConnectionStatus={getServerConnectionStatus}
+                      size="small"
+                    />
                   )}
 
                   {/* Agent Graph模式的图配置选择 */}
