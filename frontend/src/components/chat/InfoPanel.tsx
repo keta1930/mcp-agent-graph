@@ -1,9 +1,9 @@
 // src/components/chat/InfoPanel.tsx
 import React from 'react';
 import { Card, Typography, Tag, Divider, Space, Collapse, Progress } from 'antd';
-import { 
-  InfoCircleOutlined, 
-  CheckCircleOutlined, 
+import {
+  InfoCircleOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
   FileTextOutlined,
   CodeOutlined,
@@ -16,6 +16,7 @@ import { ParsedResults } from '../../types/conversation';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import './InfoPanel.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
@@ -113,10 +114,10 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         }>
           <Collapse size="small" ghost>
             {Object.entries(parsedResults.script_files).map(([filename, content]) => (
-              <Panel 
-                header={filename} 
+              <Panel
+                header={filename}
                 key={filename}
-                extra={<Tag size="small">Python</Tag>}
+                extra={<Tag>Python</Tag>}
               >
                 <SyntaxHighlighter
                   language="python"
@@ -143,14 +144,14 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         }>
           <ReactMarkdown
             components={{
-              code({ node, inline, className, children, ...props }) {
+              code({ className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '');
-                return !inline && match ? (
+                const isInline = !match;
+                return !isInline && match ? (
                   <SyntaxHighlighter
-                    style={tomorrow}
+                    style={tomorrow as any}
                     language={match[1]}
                     PreTag="div"
-                    customStyle={{ background: 'transparent', fontSize: '12px' }}
                     {...props}
                   >
                     {String(children).replace(/\n$/, '')}
@@ -242,13 +243,13 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         }>
           <Collapse size="small" ghost>
             {parsedResults.nodes.map((node, index) => (
-              <Panel 
+              <Panel
                 header={
                   <Space>
                     <span>{node.name}</span>
-                    <Tag size="small" color="blue">Level {node.level}</Tag>
+                    <Tag color="blue">Level {node.level}</Tag>
                   </Space>
-                } 
+                }
                 key={index}
               >
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -264,7 +265,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
                       <Text strong>MCP服务:</Text>
                       <div style={{ marginTop: 4 }}>
                         {node.mcp_servers.map((server: string) => (
-                          <Tag key={server} size="small">{server}</Tag>
+                          <Tag key={server}>{server}</Tag>
                         ))}
                       </div>
                     </div>
