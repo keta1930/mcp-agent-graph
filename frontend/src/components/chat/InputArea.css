@@ -2,14 +2,20 @@
 
 /* 输入区域容器 */
 .input-area {
-  padding: 20px 24px;
-  background: var(--bg-primary);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: center;
 }
 
 /* 新版输入容器 */
 .input-container-new {
   max-width: 800px;
   margin: 0 auto;
+  width: 100%;
 }
 
 /* 消息输入包装器 */
@@ -20,33 +26,33 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
+  padding: 12px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px var(--shadow-light);
+  box-shadow: 0 4px 16px var(--shadow-light);
 }
 
 .message-input-wrapper:hover {
-  border-color: rgba(24, 144, 255, 0.3);
-  box-shadow: 0 4px 16px var(--shadow-medium);
+  box-shadow: 0 6px 24px var(--shadow-medium);
 }
 
 .message-input-wrapper:focus-within {
   border-color: #1890ff;
-  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1), 0 4px 16px var(--shadow-medium);
+  box-shadow: 0 6px 24px rgba(24, 144, 255, 0.15);
 }
 
 /* 消息输入框 */
 .message-input-new {
   width: 100%;
-  padding: 16px 16px 48px 16px;
-  border: none;
   background: transparent;
-  color: var(--text-primary);
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 0 0 32px 0;
   font-size: 15px;
   line-height: 1.6;
-  resize: none;
-  outline: none;
+  color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  min-height: 56px;
+  min-height: 32px;
   max-height: 200px;
   overflow-y: auto;
 }
@@ -68,18 +74,16 @@
   border-radius: 3px;
 }
 
-/* 输入框底部左侧控件容器 */
+/* 输入框底部控件容器 */
 .input-bottom-left {
   position: absolute;
   bottom: 12px;
   left: 12px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  z-index: 10;
+  gap: 8px;
 }
 
-/* 输入框底部右侧控件容器 */
 .input-bottom-right {
   position: absolute;
   bottom: 12px;
@@ -87,7 +91,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 10;
 }
 
 /* 系统提示词切换按钮 */
@@ -182,12 +185,11 @@
   color: #1890ff;
 }
 
-/* MCP工具容器 */
+/* MCP工具面板 */
 .mcp-tools-container {
   position: relative;
 }
 
-/* MCP工具面板 */
 .mcp-tools-panel {
   position: absolute;
   bottom: 100%;
@@ -285,7 +287,11 @@
   white-space: nowrap;
 }
 
-/* 提示词选择器按钮 */
+/* 提示词选择器 */
+.prompt-selector-container {
+  position: relative;
+}
+
 .prompt-selector-button {
   color: var(--text-tertiary);
   border: none;
@@ -309,12 +315,6 @@
   background: rgba(24, 144, 255, 0.15);
 }
 
-/* 提示词选择器容器 */
-.prompt-selector-container {
-  position: relative;
-}
-
-/* 提示词选择器面板 */
 .prompt-selector-panel {
   position: absolute;
   bottom: 100%;
@@ -385,12 +385,11 @@
   font-size: 13px;
 }
 
-/* 图选择器容器 */
+/* 图选择器 */
 .graph-selector-container {
   position: relative;
 }
 
-/* 图选择器按钮 */
 .graph-selector-button {
   color: var(--text-tertiary);
   border: none;
@@ -418,7 +417,6 @@
   color: #13c2c2;
 }
 
-/* 图选择器面板 */
 .graph-selector-panel {
   position: absolute;
   bottom: 100%;
@@ -489,146 +487,152 @@
   white-space: nowrap;
 }
 
-/* 模型选择器 */
+/* 模型选择器 - 覆盖 Ant Design 样式 */
 .model-selector-new {
+  position: relative;
   display: flex;
   align-items: center;
 }
 
-.model-selector-new .ant-select {
-  width: auto;
-  min-width: 100px;
+.model-select-dropdown.ant-select,
+.model-select-dropdown.ant-select.ant-select-sm {
+  min-width: 120px !important;
+  font-size: 13px !important;
 }
 
-.model-selector-new .ant-select-selector {
-  border: none !important;
+.model-select-dropdown.ant-select .ant-select-selector,
+.model-select-dropdown.ant-select.ant-select-sm .ant-select-selector {
   background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
-  padding: 0 8px !important;
-  height: 28px !important;
-  line-height: 26px !important;
+  color: var(--text-secondary) !important;
+  padding: 4px 8px !important;
+  height: auto !important;
 }
 
-.model-selector-new .ant-select-selection-item {
+.model-select-dropdown.ant-select .ant-select-selection-item,
+.model-select-dropdown.ant-select.ant-select-sm .ant-select-selection-item {
   color: var(--text-secondary) !important;
-  font-size: 12px !important;
   font-weight: 500 !important;
 }
 
-.model-selector-new .ant-select-arrow {
+.model-select-dropdown.ant-select:hover .ant-select-selector,
+.model-select-dropdown.ant-select.ant-select-sm:hover .ant-select-selector {
+  color: var(--text-primary) !important;
+}
+
+.model-select-dropdown.ant-select .ant-select-arrow,
+.model-select-dropdown.ant-select.ant-select-sm .ant-select-arrow {
   color: var(--text-tertiary) !important;
+  font-size: 10px !important;
 }
 
-.model-selector-new .ant-select:hover .ant-select-selector {
-  background: rgba(24, 144, 255, 0.05) !important;
-}
-
-.model-selector-new .ant-select:hover .ant-select-selection-item {
-  color: #1890ff !important;
-}
-
-.model-selector-new .ant-select:hover .ant-select-arrow {
-  color: #1890ff !important;
-}
-
-.model-selector-new .ant-select-focused .ant-select-selector {
-  background: rgba(24, 144, 255, 0.1) !important;
-}
-
-/* Graph选择器 */
+/* Graph选择器 - 覆盖 Ant Design 样式 */
 .graph-selector-new {
+  position: relative;
   display: flex;
   align-items: center;
 }
 
-.graph-selector-new .ant-select {
-  width: auto;
-  min-width: 100px;
+.graph-select-dropdown.ant-select,
+.graph-select-dropdown.ant-select.ant-select-sm {
+  min-width: 120px !important;
+  font-size: 13px !important;
 }
 
-.graph-selector-new .ant-select-selector {
-  border: none !important;
+.graph-select-dropdown.ant-select .ant-select-selector,
+.graph-select-dropdown.ant-select.ant-select-sm .ant-select-selector {
   background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
-  padding: 0 8px !important;
-  height: 28px !important;
-  line-height: 26px !important;
+  color: var(--text-secondary) !important;
+  padding: 4px 8px !important;
+  height: auto !important;
 }
 
-.graph-selector-new .ant-select-selection-item {
+.graph-select-dropdown.ant-select .ant-select-selection-item,
+.graph-select-dropdown.ant-select.ant-select-sm .ant-select-selection-item {
   color: var(--text-secondary) !important;
-  font-size: 12px !important;
   font-weight: 500 !important;
 }
 
-.graph-selector-new .ant-select-arrow {
+.graph-select-dropdown.ant-select:hover .ant-select-selector,
+.graph-select-dropdown.ant-select.ant-select-sm:hover .ant-select-selector {
+  color: var(--text-primary) !important;
+}
+
+.graph-select-dropdown.ant-select .ant-select-arrow,
+.graph-select-dropdown.ant-select.ant-select-sm .ant-select-arrow {
   color: var(--text-tertiary) !important;
+  font-size: 10px !important;
 }
 
-.graph-selector-new .ant-select:hover .ant-select-selector {
-  background: rgba(19, 194, 194, 0.05) !important;
+/* 发送按钮 - 覆盖 Ant Design 样式 */
+.send-button-new.ant-btn,
+.send-button-new.ant-btn.ant-btn-sm,
+.send-button-new.ant-btn.ant-btn-icon-only,
+.send-button-new.ant-btn.ant-btn-circle {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
+  border: none !important;
+  color: white !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3) !important;
+  padding: 0 !important;
 }
 
-.graph-selector-new .ant-select:hover .ant-select-selection-item {
-  color: #13c2c2 !important;
+.send-button-new.ant-btn:hover:not(:disabled),
+.send-button-new.ant-btn.ant-btn-sm:hover:not(:disabled) {
+  background: #40a9ff !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4) !important;
+  border: none !important;
+  color: white !important;
 }
 
-.graph-selector-new .ant-select:hover .ant-select-arrow {
-  color: #13c2c2 !important;
+.send-button-new.ant-btn:active:not(:disabled),
+.send-button-new.ant-btn.ant-btn-sm:active:not(:disabled) {
+  transform: translateY(0) !important;
 }
 
-.graph-selector-new .ant-select-focused .ant-select-selector {
-  background: rgba(19, 194, 194, 0.1) !important;
+.send-button-new.ant-btn:disabled,
+.send-button-new.ant-btn[disabled],
+.send-button-new.ant-btn.ant-btn-sm:disabled,
+.send-button-new.ant-btn.ant-btn-sm[disabled] {
+  background: var(--text-tertiary) !important;
+  color: var(--bg-primary) !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
-/* 发送按钮 */
-.send-button-new {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
-}
-
-.send-button-new:hover:not(:disabled) {
-  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
-}
-
-.send-button-new:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.send-button-new:disabled {
-  background: linear-gradient(135deg, #d9d9d9 0%, #bfbfbf 100%);
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.send-button-new .anticon {
-  font-size: 14px;
+.send-button-new .anticon,
+.send-button-new.ant-btn .anticon {
+  font-size: 14px !important;
+  color: white !important;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .input-area {
-    padding: 16px;
+    padding: 12px 16px;
   }
 
   .message-input-wrapper {
     border-radius: 12px;
+    padding: 10px;
   }
 
   .message-input-new {
-    padding: 14px 14px 44px 14px;
+    padding: 0 0 28px 0;
     font-size: 14px;
   }
 
