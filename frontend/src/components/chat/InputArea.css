@@ -583,23 +583,20 @@
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
   box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3) !important;
   padding: 0 !important;
 }
 
 .send-button-new.ant-btn:hover:not(:disabled),
 .send-button-new.ant-btn.ant-btn-sm:hover:not(:disabled) {
-  background: #40a9ff !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4) !important;
   border: none !important;
   color: white !important;
 }
 
 .send-button-new.ant-btn:active:not(:disabled),
 .send-button-new.ant-btn.ant-btn-sm:active:not(:disabled) {
-  transform: translateY(0) !important;
+  border: none !important;
+  color: white !important;
 }
 
 .send-button-new.ant-btn:disabled,
