@@ -132,7 +132,7 @@ One-stop prompt management, register and reuse prompt templates
 If you find MCP Agent Graph helpful for your research or work, please consider citing it:
 
 ```bibtex
-@misc{mcp-agent-graph_github,
+@misc{McpAgentGraph,
   author       = {Yixin Yan and mcp-agent-graph Contributors},
   title        = {mcp-agent-graph: A Multi-agent Collaboration Framework},
   year         = {2025},
