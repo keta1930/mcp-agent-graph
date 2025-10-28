@@ -4,6 +4,7 @@ authors:
   - family-names: "Yan"
     given-names: "Yixin"
 title: "Mcp Agent Graph: A Multi-agent Collaboration Framework"
+version: 3.1.0
 abstract: "MCP Agent Graph (MAG) is an agent development framework for rapidly building agent systems. This project is based on graphs, nodes, and MCP to quickly construct complex Agent systems." 
 date-released: 2025-04-24
 url: "https://github.com/keta1930/mcp-agent-graph"
