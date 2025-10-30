@@ -13,6 +13,10 @@ wheels/
 .idea/
 
 test/
+experimental/
 .qoderignore
 
 .qoder/
+
+.claude
+
