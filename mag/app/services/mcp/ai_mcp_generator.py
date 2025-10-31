@@ -2,13 +2,13 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Dict, List, Any, Optional, AsyncGenerator
+from typing import Dict, Any, Optional, AsyncGenerator
 import os
 from pathlib import Path
-from app.core.file_manager import FileManager
+from app.infrastructure.storage.file_storage import FileManager
 from app.services.model_service import model_service
 from app.utils.text_parser import parse_ai_mcp_generation_response
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class AIMCPGenerator:
                     return
             else:
                 # 有conversation_id，检查是否存在
-                existing_conversation = await mongodb_service.get_mcp_generation_conversation(conversation_id)
+                existing_conversation = await mongodb_client.get_mcp_generation_conversation(conversation_id)
                 if existing_conversation:
                     # 对话存在，继续对话
                     success = await self._continue_conversation(conversation_id, requirement)
@@ -91,7 +91,7 @@ class AIMCPGenerator:
                         return
 
             # 获取对话历史构建消息上下文
-            conversation_data = await mongodb_service.get_mcp_generation_conversation(conversation_id)
+            conversation_data = await mongodb_client.get_mcp_generation_conversation(conversation_id)
             if not conversation_data:
                 error_chunk = {
                     "error": {
@@ -148,7 +148,7 @@ class AIMCPGenerator:
             assistant_message["content"] = accumulated_content or ""
 
             # 添加assistant消息到数据库
-            await mongodb_service.add_message_to_mcp_generation(
+            await mongodb_client.add_message_to_mcp_generation(
                 conversation_id,
                 assistant_message,
                 model_name=model_name
@@ -156,7 +156,7 @@ class AIMCPGenerator:
 
             # 更新token使用量
             if api_usage:
-                await mongodb_service.update_mcp_generation_token_usage(
+                await mongodb_client.update_mcp_generation_token_usage(
                     conversation_id=conversation_id,
                     prompt_tokens=api_usage["prompt_tokens"],
                     completion_tokens=api_usage["completion_tokens"]
@@ -258,7 +258,7 @@ class AIMCPGenerator:
                         update_data[key] = value
 
             if update_data:
-                await mongodb_service.update_mcp_generation_parsed_results(
+                await mongodb_client.update_mcp_generation_parsed_results(
                     conversation_id, update_data
                 )
                 logger.info(f"更新MCP解析结果: {list(update_data.keys())}")
@@ -275,7 +275,7 @@ class AIMCPGenerator:
                 conversation_id = f"mcp_{uuid.uuid4().hex[:16]}"
 
             # 创建对话（使用新的统一结构）
-            success = await mongodb_service.create_mcp_generation_conversation(
+            success = await mongodb_client.create_mcp_generation_conversation(
                 conversation_id=conversation_id,
                 user_id=user_id
             )
@@ -291,14 +291,14 @@ class AIMCPGenerator:
                 "role": "system",
                 "content": system_prompt
             }
-            await mongodb_service.add_message_to_mcp_generation(conversation_id, system_message)
+            await mongodb_client.add_message_to_mcp_generation(conversation_id, system_message)
 
             # 添加用户需求消息
             user_message = {
                 "role": "user",
                 "content": requirement
             }
-            await mongodb_service.add_message_to_mcp_generation(conversation_id, user_message)
+            await mongodb_client.add_message_to_mcp_generation(conversation_id, user_message)
 
             logger.info(f"创建MCP生成对话成功: {conversation_id}")
             return conversation_id
@@ -311,7 +311,7 @@ class AIMCPGenerator:
         """继续现有对话"""
         try:
             # 确保对话存在
-            conversation_data = await mongodb_service.get_mcp_generation_conversation(conversation_id)
+            conversation_data = await mongodb_client.get_mcp_generation_conversation(conversation_id)
             if not conversation_data:
                 logger.error(f"对话不存在: {conversation_id}")
                 return False
@@ -321,7 +321,7 @@ class AIMCPGenerator:
                 "role": "user",
                 "content": requirement
             }
-            return await mongodb_service.add_message_to_mcp_generation(conversation_id, user_message)
+            return await mongodb_client.add_message_to_mcp_generation(conversation_id, user_message)
 
         except Exception as e:
             logger.error(f"继续对话时出错: {str(e)}")
@@ -356,7 +356,7 @@ class AIMCPGenerator:
     async def _check_completion(self, conversation_id: str) -> Dict[str, Any]:
         """检查是否完成了所有必需阶段"""
         try:
-            conversation_data = await mongodb_service.get_mcp_generation_conversation(conversation_id)
+            conversation_data = await mongodb_client.get_mcp_generation_conversation(conversation_id)
             if not conversation_data:
                 return {"completed": False, "missing": ["conversation_data"]}
 
@@ -392,7 +392,7 @@ class AIMCPGenerator:
     async def _assemble_final_mcp(self, conversation_id: str) -> Dict[str, Any]:
         """组装最终MCP工具并创建、注册"""
         try:
-            conversation_data = await mongodb_service.get_mcp_generation_conversation(conversation_id)
+            conversation_data = await mongodb_client.get_mcp_generation_conversation(conversation_id)
             if not conversation_data:
                 return {"success": False, "error": "获取对话数据失败"}
 
@@ -470,7 +470,7 @@ class AIMCPGenerator:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                current_config_data = await mongodb_service.get_mcp_config()
+                current_config_data = await mongodb_client.get_mcp_config()
                 current_config = current_config_data.get("config", {"mcpServers": {}})
                 current_version = current_config_data.get("version", 1)
 
