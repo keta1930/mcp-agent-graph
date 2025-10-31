@@ -5,7 +5,7 @@ from datetime import datetime
 
 from app.services.task_service import task_service
 from app.services.task_scheduler import task_scheduler
-from app.models.task_schema import TaskCreate, TaskStatusUpdate, TaskResponse, TaskSummary, Task, TaskStatus
+from app.models.task_schema import TaskCreate, TaskStatusUpdate, TaskSummary, Task, TaskStatus
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """执行链管理类 - 处理图执行链的生成和更新"""
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,8 @@ class ExecutionChainManager:
         conversation["execution_chain"] = execution_chain
 
         # 同步到数据库
-        from app.services.mongodb_service import mongodb_service
-        await mongodb_service.update_graph_run_execution_chain(
+        from app.infrastructure.database.mongodb import mongodb_client
+        await mongodb_client.update_graph_run_execution_chain(
             conversation["conversation_id"], 
             execution_chain
         )

@@ -1,10 +1,8 @@
 import json
 import logging
-from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
-from typing import Dict, Any, Optional, List
-from app.services.mcp_service import mcp_service
+from typing import Dict
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.models.graph_schema import GraphGenerationRequest, PromptTemplateRequest

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
@@ -7,9 +7,9 @@ logger = logging.getLogger(__name__)
 class MessageBuilder:
     """消息构建器 - 统一管理消息相关的功能，保持原有接口不变"""
 
-    def __init__(self, mongodb_service=None):
+    def __init__(self, mongodb_client=None):
         """初始化消息构建器"""
-        self.mongodb_service = mongodb_service
+        self.mongodb_client = mongodb_client
 
     async def build_chat_messages(self,
                                 conversation_id: str,
@@ -26,9 +26,9 @@ class MessageBuilder:
             })
         
         # 获取历史消息
-        if self.mongodb_service:
+        if self.mongodb_client:
             try:
-                conversation_data = await self.mongodb_service.get_conversation_with_messages(conversation_id)
+                conversation_data = await self.mongodb_client.get_conversation_with_messages(conversation_id)
                 if conversation_data and conversation_data.get("rounds"):
                     for round_data in conversation_data["rounds"]:
                         for msg in round_data.get("messages", []):

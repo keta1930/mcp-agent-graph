@@ -3,12 +3,11 @@ Prompt 服务主文件
 提供提示词管理的高级服务接口
 """
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
-from .mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 from ..models.prompt_schema import (
-    PromptCreate, PromptUpdate, PromptDetail, PromptList,
-    PromptImportByPathRequest, PromptImportByFileRequest,
+    PromptCreate, PromptUpdate, PromptImportByFileRequest,
     PromptExportRequest, PromptBatchDeleteRequest
 )
 from fastapi import UploadFile
@@ -20,7 +19,7 @@ class PromptService:
     """提示词服务类"""
 
     def __init__(self):
-        self.mongodb_service = mongodb_service
+        self.mongodb_client = mongodb_client
 
     async def create_prompt(self, prompt_data: PromptCreate) -> Dict[str, Any]:
         """
@@ -33,7 +32,7 @@ class PromptService:
             Dict[str, Any]: 创建结果
         """
         try:
-            return await self.mongodb_service.create_prompt(prompt_data)
+            return await self.mongodb_client.create_prompt(prompt_data)
         except Exception as e:
             logger.error(f"提示词服务：创建提示词失败: {e}")
             return {
@@ -53,7 +52,7 @@ class PromptService:
             Dict[str, Any]: 更新结果
         """
         try:
-            return await self.mongodb_service.update_prompt(name, update_data)
+            return await self.mongodb_client.update_prompt(name, update_data)
         except Exception as e:
             logger.error(f"提示词服务：更新提示词失败 {name}: {e}")
             return {
@@ -72,7 +71,7 @@ class PromptService:
             Dict[str, Any]: 删除结果
         """
         try:
-            return await self.mongodb_service.delete_prompt(name)
+            return await self.mongodb_client.delete_prompt(name)
         except Exception as e:
             logger.error(f"提示词服务：删除提示词失败 {name}: {e}")
             return {
@@ -88,7 +87,7 @@ class PromptService:
             Dict[str, Any]: 提示词列表结果
         """
         try:
-            prompt_list = await self.mongodb_service.list_prompts()
+            prompt_list = await self.mongodb_client.list_prompts()
             return {
                 "success": True,
                 "message": "获取提示词列表成功",
@@ -112,7 +111,7 @@ class PromptService:
             Dict[str, Any]: 批量删除结果
         """
         try:
-            return await self.mongodb_service.batch_delete_prompts(delete_request.names)
+            return await self.mongodb_client.batch_delete_prompts(delete_request.names)
         except Exception as e:
             logger.error(f"提示词服务：批量删除提示词失败: {e}")
             return {
@@ -131,7 +130,7 @@ class PromptService:
             Dict[str, Any]: 提示词内容或错误信息
         """
         try:
-            prompt_detail = await self.mongodb_service.get_prompt(name)
+            prompt_detail = await self.mongodb_client.get_prompt(name)
             if prompt_detail:
                 return {
                     "success": True,
@@ -165,7 +164,7 @@ class PromptService:
             Dict[str, Any]: 导入结果
         """
         try:
-            return await self.mongodb_service.import_prompt_by_file(file, import_request)
+            return await self.mongodb_client.import_prompt_by_file(file, import_request)
         except Exception as e:
             logger.error(f"提示词服务：通过文件导入失败: {e}")
             return {
@@ -184,7 +183,7 @@ class PromptService:
             Dict[str, Any]: 导出结果，包含 ZIP 文件路径
         """
         try:
-            success, message, zip_path = await self.mongodb_service.export_prompts(export_request)
+            success, message, zip_path = await self.mongodb_client.export_prompts(export_request)
             return {
                 "success": success,
                 "message": message,

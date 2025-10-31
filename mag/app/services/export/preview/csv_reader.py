@@ -2,7 +2,7 @@ import os
 import tempfile
 import pandas as pd
 from typing import List, Dict, Any
-from app.core.minio_client import minio_client
+from app.infrastructure.storage.object_storage import minio_client
 from .base import BasePreviewReader
 
 

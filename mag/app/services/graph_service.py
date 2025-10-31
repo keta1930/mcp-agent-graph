@@ -1,23 +1,19 @@
-import asyncio
 import logging
-import json
-import uuid
 import re
 import copy
 from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import os
-from app.core.file_manager import FileManager
+from app.infrastructure.storage.file_storage import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.services.prompt_service import prompt_service
-from app.models.graph_schema import GraphConfig, AgentNode
 from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor
 from app.services.graph.ai_graph_generator import AIGraphGenerator
 from app.utils.sse_helper import SSEHelper
 from app.services.graph.background_executor import BackgroundExecutor
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +28,7 @@ class GraphService:
         self.background_executor = BackgroundExecutor(self.conversation_manager, mcp_service)
         self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
-        self.mongodb_service = mongodb_service
+        self.mongodb_client = mongodb_client
         self._task_service = None
         self._task_scheduler = None
 
@@ -45,26 +41,26 @@ class GraphService:
 
     async def list_graphs(self) -> List[str]:
         """列出所有可用的图"""
-        return await self.mongodb_service.list_graph_configs()
+        return await self.mongodb_client.list_graph_configs()
 
     async def get_graph(self, graph_name: str) -> Optional[Dict[str, Any]]:
         """获取图配置"""
-        return await self.mongodb_service.get_graph_config(graph_name)
+        return await self.mongodb_client.get_graph_config(graph_name)
 
     async def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
         """保存图配置"""
-        existing = await self.mongodb_service.graph_config_exists(graph_name)
+        existing = await self.mongodb_client.graph_config_exists(graph_name)
         if existing:
-            return await self.mongodb_service.update_graph_config(graph_name, config)
-        return await self.mongodb_service.create_graph_config(graph_name, config)
+            return await self.mongodb_client.update_graph_config(graph_name, config)
+        return await self.mongodb_client.create_graph_config(graph_name, config)
 
     async def delete_graph(self, graph_name: str) -> bool:
         """删除图配置"""
-        return await self.mongodb_service.delete_graph_config(graph_name)
+        return await self.mongodb_client.delete_graph_config(graph_name)
 
     async def rename_graph(self, old_name: str, new_name: str) -> bool:
         """重命名图"""
-        return await self.mongodb_service.rename_graph_config(old_name, new_name)
+        return await self.mongodb_client.rename_graph_config(old_name, new_name)
 
     def _extract_prompt_references(self, text: str) -> Set[str]:
         """

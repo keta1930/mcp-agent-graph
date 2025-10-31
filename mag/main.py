@@ -11,8 +11,8 @@ from app.api.routes import router
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
-from app.services.mongodb_service import mongodb_service 
-from app.core.file_manager import FileManager
+from app.infrastructure.database.mongodb import mongodb_client
+from app.infrastructure.storage.file_storage import FileManager
 from app.core.config import settings
 
 # 配置日志
@@ -64,7 +64,7 @@ async def startup_event():
         logger.info(f"配置目录: {settings.MAG_DIR}")
         settings.ensure_directories()
 
-        await mongodb_service.initialize(settings.MONGODB_URL,settings.MONGODB_DB)
+        await mongodb_client.initialize(settings.MONGODB_URL,settings.MONGODB_DB)
         logger.info("MongoDB服务初始化成功")
 
         # 初始化文件系统
@@ -72,7 +72,7 @@ async def startup_event():
         logger.info("文件系统初始化成功")
 
         # 初始化模型服务 (需要在MongoDB之后)
-        await model_service.initialize(mongodb_service)
+        await model_service.initialize(mongodb_client)
         logger.info("模型服务初始化成功")
 
         # 初始化图服务

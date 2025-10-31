@@ -4,8 +4,8 @@ import zipfile
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from app.services.mongodb_service import mongodb_service
-from app.core.minio_client import minio_client
+from app.infrastructure.database.mongodb import mongodb_client
+from app.infrastructure.storage.object_storage import minio_client
 from .export.formatters.standard import StandardFormatter
 from .export.writers.jsonl_writer import JSONLWriter
 from .export.writers.parquet_writer import ParquetWriter
@@ -351,7 +351,7 @@ class ExportService:
 
         for conv_id in conversation_ids:
             try:
-                conversation = await mongodb_service.get_conversation_with_messages(conv_id)
+                conversation = await mongodb_client.get_conversation_with_messages(conv_id)
                 if conversation:
                     conversations.append(conversation)
             except Exception as e:

@@ -2,10 +2,10 @@
 import json
 import logging
 import copy
-from typing import Dict, List, Any, Optional, AsyncGenerator
+from typing import Dict, List, Any, AsyncGenerator
 from app.services.model_service import model_service
 from app.services.graph.handoffs_manager import HandoffsManager
-from app.core.graph_run_storage import graph_run_storage
+from app.infrastructure.storage.object_storage import graph_run_storage
 
 logger = logging.getLogger(__name__)
 
@@ -215,8 +215,8 @@ class NodeExecutorCore:
 
             conversation["rounds"].append(round_data)
 
-            from app.services.mongodb_service import mongodb_service
-            await mongodb_service.add_round_to_graph_run(
+            from app.infrastructure.database.mongodb import mongodb_client
+            await mongodb_client.add_round_to_graph_run(
                 conversation_id=conversation_id,
                 round_data=round_data,
                 tools_schema=all_tools
@@ -224,7 +224,7 @@ class NodeExecutorCore:
 
             # 7. 更新token使用量
             if node_token_usage["total_tokens"] > 0:
-                await mongodb_service.update_conversation_token_usage(
+                await mongodb_client.update_conversation_token_usage(
                     conversation_id=conversation_id,
                     prompt_tokens=node_token_usage["prompt_tokens"],
                     completion_tokens=node_token_usage["completion_tokens"]

@@ -2,15 +2,14 @@ import json
 import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse, JSONResponse
-from typing import Dict, List, Any
+from fastapi.responses import StreamingResponse
 from app.services.model_service import model_service
 from app.services.chat_service import chat_service
-from app.services.mongodb_service import mongodb_service
-from app.utils.sse_helper import SSEHelper, TrajectoryCollector
+from app.infrastructure.database.mongodb import mongodb_client
+from app.utils.sse_helper import TrajectoryCollector
 from app.models.chat_schema import (
-    ChatCompletionRequest, ChatMessage, ConversationListItem,
-    ConversationListResponse, ConversationDetailResponse, ConversationRound,
+    ChatCompletionRequest, ConversationListItem,
+    ConversationListResponse, ConversationDetailResponse,
     UpdateConversationTitleRequest, UpdateConversationTagsRequest,
     ConversationCompactRequest, ConversationCompactResponse,
     TokenUsage, UpdateConversationStatusRequest
@@ -107,7 +106,7 @@ async def chat_completions(request: ChatCompletionRequest):
 async def get_conversations_list(user_id: str = "default_user"):
     """获取对话列表（返回所有类型的对话）"""
     try:
-        conversations = await mongodb_service.list_conversations(
+        conversations = await mongodb_client.list_conversations(
             user_id=user_id,
             conversation_type=None,
             limit=200,
@@ -169,8 +168,8 @@ async def get_conversations_list(user_id: str = "default_user"):
 async def get_conversation_detail(conversation_id: str):
     """获取对话完整内容（支持所有类型的对话）"""
     try:
-        # 直接调用mongodb_service的get_conversation_with_messages方法
-        conversation = await mongodb_service.get_conversation_with_messages(conversation_id)
+        # 直接调用mongodb_client的get_conversation_with_messages方法
+        conversation = await mongodb_client.get_conversation_with_messages(conversation_id)
 
         if not conversation:
             raise HTTPException(
@@ -215,8 +214,8 @@ async def get_conversation_detail(conversation_id: str):
 async def update_conversation_status(conversation_id: str, request: UpdateConversationStatusRequest):
     """更新对话状态（统一接口：活跃/软删除/收藏）"""
     try:
-        # 调用mongodb_service更新对话状态
-        success = await mongodb_service.update_conversation_status(
+        # 调用mongodb_client更新对话状态
+        success = await mongodb_client.update_conversation_status(
             conversation_id=conversation_id,
             status=request.status,
             user_id=request.user_id
@@ -257,7 +256,7 @@ async def permanently_delete_conversation(conversation_id: str, user_id: str = "
     """永久删除对话"""
     try:
         # 验证对话是否存在且属于该用户
-        conversation = await mongodb_service.get_conversation(conversation_id)
+        conversation = await mongodb_client.get_conversation(conversation_id)
         if not conversation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -271,7 +270,7 @@ async def permanently_delete_conversation(conversation_id: str, user_id: str = "
             )
 
         # 执行硬删除
-        success = await mongodb_service.permanently_delete_conversation(conversation_id)
+        success = await mongodb_client.permanently_delete_conversation(conversation_id)
 
         if not success:
             raise HTTPException(
@@ -307,8 +306,8 @@ async def update_conversation_title(conversation_id: str, request: UpdateConvers
                 detail="标题不能为空"
             )
 
-        # 调用mongodb_service更新标题
-        success = await mongodb_service.update_conversation_title(
+        # 调用mongodb_client更新标题
+        success = await mongodb_client.update_conversation_title(
             conversation_id=conversation_id,
             title=request.title.strip(),
             user_id=request.user_id
@@ -341,8 +340,8 @@ async def update_conversation_title(conversation_id: str, request: UpdateConvers
 async def update_conversation_tags(conversation_id: str, request: UpdateConversationTagsRequest):
     """更新对话标签"""
     try:
-        # 调用mongodb_service更新标签
-        success = await mongodb_service.update_conversation_tags(
+        # 调用mongodb_client更新标签
+        success = await mongodb_client.update_conversation_tags(
             conversation_id=conversation_id,
             tags=request.tags,
             user_id=request.user_id

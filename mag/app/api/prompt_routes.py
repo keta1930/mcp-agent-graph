@@ -3,13 +3,13 @@ Prompt 相关的 API 路由
 提供提示词的 CRUD 操作接口
 """
 import logging
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, status, UploadFile, File, Form
+from typing import Optional
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 
 from ..models.prompt_schema import (
-    PromptCreate, PromptUpdate, PromptImportByPathRequest, PromptImportByFileRequest,
-    PromptExportRequest, PromptBatchDeleteRequest, PromptResponse, PromptErrorResponse
+    PromptCreate, PromptUpdate, PromptImportByFileRequest,
+    PromptExportRequest, PromptBatchDeleteRequest, PromptResponse
 )
 from ..services.prompt_service import prompt_service
 

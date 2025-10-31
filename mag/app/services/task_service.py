@@ -1,11 +1,10 @@
 import asyncio
 import logging
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timezone
-
-from app.services.docdb.task_manager import TaskManager
-from app.services.mongodb_service import mongodb_service
-from app.models.task_schema import Task, TaskCreate, TaskExecutionRecord
+from datetime import datetime
+from app.infrastructure.database.mongodb.repositories import TaskRepository
+from app.infrastructure.database.mongodb import mongodb_client
+from app.models.task_schema import TaskCreate
 from app.services.graph_service import graph_service
 
 logger = logging.getLogger(__name__)
@@ -16,13 +15,13 @@ class TaskService:
 
     def __init__(self):
         """初始化任务服务"""
-        self.task_manager: Optional[TaskManager] = None
+        self.task_repository: Optional[TaskRepository] = None
 
     async def initialize(self):
         """初始化任务管理器"""
-        if mongodb_service.is_connected:
-            # 使用mongodb_service中初始化的task_manager
-            self.task_manager = mongodb_service.task_manager
+        if mongodb_client.is_connected:
+            # 使用mongodb_client中初始化的task_repository
+            self.task_repository = mongodb_client.task_repository
             logger.info("任务管理器初始化成功")
         else:
             logger.error("MongoDB未连接，任务管理器初始化失败")
@@ -30,10 +29,10 @@ class TaskService:
     async def create_task(self, task_create: TaskCreate) -> Dict[str, Any]:
         """创建新任务"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 raise Exception("任务管理器未初始化")
 
             # 转换为字典格式
@@ -45,7 +44,7 @@ class TaskService:
                 raise Exception(f"图 '{task_create.graph_name}' 不存在")
 
             # 创建任务
-            success = await self.task_manager.create_task(task_data)
+            success = await self.task_repository.create_task(task_data)
             if not success:
                 raise Exception("创建任务失败")
 
@@ -65,13 +64,13 @@ class TaskService:
     async def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取单个任务（包含完整执行历史）"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 return None
 
-            return await self.task_manager.get_task(task_id)
+            return await self.task_repository.get_task(task_id)
 
         except Exception as e:
             logger.error(f"获取任务失败: {str(e)}")
@@ -80,13 +79,13 @@ class TaskService:
     async def get_all_tasks(self, user_id: str = None) -> List[Dict[str, Any]]:
         """获取所有任务"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 return []
 
-            return await self.task_manager.get_all_tasks(user_id)
+            return await self.task_repository.get_all_tasks(user_id)
 
         except Exception as e:
             logger.error(f"获取任务列表失败: {str(e)}")
@@ -95,13 +94,13 @@ class TaskService:
     async def update_task_status(self, task_id: str, status: str) -> Dict[str, Any]:
         """更新任务状态"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 raise Exception("任务管理器未初始化")
 
-            success = await self.task_manager.update_task_status(task_id, status)
+            success = await self.task_repository.update_task_status(task_id, status)
             if not success:
                 raise Exception("更新任务状态失败")
 
@@ -120,13 +119,13 @@ class TaskService:
     async def delete_task(self, task_id: str) -> Dict[str, Any]:
         """删除任务"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 raise Exception("任务管理器未初始化")
 
-            success = await self.task_manager.delete_task(task_id)
+            success = await self.task_repository.delete_task(task_id)
             if not success:
                 raise Exception("删除任务失败")
 
@@ -145,13 +144,13 @@ class TaskService:
     async def get_task_execution_history(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取任务执行历史（从单文档获取）"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 return None
 
-            return await self.task_manager.get_task_execution_history(task_id)
+            return await self.task_repository.get_task_execution_history(task_id)
 
         except Exception as e:
             logger.error(f"获取任务执行历史失败: {str(e)}")
@@ -194,7 +193,7 @@ class TaskService:
             # 记录执行历史
             if conversation_ids:
                 executed_at = datetime.now()
-                await self.task_manager.add_execution_record(
+                await self.task_repository.add_execution_record(
                     task.get("id"), task.get("task_name", ""), executed_at, conversation_ids
                 )
 
@@ -208,13 +207,13 @@ class TaskService:
     async def get_active_tasks(self) -> List[Dict[str, Any]]:
         """获取所有活跃的任务"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 return []
 
-            return await self.task_manager.get_active_tasks()
+            return await self.task_repository.get_active_tasks()
 
         except Exception as e:
             logger.error(f"获取活跃任务列表失败: {str(e)}")
@@ -225,17 +224,17 @@ class TaskService:
                                  sort_by: str = "created_at", sort_order: str = "desc") -> List[Dict[str, Any]]:
         """获取任务摘要列表"""
         try:
-            if not self.task_manager:
+            if not self.task_repository:
                 await self.initialize()
 
-            if not self.task_manager:
+            if not self.task_repository:
                 return []
 
             status_value = None
             if status is not None:
                 status_value = getattr(status, "value", status)
 
-            return await self.task_manager.get_task_summaries(
+            return await self.task_repository.get_task_summaries(
                 user_id=user_id,
                 status=status_value,
                 graph_name=graph_name,

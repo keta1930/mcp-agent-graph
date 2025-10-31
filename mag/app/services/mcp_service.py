@@ -5,7 +5,7 @@ from app.services.mcp.server_manager import MCPServerManager
 from app.services.mcp.ai_mcp_generator import AIMCPGenerator
 from app.services.mcp.tool_executor import ToolExecutor
 from app.services.chat.message_builder import MessageBuilder
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 logger = logging.getLogger(__name__)
 
 
@@ -29,10 +29,10 @@ class MCPService:
     async def initialize(self) -> Dict[str, Dict[str, Any]]:
         """初始化MCP服务，启动客户端进程"""
 
-        config = await mongodb_service.get_mcp_config()
+        config = await mongodb_client.get_mcp_config()
         if not config:
             config = {"mcpServers": {}}
-            await mongodb_service.create_mcp_config(config)
+            await mongodb_client.create_mcp_config(config)
 
         result = await self.client_manager.initialize(config)
         self.client_process = self.client_manager.client_process
@@ -54,7 +54,7 @@ class MCPService:
     async def update_config(self, config: Dict[str, Any], expected_version: int = None) -> Dict[str, Dict[str, Any]]:
         """更新MCP配置并通知客户端"""
         if expected_version is None:
-            current_config_data = await mongodb_service.get_mcp_config()
+            current_config_data = await mongodb_client.get_mcp_config()
             if current_config_data:
                 expected_version = current_config_data.get("version", 1)
             else:
@@ -90,7 +90,7 @@ class MCPService:
                 "tools": {}
             }
 
-        current_config = await mongodb_service.get_mcp_config()
+        current_config = await mongodb_client.get_mcp_config()
         return await self.server_manager.connect_all_servers(current_config)
 
     async def disconnect_server(self, server_name: str) -> Dict[str, Any]:
@@ -135,7 +135,7 @@ class MCPService:
 
     async def get_mcp_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取MCP生成对话"""
-        return await mongodb_service.get_mcp_generation_conversation(conversation_id)
+        return await mongodb_client.get_mcp_generation_conversation(conversation_id)
 
     async def register_ai_mcp_tool(self, tool_name: str) -> bool:
         """注册AI生成的MCP工具到配置"""

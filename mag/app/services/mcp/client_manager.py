@@ -7,7 +7,7 @@ import subprocess
 import sys
 import aiohttp
 from app.core.config import settings
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -161,7 +161,7 @@ class MCPClientManager:
     async def update_config(self, config: Dict[str, Any], expected_version: int) -> Dict[str, Dict[str, Any]]:
         """更新MCP配置并通知客户端"""
         try:
-            result = await mongodb_service.update_mcp_config(config, expected_version)
+            result = await mongodb_client.update_mcp_config(config, expected_version)
 
             if not result.get("success"):
                 error_type = result.get("error")

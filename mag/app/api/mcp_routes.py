@@ -4,10 +4,10 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from typing import Dict, List, Any
-from app.core.file_manager import FileManager
+from app.infrastructure.storage.file_storage import FileManager
 from app.services.mcp_service import mcp_service
 from app.services.model_service import model_service
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 from app.models.mcp_schema import (
     MCPGenerationRequest,
     MCPToolRegistration, MCPToolTestRequest, MCPToolTestResponse,
@@ -23,7 +23,7 @@ router = APIRouter(tags=["mcp"])
 @router.get("/mcp/config")
 async def get_mcp_config():
     """获取MCP配置"""
-    config_data = await mongodb_service.get_mcp_config()
+    config_data = await mongodb_client.get_mcp_config()
     if config_data:
         return {
             "mcpServers": config_data.get("config", {}).get("mcpServers", {}),
@@ -100,7 +100,7 @@ async def add_mcp_server(request: MCPServerAddRequest):
                 "skipped_servers": []
             }
 
-        current_config_data = await mongodb_service.get_mcp_config()
+        current_config_data = await mongodb_client.get_mcp_config()
         current_config = current_config_data.get("config", {"mcpServers": {}})
         current_version = current_config_data.get("version", 1)
 
@@ -229,7 +229,7 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
                 "total_requested": 0
             }
 
-        current_config_data = await mongodb_service.get_mcp_config()
+        current_config_data = await mongodb_client.get_mcp_config()
         current_config = current_config_data.get("config", {"mcpServers": {}})
         current_version = current_config_data.get("version", 1)
 

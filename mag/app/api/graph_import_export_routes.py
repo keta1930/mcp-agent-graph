@@ -7,10 +7,10 @@ import os
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
 from typing import Dict, Any
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 from app.services.mcp_service import mcp_service
 from app.core.config import settings
-from app.core.file_manager import FileManager
+from app.infrastructure.storage.file_storage import FileManager
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.templates.flow_diagram import FlowDiagram
@@ -63,7 +63,7 @@ async def import_graph(data: GraphFilePath):
             )
 
         try:
-            mcp_config_data = await mongodb_service.get_mcp_config()
+            mcp_config_data = await mongodb_client.get_mcp_config()
             mcp_config = mcp_config_data.get("config", {"mcpServers": {}}) if mcp_config_data else {"mcpServers": {}}
             filtered_mcp_config = {"mcpServers": {}}
 
@@ -173,7 +173,7 @@ async def import_graph_package(data: GraphFilePath):
                     with open(mcp_path, 'r', encoding='utf-8') as f:
                         import_mcp_config = json.load(f)
 
-                    current_mcp_config_data = await mongodb_service.get_mcp_config()
+                    current_mcp_config_data = await mongodb_client.get_mcp_config()
                     current_mcp_config = current_mcp_config_data.get("config", {"mcpServers": {}}) if current_mcp_config_data else {"mcpServers": {}}
                     current_version = current_mcp_config_data.get("version", 1) if current_mcp_config_data else 1
 
@@ -397,7 +397,7 @@ async def export_graph(graph_name: str):
                 if node.get("model_name"):
                     used_models.add(node.get("model_name"))
 
-            mcp_config_data = await mongodb_service.get_mcp_config()
+            mcp_config_data = await mongodb_client.get_mcp_config()
             mcp_config = mcp_config_data.get("config", {"mcpServers": {}}) if mcp_config_data else {"mcpServers": {}}
             filtered_mcp_config = {"mcpServers": {}}
 

@@ -1,8 +1,7 @@
 import json
 import logging
 from typing import Dict, List, Any, Optional, AsyncGenerator
-
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 from app.services.model_service import model_service
 from app.services.mcp_service import mcp_service
 from app.services.mcp.tool_executor import ToolExecutor
@@ -21,9 +20,9 @@ class ChatService:
     def __init__(self):
         self.active_streams = {}
         self.tool_executor = ToolExecutor(mcp_service)
-        self.message_builder = MessageBuilder(mongodb_service)
+        self.message_builder = MessageBuilder(mongodb_client)
         self.stream_executor = StreamExecutor(self.tool_executor)
-        self.round_saver = RoundSaver(mongodb_service)
+        self.round_saver = RoundSaver(mongodb_client)
 
     async def chat_completions_stream(self,
                                       conversation_id: Optional[str],
@@ -54,7 +53,7 @@ class ChatService:
         try:
             # 只有非临时对话才确保对话存在
             if conversation_id is not None:
-                await mongodb_service.ensure_conversation_exists(conversation_id, user_id)
+                await mongodb_client.ensure_conversation_exists(conversation_id, user_id)
 
             # 构建消息上下文
             if conversation_id is not None:
@@ -152,7 +151,7 @@ class ChatService:
                 summarize_callback = lambda content: self._summarize_tool_content(content, model_name)
 
             # 调用MongoDB服务执行压缩
-            result = await mongodb_service.compact_conversation(
+            result = await mongodb_client.compact_conversation(
                 conversation_id=conversation_id,
                 compact_type=compact_type,
                 compact_threshold=compact_threshold,
@@ -213,7 +212,7 @@ class ChatService:
                                      limit: int = 50, skip: int = 0) -> List[Dict[str, Any]]:
         """获取对话列表"""
         try:
-            return await mongodb_service.list_conversations(user_id, limit, skip)
+            return await mongodb_client.list_conversations(user_id, limit, skip)
         except Exception as e:
             logger.error(f"获取对话列表出错: {str(e)}")
             return []
@@ -221,7 +220,7 @@ class ChatService:
     async def get_conversation_detail(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取对话详情"""
         try:
-            return await mongodb_service.get_conversation_with_messages(conversation_id)
+            return await mongodb_client.get_conversation_with_messages(conversation_id)
         except Exception as e:
             logger.error(f"获取对话详情出错: {str(e)}")
             return None
@@ -229,7 +228,7 @@ class ChatService:
     async def delete_conversation(self, conversation_id: str) -> bool:
         """删除对话"""
         try:
-            return await mongodb_service.delete_conversation(conversation_id)
+            return await mongodb_client.delete_conversation(conversation_id)
         except Exception as e:
             logger.error(f"删除对话出错: {str(e)}")
             return False

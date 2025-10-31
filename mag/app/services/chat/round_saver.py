@@ -8,13 +8,13 @@ logger = logging.getLogger(__name__)
 class RoundSaver:
     """轮次保存器 - 处理对话轮次的数据库保存"""
 
-    def __init__(self, mongodb_service):
+    def __init__(self, mongodb_client):
         """初始化轮次保存器
 
         Args:
-            mongodb_service: MongoDB服务实例
+            mongodb_client: MongoDB服务实例
         """
-        self.mongodb_service = mongodb_service
+        self.mongodb_client = mongodb_client
 
     async def save_complete_round(self,
                                  conversation_id: str,
@@ -38,12 +38,12 @@ class RoundSaver:
             round_number = await self._get_next_round_number(conversation_id)
 
             # 保存轮次消息到数据库
-            await self.mongodb_service.add_round_to_conversation(
+            await self.mongodb_client.add_round_to_conversation(
                 conversation_id, round_number, round_messages, tools_schema, model_name
             )
 
             # 更新对话总token统计
-            await self.mongodb_service.update_conversation_token_usage(
+            await self.mongodb_client.update_conversation_token_usage(
                 conversation_id=conversation_id,
                 prompt_tokens=token_usage["prompt_tokens"],
                 completion_tokens=token_usage["completion_tokens"]
@@ -62,7 +62,7 @@ class RoundSaver:
 
     async def _get_next_round_number(self, conversation_id: str) -> int:
         """获取下一个轮次编号"""
-        conversation_data = await self.mongodb_service.get_conversation_with_messages(conversation_id)
+        conversation_data = await self.mongodb_client.get_conversation_with_messages(conversation_id)
         if not conversation_data or not conversation_data.get("rounds"):
             return 1
         return len(conversation_data["rounds"]) + 1
@@ -88,7 +88,7 @@ class RoundSaver:
                 return
 
             # 调用统一的标题和标签生成方法
-            await self.mongodb_service.conversation_manager.generate_conversation_title_and_tags(
+            await self.mongodb_client.conversation_manager.generate_conversation_title_and_tags(
                 conversation_id=conversation_id,
                 messages=messages,
                 model_config=model_config

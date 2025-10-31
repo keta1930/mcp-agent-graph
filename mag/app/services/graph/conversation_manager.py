@@ -1,11 +1,10 @@
-import re
 import logging
 import uuid
 import time
 import copy
 from datetime import datetime
 import threading
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +68,8 @@ class ConversationManager:
                 "_current_round": 0
             }
 
-            from app.services.mongodb_service import mongodb_service
-            success = await mongodb_service.create_graph_run_conversation(
+            from app.infrastructure.database.mongodb import mongodb_client
+            success = await mongodb_client.create_graph_run_conversation(
                 conversation_id, graph_name, graph_config, "default_user"
             )
 
@@ -94,8 +93,8 @@ class ConversationManager:
         if conversation_id in self.active_conversations:
             return self.active_conversations[conversation_id]
 
-        from app.services.mongodb_service import mongodb_service
-        conversation_data = await mongodb_service.get_graph_run_conversation(conversation_id)
+        from app.infrastructure.database.mongodb import mongodb_client
+        conversation_data = await mongodb_client.get_graph_run_conversation(conversation_id)
 
         if conversation_data:
             logger.info(f"从MongoDB恢复会话 {conversation_id}")
@@ -119,8 +118,8 @@ class ConversationManager:
         try:
             update_data = self._prepare_mongodb_data(conversation)
 
-            from app.services.mongodb_service import mongodb_service
-            success = await mongodb_service.update_graph_run_data(conversation_id, update_data)
+            from app.infrastructure.database.mongodb import mongodb_client
+            success = await mongodb_client.update_graph_run_data(conversation_id, update_data)
 
             return success
         except Exception as e:
@@ -143,8 +142,8 @@ class ConversationManager:
         conversation["global_outputs"][node_name].append(output)
         logger.info(f"已添加节点 '{node_name}' 的全局输出，当前共 {len(conversation['global_outputs'][node_name])} 条")
 
-        from app.services.mongodb_service import mongodb_service
-        await mongodb_service.update_graph_run_global_outputs(conversation_id, node_name, output)
+        from app.infrastructure.database.mongodb import mongodb_client
+        await mongodb_client.update_graph_run_global_outputs(conversation_id, node_name, output)
 
     async def _get_global_outputs(self, conversation_id: str, node_name: str, mode: str = "all") -> List[str]:
         """全局输出获取函数"""
@@ -195,8 +194,8 @@ class ConversationManager:
 
         logger.info(f"更新节点 '{node_name}' 的handoffs状态: {used_count}/{total_limit}")
 
-        from app.services.mongodb_service import mongodb_service
-        await mongodb_service.update_graph_run_handoffs_status(conversation_id, node_name, handoffs_data)
+        from app.infrastructure.database.mongodb import mongodb_client
+        await mongodb_client.update_graph_run_handoffs_status(conversation_id, node_name, handoffs_data)
 
     async def get_handoffs_status(self, conversation_id: str, node_name: str) -> Dict[str, Any]:
         """获取handoffs状态"""
@@ -279,8 +278,8 @@ class ConversationManager:
 
             conversation["final_result"] = output
 
-            from app.services.mongodb_service import mongodb_service
-            await mongodb_service.update_graph_run_final_result(conversation["conversation_id"], output)
+            from app.infrastructure.database.mongodb import mongodb_client
+            await mongodb_client.update_graph_run_final_result(conversation["conversation_id"], output)
 
             return output
 

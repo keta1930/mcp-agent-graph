@@ -1,7 +1,6 @@
 import logging
 from fastapi import APIRouter, HTTPException, status
-
-from app.services.mongodb_service import mongodb_service
+from app.infrastructure.database.mongodb import mongodb_client
 from app.models.preview_schema import (
     PreviewShareRequest,
     PreviewShareResponse,
@@ -23,7 +22,7 @@ async def create_preview_share(request: PreviewShareRequest):
                 detail="内容不能为空"
             )
 
-        result = await mongodb_service.create_preview_share(
+        result = await mongodb_client.create_preview_share(
             lang=request.lang,
             title=request.title,
             content=request.content,
@@ -45,7 +44,7 @@ async def create_preview_share(request: PreviewShareRequest):
 async def get_preview_share(share_id: str):
     """通过短链ID获取预览内容"""
     try:
-        doc = await mongodb_service.get_preview_share(share_id)
+        doc = await mongodb_client.get_preview_share(share_id)
         if not doc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
