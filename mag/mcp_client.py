@@ -1,13 +1,10 @@
 import asyncio
-import json
 import logging
 import os
-import sys
-import time
 import traceback
 import subprocess
 from contextlib import AsyncExitStack
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 import uvicorn
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
@@ -106,7 +103,7 @@ class MCPServer:
     async def _start_ai_process(self) -> bool:
         """启动AI生成的MCP工具进程"""
         try:
-            from app.core.file_manager import FileManager
+            from app.infrastructure.storage.file_storage import FileManager
             
             # 获取脚本路径和虚拟环境Python路径
             script_path = FileManager.get_mcp_tool_main_script(self.name)

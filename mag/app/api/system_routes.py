@@ -1,6 +1,4 @@
 import logging
-import signal
-import os
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from typing import Dict, Any
 

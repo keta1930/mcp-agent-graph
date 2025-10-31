@@ -6,7 +6,6 @@ import io
 import os
 import logging
 from typing import Optional, List, Dict, Any
-from pathlib import Path
 from minio import Minio
 from minio.error import S3Error
 from app.core.config import settings

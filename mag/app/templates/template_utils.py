@@ -3,9 +3,8 @@ import time
 import threading
 import os
 import re
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
-# 添加线程本地存储和计数器
 _thread_local = threading.local()
 _counter_lock = threading.Lock()
 _global_counter = 0

@@ -3,9 +3,7 @@ Prompt 相关的数据模型定义
 """
 import re
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 from pydantic import BaseModel, Field, validator
-from fastapi import UploadFile
 
 
 class PromptCreate(BaseModel):

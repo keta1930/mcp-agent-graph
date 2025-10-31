@@ -1,5 +1,4 @@
-from typing import Dict, List, Any, Optional
-from .template_utils import sanitize_id
+from typing import Dict, List, Any
 
 
 class FlowDiagram:

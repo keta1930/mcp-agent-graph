@@ -1,6 +1,5 @@
 from fastmcp import FastMCP
 import requests
-import json
 
 mcp = FastMCP(
     name="{sanitized_graph_name}_graph",

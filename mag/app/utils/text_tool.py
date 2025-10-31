@@ -1,7 +1,5 @@
 import re
 import hashlib
-from typing import List, Dict, Tuple
-import os
 
 def calculate_sentence_length(text: str) -> int:
     english_words = len([word for word in re.findall(r'[a-zA-Z]+', text)])

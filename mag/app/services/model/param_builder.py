@@ -1,6 +1,6 @@
 """API参数构建器 - 负责构建模型API调用参数"""
 import logging
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 

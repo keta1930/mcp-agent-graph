@@ -1,5 +1,5 @@
-from typing import Dict, List, Optional, Any, Union
-from pydantic import BaseModel, Field, validator, root_validator
+from typing import Dict, List, Optional, Any
+from pydantic import BaseModel, Field, root_validator
 
 class MCPServerConfig(BaseModel):
     """MCP服务器配置"""
