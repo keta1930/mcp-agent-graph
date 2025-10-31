@@ -116,3 +116,72 @@ class GraphConfigRepository:
         except Exception as e:
             logger.error(f"检查图是否存在失败: {str(e)}")
             return False
+
+    async def add_version_record(self, graph_name: str, version_record: Dict[str, Any]) -> bool:
+        """
+        添加版本记录到 version_info.versions 数组
+
+        Args:
+            graph_name: 图名称
+            version_record: 版本记录 {
+                "version_id": "...",
+                "commit_message": "...",
+                "created_at": "...",
+                "size": 2048
+            }
+        """
+        try:
+            result = await self.collection.update_one(
+                {"_id": graph_name},
+                {
+                    "$push": {
+                        "version_info.versions": {
+                            "$each": [version_record],
+                            "$position": 0  # 插入到数组开头（最新的在前）
+                        }
+                    },
+                    "$inc": {
+                        "version_info.version_count": 1
+                    },
+                    "$set": {
+                        "updated_at": datetime.now()
+                    }
+                },
+                upsert=True  # 如果 version_info 不存在则创建
+            )
+            return result.modified_count > 0 or result.upserted_id is not None
+        except Exception as e:
+            logger.error(f"添加版本记录失败: {str(e)}")
+            return False
+
+    async def get_version_info(self, graph_name: str) -> Optional[Dict[str, Any]]:
+        """获取版本信息"""
+        try:
+            doc = await self.collection.find_one({"_id": graph_name})
+            return doc.get("version_info") if doc else None
+        except Exception as e:
+            logger.error(f"获取版本信息失败: {str(e)}")
+            return None
+
+    async def remove_version_record(self, graph_name: str, version_id: str) -> bool:
+        """
+        从 version_info.versions 数组中移除指定版本记录
+        """
+        try:
+            result = await self.collection.update_one(
+                {"_id": graph_name},
+                {
+                    "$pull": {
+                        "version_info.versions": {
+                            "version_id": version_id
+                        }
+                    },
+                    "$inc": {
+                        "version_info.version_count": -1
+                    }
+                }
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            logger.error(f"移除版本记录失败: {str(e)}")
+            return False

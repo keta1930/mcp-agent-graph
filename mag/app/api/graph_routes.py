@@ -430,3 +430,128 @@ async def delete_attachment(object_path: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"删除附件时出错: {str(e)}"
         )
+
+
+# ======= 版本管理 API =======
+
+@router.post("/graphs/{graph_name}/create-version")
+async def create_graph_version(graph_name: str, request: Dict[str, Any]):
+    """
+    为当前图配置创建版本快照
+
+    将当前 MongoDB 中的配置同步到 MinIO，创建一个带有提交信息的版本快照
+    """
+    try:
+        # 检查图是否存在
+        graph_config = await graph_service.get_graph(graph_name)
+        if not graph_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到图 '{graph_name}'"
+            )
+
+        commit_message = request.get("commit_message")
+        if not commit_message:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="commit_message 是必填项"
+            )
+
+        result = await graph_service.create_graph_version(
+            graph_name,
+            commit_message=commit_message
+        )
+
+        if result["status"] == "error":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result["message"]
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"创建版本失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"创建版本失败: {str(e)}"
+        )
+
+
+@router.get("/graphs/{graph_name}/versions")
+async def get_graph_versions(graph_name: str):
+    """
+    获取图的所有版本历史
+
+    返回完整的版本树，包括版本ID、提交信息、创建时间等
+    """
+    try:
+        result = await graph_service.get_graph_versions(graph_name)
+        return result
+    except Exception as e:
+        logger.error(f"获取版本列表失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取版本列表失败: {str(e)}"
+        )
+
+
+@router.get("/graphs/{graph_name}/versions/{version_id}")
+async def get_graph_version(graph_name: str, version_id: str):
+    """
+    获取特定版本的配置
+
+    用于查看历史版本，前端可以加载到编辑器中查看或修改
+    """
+    try:
+        result = await graph_service.get_graph_version(graph_name, version_id)
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="版本不存在"
+            )
+
+        return {
+            "version_id": version_id,
+            "graph_name": graph_name,
+            "commit_message": result.get("commit_message"),
+            "config": result["config"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取版本配置失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取版本配置失败: {str(e)}"
+        )
+
+
+@router.delete("/graphs/{graph_name}/versions/{version_id}")
+async def delete_graph_version(graph_name: str, version_id: str):
+    """
+    删除特定版本
+
+    同时删除 MinIO 中的版本和 MongoDB 中的版本记录
+    """
+    try:
+        result = await graph_service.delete_graph_version(graph_name, version_id)
+
+        if result["status"] == "error":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result["message"]
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除版本失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"删除版本失败: {str(e)}"
+        )

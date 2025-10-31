@@ -1,6 +1,7 @@
 import logging
 import re
 import copy
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import os
 from app.infrastructure.storage.file_storage import FileManager
@@ -14,6 +15,7 @@ from app.services.graph.ai_graph_generator import AIGraphGenerator
 from app.utils.sse_helper import SSEHelper
 from app.services.graph.background_executor import BackgroundExecutor
 from app.infrastructure.database.mongodb import mongodb_client
+from app.infrastructure.storage.object_storage.graph_config_version_manager import graph_config_version_manager
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +57,14 @@ class GraphService:
         return await self.mongodb_client.create_graph_config(graph_name, config)
 
     async def delete_graph(self, graph_name: str) -> bool:
-        """删除图配置"""
-        return await self.mongodb_client.delete_graph_config(graph_name)
+        """删除图配置（包括所有版本）"""
+        # 删除 MongoDB
+        mongo_success = await self.mongodb_client.delete_graph_config(graph_name)
+
+        # 删除 MinIO 所有版本
+        minio_success = graph_config_version_manager.delete_all_versions(graph_name)
+
+        return mongo_success
 
     async def rename_graph(self, old_name: str, new_name: str) -> bool:
         """重命名图"""
@@ -411,6 +419,168 @@ class GraphService:
     def task_scheduler(self):
         """获取任务调度器实例"""
         return self._task_scheduler
+
+    # ======= 版本管理 =======
+
+    async def create_graph_version(self, graph_name: str, commit_message: str) -> Dict[str, Any]:
+        """
+        为当前图配置创建版本快照
+
+        Args:
+            graph_name: 图名称
+            commit_message: 提交信息（类似 Git commit message）
+
+        Returns:
+            Dict: 创建结果
+        """
+        try:
+            # 1. 获取当前 MongoDB 中的配置
+            current_config = await self.get_graph(graph_name)
+            if not current_config:
+                return {
+                    "status": "error",
+                    "message": f"图 '{graph_name}' 不存在"
+                }
+
+            # 2. 创建 MinIO 版本
+            version_result = graph_config_version_manager.create_version(
+                graph_name,
+                current_config
+            )
+
+            if not version_result:
+                return {
+                    "status": "error",
+                    "message": "创建版本失败"
+                }
+
+            version_id = version_result["version_id"]
+            size = version_result["size"]
+
+            # 3. 添加版本记录到 MongoDB
+            version_record = {
+                "version_id": version_id,
+                "commit_message": commit_message,
+                "created_at": datetime.now().isoformat(),
+                "size": size
+            }
+
+            success = await self.mongodb_client.add_graph_version_record(graph_name, version_record)
+
+            if not success:
+                logger.warning(f"版本记录添加到 MongoDB 失败，但 MinIO 版本已创建: {version_id}")
+
+            # 4. 获取更新后的版本计数
+            version_info = await self.mongodb_client.get_graph_version_info(graph_name)
+            version_count = version_info.get("version_count", 1) if version_info else 1
+
+            return {
+                "status": "success",
+                "message": f"版本创建成功",
+                "version_id": version_id,
+                "version_count": version_count
+            }
+
+        except Exception as e:
+            logger.error(f"创建图版本失败: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"创建版本失败: {str(e)}"
+            }
+
+    async def get_graph_versions(self, graph_name: str) -> Dict[str, Any]:
+        """获取图的所有版本历史"""
+        try:
+            version_info = await self.mongodb_client.get_graph_version_info(graph_name)
+
+            if not version_info or not version_info.get("versions"):
+                return {
+                    "graph_name": graph_name,
+                    "version_count": 0,
+                    "versions": []
+                }
+
+            return {
+                "graph_name": graph_name,
+                "version_count": version_info.get("version_count", 0),
+                "versions": version_info.get("versions", [])
+            }
+
+        except Exception as e:
+            logger.error(f"获取版本列表失败: {str(e)}")
+            return {
+                "graph_name": graph_name,
+                "version_count": 0,
+                "versions": []
+            }
+
+    async def get_graph_version(self, graph_name: str, version_id: str) -> Optional[Dict[str, Any]]:
+        """
+        获取特定版本的配置
+
+        Returns:
+            Dict 包含 config 和 commit_message
+        """
+        try:
+            # 从 MinIO 获取配置
+            config = graph_config_version_manager.get_version(graph_name, version_id)
+            if not config:
+                return None
+
+            # 从 MongoDB 获取 commit_message
+            version_info = await self.mongodb_client.get_graph_version_info(graph_name)
+            commit_message = None
+
+            if version_info and version_info.get("versions"):
+                for v in version_info["versions"]:
+                    if v["version_id"] == version_id:
+                        commit_message = v.get("commit_message")
+                        break
+
+            return {
+                "config": config,
+                "commit_message": commit_message
+            }
+
+        except Exception as e:
+            logger.error(f"获取版本配置失败: {str(e)}")
+            return None
+
+    async def delete_graph_version(self, graph_name: str, version_id: str) -> Dict[str, Any]:
+        """
+        删除特定版本
+
+        同时删除 MinIO 中的版本和 MongoDB 中的版本记录
+        """
+        try:
+            # 1. 从 MinIO 删除版本
+            minio_success = graph_config_version_manager.delete_version(graph_name, version_id)
+
+            # 2. 从 MongoDB 删除版本记录
+            mongo_success = await self.mongodb_client.remove_graph_version_record(graph_name, version_id)
+
+            if minio_success and mongo_success:
+                return {
+                    "status": "success",
+                    "message": f"版本 {version_id} 已删除"
+                }
+            elif minio_success and not mongo_success:
+                return {
+                    "status": "warning",
+                    "message": f"版本从 MinIO 删除成功，但 MongoDB 记录删除失败"
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": "删除版本失败"
+                }
+
+        except Exception as e:
+            logger.error(f"删除版本失败: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"删除版本失败: {str(e)}"
+            }
 
 
 graph_service = GraphService()

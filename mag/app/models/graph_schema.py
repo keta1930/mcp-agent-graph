@@ -106,3 +106,35 @@ class PromptTemplateRequest(BaseModel):
     mcp_servers: List[str] = Field(default=[], description="需要使用的MCP服务器名称列表")
     graph_name: Optional[str] = Field(None, description="图名称，用于包含具体图配置")
 
+# ======= 版本管理相关模型 =======
+
+class CreateVersionRequest(BaseModel):
+    """创建版本请求"""
+    commit_message: str = Field(..., description="提交信息（类似 Git commit message）", min_length=1)
+
+class CreateVersionResponse(BaseModel):
+    """创建版本响应"""
+    status: str = Field(..., description="状态")
+    message: str = Field(..., description="消息")
+    version_id: Optional[str] = Field(None, description="MinIO版本ID")
+    version_count: Optional[int] = Field(None, description="当前版本总数")
+
+class GraphVersionRecord(BaseModel):
+    """图版本记录"""
+    version_id: str = Field(..., description="MinIO版本ID")
+    commit_message: str = Field(..., description="提交信息")
+    created_at: str = Field(..., description="创建时间（ISO格式）")
+    size: int = Field(..., description="配置文件大小（字节）")
+
+class GraphVersionListResponse(BaseModel):
+    """版本列表响应"""
+    graph_name: str
+    version_count: int
+    versions: List[GraphVersionRecord]
+
+class GetVersionConfigResponse(BaseModel):
+    """获取版本配置响应"""
+    version_id: str
+    graph_name: str
+    commit_message: Optional[str] = None
+    config: Dict[str, Any]

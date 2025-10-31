@@ -221,6 +221,18 @@ class MongoDBClient:
         """检查图是否存在"""
         return await self.graph_config_repository.graph_exists(graph_name)
 
+    async def add_graph_version_record(self, graph_name: str, version_record: Dict[str, Any]) -> bool:
+        """添加图配置版本记录"""
+        return await self.graph_config_repository.add_version_record(graph_name, version_record)
+
+    async def get_graph_version_info(self, graph_name: str) -> Optional[Dict[str, Any]]:
+        """获取图配置版本信息"""
+        return await self.graph_config_repository.get_version_info(graph_name)
+
+    async def remove_graph_version_record(self, graph_name: str, version_id: str) -> bool:
+        """移除图配置版本记录"""
+        return await self.graph_config_repository.remove_version_record(graph_name, version_id)
+
         # === 预览短链管理 ===
 
     async def create_preview_share(self, lang: str, title: Optional[str], content: str,
