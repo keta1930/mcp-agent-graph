@@ -210,3 +210,48 @@ export const getGraphReadme = async (graphName: string): Promise<GraphReadmeResp
   const response = await api.get(`/graphs/${graphName}/readme`);
   return response.data;
 };
+
+// ======= 版本管理功能 =======
+
+/**
+ * 创建图版本快照
+ */
+export const createGraphVersion = async (
+  graphName: string,
+  commitMessage: string
+): Promise<any> => {
+  const response = await api.post(`/graphs/${graphName}/create-version`, {
+    commit_message: commitMessage
+  });
+  return response.data;
+};
+
+/**
+ * 获取图的版本列表
+ */
+export const getGraphVersions = async (graphName: string): Promise<any> => {
+  const response = await api.get(`/graphs/${graphName}/versions`);
+  return response.data;
+};
+
+/**
+ * 获取特定版本的配置
+ */
+export const getGraphVersion = async (
+  graphName: string,
+  versionId: string
+): Promise<any> => {
+  const response = await api.get(`/graphs/${graphName}/versions/${versionId}`);
+  return response.data;
+};
+
+/**
+ * 删除特定版本
+ */
+export const deleteGraphVersion = async (
+  graphName: string,
+  versionId: string
+): Promise<any> => {
+  const response = await api.delete(`/graphs/${graphName}/versions/${versionId}`);
+  return response.data;
+};

@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import * as graphService from '../services/graphService';
-import { AgentNode, BackendGraphConfig, NodePosition } from '../types/graph';
+import { AgentNode, BackendGraphConfig, NodePosition, GraphVersionRecord } from '../types/graph';
 
 interface GraphConfig {
   name: string;
@@ -58,6 +58,14 @@ interface GraphEditorState {
 
   // MCP导出
   generateMCPScript: (graphName: string) => Promise<any>;
+
+  // 版本管理
+  versions: GraphVersionRecord[];
+  loadingVersions: boolean;
+  fetchVersions: (graphName: string) => Promise<void>;
+  createVersion: (graphName: string, commitMessage: string) => Promise<void>;
+  loadVersion: (graphName: string, versionId: string) => Promise<void>;
+  deleteVersion: (graphName: string, versionId: string) => Promise<void>;
 }
 
 // 创建默认节点
@@ -254,6 +262,10 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
   loading: false,
   selectedNode: null,
   dirty: false,
+
+  // 版本管理状态
+  versions: [],
+  loadingVersions: false,
 
   fetchGraphs: async () => {
     try {
@@ -688,6 +700,111 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       set({
         loading: false,
         error: error instanceof Error ? error.message : `Failed to generate MCP script for ${graphName}`
+      });
+      throw error;
+    }
+  },
+
+  // ======= 版本管理方法 =======
+
+  /**
+   * 获取图的版本列表
+   */
+  fetchVersions: async (graphName) => {
+    try {
+      set({ loadingVersions: true, error: undefined });
+      const result = await graphService.getGraphVersions(graphName);
+      set({
+        versions: result.versions || [],
+        loadingVersions: false
+      });
+    } catch (error) {
+      set({
+        loadingVersions: false,
+        versions: [],
+        error: error instanceof Error ? error.message : '获取版本列表失败'
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * 创建新版本
+   */
+  createVersion: async (graphName, commitMessage) => {
+    try {
+      set({ loading: true, error: undefined });
+
+      // 如果有未保存的更改，先保存
+      const { currentGraph, dirty } = get();
+      if (currentGraph && currentGraph.name === graphName && dirty) {
+        await get().saveGraph();
+      }
+
+      await graphService.createGraphVersion(graphName, commitMessage);
+
+      // 刷新版本列表
+      await get().fetchVersions(graphName);
+
+      set({ loading: false });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : '创建版本失败'
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * 加载特定版本到编辑器
+   * 注意：加载历史版本后标记为 dirty，因为与 MongoDB 中的最新版本不同
+   */
+  loadVersion: async (graphName, versionId) => {
+    try {
+      set({ loading: true, error: undefined });
+
+      // 获取历史版本配置
+      const result = await graphService.getGraphVersion(graphName, versionId);
+      const graph = convertFromBackendFormat(result.config);
+
+      // 重新加载 MongoDB 中的最新版本作为 originalGraph
+      const latestBackendGraph = await graphService.getGraph(graphName);
+      const originalGraph = convertFromBackendFormat(latestBackendGraph);
+
+      set({
+        currentGraph: graph,
+        originalGraph: originalGraph,  // 保持最新版本作为对比基准
+        loading: false,
+        selectedNode: null,
+        dirty: true  // 标记为未保存，因为历史版本与最新版本不同
+      });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : '加载版本失败'
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * 删除特定版本
+   */
+  deleteVersion: async (graphName, versionId) => {
+    try {
+      set({ loading: true, error: undefined });
+
+      await graphService.deleteGraphVersion(graphName, versionId);
+
+      // 刷新版本列表
+      await get().fetchVersions(graphName);
+
+      set({ loading: false });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : '删除版本失败'
       });
       throw error;
     }

@@ -91,3 +91,51 @@ export const SAVE_FORMAT_OPTIONS = [
   { label: 'XML (.xml)', value: 'xml' },
 ] as const;
 
+// ======= 版本管理相关类型 =======
+
+/**
+ * 图版本记录
+ */
+export interface GraphVersionRecord {
+  version_id: string;
+  commit_message: string;
+  created_at: string;
+  size: number;
+}
+
+/**
+ * 版本列表响应
+ */
+export interface GraphVersionListResponse {
+  graph_name: string;
+  version_count: number;
+  versions: GraphVersionRecord[];
+}
+
+/**
+ * 创建版本请求
+ */
+export interface CreateVersionRequest {
+  commit_message: string;
+}
+
+/**
+ * 创建版本响应
+ */
+export interface CreateVersionResponse {
+  status: string;
+  message: string;
+  version_id?: string;
+  version_count?: number;
+}
+
+/**
+ * 获取版本配置响应
+ */
+export interface GetVersionConfigResponse {
+  version_id: string;
+  graph_name: string;
+  commit_message?: string;
+  config: BackendGraphConfig;
+}
+
