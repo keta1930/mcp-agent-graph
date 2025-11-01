@@ -288,7 +288,7 @@ const GraphCanvas: React.FC = () => {
       <div style={{
         position: 'absolute',
         top: '16px',
-        right: '16px',
+        left: '16px',
         zIndex: 10,
         background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(8px)',
