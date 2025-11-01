@@ -2,35 +2,35 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { Card, Alert, Spin, Typography, Empty, Button, Tooltip, Space, Modal, Form, Input, Tour } from 'antd';
-import { 
+import {
   PlusOutlined, InfoCircleOutlined, WarningOutlined, QuestionCircleOutlined,
-  BulbOutlined, EyeOutlined
+  BulbOutlined, EyeOutlined, BranchesOutlined
 } from '@ant-design/icons';
 import GraphCanvas from '../components/graph-editor/GraphCanvas';
 import NodePropertiesPanel from '../components/graph-editor/NodePropertiesPanel';
 import GraphControls from '../components/graph-editor/GraphControls';
 import AddNodeModal from '../components/graph-editor/AddNodeModal';
+import GraphVersionManager from '../components/graph-editor/GraphVersionManager';
 import { useGraphEditorStore } from '../store/graphEditorStore';
-import { useMCPStore } from '../store/mcpStore';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
 const GraphEditor: React.FC = () => {
-  const { 
-    fetchGraphs, 
-    addNode, 
-    loading, 
-    error, 
+  const {
+    fetchGraphs,
+    addNode,
+    loading,
+    error,
     currentGraph,
     selectedNode,
     selectNode,
     createNewGraph,
     graphs
   } = useGraphEditorStore();
-  const { fetchConfig, fetchStatus, config, status } = useMCPStore();
   const [addNodeModalVisible, setAddNodeModalVisible] = useState(false);
   const [newGraphModalVisible, setNewGraphModalVisible] = useState(false);
+  const [versionManagerVisible, setVersionManagerVisible] = useState(false);
   
   // 教学引导相关状态
   const [tourOpen, setTourOpen] = useState(false);
@@ -44,11 +44,6 @@ const GraphEditor: React.FC = () => {
   const createGraphBtnRef = useRef<HTMLButtonElement>(null);
   
   const [form] = Form.useForm();
-
-  // 检查是否有连接的MCP服务器
-  const hasConnectedServers = Object.values(status || {}).some(serverStatus => 
-    serverStatus?.connected
-  );
 
   // 检查是否为首次访问
   const isFirstVisit = () => {
@@ -292,8 +287,6 @@ const GraphEditor: React.FC = () => {
 
   useEffect(() => {
     fetchGraphs();
-    fetchConfig();
-    fetchStatus();
 
     // 首次访问自动显示引导（延迟一点确保页面完全加载）
     const timer = setTimeout(() => {
@@ -302,16 +295,10 @@ const GraphEditor: React.FC = () => {
       }
     }, 1500);
 
-    // Set up a timer to periodically refresh status
-    const statusInterval = setInterval(() => {
-      fetchStatus();
-    }, 30000); // Refresh status every 30 seconds
-
     return () => {
       clearTimeout(timer);
-      clearInterval(statusInterval);
     };
-  }, [fetchGraphs, fetchConfig, fetchStatus]);
+  }, [fetchGraphs]);
 
   const handleAddNode = (nodeData: any) => {
     // Preset node position at the center of canvas with some randomization
@@ -366,26 +353,6 @@ const GraphEditor: React.FC = () => {
     setCurrent(current);
   };
 
-  // 渲染连接状态警告
-  const renderConnectionWarning = () => {
-    if (hasConnectedServers || !currentGraph) return null;
-
-    return (
-      <Alert
-        message="MCP服务器连接"
-        description="当前没有连接的MCP服务器。某些节点功能可能无法正常工作。"
-        type="warning"
-        showIcon
-        className="mb-4"
-        action={
-          <Button size="small" type="text">
-            检查连接
-          </Button>
-        }
-      />
-    );
-  };
-
   return (
     <div className="space-y-4">
       {error && (
@@ -398,8 +365,6 @@ const GraphEditor: React.FC = () => {
           closable
         />
       )}
-
-      {renderConnectionWarning()}
 
       {/* 新手引导按钮 */}
       <div style={{ 
@@ -485,11 +450,21 @@ const GraphEditor: React.FC = () => {
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>图画布 - {currentGraph.name}</span>
-                {currentGraph.description && (
-                  <Tooltip title={currentGraph.description}>
-                    <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                <Space>
+                  <Tooltip title="版本管理">
+                    <Button
+                      type="text"
+                      icon={<BranchesOutlined />}
+                      onClick={() => setVersionManagerVisible(true)}
+                      style={{ color: '#8c8c8c' }}
+                    />
                   </Tooltip>
-                )}
+                  {currentGraph.description && (
+                    <Tooltip title={currentGraph.description}>
+                      <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                    </Tooltip>
+                  )}
+                </Space>
               </div>
             }
           >
@@ -553,6 +528,15 @@ const GraphEditor: React.FC = () => {
         onClose={() => setAddNodeModalVisible(false)}
         onAdd={handleAddNode}
       />
+
+      {/* 版本管理 */}
+      {currentGraph && (
+        <GraphVersionManager
+          visible={versionManagerVisible}
+          onClose={() => setVersionManagerVisible(false)}
+          graphName={currentGraph.name}
+        />
+      )}
 
       {/* 教学引导组件 */}
       <Tour
