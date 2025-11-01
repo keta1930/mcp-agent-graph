@@ -9,7 +9,7 @@ import {
   DeleteOutlined, InfoCircleOutlined, ImportOutlined, ExportOutlined,
   RobotOutlined, DownOutlined, FileTextOutlined, UploadOutlined, QuestionCircleOutlined,
   InboxOutlined, SettingOutlined, ThunderboltOutlined, FolderOpenOutlined,
-  BranchesOutlined, ToolOutlined, PartitionOutlined, BulbOutlined, RocketOutlined
+  ToolOutlined, PartitionOutlined, BulbOutlined, RocketOutlined
 } from '@ant-design/icons';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
@@ -460,42 +460,34 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   // 更多操作菜单
   const moreMenu = (
     <Menu>
-      <Menu.Item 
-        key="auto-layout" 
-        icon={<PartitionOutlined />} 
-        onClick={handleAutoLayout}
-        disabled={!currentGraph?.name || currentGraph.nodes.length === 0}
-      >
-        自动布局
-      </Menu.Item>
-      <Menu.Item 
-        key="readme" 
-        icon={<FileTextOutlined />} 
+      <Menu.Item
+        key="readme"
+        icon={<FileTextOutlined />}
         onClick={handleViewReadme}
         disabled={!currentGraph?.name}
       >
         查看README
       </Menu.Item>
-      <Menu.Item 
-        key="settings" 
-        icon={<SettingOutlined />} 
+      <Menu.Item
+        key="settings"
+        icon={<SettingOutlined />}
         onClick={handleGraphSettings}
         disabled={!currentGraph?.name}
       >
         图设置
       </Menu.Item>
-      <Menu.Item 
-        key="export-mcp" 
-        icon={<CodeOutlined />} 
+      <Menu.Item
+        key="export-mcp"
+        icon={<CodeOutlined />}
         onClick={handleExportMCP}
         disabled={!currentGraph?.name}
       >
         导出MCP
       </Menu.Item>
       <Menu.Divider />
-      <Menu.Item 
-        key="delete" 
-        icon={<DeleteOutlined />} 
+      <Menu.Item
+        key="delete"
+        icon={<DeleteOutlined />}
         onClick={() => setDeleteModalVisible(true)}
         disabled={!currentGraph?.name}
         danger
@@ -552,7 +544,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
                 disabled={!currentGraph}
                 size="middle"
               >
-                添加节点
+                节点
               </Button>
 
               <Tooltip title="根据节点层级关系自动排列节点位置">
@@ -562,7 +554,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
                   disabled={!currentGraph?.name || currentGraph.nodes.length === 0}
                   size="middle"
                 >
-                  自动布局
+                  布局
                 </Button>
               </Tooltip>
 
@@ -571,8 +563,6 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
                   <ImportOutlined /> 导入/导出 <DownOutlined />
                 </Button>
               </Dropdown>
-
-              <ServerStatusIndicator />
             </Space>
           </Col>
 
