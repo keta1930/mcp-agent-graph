@@ -41,22 +41,27 @@
   padding: 20px;
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .version-create-section .section-title {
   font-size: 14px;
   color: #7f8c8d;
-  margin-bottom: 12px;
   font-style: italic;
+  flex: 1;
 }
 
 .version-create-section .ant-btn-primary {
   background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
   border: none;
   border-radius: 8px;
-  height: 40px;
-  font-size: 15px;
+  height: 36px;
+  font-size: 14px;
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+  flex-shrink: 0;
 }
 
 /* 版本历史区域 */

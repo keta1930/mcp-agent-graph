@@ -15,7 +15,6 @@ import {
   Card
 } from 'antd';
 import {
-  BranchesOutlined,
   PlusOutlined,
   HistoryOutlined
 } from '@ant-design/icons';
@@ -138,12 +137,6 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
     <>
       {contextHolder}
       <Modal
-        title={
-          <Space>
-            <BranchesOutlined />
-            <span>版本历史 - {graphName}</span>
-          </Space>
-        }
         open={visible}
         onCancel={onClose}
         footer={null}
@@ -161,9 +154,8 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setCreateVersionModalVisible(true)}
-              block
             >
-              创建新版本
+              新版本
             </Button>
           </div>
 
