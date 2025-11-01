@@ -276,14 +276,14 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
             rules={[
               { required: true, message: '请输入提交信息' },
               { min: 5, message: '提交信息至少5个字符' },
-              { max: 200, message: '提交信息不能超过200个字符' }
+              { max: 1000, message: '提交信息不能超过1000个字符' }
             ]}
           >
             <TextArea
               rows={4}
               placeholder="描述本次版本的主要变更内容，例如：添加数据处理节点、优化提示词、修复连接错误等"
               showCount
-              maxLength={200}
+              maxLength={1000}
             />
           </Form.Item>
 
