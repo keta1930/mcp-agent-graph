@@ -2,13 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
-  Timeline,
   Button,
   Form,
   Input,
   Spin,
   Empty,
-  Typography,
   Space,
   Tag,
   Tooltip,
@@ -19,23 +17,18 @@ import {
 import {
   BranchesOutlined,
   PlusOutlined,
-  HistoryOutlined,
-  DeleteOutlined,
-  DownloadOutlined,
-  ClockCircleOutlined,
-  FileOutlined,
-  MessageOutlined
+  HistoryOutlined
 } from '@ant-design/icons';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
+import './GraphVersionManager.css';
 
 // 配置 dayjs
 dayjs.extend(relativeTime);
 dayjs.locale('zh-cn');
 
-const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 interface GraphVersionManagerProps {
@@ -153,131 +146,112 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
         }
         open={visible}
         onCancel={onClose}
-        footer={[
-          <Button key="close" onClick={onClose}>
-            关闭
-          </Button>
-        ]}
+        footer={null}
         width={800}
-        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+        className="version-manager-modal"
+        styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {/* 创建新版本按钮 */}
-          <Card size="small" style={{ background: '#f6f8fa' }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text type="secondary">
-                为当前图配置创建版本快照，便于追踪变更历史和版本回退
-              </Text>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setCreateVersionModalVisible(true)}
-                block
-              >
-                创建新版本
-              </Button>
-            </Space>
-          </Card>
+          {/* 创建新版本区域 */}
+          <div className="version-create-section">
+            <div className="section-title">
+              为当前图配置创建版本快照，便于追踪变更历史和版本回退
+            </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateVersionModalVisible(true)}
+              block
+            >
+              创建新版本
+            </Button>
+          </div>
 
-          {/* 版本列表 */}
-          <div>
-            <Title level={5}>
-              <HistoryOutlined /> 版本历史 ({versions.length})
-            </Title>
+          {/* 版本历史区域 */}
+          <div className="version-history-section">
+            <div className="version-history-title">
+              <HistoryOutlined />
+              <span>版本历史</span>
+              <span className="version-history-count">({versions.length})</span>
+            </div>
 
-            <Spin spinning={loadingVersions}>
-              {versions.length === 0 ? (
+            {loadingVersions ? (
+              <div className="version-loading">
+                <Spin tip="加载版本列表中..." />
+              </div>
+            ) : versions.length === 0 ? (
+              <div className="version-empty">
                 <Empty
-                  description="暂无版本历史"
+                  description={null}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
-                >
-                  <Text type="secondary">
-                    点击上方"创建新版本"按钮保存当前配置
-                  </Text>
-                </Empty>
-              ) : (
-                <Timeline
-                  mode="left"
-                  items={versions.map((version, index) => ({
-                    color: index === 0 ? 'green' : 'blue',
-                    dot: index === 0 ? <ClockCircleOutlined style={{ fontSize: '16px' }} /> : undefined,
-                    children: (
-                      <Card
-                        size="small"
-                        style={{ marginBottom: '16px' }}
-                        extra={
-                          <Space>
-                            <Tooltip title="加载此版本">
-                              <Button
-                                type="link"
-                                icon={<DownloadOutlined />}
-                                size="small"
-                                onClick={() => handleLoadVersion(version.version_id, version.commit_message)}
-                              >
-                                加载
-                              </Button>
-                            </Tooltip>
-                            <Popconfirm
-                              title="确定要删除此版本吗？"
-                              description="此操作不可撤销"
-                              onConfirm={() => handleDeleteVersion(version.version_id)}
-                              okText="删除"
-                              cancelText="取消"
-                              okButtonProps={{ danger: true }}
-                            >
-                              <Button
-                                type="link"
-                                danger
-                                icon={<DeleteOutlined />}
-                                size="small"
-                              >
-                                删除
-                              </Button>
-                            </Popconfirm>
-                          </Space>
-                        }
-                      >
-                        <Space direction="vertical" style={{ width: '100%' }}>
-                          {/* 版本标识 */}
-                          <div>
-                            {index === 0 && (
-                              <Tag color="green" style={{ marginRight: 8 }}>
-                                最新版本
-                              </Tag>
-                            )}
-                            <Text type="secondary" style={{ fontSize: '12px' }}>
-                              Version ID: {version.version_id.substring(0, 16)}...
-                            </Text>
-                          </div>
-
-                          {/* 提交信息 */}
-                          <div>
-                            <MessageOutlined style={{ marginRight: 8, color: '#8c8c8c' }} />
-                            <Text strong>{version.commit_message}</Text>
-                          </div>
-
-                          {/* 元数据 */}
-                          <Space size="large">
-                            <Tooltip title="创建时间">
-                              <Text type="secondary" style={{ fontSize: '12px' }}>
-                                <ClockCircleOutlined style={{ marginRight: 4 }} />
-                                {dayjs(version.created_at).fromNow()} ({dayjs(version.created_at).format('YYYY-MM-DD HH:mm:ss')})
-                              </Text>
-                            </Tooltip>
-                            <Tooltip title="配置文件大小">
-                              <Text type="secondary" style={{ fontSize: '12px' }}>
-                                <FileOutlined style={{ marginRight: 4 }} />
-                                {formatFileSize(version.size)}
-                              </Text>
-                            </Tooltip>
-                          </Space>
-                        </Space>
-                      </Card>
-                    )
-                  }))}
                 />
-              )}
-            </Spin>
+                <div className="version-empty-text">
+                  暂无版本历史，点击上方"创建新版本"按钮保存当前配置
+                </div>
+              </div>
+            ) : (
+              <div>
+                {versions.map((version, index) => (
+                  <Card
+                    key={version.version_id}
+                    size="small"
+                    className={index === 0 ? 'version-item latest' : 'version-item'}
+                  >
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {/* 第一行：元数据和操作按钮 */}
+                      <div className="version-item-header">
+                        <div className="version-item-meta">
+                          <span className="version-item-id">
+                            {version.version_id.substring(0, 16)}...
+                          </span>
+                          <Tooltip title={dayjs(version.created_at).format('YYYY-MM-DD HH:mm:ss')}>
+                            <span className="version-item-meta-item">
+                              {dayjs(version.created_at).fromNow()}
+                            </span>
+                          </Tooltip>
+                          <span className="version-item-meta-item">
+                            {formatFileSize(version.size)}
+                          </span>
+                          {index === 0 && (
+                            <Tag className="latest-tag">最新版本</Tag>
+                          )}
+                        </div>
+                        <Space className="version-item-actions">
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => handleLoadVersion(version.version_id, version.commit_message)}
+                          >
+                            加载
+                          </Button>
+                          <Popconfirm
+                            title="确定要删除此版本吗？"
+                            description="此操作不可撤销"
+                            onConfirm={() => handleDeleteVersion(version.version_id)}
+                            okText="删除"
+                            cancelText="取消"
+                            okButtonProps={{ danger: true }}
+                          >
+                            <Button
+                              type="link"
+                              danger
+                              size="small"
+                            >
+                              删除
+                            </Button>
+                          </Popconfirm>
+                        </Space>
+                      </div>
+
+                      {/* 第二行：提交信息 */}
+                      <div className="version-item-message">
+                        {version.commit_message}
+                      </div>
+                    </Space>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </Space>
       </Modal>
@@ -293,6 +267,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
         }}
         okText="创建"
         cancelText="取消"
+        className="create-version-modal"
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -312,15 +287,9 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
             />
           </Form.Item>
 
-          <div style={{
-            padding: '12px',
-            backgroundColor: '#f6f8fa',
-            borderRadius: '6px',
-            fontSize: '12px',
-            color: '#666'
-          }}>
-            <Text strong>提示：</Text>
-            <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+          <div className="version-create-tips">
+            <div className="version-create-tips-title">提示：</div>
+            <ul>
               <li>提交信息应清晰描述此版本的主要变更</li>
               <li>版本将保存当前的完整图配置</li>
               <li>如果有未保存的更改，将自动先保存</li>
