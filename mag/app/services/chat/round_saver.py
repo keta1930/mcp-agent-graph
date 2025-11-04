@@ -88,7 +88,7 @@ class RoundSaver:
                 return
 
             # 调用统一的标题和标签生成方法
-            await self.mongodb_client.conversation_manager.generate_conversation_title_and_tags(
+            await self.mongodb_client.conversation_repository.generate_conversation_title_and_tags(
                 conversation_id=conversation_id,
                 messages=messages,
                 model_config=model_config
