@@ -14,3 +14,6 @@ websockets>=15.0.1
 beautifulsoup4>=4.13.4
 minio>=7.2.16
 apscheduler>=3.10.4
+python-jose[cryptography]>=3.5.0
+bcrypt>=4.0.0
+python-multipart>=0.0.20
