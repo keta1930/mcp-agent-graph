@@ -4,7 +4,7 @@ Prompt 相关的 API 路由
 """
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse, FileResponse
 
 from ..models.prompt_schema import (
@@ -12,6 +12,8 @@ from ..models.prompt_schema import (
     PromptExportRequest, PromptBatchDeleteRequest, PromptResponse
 )
 from ..services.prompt_service import prompt_service
+from ..auth.dependencies import get_current_user
+from ..models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ router = APIRouter(prefix="/prompt", tags=["prompt-registry"])
 
 
 @router.post("/create", response_model=PromptResponse, summary="创建提示词")
-async def create_prompt(prompt_data: PromptCreate):
+async def create_prompt(prompt_data: PromptCreate, current_user: CurrentUser = Depends(get_current_user)):
     """
     创建新的提示词
 
@@ -28,7 +30,7 @@ async def create_prompt(prompt_data: PromptCreate):
     - **category**: 提示词分类（必填）
     """
     try:
-        result = await prompt_service.create_prompt(prompt_data)
+        result = await prompt_service.create_prompt(prompt_data, user_id=current_user.user_id)
 
         if result["success"]:
             return JSONResponse(
@@ -49,14 +51,14 @@ async def create_prompt(prompt_data: PromptCreate):
 
 
 @router.get("/content/{name}", response_model=PromptResponse, summary="获取提示词内容")
-async def get_prompt_content(name: str):
+async def get_prompt_content(name: str, current_user: CurrentUser = Depends(get_current_user)):
     """
     获取提示词的内容
 
     - **name**: 提示词名称
     """
     try:
-        result = await prompt_service.get_prompt_content_only(name)
+        result = await prompt_service.get_prompt_content_only(name, user_id=current_user.user_id)
 
         if result["success"]:
             return JSONResponse(
@@ -77,7 +79,7 @@ async def get_prompt_content(name: str):
 
 
 @router.put("/update/{name}", response_model=PromptResponse, summary="更新提示词")
-async def update_prompt(name: str, update_data: PromptUpdate):
+async def update_prompt(name: str, update_data: PromptUpdate, current_user: CurrentUser = Depends(get_current_user)):
     """
     更新指定提示词
 
@@ -86,7 +88,7 @@ async def update_prompt(name: str, update_data: PromptUpdate):
     - **category**: 新的提示词分类（可选）
     """
     try:
-        result = await prompt_service.update_prompt(name, update_data)
+        result = await prompt_service.update_prompt(name, update_data, user_id=current_user.user_id)
 
         if result["success"]:
             return JSONResponse(
@@ -107,14 +109,14 @@ async def update_prompt(name: str, update_data: PromptUpdate):
 
 
 @router.delete("/delete/{name}", response_model=PromptResponse, summary="删除提示词")
-async def delete_prompt(name: str):
+async def delete_prompt(name: str, current_user: CurrentUser = Depends(get_current_user)):
     """
     删除指定提示词
 
     - **name**: 提示词名称
     """
     try:
-        result = await prompt_service.delete_prompt(name)
+        result = await prompt_service.delete_prompt(name, user_id=current_user.user_id)
 
         if result["success"]:
             return JSONResponse(
@@ -135,12 +137,12 @@ async def delete_prompt(name: str):
 
 
 @router.get("/list", response_model=PromptResponse, summary="获取提示词列表")
-async def list_prompts():
+async def list_prompts(current_user: CurrentUser = Depends(get_current_user)):
     """
     获取提示词列表
     """
     try:
-        result = await prompt_service.list_prompts()
+        result = await prompt_service.list_prompts(user_id=current_user.user_id)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=result
@@ -154,14 +156,14 @@ async def list_prompts():
 
 
 @router.post("/batch-delete", response_model=PromptResponse, summary="批量删除提示词")
-async def batch_delete_prompts(delete_request: PromptBatchDeleteRequest):
+async def batch_delete_prompts(delete_request: PromptBatchDeleteRequest, current_user: CurrentUser = Depends(get_current_user)):
     """
     批量删除提示词
 
     - **names**: 要删除的提示词名称列表
     """
     try:
-        result = await prompt_service.batch_delete_prompts(delete_request)
+        result = await prompt_service.batch_delete_prompts(delete_request, user_id=current_user.user_id)
 
         if result["success"]:
             return JSONResponse(
@@ -185,7 +187,8 @@ async def batch_delete_prompts(delete_request: PromptBatchDeleteRequest):
 async def import_prompt_by_file(
     file: UploadFile = File(..., description="要上传的 Markdown 文件"),
     name: Optional[str] = Form(None, description="提示词名称（必须）"),
-    category: Optional[str] = Form(None, description="提示词分类（必须）")
+    category: Optional[str] = Form(None, description="提示词分类（必须）"),
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     通过文件上传导入提示词
@@ -196,7 +199,7 @@ async def import_prompt_by_file(
     """
     try:
         import_request = PromptImportByFileRequest(name=name, category=category)
-        result = await prompt_service.import_prompt_by_file(file, import_request)
+        result = await prompt_service.import_prompt_by_file(file, import_request, user_id=current_user.user_id)
 
         if result["success"]:
             return JSONResponse(
@@ -217,14 +220,14 @@ async def import_prompt_by_file(
 
 
 @router.post("/export", summary="批量导出提示词")
-async def export_prompts(export_request: PromptExportRequest):
+async def export_prompts(export_request: PromptExportRequest, current_user: CurrentUser = Depends(get_current_user)):
     """
     批量导出提示词为 ZIP 压缩包
 
     - **names**: 要导出的提示词名称列表
     """
     try:
-        result = await prompt_service.export_prompts(export_request)
+        result = await prompt_service.export_prompts(export_request, user_id=current_user.user_id)
 
         if result["success"] and result["data"] and result["data"]["zip_path"]:
             zip_path = result["data"]["zip_path"]

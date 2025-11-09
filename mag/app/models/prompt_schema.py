@@ -63,6 +63,8 @@ class PromptInfo(BaseModel):
     size: int = Field(..., description="内容大小（字节）")
     created_time: str = Field(..., description="创建时间（YYYY-MM-DD格式）")
     modified_time: str = Field(..., description="最后修改时间（YYYY-MM-DD格式）")
+    user_id: Optional[str] = Field(None, description="所有者用户ID")
+    shared_with: Optional[List[str]] = Field(default_factory=list, description="共享给的用户列表")
 
 
 class PromptDetail(PromptInfo):

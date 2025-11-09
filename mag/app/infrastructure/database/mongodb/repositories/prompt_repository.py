@@ -32,19 +32,21 @@ class PromptRepository:
         self.db = db
         self.collection = collection
 
-    async def create_prompt(self, prompt_data: PromptCreate) -> Dict[str, Any]:
+    async def create_prompt(self, prompt_data: PromptCreate, user_id: str = "default_user") -> Dict[str, Any]:
         """
         创建新的提示词
 
         Args:
             prompt_data: 提示词创建数据
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 操作结果
         """
         try:
-            # 检查是否已存在
+            # 检查该用户是否已有同名提示词
             existing = await self.collection.find_one({
+                "user_id": user_id,
                 "name": prompt_data.name
             })
 
@@ -56,9 +58,11 @@ class PromptRepository:
 
             # 创建文档
             document = {
+                "user_id": user_id,
                 "name": prompt_data.name,
                 "content": prompt_data.content,
                 "category": prompt_data.category,
+                "shared_with": [],
                 "created_at": datetime.now(),
                 "updated_at": datetime.now()
             }
@@ -66,7 +70,7 @@ class PromptRepository:
             result = await self.collection.insert_one(document)
 
             if result.inserted_id:
-                logger.info(f"提示词创建成功: {prompt_data.name}")
+                logger.info(f"提示词创建成功: {prompt_data.name} (user: {user_id})")
                 return {
                     "success": True,
                     "message": f"提示词 '{prompt_data.name}' 创建成功",
@@ -88,20 +92,31 @@ class PromptRepository:
                 "message": f"创建提示词时发生错误: {str(e)}"
             }
 
-    async def get_prompt(self, name: str) -> Optional[PromptDetail]:
+    async def get_prompt(self, name: str, user_id: str = "default_user", check_shared: bool = True) -> Optional[PromptDetail]:
         """
         获取指定提示词的详细信息
 
         Args:
             name: 提示词名称
+            user_id: 用户ID
+            check_shared: 是否检查共享（如果用户没有自己的提示词，尝试获取共享的）
 
         Returns:
             Optional[PromptDetail]: 提示词详细信息，不存在时返回 None
         """
         try:
+            # 首先查找用户自己的提示词
             doc = await self.collection.find_one({
+                "user_id": user_id,
                 "name": name
             })
+
+            # 如果没有找到且需要检查共享，尝试获取共享给该用户的提示词
+            if not doc and check_shared:
+                doc = await self.collection.find_one({
+                    "name": name,
+                    "shared_with": user_id
+                })
 
             if not doc:
                 return None
@@ -120,30 +135,32 @@ class PromptRepository:
             )
 
         except Exception as e:
-            logger.error(f"获取提示词失败 {name}: {e}")
+            logger.error(f"获取提示词失败 {name} (user: {user_id}): {e}")
             return None
 
-    async def update_prompt(self, name: str, update_data: PromptUpdate) -> Dict[str, Any]:
+    async def update_prompt(self, name: str, update_data: PromptUpdate, user_id: str = "default_user") -> Dict[str, Any]:
         """
         更新指定提示词
 
         Args:
             name: 提示词名称
             update_data: 更新数据
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 操作结果
         """
         try:
-            # 检查提示词是否存在
+            # 检查提示词是否存在且属于该用户
             existing = await self.collection.find_one({
+                "user_id": user_id,
                 "name": name
             })
 
             if not existing:
                 return {
                     "success": False,
-                    "message": f"提示词 '{name}' 不存在"
+                    "message": f"提示词 '{name}' 不存在或无权限访问"
                 }
 
             # 构建更新字段
@@ -157,12 +174,12 @@ class PromptRepository:
 
             # 执行更新
             result = await self.collection.update_one(
-                {"name": name},
+                {"user_id": user_id, "name": name},
                 {"$set": update_fields}
             )
 
             if result.modified_count > 0 or result.matched_count > 0:
-                logger.info(f"提示词更新成功: {name}")
+                logger.info(f"提示词更新成功: {name} (user: {user_id})")
                 return {
                     "success": True,
                     "message": f"提示词 '{name}' 更新成功"
@@ -174,29 +191,31 @@ class PromptRepository:
                 }
 
         except Exception as e:
-            logger.error(f"更新提示词失败 {name}: {e}")
+            logger.error(f"更新提示词失败 {name} (user: {user_id}): {e}")
             return {
                 "success": False,
                 "message": f"更新提示词时发生错误: {str(e)}"
             }
 
-    async def delete_prompt(self, name: str) -> Dict[str, Any]:
+    async def delete_prompt(self, name: str, user_id: str = "default_user") -> Dict[str, Any]:
         """
         删除指定提示词
 
         Args:
             name: 提示词名称
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 操作结果
         """
         try:
             result = await self.collection.delete_one({
+                "user_id": user_id,
                 "name": name
             })
 
             if result.deleted_count > 0:
-                logger.info(f"提示词删除成功: {name}")
+                logger.info(f"提示词删除成功: {name} (user: {user_id})")
                 return {
                     "success": True,
                     "message": f"提示词 '{name}' 删除成功"
@@ -204,26 +223,29 @@ class PromptRepository:
             else:
                 return {
                     "success": False,
-                    "message": f"提示词 '{name}' 不存在"
+                    "message": f"提示词 '{name}' 不存在或无权限访问"
                 }
 
         except Exception as e:
-            logger.error(f"删除提示词失败 {name}: {e}")
+            logger.error(f"删除提示词失败 {name} (user: {user_id}): {e}")
             return {
                 "success": False,
                 "message": f"删除提示词时发生错误: {str(e)}"
             }
 
-    async def list_prompts(self) -> PromptList:
+    async def list_prompts(self, user_id: str = "default_user") -> PromptList:
         """
-        列出所有提示词（只包含元数据）
+        列出用户的所有提示词（只包含元数据）
+
+        Args:
+            user_id: 用户ID
 
         Returns:
             PromptList: 提示词列表
         """
         try:
             cursor = self.collection.find(
-                {},
+                {"user_id": user_id},
                 {"name": 1, "category": 1, "content": 1, "created_at": 1, "updated_at": 1}
             ).sort("updated_at", -1)
 
@@ -246,15 +268,16 @@ class PromptRepository:
             return PromptList(prompts=prompts, total=len(prompts))
 
         except Exception as e:
-            logger.error(f"列出提示词失败: {e}")
+            logger.error(f"列出提示词失败 (user: {user_id}): {e}")
             return PromptList(prompts=[], total=0)
 
-    async def batch_delete_prompts(self, names: List[str]) -> Dict[str, Any]:
+    async def batch_delete_prompts(self, names: List[str], user_id: str = "default_user") -> Dict[str, Any]:
         """
         批量删除提示词
 
         Args:
             names: 要删除的提示词名称列表
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 批量操作结果
@@ -267,7 +290,7 @@ class PromptRepository:
             }
 
             for name in names:
-                result = await self.delete_prompt(name)
+                result = await self.delete_prompt(name, user_id)
                 if result["success"]:
                     results["success"].append(name)
                 else:
@@ -283,19 +306,105 @@ class PromptRepository:
             }
 
         except Exception as e:
-            logger.error(f"批量删除提示词失败: {e}")
+            logger.error(f"批量删除提示词失败 (user: {user_id}): {e}")
             return {
                 "success": False,
                 "message": f"批量删除时发生错误: {str(e)}"
             }
 
-    async def import_prompt_by_file(self, file: UploadFile, import_request: PromptImportByFileRequest) -> Dict[str, Any]:
+    async def share_prompt(self, prompt_name: str, owner_user_id: str, target_user_ids: List[str]) -> bool:
+        """
+        共享提示词给其他用户
+
+        Args:
+            prompt_name: 提示词名称
+            owner_user_id: 所有者用户ID
+            target_user_ids: 目标用户ID列表
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            result = await self.collection.update_one(
+                {"user_id": owner_user_id, "name": prompt_name},
+                {"$addToSet": {"shared_with": {"$each": target_user_ids}}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"提示词共享成功: {prompt_name} (owner: {owner_user_id}, targets: {target_user_ids})")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"共享提示词失败 (owner: {owner_user_id}, prompt: {prompt_name}): {e}")
+            return False
+
+    async def unshare_prompt(self, prompt_name: str, owner_user_id: str, target_user_ids: List[str]) -> bool:
+        """
+        取消共享提示词
+
+        Args:
+            prompt_name: 提示词名称
+            owner_user_id: 所有者用户ID
+            target_user_ids: 目标用户ID列表
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            result = await self.collection.update_one(
+                {"user_id": owner_user_id, "name": prompt_name},
+                {"$pullAll": {"shared_with": target_user_ids}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"取消提示词共享成功: {prompt_name} (owner: {owner_user_id}, targets: {target_user_ids})")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"取消共享提示词失败 (owner: {owner_user_id}, prompt: {prompt_name}): {e}")
+            return False
+
+    async def list_shared_prompts(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        列出共享给用户的提示词
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            List[Dict[str, Any]]: 共享的提示词列表
+        """
+        try:
+            cursor = self.collection.find({"shared_with": user_id})
+            prompts = []
+
+            async for doc in cursor:
+                created_time = doc["created_at"].strftime("%Y-%m-%d") if doc.get("created_at") else datetime.now().strftime("%Y-%m-%d")
+                updated_time = doc["updated_at"].strftime("%Y-%m-%d") if doc.get("updated_at") else datetime.now().strftime("%Y-%m-%d")
+
+                prompts.append({
+                    "owner_user_id": doc.get("user_id"),
+                    "name": doc["name"],
+                    "content": doc["content"],
+                    "category": doc.get("category"),
+                    "created_time": created_time,
+                    "updated_time": updated_time
+                })
+
+            return prompts
+        except Exception as e:
+            logger.error(f"列出共享提示词失败 (user: {user_id}): {e}")
+            return []
+
+    async def import_prompt_by_file(self, file: UploadFile, import_request: PromptImportByFileRequest,
+                                   user_id: str = "default_user") -> Dict[str, Any]:
         """
         通过文件上传导入提示词
 
         Args:
             file: 上传的文件
             import_request: 导入请求
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 导入结果
@@ -320,21 +429,23 @@ class PromptRepository:
             )
 
             # 调用创建方法
-            return await self.create_prompt(prompt_data)
+            return await self.create_prompt(prompt_data, user_id)
 
         except Exception as e:
-            logger.error(f"通过文件上传导入提示词失败: {e}")
+            logger.error(f"通过文件上传导入提示词失败 (user: {user_id}): {e}")
             return {
                 "success": False,
                 "message": f"导入失败: {str(e)}"
             }
 
-    async def export_prompts(self, export_request: PromptExportRequest) -> Tuple[bool, str, Optional[str]]:
+    async def export_prompts(self, export_request: PromptExportRequest,
+                            user_id: str = "default_user") -> Tuple[bool, str, Optional[str]]:
         """
         批量导出提示词为 ZIP 压缩包
 
         Args:
             export_request: 导出请求
+            user_id: 用户ID
 
         Returns:
             Tuple[bool, str, Optional[str]]: (成功状态, 消息, ZIP文件路径)
@@ -350,7 +461,7 @@ class PromptRepository:
                 for name in export_request.names:
                     try:
                         # 从MongoDB获取提示词
-                        prompt_detail = await self.get_prompt(name)
+                        prompt_detail = await self.get_prompt(name, user_id, check_shared=False)
 
                         if prompt_detail:
                             # 将内容写入ZIP
@@ -358,11 +469,11 @@ class PromptRepository:
                             exported_count += 1
                         else:
                             failed_count += 1
-                            logger.warning(f"无法找到提示词: {name}")
+                            logger.warning(f"无法找到提示词: {name} (user: {user_id})")
 
                     except Exception as e:
                         failed_count += 1
-                        logger.error(f"导出提示词 {name} 失败: {e}")
+                        logger.error(f"导出提示词 {name} 失败 (user: {user_id}): {e}")
 
             if exported_count > 0:
                 message = f"导出完成：成功 {exported_count} 个"
@@ -375,5 +486,5 @@ class PromptRepository:
                 return False, "没有成功导出任何提示词", None
 
         except Exception as e:
-            logger.error(f"批量导出提示词失败: {e}")
+            logger.error(f"批量导出提示词失败 (user: {user_id}): {e}")
             return False, f"导出失败: {str(e)}", None
