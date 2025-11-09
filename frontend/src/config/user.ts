@@ -1,41 +1,32 @@
 // src/config/user.ts
+import { getUserInfo } from '../utils/auth';
+
 export interface UserConfig {
   userId: string;
-  displayName?: string;
 }
 
-// 从本地存储获取用户配置
+// 从本地存储获取用户配置（已废弃，使用 getUserInfo 代替）
 export const getUserConfig = (): UserConfig => {
-  // 从本地存储获取
-  const storedConfig = localStorage.getItem('user_config');
-  let localConfig: UserConfig | null = null;
-  
-  if (storedConfig) {
-    try {
-      localConfig = JSON.parse(storedConfig);
-    } catch {
-      // 忽略解析错误
-    }
-  }
-  
-  // 优先级：本地存储 > 默认值
+  const userInfo = getUserInfo();
   return {
-    userId: localConfig?.userId || 'default_user',
-    displayName: localConfig?.displayName || 'Default User'
+    userId: userInfo?.user_id || 'default_user'
   };
 };
 
-// 保存用户配置到本地存储
+// 保存用户配置到本地存储（已废弃，使用 setUserInfo 代替）
 export const setUserConfig = (config: UserConfig): void => {
-  localStorage.setItem('user_config', JSON.stringify(config));
+  // 此方法已废弃，保留仅为兼容性
+  console.warn('setUserConfig is deprecated, use setUserInfo from auth.ts instead');
 };
 
-// 获取当前用户ID（向后兼容）
+// 获取当前用户ID
 export const getCurrentUserId = (): string => {
-  return getUserConfig().userId;
+  const userInfo = getUserInfo();
+  return userInfo?.user_id || 'default_user';
 };
 
-// 获取当前用户显示名称
+// 获取当前用户显示名称（直接返回userId）
 export const getCurrentUserDisplayName = (): string => {
-  return getUserConfig().displayName || getUserConfig().userId;
+  const userInfo = getUserInfo();
+  return userInfo?.user_id || 'default_user';
 };
