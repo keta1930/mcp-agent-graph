@@ -25,8 +25,19 @@ class PreviewRepository:
         return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
     async def create_preview_share(self, lang: str, title: Optional[str], content: str,
-                                   expire_hours: Optional[int] = 72) -> Dict[str, Any]:
-        """创建预览短链"""
+                                   expire_hours: Optional[int] = 72, user_id: str = "default_user") -> Dict[str, Any]:
+        """创建预览短链
+
+        Args:
+            lang: 语言
+            title: 标题
+            content: 内容
+            expire_hours: 过期小时数
+            user_id: 用户ID
+
+        Returns:
+            Dict[str, Any]: 包含key的字典
+        """
         content_hash = self._generate_content_hash(content)
 
         existing_doc = await self.collection.find_one({"content_hash": content_hash})
@@ -51,12 +62,14 @@ class PreviewRepository:
             "title": title or f"{lang.upper()} 预览",
             "content": content,
             "content_hash": content_hash,
+            "user_id": user_id,  # 添加user_id字段
             "created_at": now,
             "expires_at": expires_at,
         }
 
         try:
             await self.collection.insert_one(doc)
+            logger.info(f"预览短链创建成功: {key} (user: {user_id})")
             return {"key": key}
         except DuplicateKeyError:
             existing = await self.collection.find_one({"content_hash": content_hash})
