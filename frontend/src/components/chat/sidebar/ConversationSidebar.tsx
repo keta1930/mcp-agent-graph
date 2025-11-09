@@ -336,9 +336,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [userEditModalVisible, setUserEditModalVisible] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [currentUserDisplayName, setCurrentUserDisplayName] = useState(getCurrentUserDisplayName());
+  const currentUserDisplayName = getCurrentUserDisplayName();
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
@@ -412,26 +410,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   }, [conversations, searchQuery]);
 
   // 处理用户名编辑
-  const handleUserNameEdit = () => {
-    setNewUserName(currentUserDisplayName);
-    setUserEditModalVisible(true);
-  };
-
-  const handleUserNameSave = () => {
-    if (newUserName.trim()) {
-      const currentConfig = getUserConfig();
-      setUserConfig({
-        ...currentConfig,
-        displayName: newUserName.trim()
-      });
-      // 更新本地状态以触发重新渲染
-      setCurrentUserDisplayName(newUserName.trim());
-      showNotification('用户名已更新', 'success');
-      setUserEditModalVisible(false);
-      // 通知父组件用户名已更新
-      onUserNameUpdate?.();
-    }
-  };
 
   // 批量选择相关处理函数
   const handleBatchModeToggle = () => {
@@ -535,14 +513,13 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           <div className="collapsed-status-indicator" title="系统在线"></div>
 
           {/* 用户信息 */}
-          <button
+          <div
             className="collapsed-nav-item"
-            onClick={handleUserNameEdit}
             title={`用户: ${currentUserDisplayName}`}
           >
             <UserOutlined />
             <div className="collapsed-tooltip">用户: {currentUserDisplayName}</div>
-          </button>
+          </div>
 
           {/* 回到主页 */}
           <button
@@ -661,7 +638,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
       {/* 底部操作区 */}
       <div className="sidebar-footer">
-        <div className="user-info" onClick={handleUserNameEdit} style={{ cursor: 'pointer' }}>
+        <div className="user-info">
           <UserOutlined />
           <span>{currentUserDisplayName}</span>
         </div>
@@ -703,24 +680,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           </Tooltip>
         </div>
       </div>
-
-      {/* 用户名编辑模态框 */}
-      <Modal
-        title="编辑用户名"
-        open={userEditModalVisible}
-        onOk={handleUserNameSave}
-        onCancel={() => setUserEditModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Input
-          value={newUserName}
-          onChange={(e) => setNewUserName(e.target.value)}
-          placeholder="请输入用户名"
-          maxLength={50}
-        />
-      </Modal>
-
 
     </div>
   );

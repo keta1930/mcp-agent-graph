@@ -9,6 +9,12 @@ export interface MCPServerConfig {
   url?: string; // SSE URL or HTTP URL
   base_url?: string;
   env?: Record<string, string>;
+
+  // 团队共享字段
+  provider_user_id?: string;     // 提供者用户ID
+  provider_username?: string;     // 提供者用户名
+  created_at?: string;            // 创建时间
+
   [key: string]: any;
 }
 

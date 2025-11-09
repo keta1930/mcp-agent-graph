@@ -4,7 +4,6 @@ import {
   ConversationService,
   generateMongoId
 } from '../services/conversationService';
-import { getCurrentUserId } from '../config/user';
 import {
   ChatRequest,
   AgentRequest,
@@ -405,8 +404,7 @@ export function useSSEConnection() {
             system_prompt: options.system_prompt,
             model_name: options.model_name,
             mcp_servers: options.mcp_servers || [],
-            conversation_id: conversationId,
-            user_id: getCurrentUserId()
+            conversation_id: conversationId
           };
           reader = await ConversationService.createChatSSE(request);
           break;
@@ -420,8 +418,7 @@ export function useSSEConnection() {
               model_name: options.model_name,
               mcp_servers: options.mcp_servers || [],
               graph_name: options.graph_name,
-              conversation_id: conversationId,
-              user_id: getCurrentUserId()
+              conversation_id: conversationId
             };
             reader = await ConversationService.createGraphGenerateSSE(graphRequest);
           } else {
@@ -429,8 +426,7 @@ export function useSSEConnection() {
             const mcpRequest: AgentRequest = {
               requirement: inputText,
               model_name: options.model_name,
-              conversation_id: conversationId,
-              user_id: getCurrentUserId()
+              conversation_id: conversationId
             };
             reader = await ConversationService.createAgentSSE(mcpRequest);
           }

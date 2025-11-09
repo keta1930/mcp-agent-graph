@@ -8,14 +8,13 @@ import {
   GraphGenerationRequest,
   GraphExecuteRequest
 } from '../types/conversation';
-import { getCurrentUserId } from '../config/user';
 
 const CONVERSATION_API_BASE = '/chat/conversations';
 
 export class ConversationService {
   // 获取对话列表
-  static async getConversations(userId: string = getCurrentUserId()): Promise<ConversationListResponse> {
-    const response = await api.get(`${CONVERSATION_API_BASE}?user_id=${userId}`);
+  static async getConversations(): Promise<ConversationListResponse> {
+    const response = await api.get(`${CONVERSATION_API_BASE}`);
     return response.data;
   }
 
@@ -28,45 +27,38 @@ export class ConversationService {
   // 更新对话状态
   static async updateConversationStatus(
     conversationId: string,
-    status: 'active' | 'deleted' | 'favorite',
-    userId: string = getCurrentUserId()
+    status: 'active' | 'deleted' | 'favorite'
   ): Promise<void> {
     await api.put(`${CONVERSATION_API_BASE}/${conversationId}/status`, {
-      status,
-      user_id: userId
+      status
     });
   }
 
   // 更新对话标题
   static async updateConversationTitle(
     conversationId: string,
-    title: string,
-    userId: string = getCurrentUserId()
+    title: string
   ): Promise<void> {
     await api.put(`${CONVERSATION_API_BASE}/${conversationId}/title`, {
-      title,
-      user_id: userId
+      title
     });
   }
 
   // 更新对话标签
   static async updateConversationTags(
     conversationId: string,
-    tags: string[],
-    userId: string = getCurrentUserId()
+    tags: string[]
   ): Promise<void> {
     await api.put(`${CONVERSATION_API_BASE}/${conversationId}/tags`, {
-      tags,
-      user_id: userId
+      tags
     });
   }
 
   // 永久删除对话
   static async deleteConversationPermanent(
-    conversationId: string,
-    userId: string = getCurrentUserId()
+    conversationId: string
   ): Promise<void> {
-    await api.delete(`${CONVERSATION_API_BASE}/${conversationId}/permanent?user_id=${userId}`);
+    await api.delete(`${CONVERSATION_API_BASE}/${conversationId}/permanent`);
   }
 
   // 压缩对话
@@ -74,28 +66,33 @@ export class ConversationService {
     conversationId: string,
     modelName: string,
     compactType: 'brutal' | 'precise' = 'precise',
-    compactThreshold: number = 2000,
-    userId: string = getCurrentUserId()
+    compactThreshold: number = 2000
   ): Promise<any> {
     const response = await api.post(`${CONVERSATION_API_BASE}/${conversationId}/compact`, {
       conversation_id: conversationId,
       model_name: modelName,
       compact_type: compactType,
-      compact_threshold: compactThreshold,
-      user_id: userId
+      compact_threshold: compactThreshold
     });
     return response.data;
   }
 
   // Chat模式 - 创建SSE连接
   static async createChatSSE(request: ChatRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const token = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${api.defaults.baseURL}/chat/completions`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-      },
+      headers,
       body: JSON.stringify(request)
     });
 
@@ -112,13 +109,20 @@ export class ConversationService {
 
   // Agent模式 - 创建SSE连接
   static async createAgentSSE(request: AgentRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const token = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${api.defaults.baseURL}/mcp/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-      },
+      headers,
       body: JSON.stringify(request)
     });
 
@@ -135,13 +139,20 @@ export class ConversationService {
 
   // Graph模式 - 创建SSE连接
   static async createGraphSSE(request: GraphExecuteRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const token = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${api.defaults.baseURL}/graphs/execute`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-      },
+      headers,
       body: JSON.stringify(request)
     });
 
@@ -158,13 +169,20 @@ export class ConversationService {
 
   // Graph生成模式 - 创建SSE连接
   static async createGraphGenerateSSE(request: GraphGenerationRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const token = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${api.defaults.baseURL}/graphs/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-      },
+      headers,
       body: JSON.stringify(request)
     });
 

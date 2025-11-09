@@ -15,7 +15,6 @@ import { useModelStore } from '../store/modelStore';
 import { useGlobalNotification } from '../hooks/useGlobalNotification';
 import { ConversationService, generateMongoId } from '../services/conversationService';
 import { ConversationMode, ConversationDetail } from '../types/conversation';
-import { getCurrentUserId } from '../config/user';
 import '../styles/chat-system.css';
 
 const ChatSystem: React.FC = () => {
@@ -463,8 +462,7 @@ const ChatSystem: React.FC = () => {
         activeConversationId,
         config.modelName,
         config.compactType,
-        config.threshold,
-        getCurrentUserId()
+        config.threshold
       );
 
       if (result.status === 'success') {

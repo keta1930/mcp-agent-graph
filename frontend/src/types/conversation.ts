@@ -116,14 +116,12 @@ export interface ChatRequest {
   mcp_servers?: string[];
   model_name: string;
   conversation_id?: string;
-  user_id?: string;
 }
 
 export interface AgentRequest {
   requirement: string;
   model_name: string;
   conversation_id?: string;
-  user_id?: string;
 }
 
 export interface GraphGenerationRequest {
@@ -132,7 +130,6 @@ export interface GraphGenerationRequest {
   mcp_servers?: string[];
   conversation_id?: string;
   graph_name?: string;
-  user_id?: string;
 }
 
 export interface GraphExecuteRequest {
@@ -146,7 +143,6 @@ export interface ConversationUpdateRequest {
   status?: 'active' | 'deleted' | 'favorite';
   title?: string;
   tags?: string[];
-  user_id?: string;
 }
 
 export type ConversationMode = 'chat' | 'agent' | 'graph';

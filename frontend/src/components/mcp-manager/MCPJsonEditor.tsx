@@ -47,6 +47,17 @@ const cleanServerConfigForEditor = (config: any): any => {
     cleanConfig.ai_generated = true;
   }
 
+  // 保留 provider 信息字段（团队共享，标记提供者）
+  if (config.provider_user_id && typeof config.provider_user_id === 'string') {
+    cleanConfig.provider_user_id = config.provider_user_id;
+  }
+  if (config.provider_username && typeof config.provider_username === 'string') {
+    cleanConfig.provider_username = config.provider_username;
+  }
+  if (config.created_at && typeof config.created_at === 'string') {
+    cleanConfig.created_at = config.created_at;
+  }
+
   if (config.env && typeof config.env === 'object' && !Array.isArray(config.env) && Object.keys(config.env).length > 0) {
     cleanConfig.env = config.env;
   }

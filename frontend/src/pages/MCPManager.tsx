@@ -15,6 +15,7 @@ import MCPServerCard from '../components/mcp-manager/MCPServerCard';
 import MCPToolsViewer from '../components/mcp-manager/MCPToolsViewer';
 import MCPJsonEditor from '../components/mcp-manager/MCPJsonEditor';
 import { MCPServerConfig } from '../types/mcp';
+import { getUserInfo } from '../utils/auth';
 
 const MCPManager: React.FC = () => {
   const {
@@ -34,6 +35,9 @@ const MCPManager: React.FC = () => {
     registerMCPTool,
     getUsedPorts
   } = useMCPStore();
+
+  // 获取当前用户信息
+  const currentUser = getUserInfo();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [toolsModalVisible, setToolsModalVisible] = useState(false);
@@ -305,6 +309,8 @@ const MCPManager: React.FC = () => {
                     onDelete={handleDeleteServer}
                     onViewTools={showToolsModal}
                     loading={loading}
+                    currentUserId={currentUser?.user_id}
+                    currentUserRole={currentUser?.role}
                   />
                 </Col>
               ))}

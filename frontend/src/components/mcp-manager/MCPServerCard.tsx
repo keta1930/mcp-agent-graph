@@ -11,7 +11,9 @@ import {
   StopOutlined,
   ToolOutlined,
   EnvironmentOutlined,
-  RobotOutlined
+  RobotOutlined,
+  UserOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { MCPServerConfig } from '../../types/mcp';
 
@@ -34,6 +36,8 @@ interface MCPServerCardProps {
   onDelete: (serverName: string) => void;
   onViewTools: (serverName: string) => void;
   loading: boolean;
+  currentUserId?: string;    // 当前用户ID
+  currentUserRole?: string;  // 当前用户角色
 }
 
 const MCPServerCard: React.FC<MCPServerCardProps> = ({
@@ -46,6 +50,8 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   onDelete,
   onViewTools,
   loading,
+  currentUserId,
+  currentUserRole,
 }) => {
   // Determine status information
   const connected = status?.connected || false;
@@ -54,8 +60,16 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   const error = status?.error || '';
 
   // Check if this is an AI-generated tool
-  const isAIGenerated = config.ai_generated || 
+  const isAIGenerated = config.ai_generated ||
     (config.transportType === 'streamable_http' && config.url?.includes('localhost'));
+
+  // 权限检查：只有提供者或管理员可以删除
+  const canDelete = currentUserRole === 'admin' ||
+    !config.provider_user_id ||
+    config.provider_user_id === currentUserId;
+
+  // 检查是否是当前用户添加的
+  const isOwnServer = config.provider_user_id === currentUserId;
 
   // Format server arguments for display
   const formattedArgs = Array.isArray(config.args)
@@ -182,20 +196,46 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
           >
             编辑
           </Button>
-          <Popconfirm
-            title="您确定要删除这个服务器吗？"
-            onConfirm={() => onDelete(serverName)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button icon={<DeleteOutlined />} danger>
-              删除
-            </Button>
-          </Popconfirm>
+          <Tooltip title={!canDelete ? '只有提供者或管理员可以删除此服务器' : ''}>
+            <Popconfirm
+              title="您确定要删除这个服务器吗？"
+              onConfirm={() => onDelete(serverName)}
+              okText="确定"
+              cancelText="取消"
+              disabled={!canDelete}
+            >
+              <Button
+                icon={<DeleteOutlined />}
+                danger
+                disabled={!canDelete}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          </Tooltip>
         </Space>
       }
     >
       <div className="space-y-2">
+        {/* Provider信息 */}
+        {config.provider_username && (
+          <div>
+            <Text strong>
+              <UserOutlined style={{ marginRight: '4px' }} />
+              提供者:
+            </Text>{' '}
+            <Tag color={isOwnServer ? 'blue' : 'default'}>
+              {config.provider_username}
+              {isOwnServer && ' (我)'}
+            </Tag>
+            {config.created_at && (
+              <Text type="secondary" style={{ marginLeft: '8px' }}>
+                <ClockCircleOutlined style={{ marginRight: '4px' }} />
+                {new Date(config.created_at).toLocaleString('zh-CN')}
+              </Text>
+            )}
+          </div>
+        )}
         <div>
           <Text strong>传输类型:</Text> {config.transportType}
           {isAIGenerated && (
