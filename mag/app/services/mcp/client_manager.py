@@ -159,7 +159,7 @@ class MCPClientManager:
             return False
 
     async def update_config(self, config: Dict[str, Any], expected_version: int) -> Dict[str, Dict[str, Any]]:
-        """更新MCP配置并通知客户端"""
+        """更新团队MCP配置并通知客户端"""
         try:
             result = await mongodb_client.update_mcp_config(config, expected_version)
 

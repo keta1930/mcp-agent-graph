@@ -10,49 +10,80 @@ logger = logging.getLogger(__name__)
 
 
 class MCPService:
-    """MCP服务管理 - 作为各个功能组件的协调者"""
+    """MCP服务管理 - 团队级架构，所有用户共享MCP Client"""
 
     def __init__(self):
-        # 初始化子模块
-        self.client_manager = MCPClientManager()
-        self.server_manager = MCPServerManager(self.client_manager.client_url)
+        # 团队级单一MCP客户端
+        self.client_manager: Optional[MCPClientManager] = None
+        self.server_manager: Optional[MCPServerManager] = None
+
+        # 共享模块（不依赖用户状态）
         self.ai_mcp_generator = AIMCPGenerator()
-        self.tool_executor = ToolExecutor(self)
         self.message_builder = MessageBuilder()
-        self.client_process = None
-        self.client_url = self.client_manager.client_url
-        self.client_started = False
-        self.startup_retries = 5
-        self.retry_delay = 1
-        self._session = None
+
+    def _ensure_managers(self):
+        """确保管理器已初始化"""
+        if self.client_manager is None:
+            self.client_manager = MCPClientManager()
+        if self.server_manager is None:
+            self.server_manager = MCPServerManager(self.client_manager.client_url)
 
     async def initialize(self) -> Dict[str, Dict[str, Any]]:
-        """初始化MCP服务，启动客户端进程"""
+        """初始化团队MCP服务，启动客户端进程
 
-        config = await mongodb_client.get_mcp_config()
-        if not config:
+        Returns:
+            Dict[str, Dict[str, Any]]: 初始化结果
+        """
+        config_data = await mongodb_client.get_mcp_config()
+        if not config_data:
+            # 初始化空配置
             config = {"mcpServers": {}}
-            await mongodb_client.create_mcp_config(config)
+            await mongodb_client.initialize_mcp_config(config)
+        else:
+            config = config_data.get("config", {"mcpServers": {}})
 
+        self._ensure_managers()
         result = await self.client_manager.initialize(config)
-        self.client_process = self.client_manager.client_process
-        self.client_started = self.client_manager.client_started
+
+        logger.info("团队MCP服务初始化成功")
         return result
 
     async def _get_session(self):
         """获取或创建aiohttp会话"""
+        self._ensure_managers()
         return await self.server_manager._get_session()
 
     async def notify_client_shutdown(self) -> bool:
-        """通知Client关闭"""
+        """通知Client关闭
+
+        Returns:
+            bool: 是否成功
+        """
+        self._ensure_managers()
         return await self.client_manager.notify_client_shutdown()
 
     def _notify_config_change(self, config_path: str) -> bool:
-        """通知客户端配置已更改"""
+        """通知客户端配置已更改
+
+        Args:
+            config_path: 配置文件路径
+
+        Returns:
+            bool: 是否成功
+        """
+        self._ensure_managers()
         return self.client_manager._notify_config_change(config_path)
 
     async def update_config(self, config: Dict[str, Any], expected_version: int = None) -> Dict[str, Dict[str, Any]]:
-        """更新MCP配置并通知客户端"""
+        """更新团队MCP配置并通知客户端
+
+        Args:
+            config: 新配置
+            expected_version: 期望版本号
+
+        Returns:
+            Dict[str, Dict[str, Any]]: 更新结果
+        """
         if expected_version is None:
             current_config_data = await mongodb_client.get_mcp_config()
             if current_config_data:
@@ -60,29 +91,53 @@ class MCPService:
             else:
                 expected_version = 0
 
+        self._ensure_managers()
         return await self.client_manager.update_config(config, expected_version)
 
     async def get_server_status(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有服务器的状态"""
-        if not self.client_started:
+        """获取所有服务器的状态
+
+        Returns:
+            Dict[str, Dict[str, Any]]: 服务器状态
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {}
         return await self.server_manager.get_server_status()
 
     def get_server_status_sync(self) -> Dict[str, Dict[str, Any]]:
-        """获取所有服务器的状态"""
-        if not self.client_started:
+        """同步获取所有服务器的状态
+
+        Returns:
+            Dict[str, Dict[str, Any]]: 服务器状态
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {}
         return self.server_manager.get_server_status_sync()
 
     async def connect_server(self, server_name: str) -> Dict[str, Any]:
-        """连接指定的服务器"""
-        if not self.client_started:
+        """连接指定的服务器
+
+        Args:
+            server_name: 服务器名称
+
+        Returns:
+            Dict[str, Any]: 连接结果
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {"status": "error", "error": "MCP Client未启动"}
         return await self.server_manager.connect_server(server_name)
 
     async def connect_all_servers(self) -> Dict[str, Any]:
-        """连接所有已配置的MCP服务器"""
-        if not self.client_started:
+        """连接所有已配置的MCP服务器
+
+        Returns:
+            Dict[str, Any]: 连接结果
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {
                 "status": "error",
                 "error": "MCP Client未启动",
@@ -90,30 +145,63 @@ class MCPService:
                 "tools": {}
             }
 
-        current_config = await mongodb_client.get_mcp_config()
+        current_config_data = await mongodb_client.get_mcp_config()
+        current_config = current_config_data.get("config", {"mcpServers": {}}) if current_config_data else {"mcpServers": {}}
         return await self.server_manager.connect_all_servers(current_config)
 
     async def disconnect_server(self, server_name: str) -> Dict[str, Any]:
-        """断开指定服务器的连接"""
-        if not self.client_started:
+        """断开指定服务器的连接
+
+        Args:
+            server_name: 服务器名称
+
+        Returns:
+            Dict[str, Any]: 断开结果
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {"status": "error", "error": "MCP Client未启动"}
         return await self.server_manager.disconnect_server(server_name)
 
     async def get_all_tools(self) -> Dict[str, List[Dict[str, Any]]]:
-        """获取所有可用工具的信息"""
-        if not self.client_started:
+        """获取所有可用工具的信息
+
+        Returns:
+            Dict[str, List[Dict[str, Any]]]: 工具信息
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {}
         return await self.server_manager.get_all_tools()
 
     async def prepare_chat_tools(self, mcp_servers: List[str]) -> List[Dict[str, Any]]:
-        """为聊天准备MCP工具列表"""
+        """为聊天准备MCP工具列表
+
+        Args:
+            mcp_servers: MCP服务器列表
+
+        Returns:
+            List[Dict[str, Any]]: 工具列表
+        """
+        self._ensure_managers()
         return await self.server_manager.prepare_chat_tools(mcp_servers)
 
     async def call_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """调用指定服务器的工具"""
-        if not self.client_started:
+        """调用指定服务器的工具
+
+        Args:
+            server_name: 服务器名称
+            tool_name: 工具名称
+            params: 工具参数
+
+        Returns:
+            Dict[str, Any]: 工具执行结果
+        """
+        self._ensure_managers()
+        if not self.client_manager.client_started:
             return {"error": "MCP Client未启动"}
-        return await self.tool_executor.execute_single_tool(server_name, tool_name, params)
+        tool_executor = ToolExecutor(self)
+        return await tool_executor.execute_single_tool(server_name, tool_name, params)
 
     async def get_mcp_generator_template(self) -> str:
         """获取MCP生成器的提示词模板"""
@@ -137,19 +225,31 @@ class MCPService:
         """获取MCP生成对话"""
         return await mongodb_client.get_mcp_generation_conversation(conversation_id)
 
-    async def register_ai_mcp_tool(self, tool_name: str) -> bool:
-        """注册AI生成的MCP工具到配置"""
-        return await self.ai_mcp_generator.register_ai_mcp_tool_stdio(tool_name)
+    async def register_ai_mcp_tool(self, tool_name: str, user_id: str = "default_user") -> bool:
+        """注册AI生成的MCP工具到团队配置
 
-    async def cleanup(self, force=True):
-        """清理资源"""
-        # 清理server_manager的资源
-        await self.server_manager.cleanup()
+        Args:
+            tool_name: 工具名称
+            user_id: 用户ID（作为provider记录）
 
-        # 清理client_manager的资源
-        await self.client_manager.cleanup(force)
-        self.client_process = self.client_manager.client_process
-        self.client_started = self.client_manager.client_started
+        Returns:
+            bool: 是否成功
+        """
+        return await self.ai_mcp_generator.register_ai_mcp_tool_stdio(tool_name, user_id)
+
+    async def cleanup(self, force: bool = True):
+        """清理资源
+
+        Args:
+            force: 是否强制清理
+        """
+        if self.server_manager:
+            await self.server_manager.cleanup()
+
+        if self.client_manager:
+            await self.client_manager.cleanup(force)
+
+        logger.info("已清理团队MCP资源")
 
 
 # 创建全局MCP服务实例

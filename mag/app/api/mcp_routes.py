@@ -1,7 +1,8 @@
 import time
 import json
 import logging
-from fastapi import APIRouter, HTTPException, status
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from typing import Dict, List, Any
 from app.infrastructure.storage.file_storage import FileManager
@@ -13,6 +14,8 @@ from app.models.mcp_schema import (
     MCPToolRegistration, MCPToolTestRequest, MCPToolTestResponse,
     MCPConfigWithVersion, MCPServerAddRequest, MCPServerRemoveRequest
 )
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -21,27 +24,56 @@ router = APIRouter(tags=["mcp"])
 # ======= MCP服务器管理 =======
 
 @router.get("/mcp/config")
-async def get_mcp_config():
-    """获取MCP配置"""
-    config_data = await mongodb_client.get_mcp_config()
-    if config_data:
-        return {
-            "mcpServers": config_data.get("config", {}).get("mcpServers", {}),
-            "version": config_data.get("version"),
-            "updated_at": config_data.get("updated_at")
-        }
-    return {"mcpServers": {}, "version": 1}
+async def get_mcp_config(current_user: CurrentUser = Depends(get_current_user)):
+    """获取团队MCP配置"""
+    try:
+        config_data = await mongodb_client.get_mcp_config()
+        if config_data:
+            return {
+                "mcpServers": config_data.get("config", {}).get("mcpServers", {}),
+                "version": config_data.get("version"),
+                "updated_at": config_data.get("updated_at")
+            }
+        return {"mcpServers": {}, "version": 1}
+    except Exception as e:
+        logger.error(f"获取MCP配置失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取MCP配置失败: {str(e)}"
+        )
 
 
 @router.post("/mcp/config", response_model=Dict[str, Any])
-async def update_mcp_config(request: MCPConfigWithVersion):
-    """更新MCP配置并重新连接服务器"""
+async def update_mcp_config(request: MCPConfigWithVersion, current_user: CurrentUser = Depends(get_current_user)):
+    """更新团队MCP配置并重新连接服务器"""
     try:
         config_dict = request.config.dict()
         expected_version = request.version
 
+        # 获取当前配置以保留provider信息
+        current_config_data = await mongodb_client.get_mcp_config()
+        current_servers = current_config_data.get("config", {}).get("mcpServers", {}) if current_config_data else {}
+
         if 'mcpServers' in config_dict:
             for server_name, server_config in config_dict['mcpServers'].items():
+                # 如果是已存在的服务器，保留原有provider信息
+                if server_name in current_servers:
+                    old_server = current_servers[server_name]
+                    # 保留provider字段（如果存在）
+                    for field in ['provider_user_id', 'provider_username', 'created_at']:
+                        if field in old_server and field not in server_config:
+                            server_config[field] = old_server[field]
+                    logger.info(
+                        f"服务器 '{server_name}' 已存在，保留原provider信息: {old_server.get('provider_username', 'unknown')}")
+                else:
+                    # 新服务器，添加当前用户provider信息
+                    if 'provider_user_id' not in server_config:
+                        server_config['provider_user_id'] = current_user.user_id
+                        server_config['provider_username'] = current_user.user_id
+                        server_config['created_at'] = datetime.now().isoformat()
+                    logger.info(
+                        f"新服务器 '{server_name}' 添加provider信息: {current_user.user_id}")
+
                 logger.info(
                     f"服务器 '{server_name}' 配置已规范化，传输类型: {server_config.get('transportType', 'stdio')}")
 
@@ -72,8 +104,8 @@ async def update_mcp_config(request: MCPConfigWithVersion):
         )
 
 @router.get("/mcp/status", response_model=Dict[str, Dict[str, Any]])
-async def get_mcp_status():
-    """获取MCP服务器状态"""
+async def get_mcp_status(current_user: CurrentUser = Depends(get_current_user)):
+    """获取团队MCP服务器状态"""
     try:
         return await mcp_service.get_server_status()
     except Exception as e:
@@ -85,9 +117,10 @@ async def get_mcp_status():
 
 
 @router.post("/mcp/add", response_model=Dict[str, Any])
-async def add_mcp_server(request: MCPServerAddRequest):
-    """添加新的MCP服务器"""
+async def add_mcp_server(request: MCPServerAddRequest, current_user: CurrentUser = Depends(get_current_user)):
+    """添加新的MCP服务器到团队配置"""
     try:
+        from datetime import datetime
         servers_to_add = request.mcpServers
         expected_version = request.version
 
@@ -126,6 +159,10 @@ async def add_mcp_server(request: MCPServerAddRequest):
             else:
                 try:
                     normalized_config = server_config.dict()
+                    # 添加provider信息
+                    normalized_config['provider_user_id'] = current_user.user_id
+                    normalized_config['provider_username'] = current_user.user_id
+                    normalized_config['created_at'] = datetime.now().isoformat()
                     servers_to_actually_add[server_name] = normalized_config
                 except Exception as e:
                     logger.error(f"服务器 '{server_name}' 配置处理失败: {str(e)}")
@@ -214,8 +251,8 @@ async def add_mcp_server(request: MCPServerAddRequest):
 
 
 @router.post("/mcp/remove", response_model=Dict[str, Any])
-async def remove_mcp_servers(request: MCPServerRemoveRequest):
-    """批量删除指定的MCP服务器（支持传统MCP和AI生成的MCP）"""
+async def remove_mcp_servers(request: MCPServerRemoveRequest, current_user: CurrentUser = Depends(get_current_user)):
+    """批量删除指定的MCP服务器（支持传统MCP和AI生成的MCP）- 需要权限检查"""
     try:
         server_names = request.server_names
         expected_version = request.version
@@ -226,6 +263,7 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
                 "message": "没有指定要删除的服务器",
                 "removed_servers": [],
                 "not_found_servers": [],
+                "permission_denied_servers": [],
                 "total_requested": 0
             }
 
@@ -248,14 +286,24 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
 
         servers_to_remove = []
         not_found_servers = []
+        permission_denied_servers = []
         ai_generated_servers = []
         traditional_servers = []
 
+        # 检查权限
         for server_name in server_names:
             if server_name in current_servers:
+                server_config = current_servers[server_name]
+                provider_user_id = server_config.get("provider_user_id")
+
+                # 权限检查：只有提供者或管理员可以删除
+                if provider_user_id and provider_user_id != current_user.user_id and current_user.role != "admin":
+                    permission_denied_servers.append(server_name)
+                    logger.warning(f"用户{current_user.user_id}尝试删除服务器{server_name}但无权限（provider: {provider_user_id}）")
+                    continue
+
                 servers_to_remove.append(server_name)
 
-                server_config = current_servers[server_name]
                 if server_config.get("ai_generated", False) or FileManager.mcp_tool_exists(server_name):
                     ai_generated_servers.append(server_name)
                 else:
@@ -311,39 +359,56 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
                         }
                     )
 
-        if removed_servers and not not_found_servers and not failed_removals:
+        if removed_servers and not not_found_servers and not failed_removals and not permission_denied_servers:
             return {
                 "status": "success",
                 "message": f"成功删除 {len(removed_servers)} 个服务器",
                 "removed_servers": removed_servers,
                 "not_found_servers": [],
                 "failed_removals": [],
+                "permission_denied_servers": [],
                 "ai_generated_count": len(ai_generated_servers),
                 "traditional_count": len(traditional_servers),
                 "total_requested": len(server_names),
                 "update_result": update_result,
                 "new_version": update_result.get("status", {}).get("version")
             }
-        elif removed_servers and (not_found_servers or failed_removals):
+        elif removed_servers and (not_found_servers or failed_removals or permission_denied_servers):
             return {
                 "status": "partial_success",
-                "message": f"成功删除 {len(removed_servers)} 个服务器，{len(not_found_servers)} 个服务器不存在，{len(failed_removals)} 个删除失败",
+                "message": f"成功删除 {len(removed_servers)} 个服务器，{len(not_found_servers)} 个服务器不存在，{len(failed_removals)} 个删除失败，{len(permission_denied_servers)} 个无权限",
                 "removed_servers": removed_servers,
                 "not_found_servers": not_found_servers,
                 "failed_removals": failed_removals,
+                "permission_denied_servers": permission_denied_servers,
                 "ai_generated_count": len([s for s in ai_generated_servers if s in removed_servers]),
                 "traditional_count": len([s for s in traditional_servers if s in removed_servers]),
                 "total_requested": len(server_names),
                 "update_result": update_result,
                 "new_version": update_result.get("status", {}).get("version")
             }
-        elif not_found_servers and not removed_servers:
+        elif permission_denied_servers and not removed_servers:
+            return {
+                "status": "permission_denied",
+                "message": f"所有 {len(permission_denied_servers)} 个服务器都没有删除权限",
+                "removed_servers": [],
+                "not_found_servers": not_found_servers,
+                "failed_removals": [],
+                "permission_denied_servers": permission_denied_servers,
+                "ai_generated_count": 0,
+                "traditional_count": 0,
+                "total_requested": len(server_names),
+                "update_result": None,
+                "current_version": current_version
+            }
+        elif not_found_servers and not removed_servers and not permission_denied_servers:
             return {
                 "status": "no_changes",
                 "message": f"所有 {len(not_found_servers)} 个服务器都不存在，未删除任何服务器",
                 "removed_servers": [],
                 "not_found_servers": not_found_servers,
                 "failed_removals": [],
+                "permission_denied_servers": [],
                 "ai_generated_count": 0,
                 "traditional_count": 0,
                 "total_requested": len(server_names),
@@ -357,6 +422,7 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
                 "removed_servers": removed_servers,
                 "not_found_servers": not_found_servers,
                 "failed_removals": failed_removals,
+                "permission_denied_servers": permission_denied_servers,
                 "ai_generated_count": len([s for s in ai_generated_servers if s in removed_servers]),
                 "traditional_count": len([s for s in traditional_servers if s in removed_servers]),
                 "total_requested": len(server_names),
@@ -379,7 +445,7 @@ async def remove_mcp_servers(request: MCPServerRemoveRequest):
 
 
 @router.post("/mcp/connect/{server_name}", response_model=Dict[str, Any])
-async def connect_server(server_name: str):
+async def connect_server(server_name: str, current_user: CurrentUser = Depends(get_current_user)):
     """连接指定的MCP服务器，或者连接所有服务器（当server_name为'all'时）"""
     try:
         if server_name.lower() == "all":
@@ -405,16 +471,16 @@ async def connect_server(server_name: str):
         )
 
 @router.post("/mcp/test-tool", response_model=MCPToolTestResponse)
-async def test_mcp_tool(request: MCPToolTestRequest):
+async def test_mcp_tool(request: MCPToolTestRequest, current_user: CurrentUser = Depends(get_current_user)):
     """测试MCP工具调用"""
     try:
         # 记录开始时间
         start_time = time.time()
-        
+
         # 调用工具
         result = await mcp_service.call_tool(
             request.server_name,
-            request.tool_name, 
+            request.tool_name,
             request.params
         )
         
@@ -454,7 +520,7 @@ async def test_mcp_tool(request: MCPToolTestRequest):
         )
         
 @router.post("/mcp/disconnect/{server_name}", response_model=Dict[str, Any])
-async def disconnect_server(server_name: str):
+async def disconnect_server(server_name: str, current_user: CurrentUser = Depends(get_current_user)):
     """断开指定的MCP服务器连接"""
     try:
         # 检查服务器状态
@@ -464,7 +530,7 @@ async def disconnect_server(server_name: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到服务器 '{server_name}'"
             )
-        
+
         # 如果服务器未连接，直接返回
         if not server_status[server_name].get("connected", False):
             return {
@@ -472,7 +538,7 @@ async def disconnect_server(server_name: str):
                 "server": server_name,
                 "message": "服务器未连接"
             }
-        
+
         # 断开服务器连接
         result = await mcp_service.disconnect_server(server_name)
         if result.get("status") == "error":
@@ -480,7 +546,7 @@ async def disconnect_server(server_name: str):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=result.get("error", "断开服务器连接失败")
             )
-        
+
         return result
     except HTTPException:
         raise
@@ -492,7 +558,7 @@ async def disconnect_server(server_name: str):
         )
         
 @router.get("/mcp/tools", response_model=Dict[str, List[Dict[str, Any]]])
-async def get_mcp_tools():
+async def get_mcp_tools(current_user: CurrentUser = Depends(get_current_user)):
     """获取所有MCP工具信息"""
     try:
         return await mcp_service.get_all_tools()
@@ -504,11 +570,11 @@ async def get_mcp_tools():
         )
 
 @router.get("/mcp/ai-generator-template", response_model=Dict[str, str])
-async def get_mcp_generator_template():
+async def get_mcp_generator_template(current_user: CurrentUser = Depends(get_current_user)):
     """获取AI生成MCP的提示词模板"""
     try:
         template = await mcp_service.get_mcp_generator_template()
-        
+
         return {
             "template": template,
             "note": "模版可作为系统提示词使用，您的需求可作为用户输入"
@@ -522,7 +588,7 @@ async def get_mcp_generator_template():
 
 
 @router.post("/mcp/generate")
-async def generate_mcp_tool(request: MCPGenerationRequest):
+async def generate_mcp_tool(request: MCPGenerationRequest, current_user: CurrentUser = Depends(get_current_user)):
     """AI生成MCP工具接口 - 支持流式和非流式响应"""
     try:
         # 基本参数验证
@@ -539,7 +605,7 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
             )
 
         # 验证模型是否存在
-        model_config = await model_service.get_model(request.model_name)
+        model_config = await model_service.get_model(request.model_name, user_id=current_user.user_id)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -553,7 +619,7 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
                         requirement=request.requirement,
                         model_name=request.model_name,
                         conversation_id=request.conversation_id,
-                        user_id=request.user_id
+                        user_id=current_user.user_id
                 ):
                     yield chunk
             except Exception as e:
@@ -606,7 +672,7 @@ async def generate_mcp_tool(request: MCPGenerationRequest):
         )
 
 @router.post("/mcp/register-tool", response_model=Dict[str, Any])
-async def register_mcp_tool(request: MCPToolRegistration):
+async def register_mcp_tool(request: MCPToolRegistration, current_user: CurrentUser = Depends(get_current_user)):
     """注册MCP工具到系统"""
     try:
         # 检查工具是否已存在
@@ -615,7 +681,7 @@ async def register_mcp_tool(request: MCPToolRegistration):
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"MCP工具 '{request.folder_name}' 已存在"
             )
-        
+
         # 创建MCP工具
         success = FileManager.create_mcp_tool(
             request.folder_name,
@@ -623,15 +689,15 @@ async def register_mcp_tool(request: MCPToolRegistration):
             request.readme,
             request.dependencies
         )
-        
+
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="创建MCP工具文件失败"
             )
-        
+
         # 注册到MCP配置
-        success = await mcp_service.register_ai_mcp_tool(request.folder_name)
+        success = await mcp_service.register_ai_mcp_tool(request.folder_name, user_id=current_user.user_id)
         if not success:
             # 注册失败，清理文件
             FileManager.delete_mcp_tool(request.folder_name)
@@ -639,12 +705,12 @@ async def register_mcp_tool(request: MCPToolRegistration):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="注册MCP工具到配置失败"
             )
-        
+
         return {
             "status": "success",
             "message": f"MCP工具 '{request.folder_name}' 注册成功"
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -655,7 +721,7 @@ async def register_mcp_tool(request: MCPToolRegistration):
         )
 
 @router.get("/mcp/ai-tools", response_model=List[str])
-async def list_ai_mcp_tools():
+async def list_ai_mcp_tools(current_user: CurrentUser = Depends(get_current_user)):
     """列出所有AI生成的MCP工具"""
     try:
         return FileManager.list_mcp_tools()

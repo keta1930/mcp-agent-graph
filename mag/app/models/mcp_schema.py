@@ -13,6 +13,11 @@ class MCPServerConfig(BaseModel):
     type: Optional[str] = Field(None, description="服务器类型，会自动转换为transportType")
     env: Optional[Dict[str, str]] = Field(None, description="环境变量")
 
+    # 团队共享字段
+    provider_user_id: Optional[str] = Field(None, description="提供者用户ID")
+    provider_username: Optional[str] = Field(None, description="提供者用户名（便于前端显示）")
+    created_at: Optional[str] = Field(None, description="创建时间")
+
     @root_validator(pre=False, skip_on_failure=True)
     def normalize_config(cls, values):
         """规范化配置，处理type字段转换和字段验证"""
@@ -112,6 +117,15 @@ class MCPServerRemoveRequest(BaseModel):
     """删除MCP服务器请求"""
     server_names: List[str] = Field(..., description="要删除的服务器名称列表")
     version: int = Field(..., description="客户端读取时的版本号")
+
+
+class MCPConfigResponse(BaseModel):
+    """MCP配置响应（包含用户信息）"""
+    config: MCPConfig = Field(..., description="MCP配置内容")
+    version: int = Field(..., description="配置版本号")
+    user_id: str = Field(..., description="配置所有者用户ID")
+    shared_with: List[str] = Field(default_factory=list, description="共享给的用户列表")
+    updated_at: Optional[str] = Field(None, description="最后更新时间")
 
 
 class MCPGenerationRequest(BaseModel):

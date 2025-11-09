@@ -235,7 +235,7 @@ class ToolExecutor:
             
             session = await self.mcp_service._get_session()
             async with session.post(
-                f"{self.mcp_service.client_url}/tool_call",
+                f"{self.mcp_service.client_manager.client_url}/tool_call",
                 json={
                     "server_name": server_name,
                     "tool_name": tool_name,

@@ -34,7 +34,7 @@ class AIMCPGenerator:
                 return
 
             # 验证模型是否存在
-            model_config = await model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name, user_id=user_id)
             if not model_config:
                 error_chunk = {
                     "error": {
@@ -112,7 +112,8 @@ class AIMCPGenerator:
                 model_name=model_name,
                 messages=messages,
                 tools=None,
-                yield_chunks=True
+                yield_chunks=True,
+                user_id=user_id
             ):
                 if isinstance(item, str):
                     # SSE chunk，直接转发
@@ -396,6 +397,8 @@ class AIMCPGenerator:
             if not conversation_data:
                 return {"success": False, "error": "获取对话数据失败"}
 
+            # 获取用户ID
+            user_id = conversation_data.get("user_id", "default_user")
             parsed_results = conversation_data.get("parsed_results", {})
 
             # 使用LLM生成的folder_name
@@ -427,7 +430,7 @@ class AIMCPGenerator:
                 return {"success": False, "error": "创建MCP工具文件失败"}
 
             # 注册MCP工具到配置
-            register_success = await self.register_ai_mcp_tool_stdio(folder_name)
+            register_success = await self.register_ai_mcp_tool_stdio(folder_name, user_id)
             if not register_success:
                 # 注册失败，清理文件
                 FileManager.delete_mcp_tool(folder_name)
@@ -465,8 +468,9 @@ class AIMCPGenerator:
             logger.error(f"生成MCP生成器模板时出错: {str(e)}")
             raise
 
-    async def register_ai_mcp_tool_stdio(self, tool_name: str) -> bool:
-        """注册AI生成的MCP工具到配置（使用stdio，乐观锁）"""
+    async def register_ai_mcp_tool_stdio(self, tool_name: str, user_id: str = "default_user") -> bool:
+        """注册AI生成的MCP工具到团队配置（使用stdio，乐观锁）"""
+        from datetime import datetime
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -488,7 +492,10 @@ class AIMCPGenerator:
                     "command": str(venv_python),
                     "args": [str(main_script)],
                     "transportType": "stdio",
-                    "ai_generated": True
+                    "ai_generated": True,
+                    "provider_user_id": user_id,
+                    "provider_username": user_id,
+                    "created_at": datetime.now().isoformat()
                 }
                 from app.services.mcp_service import mcp_service
                 success = await mcp_service.update_config(current_config, current_version)
