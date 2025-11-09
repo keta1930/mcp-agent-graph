@@ -9,6 +9,9 @@ from .prompt_repository import PromptRepository
 from .model_config_repository import ModelConfigRepository
 from .mcp_config_repository import MCPConfigRepository
 from .preview_repository import PreviewRepository
+from .user_repository import UserRepository
+from .invite_code_repository import InviteCodeRepository
+from .team_settings_repository import TeamSettingsRepository
 
 __all__ = [
     'ConversationRepository',
@@ -21,5 +24,8 @@ __all__ = [
     'PromptRepository',
     'ModelConfigRepository',
     'MCPConfigRepository',
-    'PreviewRepository'
+    'PreviewRepository',
+    'UserRepository',
+    'InviteCodeRepository',
+    'TeamSettingsRepository'
 ]
