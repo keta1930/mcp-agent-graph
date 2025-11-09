@@ -3,18 +3,23 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).parent.parent.parent.parent
 mag_services_env_path = project_root / "docker" / "mag_services" / ".env"
 
 if mag_services_env_path.exists():
     load_dotenv(mag_services_env_path)
+else:
+    # 如果找不到，尝试从当前工作目录加载
+    cwd_env_path = Path.cwd() / "docker" / "mag_services" / ".env"
+    if cwd_env_path.exists():
+        load_dotenv(cwd_env_path)
 
 class Settings:
     """应用配置设置"""
 
     # 应用版本和名称
     APP_NAME: str = "MAG - MCP Agent Graph"
-    APP_VERSION: str = "2.0.0"
+    APP_VERSION: str = "3.0.0"
 
     MONGODB_URL: str = os.getenv(
         "MONGODB_URL",
@@ -24,6 +29,15 @@ class Settings:
     )
 
     MONGODB_DB: str = os.getenv("MONGO_DATABASE", "mcp-agent-graph")
+
+    # JWT 配置
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24小时
+
+    # 超级管理员配置
+    ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
 
     # MinIO 配置
     MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", f"localhost:{os.getenv('MINIO_API_PORT', '9010')}")
