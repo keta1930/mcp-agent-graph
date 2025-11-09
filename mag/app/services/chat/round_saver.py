@@ -54,7 +54,7 @@ class RoundSaver:
             # 如果是第一轮，生成标题和标签
             if round_number == 1:
                 await self._generate_title_and_tags(
-                    conversation_id, round_messages, model_name
+                    conversation_id, round_messages, model_name, user_id
                 )
 
         except Exception as e:
@@ -70,18 +70,20 @@ class RoundSaver:
     async def _generate_title_and_tags(self,
                                       conversation_id: str,
                                       messages: List[Dict[str, Any]],
-                                      model_name: str):
+                                      model_name: str,
+                                      user_id: str = "default_user"):
         """生成对话标题和标签
 
         Args:
             conversation_id: 对话ID
             messages: 消息列表
             model_name: 模型名称
+            user_id: 用户ID
         """
         try:
             # 获取模型配置
             from app.services.model_service import model_service
-            model_config = await model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name, user_id=user_id)
 
             if not model_config:
                 logger.warning(f"找不到模型配置: {model_name}，跳过标题生成")
@@ -91,7 +93,8 @@ class RoundSaver:
             await self.mongodb_client.conversation_repository.generate_conversation_title_and_tags(
                 conversation_id=conversation_id,
                 messages=messages,
-                model_config=model_config
+                model_config=model_config,
+                user_id=user_id
             )
         except Exception as e:
             logger.error(f"生成标题和标签时出错: {str(e)}")

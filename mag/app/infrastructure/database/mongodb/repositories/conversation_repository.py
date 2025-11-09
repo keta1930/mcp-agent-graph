@@ -107,7 +107,8 @@ class ConversationRepository:
     async def generate_conversation_title_and_tags(self,
                                                    conversation_id: str,
                                                    messages: List[Dict[str, Any]],
-                                                   model_config: Dict[str, Any]) -> bool:
+                                                   model_config: Dict[str, Any],
+                                                   user_id: str = "default_user") -> bool:
         """统一的对话标题和标签生成方法"""
         try:
             user_message = ""
@@ -143,7 +144,8 @@ class ConversationRepository:
             from app.services.model_service import model_service
             result = await model_service.call_model(
                 model_name=model_config["name"],
-                messages=[{"role": "user", "content": title_prompt}]
+                messages=[{"role": "user", "content": title_prompt}],
+                user_id=user_id
             )
 
             title = "新对话"

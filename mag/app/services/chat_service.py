@@ -79,7 +79,8 @@ class ChatService:
                 tools=tools,
                 mcp_servers=mcp_servers,
                 conversation_id=conversation_id,
-                max_iterations=10
+                max_iterations=10,
+                user_id=user_id
             ):
                 if isinstance(item, str):
                     # SSE chunk，直接转发
@@ -141,14 +142,14 @@ class ChatService:
                 return {"status": "error", "error": "压缩类型必须是 'brutal' 或 'precise'"}
 
             # 验证模型是否存在
-            model_config = await model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name, user_id=user_id)
             if not model_config:
                 return {"status": "error", "error": f"找不到模型配置: {model_name}"}
 
             # 创建总结回调函数（用于精确压缩）
             summarize_callback = None
             if compact_type == "precise":
-                summarize_callback = lambda content: self._summarize_tool_content(content, model_name)
+                summarize_callback = lambda content: self._summarize_tool_content(content, model_name, user_id)
 
             # 调用MongoDB服务执行压缩
             result = await mongodb_client.compact_conversation(
@@ -166,12 +167,13 @@ class ChatService:
             logger.error(f"压缩对话时出错: {str(e)}")
             return {"status": "error", "error": str(e)}
 
-    async def _summarize_tool_content(self, content: str, model_name: str) -> Dict[str, Any]:
+    async def _summarize_tool_content(self, content: str, model_name: str, user_id: str = "default_user") -> Dict[str, Any]:
         """使用模型总结工具结果进行压缩内容
 
         Args:
             content: 待总结内容
             model_name: 模型名称
+            user_id: 用户ID
 
         Returns:
             总结结果
@@ -190,7 +192,8 @@ class ChatService:
             # 调用模型
             result = await model_service.call_model(
                 model_name=model_name,
-                messages=messages
+                messages=messages,
+                user_id=user_id
             )
 
             if result.get("status") == "success":

@@ -47,7 +47,7 @@ class ConversationManager:
 
         return final_id
 
-    async def create_conversation(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
+    async def create_conversation(self, graph_name: str, graph_config: Dict[str, Any], user_id: str = "default_user") -> str:
         """创建新的会话，使用MongoDB存储"""
         conversation_id = self._generate_unique_conversation_id(graph_name)
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -70,7 +70,7 @@ class ConversationManager:
 
             from app.infrastructure.database.mongodb import mongodb_client
             success = await mongodb_client.create_graph_run_conversation(
-                conversation_id, graph_name, graph_config, "default_user"
+                conversation_id, graph_name, graph_config, user_id
             )
 
             if not success:
@@ -84,9 +84,9 @@ class ConversationManager:
             self._cleanup_failed_conversation(conversation_id)
             raise
 
-    async def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any]) -> str:
+    async def create_conversation_with_config(self, graph_name: str, graph_config: Dict[str, Any], user_id: str = "default_user") -> str:
         """使用指定配置创建新的会话"""
-        return await self.create_conversation(graph_name, graph_config)
+        return await self.create_conversation(graph_name, graph_config, user_id)
 
     async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取会话状态，优先从内存获取，否则从MongoDB恢复"""

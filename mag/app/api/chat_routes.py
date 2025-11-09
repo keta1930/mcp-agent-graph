@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from app.services.model_service import model_service
 from app.services.chat_service import chat_service
@@ -14,6 +14,8 @@ from app.models.chat_schema import (
     ConversationCompactRequest, ConversationCompactResponse,
     TokenUsage, UpdateConversationStatusRequest
 )
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +23,14 @@ router = APIRouter(tags=["chat"])
 
 # ======= Chat模式API接口=======
 @router.post("/chat/completions")
-async def chat_completions(request: ChatCompletionRequest):
+async def chat_completions(
+    request: ChatCompletionRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """Chat completions接口 - 支持流式和非流式响应，支持临时对话"""
     try:
+        # 从token获取user_id，覆盖请求体中的user_id
+        user_id = current_user.user_id
         # 基本参数验证
         if not request.user_prompt.strip():
             raise HTTPException(
@@ -37,8 +44,8 @@ async def chat_completions(request: ChatCompletionRequest):
                 detail="必须指定模型名称"
             )
 
-        # 验证模型是否存在
-        model_config = await model_service.get_model(request.model_name)
+        # 验证模型是否存在（使用当前用户的user_id）
+        model_config = await model_service.get_model(request.model_name, user_id=user_id)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -54,7 +61,7 @@ async def chat_completions(request: ChatCompletionRequest):
                         system_prompt=request.system_prompt,
                         mcp_servers=request.mcp_servers,
                         model_name=request.model_name,
-                        user_id=request.user_id
+                        user_id=user_id
                 ):
                     yield chunk
             except Exception as e:
@@ -103,9 +110,10 @@ async def chat_completions(request: ChatCompletionRequest):
         )
 
 @router.get("/chat/conversations", response_model=ConversationListResponse)
-async def get_conversations_list(user_id: str = "default_user"):
+async def get_conversations_list(current_user: CurrentUser = Depends(get_current_user)):
     """获取对话列表（返回所有类型的对话）"""
     try:
+        user_id = current_user.user_id
         conversations = await mongodb_client.list_conversations(
             user_id=user_id,
             conversation_type=None,
@@ -165,7 +173,10 @@ async def get_conversations_list(user_id: str = "default_user"):
 
 
 @router.get("/chat/conversations/{conversation_id}", response_model=ConversationDetailResponse,response_model_exclude_none=True)
-async def get_conversation_detail(conversation_id: str):
+async def get_conversation_detail(
+    conversation_id: str,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """获取对话完整内容（支持所有类型的对话）"""
     try:
         # 直接调用mongodb_client的get_conversation_with_messages方法
@@ -175,6 +186,13 @@ async def get_conversation_detail(conversation_id: str):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        # 验证所有权（管理员可以访问所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限访问此对话"
             )
 
         # 处理轮次数据 - 转换为OpenAI格式
@@ -211,14 +229,33 @@ async def get_conversation_detail(conversation_id: str):
         )
 
 @router.put("/chat/conversations/{conversation_id}/status")
-async def update_conversation_status(conversation_id: str, request: UpdateConversationStatusRequest):
+async def update_conversation_status(
+    conversation_id: str,
+    request: UpdateConversationStatusRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """更新对话状态（统一接口：活跃/软删除/收藏）"""
     try:
+        # 验证对话所有权
+        conversation = await mongodb_client.get_conversation(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        # 验证所有权（管理员可以操作所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限操作此对话"
+            )
+
         # 调用mongodb_client更新对话状态
         success = await mongodb_client.update_conversation_status(
             conversation_id=conversation_id,
             status=request.status,
-            user_id=request.user_id
+            user_id=current_user.user_id
         )
 
         if not success:
@@ -252,7 +289,10 @@ async def update_conversation_status(conversation_id: str, request: UpdateConver
 
 
 @router.delete("/chat/conversations/{conversation_id}/permanent")
-async def permanently_delete_conversation(conversation_id: str, user_id: str = "default_user"):
+async def permanently_delete_conversation(
+    conversation_id: str,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """永久删除对话"""
     try:
         # 验证对话是否存在且属于该用户
@@ -263,7 +303,8 @@ async def permanently_delete_conversation(conversation_id: str, user_id: str = "
                 detail=f"找不到对话 '{conversation_id}'"
             )
 
-        if conversation.get("user_id") != user_id:
+        # 验证所有权（管理员可以删除所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="无权限访问此对话"
@@ -296,7 +337,11 @@ async def permanently_delete_conversation(conversation_id: str, user_id: str = "
 
 
 @router.put("/chat/conversations/{conversation_id}/title")
-async def update_conversation_title(conversation_id: str, request: UpdateConversationTitleRequest):
+async def update_conversation_title(
+    conversation_id: str,
+    request: UpdateConversationTitleRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """更新对话标题"""
     try:
         # 验证标题不为空
@@ -306,11 +351,26 @@ async def update_conversation_title(conversation_id: str, request: UpdateConvers
                 detail="标题不能为空"
             )
 
+        # 验证对话所有权
+        conversation = await mongodb_client.get_conversation(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        # 验证所有权（管理员可以操作所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限操作此对话"
+            )
+
         # 调用mongodb_client更新标题
         success = await mongodb_client.update_conversation_title(
             conversation_id=conversation_id,
             title=request.title.strip(),
-            user_id=request.user_id
+            user_id=current_user.user_id
         )
 
         if not success:
@@ -337,14 +397,33 @@ async def update_conversation_title(conversation_id: str, request: UpdateConvers
 
 
 @router.put("/chat/conversations/{conversation_id}/tags")
-async def update_conversation_tags(conversation_id: str, request: UpdateConversationTagsRequest):
+async def update_conversation_tags(
+    conversation_id: str,
+    request: UpdateConversationTagsRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """更新对话标签"""
     try:
+        # 验证对话所有权
+        conversation = await mongodb_client.get_conversation(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        # 验证所有权（管理员可以操作所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限操作此对话"
+            )
+
         # 调用mongodb_client更新标签
         success = await mongodb_client.update_conversation_tags(
             conversation_id=conversation_id,
             tags=request.tags,
-            user_id=request.user_id
+            user_id=current_user.user_id
         )
 
         if not success:
@@ -370,10 +449,14 @@ async def update_conversation_tags(conversation_id: str, request: UpdateConversa
         )
 
 @router.post("/chat/conversations/{conversation_id}/compact", response_model=ConversationCompactResponse)
-async def compact_conversation(conversation_id: str, request: ConversationCompactRequest):
+async def compact_conversation(
+    conversation_id: str,
+    request: ConversationCompactRequest,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """
     压缩对话内容
-    
+
     支持两种压缩类型：
     - brutal（暴力压缩）：保留每轮的系统提示词、用户消息和最后一个assistant消息
     - precise（精确压缩）：对长工具内容进行智能总结
@@ -387,7 +470,7 @@ async def compact_conversation(conversation_id: str, request: ConversationCompac
             )
 
         # 验证模型名称
-        model_config = await model_service.get_model(request.model_name)
+        model_config = await model_service.get_model(request.model_name, current_user.user_id)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -402,8 +485,8 @@ async def compact_conversation(conversation_id: str, request: ConversationCompac
                 detail=f"找不到对话 '{conversation_id}'"
             )
 
-        # 验证对话所有权
-        if conversation.get("user_id") != request.user_id:
+        # 验证对话所有权（管理员可以操作所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="无权限访问此对话"
@@ -415,7 +498,7 @@ async def compact_conversation(conversation_id: str, request: ConversationCompac
             model_name=request.model_name,
             compact_type=request.compact_type,
             compact_threshold=request.compact_threshold,
-            user_id=request.user_id
+            user_id=current_user.user_id
         )
 
         # 处理结果
