@@ -2,6 +2,7 @@ import os
 import tempfile
 import zipfile
 import logging
+import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from app.infrastructure.database.mongodb import mongodb_client
@@ -41,20 +42,21 @@ class ExportService:
             "csv": CSVPreviewReader()
         }
 
-    def _get_storage_path(self, data_format: str, dataset_name: str) -> str:
-        """根据数据格式获取存储路径"""
-        return f"conversation_export/{data_format}/{dataset_name}/"
+    def _get_storage_path(self, data_format: str, dataset_name: str, user_id: str = "default_user") -> str:
+        """根据数据格式获取存储路径（包含user_id隔离）"""
+        return f"conversation_export/{user_id}/{data_format}/{dataset_name}/"
 
-    def _get_base_storage_path(self, data_format: str) -> str:
-        """根据数据格式获取基础存储路径"""
-        return f"conversation_export/{data_format}/"
+    def _get_base_storage_path(self, data_format: str, user_id: str = "default_user") -> str:
+        """根据数据格式获取基础存储路径（包含user_id隔离）"""
+        return f"conversation_export/{user_id}/{data_format}/"
 
     async def export_conversations(self,
                                    dataset_name: str,
                                    file_name: str,
                                    conversation_ids: List[str],
                                    file_format: str = "jsonl",
-                                   data_format: str = "standard") -> Dict[str, Any]:
+                                   data_format: str = "standard",
+                                   user_id: str = "default_user") -> Dict[str, Any]:
         """
         导出对话数据
 
@@ -64,6 +66,7 @@ class ExportService:
             conversation_ids: 会话ID列表
             file_format: 文件格式（jsonl/parquet/csv）
             data_format: 数据格式（standard）
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 导出结果
@@ -105,7 +108,7 @@ class ExportService:
                 DatasetInfoGenerator.save_to_file(dataset_info, dataset_info_path)
 
                 # 上传到MinIO
-                storage_path = self._get_storage_path(data_format, dataset_name)
+                storage_path = self._get_storage_path(data_format, dataset_name, user_id)
 
                 # 上传数据文件
                 data_object_name = storage_path + full_file_name
@@ -135,19 +138,21 @@ class ExportService:
             logger.error(f"导出对话数据失败: {str(e)}")
             return {"success": False, "message": f"导出失败: {str(e)}"}
 
-    async def download_dataset(self, dataset_name: str, data_format: str = "standard") -> Optional[str]:
+    async def download_dataset(self, dataset_name: str, data_format: str = "standard",
+                             user_id: str = "default_user") -> Optional[str]:
         """
         下载数据集为ZIP文件
 
         Args:
             dataset_name: 数据集名称
             data_format: 数据格式
+            user_id: 用户ID
 
         Returns:
             Optional[str]: 临时ZIP文件路径，失败返回None
         """
         try:
-            storage_path = self._get_storage_path(data_format, dataset_name)
+            storage_path = self._get_storage_path(data_format, dataset_name, user_id)
 
             # 列出该路径下的所有文件
             objects = minio_client.list_objects(storage_path)
@@ -175,19 +180,21 @@ class ExportService:
             logger.error(f"下载数据集失败: {str(e)}")
             return None
 
-    async def preview_dataset(self, dataset_name: str, data_format: str = "standard") -> Dict[str, Any]:
+    async def preview_dataset(self, dataset_name: str, data_format: str = "standard",
+                            user_id: str = "default_user") -> Dict[str, Any]:
         """
         预览数据集
 
         Args:
             dataset_name: 数据集名称
             data_format: 数据格式
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 预览结果
         """
         try:
-            storage_path = self._get_storage_path(data_format, dataset_name)
+            storage_path = self._get_storage_path(data_format, dataset_name, user_id)
 
             # 获取dataset_info.json
             info_object_name = storage_path + "dataset_info.json"
@@ -195,7 +202,6 @@ class ExportService:
             if not info_content:
                 return {"success": False, "message": "未找到数据集信息"}
 
-            import json
             dataset_info = json.loads(info_content)
 
             # 查找数据文件：优先从dataset_info中获取文件名
@@ -244,19 +250,21 @@ class ExportService:
             logger.error(f"预览数据集失败: {str(e)}")
             return {"success": False, "message": f"预览失败: {str(e)}"}
 
-    async def delete_dataset(self, dataset_name: str, data_format: str = "standard") -> Dict[str, Any]:
+    async def delete_dataset(self, dataset_name: str, data_format: str = "standard",
+                           user_id: str = "default_user") -> Dict[str, Any]:
         """
         删除数据集
 
         Args:
             dataset_name: 数据集名称
             data_format: 数据格式
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 删除结果
         """
         try:
-            storage_path = self._get_storage_path(data_format, dataset_name)
+            storage_path = self._get_storage_path(data_format, dataset_name, user_id)
 
             # 列出并删除所有文件
             objects = minio_client.list_objects(storage_path)
@@ -280,15 +288,18 @@ class ExportService:
             logger.error(f"删除数据集失败: {str(e)}")
             return {"success": False, "message": f"删除失败: {str(e)}"}
 
-    async def list_datasets(self) -> Dict[str, Any]:
+    async def list_datasets(self, user_id: str = "default_user") -> Dict[str, Any]:
         """
-        列出所有格式的所有数据集
+        列出用户的所有格式的所有数据集
+
+        Args:
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 数据集列表
         """
         try:
-            base_path = "conversation_export/"
+            base_path = f"conversation_export/{user_id}/"
             objects = minio_client.list_objects(base_path)
 
             # 提取数据集信息 (data_format/dataset_name)

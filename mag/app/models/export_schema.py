@@ -1,7 +1,6 @@
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
-
 class ExportRequest(BaseModel):
     """导出请求模型"""
     dataset_name: str = Field(..., description="数据集名称")
@@ -9,6 +8,7 @@ class ExportRequest(BaseModel):
     conversation_ids: List[str] = Field(..., description="会话ID列表")
     file_format: str = Field(default="jsonl", description="文件格式：jsonl/parquet/csv")
     data_format: str = Field(default="standard", description="数据格式：standard")
+    user_id: str = Field(default="default_user", description="用户ID")
 
 
 class FileInfo(BaseModel):

@@ -1,13 +1,15 @@
 import os
 import shutil
 import logging
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
 from app.services.export_service import export_service
 from app.models.export_schema import (
     ExportRequest, ExportResponse, PreviewResponse,
     DeleteResponse, ListResponse
 )
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ router = APIRouter(prefix="/export", tags=["export"])
 
 
 @router.post("/conversations", response_model=ExportResponse)
-async def export_conversations(request: ExportRequest):
+async def export_conversations(request: ExportRequest, current_user: CurrentUser = Depends(get_current_user)):
     """导出对话数据"""
     try:
         result = await export_service.export_conversations(
@@ -23,7 +25,8 @@ async def export_conversations(request: ExportRequest):
             file_name=request.file_name,
             conversation_ids=request.conversation_ids,
             file_format=request.file_format,
-            data_format=request.data_format
+            data_format=request.data_format,
+            user_id=current_user.user_id
         )
 
         if not result["success"]:
@@ -45,10 +48,10 @@ async def export_conversations(request: ExportRequest):
 
 
 @router.get("/download/{dataset_name}")
-async def download_dataset(dataset_name: str, data_format: str, background_tasks: BackgroundTasks):
+async def download_dataset(dataset_name: str, data_format: str, background_tasks: BackgroundTasks, current_user: CurrentUser = Depends(get_current_user)):
     """下载数据集"""
     try:
-        zip_path = await export_service.download_dataset(dataset_name, data_format)
+        zip_path = await export_service.download_dataset(dataset_name, data_format, user_id=current_user.user_id)
 
         if not zip_path or not os.path.exists(zip_path):
             raise HTTPException(
@@ -78,10 +81,10 @@ async def download_dataset(dataset_name: str, data_format: str, background_tasks
 
 
 @router.get("/preview/{dataset_name}", response_model=PreviewResponse)
-async def preview_dataset(dataset_name: str, data_format: str = "standard"):
+async def preview_dataset(dataset_name: str, data_format: str = "standard", current_user: CurrentUser = Depends(get_current_user)):
     """预览数据集"""
     try:
-        result = await export_service.preview_dataset(dataset_name, data_format)
+        result = await export_service.preview_dataset(dataset_name, data_format, user_id=current_user.user_id)
 
         if not result["success"]:
             raise HTTPException(
@@ -102,10 +105,10 @@ async def preview_dataset(dataset_name: str, data_format: str = "standard"):
 
 
 @router.delete("/{dataset_name}", response_model=DeleteResponse)
-async def delete_dataset(dataset_name: str, data_format: str = "standard"):
+async def delete_dataset(dataset_name: str, data_format: str = "standard", current_user: CurrentUser = Depends(get_current_user)):
     """删除数据集"""
     try:
-        result = await export_service.delete_dataset(dataset_name, data_format)
+        result = await export_service.delete_dataset(dataset_name, data_format, user_id=current_user.user_id)
 
         if not result["success"]:
             raise HTTPException(
@@ -126,10 +129,10 @@ async def delete_dataset(dataset_name: str, data_format: str = "standard"):
 
 
 @router.get("/list", response_model=ListResponse)
-async def list_datasets():
+async def list_datasets(current_user: CurrentUser = Depends(get_current_user)):
     """列出所有数据集"""
     try:
-        result = await export_service.list_datasets()
+        result = await export_service.list_datasets(user_id=current_user.user_id)
         return ListResponse(**result)
 
     except Exception as e:
