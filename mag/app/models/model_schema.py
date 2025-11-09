@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field, validator
 
 class ModelConfig(BaseModel):
     """模型配置 - 支持所有OpenAI API参数"""
+    # 用户隔离
+    user_id: Optional[str] = Field(default="default_user", description="所属用户ID")
+
     # 必填参数（保持不变）
     name: str = Field(..., description="模型名称")
     base_url: str = Field(..., description="API基础URL")

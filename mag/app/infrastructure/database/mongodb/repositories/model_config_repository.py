@@ -23,19 +23,21 @@ class ModelConfigRepository:
         self.db = db
         self.collection = collection
 
-    async def create_model(self, model_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_model(self, user_id: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
         """
         创建新的模型配置
 
         Args:
+            user_id: 用户ID
             model_config: 模型配置数据
 
         Returns:
             Dict[str, Any]: 操作结果
         """
         try:
-            # 检查是否已存在
+            # 检查该用户是否已有同名模型
             existing = await self.collection.find_one({
+                "user_id": user_id,
                 "name": model_config["name"]
             })
 
@@ -47,6 +49,7 @@ class ModelConfigRepository:
 
             # 创建文档
             document = {
+                "user_id": user_id,
                 "name": model_config["name"],
                 "base_url": model_config["base_url"],
                 "api_key": model_config["api_key"],
@@ -75,7 +78,7 @@ class ModelConfigRepository:
             result = await self.collection.insert_one(document)
 
             if result.inserted_id:
-                logger.info(f"模型配置创建成功: {model_config['name']}")
+                logger.info(f"模型配置创建成功: {model_config['name']} (user: {user_id})")
                 return {
                     "success": True,
                     "message": f"模型 '{model_config['name']}' 创建成功",
@@ -97,12 +100,13 @@ class ModelConfigRepository:
                 "message": f"创建模型配置时发生错误: {str(e)}"
             }
 
-    async def get_model(self, model_name: str, include_api_key: bool = True) -> Optional[Dict[str, Any]]:
+    async def get_model(self, model_name: str, user_id: str, include_api_key: bool = True) -> Optional[Dict[str, Any]]:
         """
         获取指定模型的配置
 
         Args:
             model_name: 模型名称
+            user_id: 用户ID
             include_api_key: 是否包含API密钥（用于编辑时不返回密钥）
 
         Returns:
@@ -112,7 +116,7 @@ class ModelConfigRepository:
             projection = None if include_api_key else {"api_key": 0}
 
             doc = await self.collection.find_one(
-                {"name": model_name},
+                {"name": model_name, "user_id": user_id},
                 projection
             )
 
@@ -125,34 +129,35 @@ class ModelConfigRepository:
             return doc
 
         except Exception as e:
-            logger.error(f"获取模型配置失败 {model_name}: {e}")
+            logger.error(f"获取模型配置失败 {model_name} (user: {user_id}): {e}")
             return None
 
-    async def update_model(self, model_name: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_model(self, model_name: str, user_id: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
         """
         更新指定模型配置
 
         Args:
             model_name: 原模型名称
+            user_id: 用户ID
             model_config: 更新的配置数据
 
         Returns:
             Dict[str, Any]: 操作结果
         """
         try:
-            # 检查模型是否存在
-            existing = await self.collection.find_one({"name": model_name})
+            # 检查模型是否存在且属于该用户
+            existing = await self.collection.find_one({"name": model_name, "user_id": user_id})
 
             if not existing:
                 return {
                     "success": False,
-                    "message": f"模型 '{model_name}' 不存在"
+                    "message": f"模型 '{model_name}' 不存在或无权限访问"
                 }
 
-            # 如果修改了名称，检查新名称是否已被占用
+            # 如果修改了名称，检查新名称是否已被该用户占用
             new_name = model_config.get("name", model_name)
             if new_name != model_name:
-                name_exists = await self.collection.find_one({"name": new_name})
+                name_exists = await self.collection.find_one({"name": new_name, "user_id": user_id})
                 if name_exists:
                     return {
                         "success": False,
@@ -189,12 +194,12 @@ class ModelConfigRepository:
 
             # 执行更新
             result = await self.collection.update_one(
-                {"name": model_name},
+                {"name": model_name, "user_id": user_id},
                 {"$set": update_fields}
             )
 
             if result.modified_count > 0 or result.matched_count > 0:
-                logger.info(f"模型配置更新成功: {model_name} -> {new_name}")
+                logger.info(f"模型配置更新成功: {model_name} -> {new_name} (user: {user_id})")
                 return {
                     "success": True,
                     "message": f"模型 '{model_name}' 更新成功",
@@ -207,29 +212,31 @@ class ModelConfigRepository:
                 }
 
         except Exception as e:
-            logger.error(f"更新模型配置失败 {model_name}: {e}")
+            logger.error(f"更新模型配置失败 {model_name} (user: {user_id}): {e}")
             return {
                 "success": False,
                 "message": f"更新模型配置时发生错误: {str(e)}"
             }
 
-    async def delete_model(self, model_name: str) -> Dict[str, Any]:
+    async def delete_model(self, model_name: str, user_id: str) -> Dict[str, Any]:
         """
         删除指定模型配置
 
         Args:
             model_name: 模型名称
+            user_id: 用户ID
 
         Returns:
             Dict[str, Any]: 操作结果
         """
         try:
             result = await self.collection.delete_one({
-                "name": model_name
+                "name": model_name,
+                "user_id": user_id
             })
 
             if result.deleted_count > 0:
-                logger.info(f"模型配置删除成功: {model_name}")
+                logger.info(f"模型配置删除成功: {model_name} (user: {user_id})")
                 return {
                     "success": True,
                     "message": f"模型 '{model_name}' 删除成功"
@@ -237,21 +244,22 @@ class ModelConfigRepository:
             else:
                 return {
                     "success": False,
-                    "message": f"模型 '{model_name}' 不存在"
+                    "message": f"模型 '{model_name}' 不存在或无权限访问"
                 }
 
         except Exception as e:
-            logger.error(f"删除模型配置失败 {model_name}: {e}")
+            logger.error(f"删除模型配置失败 {model_name} (user: {user_id}): {e}")
             return {
                 "success": False,
                 "message": f"删除模型配置时发生错误: {str(e)}"
             }
 
-    async def list_models(self, include_api_key: bool = False) -> List[Dict[str, Any]]:
+    async def list_models(self, user_id: str, include_api_key: bool = False) -> List[Dict[str, Any]]:
         """
-        列出所有模型配置
+        列出用户的所有模型配置
 
         Args:
+            user_id: 用户ID
             include_api_key: 是否包含API密钥
 
         Returns:
@@ -263,28 +271,29 @@ class ModelConfigRepository:
             if not include_api_key:
                 projection["api_key"] = 0
 
-            cursor = self.collection.find({}, projection).sort("updated_at", -1)
+            cursor = self.collection.find({"user_id": user_id}, projection).sort("updated_at", -1)
             docs = await cursor.to_list(length=None)
 
             return docs
 
         except Exception as e:
-            logger.error(f"列出模型配置失败: {e}")
+            logger.error(f"列出模型配置失败 (user: {user_id}): {e}")
             return []
 
-    async def model_exists(self, model_name: str) -> bool:
+    async def model_exists(self, model_name: str, user_id: str) -> bool:
         """
         检查模型是否存在
 
         Args:
             model_name: 模型名称
+            user_id: 用户ID
 
         Returns:
             bool: 是否存在
         """
         try:
-            count = await self.collection.count_documents({"name": model_name})
+            count = await self.collection.count_documents({"name": model_name, "user_id": user_id})
             return count > 0
         except Exception as e:
-            logger.error(f"检查模型是否存在失败 {model_name}: {e}")
+            logger.error(f"检查模型是否存在失败 {model_name} (user: {user_id}): {e}")
             return False
