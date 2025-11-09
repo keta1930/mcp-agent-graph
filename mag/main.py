@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,6 +12,7 @@ from app.services.graph_service import graph_service
 from app.infrastructure.database.mongodb import mongodb_client
 from app.infrastructure.storage.file_storage import FileManager
 from app.core.config import settings
+from app.core.initialization import initialize_system
 
 # 配置日志
 logging.basicConfig(
@@ -19,11 +21,74 @@ logging.basicConfig(
 )
 logger = logging.getLogger("mag")
 
-# 创建应用
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理"""
+    logger.info("Starting MAG application...")
+
+    try:
+        # 1. 确保目录存在
+        logger.info(f"配置目录: {settings.MAG_DIR}")
+        settings.ensure_directories()
+
+        # 2. 连接MongoDB
+        await mongodb_client.initialize(settings.MONGODB_URL, settings.MONGODB_DB)
+        logger.info("MongoDB connected successfully")
+
+        # 3. 执行系统初始化（创建超级管理员、团队）
+        await initialize_system()
+        logger.info("System initialization completed")
+
+        # 4. 初始化文件系统
+        FileManager.initialize()
+        logger.info("文件系统初始化成功")
+
+        # 5. 初始化模型服务
+        await model_service.initialize(mongodb_client)
+        logger.info("模型服务初始化成功")
+
+        # 6. 初始化图服务
+        await graph_service.initialize()
+        logger.info("图服务初始化成功")
+
+        # 7. 初始化MCP服务 - 启动客户端进程
+        await mcp_service.initialize()
+        logger.info("MCP服务初始化成功")
+
+        logger.info("所有服务初始化完成")
+
+        yield
+
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
+    finally:
+        logger.info("Shutting down MAG application...")
+
+        try:
+            # 清理MCP服务
+            await mcp_service.cleanup()
+            logger.info("MCP服务清理完成")
+        except Exception as e:
+            logger.error(f"清理MCP服务时出错: {str(e)}")
+
+        try:
+            # 断开MongoDB连接
+            await mongodb_client.disconnect()
+            logger.info("MongoDB连接已断开")
+        except Exception as e:
+            logger.error(f"断开MongoDB连接时出错: {str(e)}")
+
+
+# 创建应用（使用lifespan）
 app = FastAPI(
     title="MAG - MCP Agent Graph",
     description="通过MCP+Graph构建Agent系统的工具",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 # 添加CORS中间件
@@ -50,56 +115,6 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # 注册路由
 app.include_router(router, prefix="/api")
-
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("MAG服务器启动...")
-
-    # 确保目录存在
-    try:
-        logger.info(f"配置目录: {settings.MAG_DIR}")
-        settings.ensure_directories()
-
-        await mongodb_client.initialize(settings.MONGODB_URL,settings.MONGODB_DB)
-        logger.info("MongoDB服务初始化成功")
-
-        # 初始化文件系统
-        FileManager.initialize()
-        logger.info("文件系统初始化成功")
-
-        # 初始化模型服务 (需要在MongoDB之后)
-        await model_service.initialize(mongodb_client)
-        logger.info("模型服务初始化成功")
-
-        # 初始化图服务
-        await graph_service.initialize()
-        logger.info("图服务初始化成功")
-
-        # 初始化MCP服务 - 启动客户端进程
-        await mcp_service.initialize()
-        logger.info("MCP服务初始化成功")
-
-        logger.info("所有服务初始化完成")
-    except Exception as e:
-        logger.error(f"初始化时出错: {str(e)}")
-        import traceback
-        traceback.print_exc()
-
-
-# 关闭事件
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("MAG服务器关闭...")
-
-    try:
-        # 清理MCP服务
-        await mcp_service.cleanup()
-        logger.info("MCP服务清理完成")
-    except Exception as e:
-        logger.error(f"清理MCP服务时出错: {str(e)}")
-        import traceback
-        traceback.print_exc()
 
 
 @app.get("/health")
