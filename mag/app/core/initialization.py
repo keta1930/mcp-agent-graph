@@ -10,7 +10,6 @@
 import os
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 
 from app.core.config import settings
 from app.auth.password import hash_password
@@ -58,8 +57,8 @@ async def initialize_super_admin() -> None:
             "password_hash": password_hash,
             "role": "super_admin",
             "is_active": True,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
             "last_login_at": None
         })
 
@@ -67,8 +66,6 @@ async def initialize_super_admin() -> None:
 
     except Exception as e:
         logger.error(f"Failed to initialize super admin: {str(e)}")
-        # 超级管理员创建失败不应该阻止应用启动
-        # 管理员可以稍后通过其他方式创建
 
 
 async def initialize_team_settings() -> None:
@@ -91,7 +88,7 @@ async def initialize_team_settings() -> None:
             return
 
         # 创建默认团队设置
-        now = datetime.now(timezone.utc)
+        now = datetime.now()
 
         await mongodb_client.team_settings_collection.insert_one({
             "_id": "team_config",
@@ -113,41 +110,13 @@ async def initialize_team_settings() -> None:
         # 团队设置创建失败不应该阻止应用启动
 
 
-async def create_database_indexes() -> None:
-    """
-    创建所有必要的数据库索引
-
-    此函数调用MongoDBClient的_create_indexes()方法，
-    该方法会创建所有集合的索引。
-
-    注意:
-        - 索引创建失败会记录错误日志
-        - 索引创建是幂等的，重复执行不会出错
-        - 索引对于查询性能至关重要
-    """
-    logger.info("Creating database indexes...")
-
-    try:
-        # MongoDBClient在initialize时已经调用了_create_indexes
-        # 这里我们确保它被调用了
-        await mongodb_client._create_indexes()
-
-        logger.info("All database indexes created successfully")
-
-    except Exception as e:
-        logger.error(f"Failed to create indexes: {str(e)}")
-        # 索引创建失败会记录错误，但不抛出异常
-        # 这样应用仍然可以启动，只是性能可能受影响
-
-
 async def initialize_system() -> None:
     """
     执行系统初始化的主函数
 
     按顺序执行以下初始化步骤：
-    1. 创建数据库索引
-    2. 初始化超级管理员
-    3. 初始化团队设置
+    1. 初始化超级管理员
+    2. 初始化团队设置
 
     注意:
         - 这个函数应该在MongoDB连接建立后调用
@@ -156,14 +125,10 @@ async def initialize_system() -> None:
     """
     logger.info("Starting system initialization...")
 
-    # 1. 创建数据库索引（已在MongoDBClient.initialize中完成）
-    # 这里只是确保索引存在
-    await create_database_indexes()
-
-    # 2. 初始化超级管理员
+    # 1. 初始化超级管理员
     await initialize_super_admin()
 
-    # 3. 初始化团队设置
+    # 2. 初始化团队设置
     await initialize_team_settings()
 
     logger.info("System initialization completed")

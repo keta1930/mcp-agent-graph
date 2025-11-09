@@ -163,12 +163,12 @@ class InviteCodeService:
             # 检查是否过期
             expires_at = invite_code.get("expires_at")
             if expires_at:
-                # 确保比较时使用带时区的datetime
+                # 使用本地时间进行比较
                 if isinstance(expires_at, datetime):
-                    from datetime import timezone
                     if expires_at.tzinfo is None:
-                        expires_at = expires_at.replace(tzinfo=timezone.utc)
-                    stats["is_expired"] = datetime.now(timezone.utc) > expires_at
+                        # 保持为本地时间
+                        pass
+                    stats["is_expired"] = datetime.now() > expires_at
 
             return stats
 

@@ -42,7 +42,7 @@ class UserRepository:
             Exception: 用户名已存在或创建失败
         """
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now()
 
             user_doc = {
                 "user_id": user_id,
@@ -130,7 +130,7 @@ class UserRepository:
                 {
                     "$set": {
                         "role": new_role,
-                        "updated_at": datetime.now(timezone.utc)
+                        "updated_at": datetime.now()
                     }
                 }
             )
@@ -161,8 +161,8 @@ class UserRepository:
                 {"user_id": user_id},
                 {
                     "$set": {
-                        "last_login_at": datetime.now(timezone.utc),
-                        "updated_at": datetime.now(timezone.utc)
+                        "last_login_at": datetime.now(),
+                        "updated_at": datetime.now()
                     }
                 }
             )
@@ -189,7 +189,7 @@ class UserRepository:
                 {
                     "$set": {
                         "is_active": False,
-                        "updated_at": datetime.now(timezone.utc)
+                        "updated_at": datetime.now()
                     }
                 }
             )

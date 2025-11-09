@@ -52,7 +52,7 @@ class TeamSettingsRepository:
             Exception: 更新失败
         """
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now()
 
             # 使用 upsert 确保文档存在
             result = await self.collection.find_one_and_update(
@@ -96,7 +96,7 @@ class TeamSettingsRepository:
                 return existing
 
             # 创建新的团队设置
-            now = datetime.now(timezone.utc)
+            now = datetime.now()
 
             settings_doc = {
                 "_id": self.TEAM_CONFIG_ID,

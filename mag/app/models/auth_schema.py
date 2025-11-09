@@ -163,11 +163,8 @@ class InviteCodeCreateRequest(BaseModel):
     def validate_expires_at(cls, v):
         """验证过期时间必须在未来"""
         if v is not None:
-            # 确保比较时使用带时区的datetime
-            if v.tzinfo is None:
-                from datetime import timezone
-                v = v.replace(tzinfo=timezone.utc)
-            if v <= datetime.now(timezone.utc):
+            # 使用本地时间进行比较
+            if v <= datetime.now():
                 raise ValueError('过期时间必须在未来')
         return v
 

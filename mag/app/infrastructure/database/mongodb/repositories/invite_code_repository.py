@@ -44,7 +44,7 @@ class InviteCodeRepository:
             Exception: 邀请码已存在或创建失败
         """
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now()
 
             invite_code_doc = {
                 "code": code,
@@ -130,7 +130,7 @@ class InviteCodeRepository:
                 {
                     "$set": {
                         "is_active": is_active,
-                        "updated_at": datetime.now(timezone.utc)
+                        "updated_at": datetime.now()
                     }
                 }
             )
@@ -162,7 +162,7 @@ class InviteCodeRepository:
                 {"code": code},
                 {
                     "$inc": {"current_uses": 1},
-                    "$set": {"updated_at": datetime.now(timezone.utc)}
+                    "$set": {"updated_at": datetime.now()}
                 }
             )
 
@@ -203,13 +203,9 @@ class InviteCodeRepository:
             # 检查是否过期
             expires_at = invite_code.get("expires_at")
             if expires_at:
-                # 确保比较时使用带时区的datetime
+                # 使用本地时间进行比较
                 if isinstance(expires_at, datetime):
-                    # 如果expires_at没有时区信息，添加UTC时区
-                    if expires_at.tzinfo is None:
-                        expires_at = expires_at.replace(tzinfo=timezone.utc)
-
-                    if datetime.now(timezone.utc) > expires_at:
+                    if datetime.now() > expires_at:
                         return False, "邀请码已过期"
 
             # 检查是否达到使用上限
