@@ -12,6 +12,7 @@ from .preview_repository import PreviewRepository
 from .user_repository import UserRepository
 from .invite_code_repository import InviteCodeRepository
 from .team_settings_repository import TeamSettingsRepository
+from .message_repository import MessageRepository
 
 __all__ = [
     'ConversationRepository',
@@ -27,5 +28,6 @@ __all__ = [
     'PreviewRepository',
     'UserRepository',
     'InviteCodeRepository',
-    'TeamSettingsRepository'
+    'TeamSettingsRepository',
+    'MessageRepository'
 ]

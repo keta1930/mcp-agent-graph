@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.infrastructure.database.mongodb.repositories import (ConversationRepository, ChatRepository,
                                 GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
                                 GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
-                                PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository)
+                                PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository, MessageRepository)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class MongoDBClient:
         self.users_collection = None
         self.invite_codes_collection = None
         self.team_settings_collection = None
+        self.messages_collection = None
 
         self.is_connected = False
 
@@ -47,6 +48,7 @@ class MongoDBClient:
         self.user_repository = None
         self.invite_code_repository = None
         self.team_settings_repository = None
+        self.message_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -74,6 +76,7 @@ class MongoDBClient:
             self.users_collection = self.db.users
             self.invite_codes_collection = self.db.invite_codes
             self.team_settings_collection = self.db.team_settings
+            self.messages_collection = self.db.messages
 
             await self.client.admin.command('ping')
 
@@ -161,6 +164,11 @@ class MongoDBClient:
             self.team_settings_collection
         )
 
+        self.message_repository = MessageRepository(
+            self.db,
+            self.messages_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -225,6 +233,12 @@ class MongoDBClient:
             await self.invite_codes_collection.create_index([("code", 1)], unique=True)
             await self.invite_codes_collection.create_index([("is_active", 1)])
             await self.invite_codes_collection.create_index([("created_by", 1)])
+
+            # 消息集合索引
+            await self.messages_collection.create_index([("message_id", 1)], unique=True)
+            await self.messages_collection.create_index([("sender_id", 1), ("receiver_id", 1), ("created_at", -1)])
+            await self.messages_collection.create_index([("receiver_id", 1), ("is_read", 1)])
+            await self.messages_collection.create_index([("created_at", -1)])
 
             logger.info("MongoDB索引创建成功")
 

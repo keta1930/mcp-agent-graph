@@ -20,6 +20,7 @@ import PreviewPage from './pages/PreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/admin/AdminPanel';
+import TeamChat from './pages/TeamChat';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -56,6 +57,13 @@ const App: React.FC = () => {
         <Route path="/chat/:conversationId" element={
           <PrivateRoute>
             <ChatSystem />
+          </PrivateRoute>
+        } />
+
+        {/* 受保护的路由 - 团队消息 */}
+        <Route path="/team-chat" element={
+          <PrivateRoute>
+            <TeamChat />
           </PrivateRoute>
         } />
 
