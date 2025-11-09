@@ -26,7 +26,7 @@ class TaskService:
         else:
             logger.error("MongoDB未连接，任务管理器初始化失败")
 
-    async def create_task(self, task_create: TaskCreate) -> Dict[str, Any]:
+    async def create_task(self, task_create: TaskCreate, user_id: str = "default_user") -> Dict[str, Any]:
         """创建新任务"""
         try:
             if not self.task_repository:
@@ -38,9 +38,9 @@ class TaskService:
             # 转换为字典格式
             task_data = task_create.dict()
 
-            # 验证图是否存在
-            graph_config = await graph_service.get_graph(task_create.graph_name)
-            if not graph_config:
+            # 验证图是否存在（使用任务所属用户的user_id验证）
+            graph_doc = await graph_service.get_graph(task_create.graph_name, user_id=task_data.get("user_id", user_id))
+            if not graph_doc:
                 raise Exception(f"图 '{task_create.graph_name}' 不存在")
 
             # 创建任务
@@ -61,8 +61,17 @@ class TaskService:
                 "message": f"创建任务失败: {str(e)}"
             }
 
-    async def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """获取单个任务（包含完整执行历史）"""
+    async def get_task(self, task_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        获取单个任务（包含完整执行历史）
+
+        Args:
+            task_id: 任务ID
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            任务字典，如果无权访问或不存在则返回None
+        """
         try:
             if not self.task_repository:
                 await self.initialize()
@@ -70,7 +79,7 @@ class TaskService:
             if not self.task_repository:
                 return None
 
-            return await self.task_repository.get_task(task_id)
+            return await self.task_repository.get_task(task_id, user_id)
 
         except Exception as e:
             logger.error(f"获取任务失败: {str(e)}")
@@ -91,8 +100,19 @@ class TaskService:
             logger.error(f"获取任务列表失败: {str(e)}")
             return []
 
-    async def update_task_status(self, task_id: str, status: str) -> Dict[str, Any]:
-        """更新任务状态"""
+    async def update_task_status(self, task_id: str, status: str,
+                                user_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        更新任务状态
+
+        Args:
+            task_id: 任务ID
+            status: 新状态
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            包含状态和消息的字典
+        """
         try:
             if not self.task_repository:
                 await self.initialize()
@@ -100,7 +120,7 @@ class TaskService:
             if not self.task_repository:
                 raise Exception("任务管理器未初始化")
 
-            success = await self.task_repository.update_task_status(task_id, status)
+            success = await self.task_repository.update_task_status(task_id, status, user_id)
             if not success:
                 raise Exception("更新任务状态失败")
 
@@ -116,8 +136,17 @@ class TaskService:
                 "message": f"更新任务状态失败: {str(e)}"
             }
 
-    async def delete_task(self, task_id: str) -> Dict[str, Any]:
-        """删除任务"""
+    async def delete_task(self, task_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        删除任务
+
+        Args:
+            task_id: 任务ID
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            包含状态和消息的字典
+        """
         try:
             if not self.task_repository:
                 await self.initialize()
@@ -125,7 +154,7 @@ class TaskService:
             if not self.task_repository:
                 raise Exception("任务管理器未初始化")
 
-            success = await self.task_repository.delete_task(task_id)
+            success = await self.task_repository.delete_task(task_id, user_id)
             if not success:
                 raise Exception("删除任务失败")
 
@@ -162,12 +191,14 @@ class TaskService:
             execution_count = task.get("execution_count", 1)
             graph_name = task.get("graph_name")
             input_text = task.get("input_text")
+            user_id = task.get("user_id", "default_user")
 
             # 获取图配置
-            graph_config = await graph_service.get_graph(graph_name)
-            if not graph_config:
+            graph_doc = await graph_service.get_graph(graph_name, user_id=user_id)
+            if not graph_doc:
                 raise Exception(f"图 '{graph_name}' 不存在")
 
+            graph_config = graph_doc.get("config", {})
             # 并发执行多个图实例
             tasks = []
             for i in range(execution_count):
@@ -175,7 +206,8 @@ class TaskService:
                     graph_name=graph_name,
                     input_text=input_text,
                     graph_config=graph_config,
-                    conversation_id=None
+                    conversation_id=None,
+                    user_id=user_id
                 )
                 tasks.append(task_coroutine)
 

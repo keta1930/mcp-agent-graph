@@ -1,11 +1,13 @@
 import logging
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from app.services.task_service import task_service
 from app.services.task_scheduler import task_scheduler
 from app.models.task_schema import TaskCreate, TaskStatusUpdate, TaskSummary, Task, TaskStatus
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +16,11 @@ router = APIRouter(tags=["tasks"])
 # ======= 任务管理 =======
 
 @router.post("/tasks", response_model=Dict[str, Any])
-async def create_task(task: TaskCreate):
+async def create_task(task: TaskCreate, current_user: CurrentUser = Depends(get_current_user)):
     """创建任务"""
     try:
+        # 设置任务的user_id
+        task.user_id = current_user.user_id
         # 验证单次执行任务的时间
         if task.schedule_type.value == "single":
             execute_at = task.schedule_config.execute_at
@@ -34,7 +38,7 @@ async def create_task(task: TaskCreate):
                 )
 
         # 创建任务
-        result = await task_service.create_task(task)
+        result = await task_service.create_task(task, user_id=current_user.user_id)
 
         if result.get("status") == "error":
             raise HTTPException(
@@ -50,7 +54,7 @@ async def create_task(task: TaskCreate):
                 detail="创建任务成功但无法获取任务ID"
             )
 
-        created_task = await task_service.get_task(task_id)
+        created_task = await task_service.get_task(task_id, user_id=current_user.user_id)
         if not created_task:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -97,7 +101,7 @@ async def get_scheduled_jobs():
 
 @router.get("/tasks", response_model=List[TaskSummary])
 async def get_tasks(
-    user_id: Optional[str] = None,
+    current_user: CurrentUser = Depends(get_current_user),
     task_status: Optional[TaskStatus] = None,
     graph_name: Optional[str] = None,
     limit: int = 20,
@@ -107,6 +111,9 @@ async def get_tasks(
 ):
     """获取任务摘要列表"""
     try:
+        # 管理员可以查看所有用户的任务，普通用户只能查看自己的
+        user_id = None if current_user.is_admin() else current_user.user_id
+
         tasks = await task_service.get_task_summaries(
             user_id=user_id,
             status=task_status,
@@ -126,16 +133,24 @@ async def get_tasks(
 
 
 @router.get("/tasks/{task_id}", response_model=Task)
-async def get_task(task_id: str):
+async def get_task(task_id: str, current_user: CurrentUser = Depends(get_current_user)):
     """获取任务详情和执行历史"""
     try:
         # 获取任务基本信息（包含执行历史）
-        task = await task_service.get_task(task_id)
+        task = await task_service.get_task(task_id, user_id=None)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到任务 '{task_id}'"
             )
+
+        # 验证所有权
+        if not current_user.is_admin() and task.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限访问此任务"
+            )
+
         return task
 
     except HTTPException:
@@ -149,19 +164,30 @@ async def get_task(task_id: str):
 
 
 @router.put("/tasks/{task_id}/status", response_model=Dict[str, Any])
-async def update_task_status(task_id: str, status_update: TaskStatusUpdate):
+async def update_task_status(
+    task_id: str,
+    status_update: TaskStatusUpdate,
+    current_user: CurrentUser = Depends(get_current_user)
+):
     """更新任务状态"""
     try:
         # 检查任务是否存在
-        task = await task_service.get_task(task_id)
+        task = await task_service.get_task(task_id, user_id=None)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到任务 '{task_id}'"
             )
 
+        # 验证所有权
+        if not current_user.is_admin() and task.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限操作此任务"
+            )
+
         # 更新任务状态
-        result = await task_service.update_task_status(task_id, status_update.status.value)
+        result = await task_service.update_task_status(task_id, status_update.status.value, user_id=current_user.user_id)
         if result.get("status") == "error":
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -171,7 +197,7 @@ async def update_task_status(task_id: str, status_update: TaskStatusUpdate):
         # 根据状态调整调度器
         if status_update.status.value == "active":
             # 重新调度任务
-            updated_task = await task_service.get_task(task_id)
+            updated_task = await task_service.get_task(task_id, user_id=current_user.user_id)
             if updated_task:
                 await task_scheduler.schedule_task(updated_task)
         elif status_update.status.value == "paused":
@@ -201,22 +227,29 @@ async def update_task_status(task_id: str, status_update: TaskStatusUpdate):
 
 
 @router.delete("/tasks/{task_id}", response_model=Dict[str, Any])
-async def delete_task(task_id: str):
+async def delete_task(task_id: str, current_user: CurrentUser = Depends(get_current_user)):
     """删除任务（优化后只需删除单个文档）"""
     try:
         # 检查任务是否存在
-        task = await task_service.get_task(task_id)
+        task = await task_service.get_task(task_id, user_id=None)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到任务 '{task_id}'"
             )
 
+        # 验证所有权
+        if not current_user.is_admin() and task.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限删除此任务"
+            )
+
         # 从调度器移除任务
         await task_scheduler.remove_task(task_id)
 
         # 删除任务
-        result = await task_service.delete_task(task_id)
+        result = await task_service.delete_task(task_id, user_id=current_user.user_id)
         if result.get("status") == "error":
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

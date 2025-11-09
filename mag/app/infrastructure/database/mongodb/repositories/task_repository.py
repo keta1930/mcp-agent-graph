@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from bson import ObjectId
+from app.utils.permission_utils import verify_resource_ownership
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class TaskRepository:
             task_id = f"task_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{ObjectId()}"
             task_data["_id"] = task_id
             task_data["id"] = task_id
-            
+
             # 初始化执行历史和统计字段
             task_data["execution_history"] = []
             task_data["execution_stats"] = {
@@ -50,19 +51,46 @@ class TaskRepository:
             logger.error(f"创建任务失败: {str(e)}")
             return False
 
-    async def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """获取单个任务"""
+    async def get_task(self, task_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        获取单个任务
+
+        Args:
+            task_id: 任务ID
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            任务字典，如果无权访问或不存在则返回None
+
+        Raises:
+            ValueError: 当用户无权访问时
+        """
         try:
             task = await self.tasks_collection.find_one({"_id": task_id})
-            if task:
-                return self._convert_objectid_to_str(task)
-            return None
+            if not task:
+                return None
+
+            # 如果提供了user_id，验证所有者权限
+            if user_id is not None:
+                verify_resource_ownership(task, user_id, "task")
+
+            return self._convert_objectid_to_str(task)
+        except ValueError:
+            # 重新抛出权限错误
+            raise
         except Exception as e:
             logger.error(f"获取任务失败: {str(e)}")
             return None
 
-    async def get_all_tasks(self, user_id: str = None) -> List[Dict[str, Any]]:
-        """获取所有任务"""
+    async def get_all_tasks(self, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """获取任务列表（支持管理员查看所有任务）
+
+        Args:
+            user_id: 用户ID（None表示获取所有任务，仅管理员可用）
+
+        Returns:
+            任务列表
+        """
         try:
             filter_query = {}
             if user_id:
@@ -77,9 +105,32 @@ class TaskRepository:
             logger.error(f"获取任务列表失败: {str(e)}")
             return []
 
-    async def update_task_status(self, task_id: str, status: str) -> bool:
-        """更新任务状态"""
+    async def update_task_status(self, task_id: str, status: str,
+                                user_id: Optional[str] = None) -> bool:
+        """
+        更新任务状态
+
+        Args:
+            task_id: 任务ID
+            status: 新状态
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            是否更新成功
+
+        Raises:
+            ValueError: 当用户无权修改时
+        """
         try:
+            # 如果提供了user_id，验证所有者权限
+            if user_id is not None:
+                task = await self.tasks_collection.find_one({"_id": task_id})
+                if not task:
+                    logger.warning(f"Task '{task_id}' not found")
+                    return False
+
+                verify_resource_ownership(task, user_id, "task")
+
             result = await self.tasks_collection.update_one(
                 {"_id": task_id},
                 {
@@ -90,20 +141,47 @@ class TaskRepository:
                 }
             )
             return result.modified_count > 0
+        except ValueError:
+            # 重新抛出权限错误
+            raise
         except Exception as e:
             logger.error(f"更新任务状态失败: {str(e)}")
             return False
 
-    async def delete_task(self, task_id: str) -> bool:
-        """删除任务"""
+    async def delete_task(self, task_id: str, user_id: Optional[str] = None) -> bool:
+        """
+        删除任务
+
+        Args:
+            task_id: 任务ID
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            是否删除成功
+
+        Raises:
+            ValueError: 当用户无权删除时
+        """
         try:
+            # 如果提供了user_id，验证所有者权限
+            if user_id is not None:
+                task = await self.tasks_collection.find_one({"_id": task_id})
+                if not task:
+                    logger.warning(f"Task '{task_id}' not found")
+                    return False
+
+                verify_resource_ownership(task, user_id, "task")
+
             result = await self.tasks_collection.delete_one({"_id": task_id})
             if result.deleted_count == 0:
                 logger.warning(f"任务 {task_id} 不存在")
                 return False
-        
+
             logger.info(f"任务 {task_id} 已删除")
             return True
+        except ValueError:
+            # 重新抛出权限错误
+            raise
         except Exception as e:
             logger.error(f"删除任务失败: {str(e)}")
             return False
@@ -206,7 +284,20 @@ class TaskRepository:
     async def get_task_summaries(self, user_id: Optional[str] = None, status: Optional[str] = None,
                                  graph_name: Optional[str] = None, limit: int = 20, offset: int = 0,
                                  sort_by: str = "created_at", sort_order: str = "desc") -> List[Dict[str, Any]]:
-        """获取任务摘要列表（排除执行历史，大字段）"""
+        """获取任务摘要列表（排除执行历史，大字段）
+
+        Args:
+            user_id: 用户ID（None表示获取所有任务，仅管理员可用）
+            status: 任务状态过滤（可选）
+            graph_name: 图名称过滤（可选）
+            limit: 返回数量限制
+            offset: 偏移量
+            sort_by: 排序字段
+            sort_order: 排序顺序
+
+        Returns:
+            任务摘要列表
+        """
         try:
             filter_query: Dict[str, Any] = {}
             if user_id:
