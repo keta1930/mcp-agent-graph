@@ -1,30 +1,34 @@
 import json
 import logging
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from typing import Dict
 from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.models.graph_schema import GraphGenerationRequest, PromptTemplateRequest
 from app.services.graph.ai_graph_generator import AIGraphGenerator
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["graph"])
 
 
 @router.post("/prompt-template", response_model=Dict[str, str])
-async def get_prompt_template(request: PromptTemplateRequest):
+async def get_prompt_template(request: PromptTemplateRequest, current_user: CurrentUser = Depends(get_current_user)):
     """生成提示词模板，包含节点参数规范、指定MCP服务器的工具信息和已有模型名称"""
     try:
         # 获取图配置（如果提供了graph_name）
         graph_config = None
         if request.graph_name:
-            graph_config = await graph_service.get_graph(request.graph_name)
-            if not graph_config:
+            graph_doc = await graph_service.get_graph(request.graph_name, user_id=current_user.user_id)
+            if not graph_doc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"找不到图 '{request.graph_name}'"
                 )
+            graph_config = graph_doc.get("config", {})
             logger.info(f"成功加载图配置: {request.graph_name}")
 
         # 创建AI图生成器实例并调用_build_system_prompt方法
@@ -49,7 +53,7 @@ async def get_prompt_template(request: PromptTemplateRequest):
         )
 
 @router.post("/graphs/generate")
-async def generate_graph(request: GraphGenerationRequest):
+async def generate_graph(request: GraphGenerationRequest, current_user: CurrentUser = Depends(get_current_user)):
     """AI生成图接口 - 支持流式和非流式响应"""
     try:
         # 基本参数验证
@@ -66,7 +70,7 @@ async def generate_graph(request: GraphGenerationRequest):
             )
 
         # 验证模型是否存在
-        model_config = await model_service.get_model(request.model_name)
+        model_config = await model_service.get_model(request.model_name, user_id=current_user.user_id)
         if not model_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -76,12 +80,13 @@ async def generate_graph(request: GraphGenerationRequest):
         # 获取graph配置（如果提供了graph_name）
         graph_config = None
         if request.graph_name:
-            graph_config = await graph_service.get_graph(request.graph_name)
-            if not graph_config:
+            graph_doc = await graph_service.get_graph(request.graph_name, user_id=current_user.user_id)
+            if not graph_doc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"找不到图 '{request.graph_name}'"
                 )
+            graph_config = graph_doc.get("config", {})
 
         # 生成流式响应的生成器
         async def generate_stream():
@@ -91,7 +96,7 @@ async def generate_graph(request: GraphGenerationRequest):
                     model_name=request.model_name,
                     mcp_servers=request.mcp_servers,
                     conversation_id=request.conversation_id,
-                    user_id=request.user_id,
+                    user_id=current_user.user_id,
                     graph_config=graph_config,
                 ):
                     yield chunk

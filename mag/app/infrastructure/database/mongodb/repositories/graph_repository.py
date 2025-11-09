@@ -224,7 +224,10 @@ class GraphRepository:
 
                 # 只在添加assistant消息时检查是否需要生成title和tags
                 if message_role == "assistant":
-                    await self._check_and_generate_title_tags(conversation_id, model_name)
+                    # 获取对话的 user_id
+                    conversation_info = await self.conversation_manager.get_conversation(conversation_id)
+                    user_id = conversation_info.get("user_id", "default_user") if conversation_info else "default_user"
+                    await self._check_and_generate_title_tags(conversation_id, model_name, user_id)
 
                 return True
             else:
@@ -235,7 +238,7 @@ class GraphRepository:
             logger.error(f"添加图生成对话消息失败: {str(e)}")
             return False
 
-    async def _check_and_generate_title_tags(self, conversation_id: str, model_name: str = None):
+    async def _check_and_generate_title_tags(self, conversation_id: str, model_name: str = None, user_id: str = "default_user"):
         """检查并生成标题和标签（当标题为默认标题时）"""
         try:
             # 获取当前对话基本信息
@@ -281,7 +284,8 @@ class GraphRepository:
                     await self.conversation_manager.generate_conversation_title_and_tags(
                         conversation_id=conversation_id,
                         messages=all_messages,
-                        model_config=model_config
+                        model_config=model_config,
+                        user_id=user_id
                     )
 
                     logger.info(

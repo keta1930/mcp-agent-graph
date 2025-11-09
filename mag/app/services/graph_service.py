@@ -41,34 +41,83 @@ class GraphService:
         # 初始化任务管理组件
         await self._initialize_task_components()
 
-    async def list_graphs(self) -> List[str]:
-        """列出所有可用的图"""
-        return await self.mongodb_client.list_graph_configs()
+    async def list_graphs(self, user_id: str = "default_user") -> List[str]:
+        """
+        列出所有可用的图
 
-    async def get_graph(self, graph_name: str) -> Optional[Dict[str, Any]]:
-        """获取图配置"""
-        return await self.mongodb_client.get_graph_config(graph_name)
+        Args:
+            user_id: 用户ID（用于过滤用户拥有的图）
 
-    async def save_graph(self, graph_name: str, config: Dict[str, Any]) -> bool:
-        """保存图配置"""
-        existing = await self.mongodb_client.graph_config_exists(graph_name)
+        Returns:
+            图名称列表
+        """
+        return await self.mongodb_client.list_graph_configs(user_id)
+
+    async def get_graph(self, graph_name: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        获取图配置
+
+        Args:
+            graph_name: 图名称
+            user_id: 用户ID（如果提供，将验证访问权限）
+
+        Returns:
+            图配置字典，如果无权访问或不存在则返回None
+        """
+        return await self.mongodb_client.get_graph_config(graph_name, user_id)
+
+    async def save_graph(self, graph_name: str, config: Dict[str, Any],
+                        user_id: str = "default_user") -> bool:
+        """
+        保存图配置
+
+        Args:
+            graph_name: 图名称
+            config: 图配置
+            user_id: 用户ID
+
+        Returns:
+            是否保存成功
+        """
+        existing = await self.mongodb_client.graph_config_exists(graph_name, user_id)
         if existing:
-            return await self.mongodb_client.update_graph_config(graph_name, config)
-        return await self.mongodb_client.create_graph_config(graph_name, config)
+            return await self.mongodb_client.update_graph_config(graph_name, config, user_id)
+        return await self.mongodb_client.create_graph_config(graph_name, config, user_id)
 
-    async def delete_graph(self, graph_name: str) -> bool:
-        """删除图配置（包括所有版本）"""
+    async def delete_graph(self, graph_name: str, user_id: Optional[str] = None) -> bool:
+        """
+        删除图配置（包括所有版本）
+
+        Args:
+            graph_name: 图名称
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            是否删除成功
+        """
         # 删除 MongoDB
-        mongo_success = await self.mongodb_client.delete_graph_config(graph_name)
+        mongo_success = await self.mongodb_client.delete_graph_config(graph_name, user_id)
 
         # 删除 MinIO 所有版本
-        minio_success = graph_config_version_manager.delete_all_versions(graph_name)
+        effective_user_id = user_id if user_id else "default_user"
+        minio_success = graph_config_version_manager.delete_all_versions(graph_name, effective_user_id)
 
         return mongo_success
 
-    async def rename_graph(self, old_name: str, new_name: str) -> bool:
-        """重命名图"""
-        return await self.mongodb_client.rename_graph_config(old_name, new_name)
+    async def rename_graph(self, old_name: str, new_name: str,
+                          user_id: Optional[str] = None) -> bool:
+        """
+        重命名图
+
+        Args:
+            old_name: 旧图名称
+            new_name: 新图名称
+            user_id: 用户ID（如果提供，将验证所有者权限）
+
+        Returns:
+            是否重命名成功
+        """
+        return await self.mongodb_client.rename_graph_config(old_name, new_name, user_id)
 
     def _extract_prompt_references(self, text: str) -> Set[str]:
         """
@@ -186,11 +235,15 @@ class GraphService:
         """检测图引用中的循环"""
         return await self.processor.detect_graph_cycles(graph_name, visited)
 
-    async def validate_graph(self, graph_config: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    async def validate_graph(self, graph_config: Dict[str, Any], user_id: str = "default_user") -> Tuple[bool, Optional[str]]:
         """验证图配置是否有效"""
+        # 创建包装函数，传递user_id
+        async def get_model_wrapper(model_name: str):
+            return await model_service.get_model(model_name, user_id=user_id)
+
         return await self.processor.validate_graph(
             graph_config,
-            model_service.get_model,
+            get_model_wrapper,
             mcp_service.get_server_status_sync
         )
 
@@ -224,7 +277,8 @@ class GraphService:
 
     async def execute_graph_background(self, graph_name: str, input_text: str,
                                        graph_config: Dict[str, Any],
-                                       conversation_id: Optional[str] = None) -> Dict[str, Any]:
+                                       conversation_id: Optional[str] = None,
+                                       user_id: str = "default_user") -> Dict[str, Any]:
         """后台异步执行图，执行到创建conversation_id后立即返回，图在后台继续运行"""
         try:
             # 检测图循环（和SSE版本一样的前期检查）
@@ -260,7 +314,7 @@ class GraphService:
 
                 # 使用后台执行器执行图
                 result = await self.background_executor.execute_graph_background(
-                    graph_name, flattened_config, input_text, model_service
+                    graph_name, flattened_config, input_text, model_service, user_id
                 )
                 return result
 
@@ -271,7 +325,8 @@ class GraphService:
                 "message": f"启动后台执行失败: {str(e)}"
             }
 
-    async def execute_graph_stream(self, graph_name: str, input_text: str, graph_config) -> AsyncGenerator[str, None]:
+    async def execute_graph_stream(self, graph_name: str, input_text: str, graph_config,
+                                   user_id: str = "default_user") -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""
         try:
             cycle = await self.detect_graph_cycles(graph_name)
@@ -292,7 +347,8 @@ class GraphService:
                     graph_name,
                     flattened_config,
                     input_text,
-                    model_service
+                    model_service,
+                    user_id
             ):
                 yield sse_data
 
@@ -422,20 +478,21 @@ class GraphService:
 
     # ======= 版本管理 =======
 
-    async def create_graph_version(self, graph_name: str, commit_message: str) -> Dict[str, Any]:
+    async def create_graph_version(self, graph_name: str, commit_message: str, user_id: str = "default_user") -> Dict[str, Any]:
         """
         为当前图配置创建版本快照
 
         Args:
             graph_name: 图名称
             commit_message: 提交信息（类似 Git commit message）
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
             Dict: 创建结果
         """
         try:
             # 1. 获取当前 MongoDB 中的配置
-            current_config = await self.get_graph(graph_name)
+            current_config = await self.get_graph(graph_name, user_id)
             if not current_config:
                 return {
                     "status": "error",
@@ -445,7 +502,8 @@ class GraphService:
             # 2. 创建 MinIO 版本
             version_result = graph_config_version_manager.create_version(
                 graph_name,
-                current_config
+                current_config,
+                user_id
             )
 
             if not version_result:
@@ -465,13 +523,13 @@ class GraphService:
                 "size": size
             }
 
-            success = await self.mongodb_client.add_graph_version_record(graph_name, version_record)
+            success = await self.mongodb_client.add_graph_version_record(graph_name, version_record, user_id)
 
             if not success:
                 logger.warning(f"版本记录添加到 MongoDB 失败，但 MinIO 版本已创建: {version_id}")
 
             # 4. 获取更新后的版本计数
-            version_info = await self.mongodb_client.get_graph_version_info(graph_name)
+            version_info = await self.mongodb_client.get_graph_version_info(graph_name, user_id)
             version_count = version_info.get("version_count", 1) if version_info else 1
 
             return {
@@ -488,10 +546,20 @@ class GraphService:
                 "message": f"创建版本失败: {str(e)}"
             }
 
-    async def get_graph_versions(self, graph_name: str) -> Dict[str, Any]:
+    async def get_graph_versions(self, graph_name: str, user_id: str = "default_user") -> Dict[str, Any]:
         """获取图的所有版本历史"""
         try:
-            version_info = await self.mongodb_client.get_graph_version_info(graph_name)
+            # 验证用户是否有权访问该图
+            graph_config = await self.get_graph(graph_name, user_id)
+            if not graph_config:
+                logger.warning(f"用户 {user_id} 无权访问图 '{graph_name}' 的版本")
+                return {
+                    "graph_name": graph_name,
+                    "version_count": 0,
+                    "versions": []
+                }
+
+            version_info = await self.mongodb_client.get_graph_version_info(graph_name, user_id)
 
             if not version_info or not version_info.get("versions"):
                 return {
@@ -514,21 +582,26 @@ class GraphService:
                 "versions": []
             }
 
-    async def get_graph_version(self, graph_name: str, version_id: str) -> Optional[Dict[str, Any]]:
+    async def get_graph_version(self, graph_name: str, version_id: str, user_id: str = "default_user") -> Optional[Dict[str, Any]]:
         """
         获取特定版本的配置
+
+        Args:
+            graph_name: 图名称
+            version_id: 版本ID
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
             Dict 包含 config 和 commit_message
         """
         try:
             # 从 MinIO 获取配置
-            config = graph_config_version_manager.get_version(graph_name, version_id)
+            config = graph_config_version_manager.get_version(graph_name, version_id, user_id)
             if not config:
                 return None
 
             # 从 MongoDB 获取 commit_message
-            version_info = await self.mongodb_client.get_graph_version_info(graph_name)
+            version_info = await self.mongodb_client.get_graph_version_info(graph_name, user_id)
             commit_message = None
 
             if version_info and version_info.get("versions"):
@@ -546,18 +619,26 @@ class GraphService:
             logger.error(f"获取版本配置失败: {str(e)}")
             return None
 
-    async def delete_graph_version(self, graph_name: str, version_id: str) -> Dict[str, Any]:
+    async def delete_graph_version(self, graph_name: str, version_id: str, user_id: str = "default_user") -> Dict[str, Any]:
         """
         删除特定版本
+
+        Args:
+            graph_name: 图名称
+            version_id: 版本ID
+            user_id: 用户ID，默认为 "default_user"
+
+        Returns:
+            Dict: 删除结果
 
         同时删除 MinIO 中的版本和 MongoDB 中的版本记录
         """
         try:
             # 1. 从 MinIO 删除版本
-            minio_success = graph_config_version_manager.delete_version(graph_name, version_id)
+            minio_success = graph_config_version_manager.delete_version(graph_name, version_id, user_id)
 
             # 2. 从 MongoDB 删除版本记录
-            mongo_success = await self.mongodb_client.remove_graph_version_record(graph_name, version_id)
+            mongo_success = await self.mongodb_client.remove_graph_version_record(graph_name, version_id, user_id)
 
             if minio_success and mongo_success:
                 return {

@@ -5,7 +5,7 @@ import zipfile
 import shutil
 import os
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends
 from typing import Dict, Any
 from app.infrastructure.database.mongodb import mongodb_client
 from app.services.mcp_service import mcp_service
@@ -15,6 +15,8 @@ from app.services.model_service import model_service
 from app.services.graph_service import graph_service
 from app.templates.flow_diagram import FlowDiagram
 from app.models.graph_schema import GraphFilePath
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ router = APIRouter(tags=["graph"])
 
 # ======= 图导入/导出功能 =======
 @router.post("/graphs/import", response_model=Dict[str, Any])
-async def import_graph(data: GraphFilePath):
+async def import_graph(data: GraphFilePath, current_user: CurrentUser = Depends(get_current_user)):
     """从JSON文件导入图配置"""
     try:
         file_path = Path(data.file_path)
@@ -47,7 +49,7 @@ async def import_graph(data: GraphFilePath):
                 detail="JSON文件缺少必要的'name'字段"
             )
 
-        valid, error = await graph_service.validate_graph(graph_data)
+        valid, error = await graph_service.validate_graph(graph_data, user_id=current_user.user_id)
         if not valid:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,7 +57,7 @@ async def import_graph(data: GraphFilePath):
             )
 
         graph_name = graph_data['name']
-        existing_graph = await graph_service.get_graph(graph_name)
+        existing_graph = await graph_service.get_graph(graph_name, user_id=current_user.user_id)
         if existing_graph:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -82,7 +84,7 @@ async def import_graph(data: GraphFilePath):
                     used_models.add(node.get("model_name"))
 
             model_configs = []
-            all_models = await model_service.get_all_models()
+            all_models = await model_service.get_all_models(user_id=current_user.user_id)
             for model in all_models:
                 if model["name"] in used_models:
                     model_configs.append(model)
@@ -93,7 +95,7 @@ async def import_graph(data: GraphFilePath):
         except Exception as e:
             logger.error(f"生成README时出错: {str(e)}")
 
-        success = await graph_service.save_graph(graph_name, graph_data)
+        success = await graph_service.save_graph(graph_name, graph_data, user_id=current_user.user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -115,7 +117,7 @@ async def import_graph(data: GraphFilePath):
 
 
 @router.post("/graphs/import_package", response_model=Dict[str, Any])
-async def import_graph_package(data: GraphFilePath):
+async def import_graph_package(data: GraphFilePath, current_user: CurrentUser = Depends(get_current_user)):
     """从ZIP包导入图配置及相关组件"""
     try:
         file_path = Path(data.file_path)
@@ -159,7 +161,7 @@ async def import_graph_package(data: GraphFilePath):
                 graph_config["name"] = graph_name
                 logger.warning(f"配置文件中缺少名称，使用文件名 '{graph_name}' 作为图名称")
 
-            existing_graph = await graph_service.get_graph(graph_name)
+            existing_graph = await graph_service.get_graph(graph_name, user_id=current_user.user_id)
             if existing_graph:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -198,7 +200,7 @@ async def import_graph_package(data: GraphFilePath):
                     with open(model_path, 'r', encoding='utf-8') as f:
                         import_models = json.load(f).get("models", [])
 
-                    current_models = await model_service.get_all_models()
+                    current_models = await model_service.get_all_models(user_id=current_user.user_id)
                     current_model_names = {model["name"] for model in current_models}
 
                     for model in import_models:
@@ -209,7 +211,7 @@ async def import_graph_package(data: GraphFilePath):
                             if not model.get("api_key"):
                                 models_need_api_key.append(model["name"])
 
-                            await model_service.add_model(model)
+                            await model_service.add_model(current_user.user_id, model)
                             current_model_names.add(model["name"])
 
                     if models_need_api_key:
@@ -254,7 +256,7 @@ async def import_graph_package(data: GraphFilePath):
                             except:
                                 pass
 
-            success = await graph_service.save_graph(graph_name, graph_config)
+            success = await graph_service.save_graph(graph_name, graph_config, user_id=current_user.user_id)
             if not success:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -282,7 +284,7 @@ async def import_graph_package(data: GraphFilePath):
         )
 
 @router.post("/graphs/import_from_file", response_model=Dict[str, Any])
-async def import_graph_from_file(file: UploadFile = File(...)):
+async def import_graph_from_file(file: UploadFile = File(...), current_user: CurrentUser = Depends(get_current_user)):
     """从上传的JSON文件导入图配置"""
     try:
         # 验证文件类型
@@ -301,7 +303,7 @@ async def import_graph_from_file(file: UploadFile = File(...)):
             content = await file.read()
             with os.fdopen(temp_fd, 'wb') as temp_file:
                 temp_file.write(content)
-            result = await import_graph(GraphFilePath(file_path=str(temp_path)))
+            result = await import_graph(GraphFilePath(file_path=str(temp_path)), current_user)
             return result
         finally:
             # 清理临时文件
@@ -321,7 +323,7 @@ async def import_graph_from_file(file: UploadFile = File(...)):
         )
 
 @router.post("/graphs/import_package_from_file", response_model=Dict[str, Any])
-async def import_graph_package_from_file(file: UploadFile = File(...)):
+async def import_graph_package_from_file(file: UploadFile = File(...), current_user: CurrentUser = Depends(get_current_user)):
     """从上传的ZIP包导入图配置及相关组件"""
     try:
         # 验证文件类型
@@ -340,7 +342,7 @@ async def import_graph_package_from_file(file: UploadFile = File(...)):
             content = await file.read()
             with os.fdopen(temp_fd, 'wb') as temp_file:
                 temp_file.write(content)
-            result = await import_graph_package(GraphFilePath(file_path=str(temp_path)))
+            result = await import_graph_package(GraphFilePath(file_path=str(temp_path)), current_user)
             return result
         finally:
             # 清理临时文件
@@ -361,15 +363,18 @@ async def import_graph_package_from_file(file: UploadFile = File(...)):
 
 
 @router.get("/graphs/{graph_name}/export", response_model=Dict[str, Any])
-async def export_graph(graph_name: str):
+async def export_graph(graph_name: str, current_user: CurrentUser = Depends(get_current_user)):
     """打包并导出图配置"""
     try:
-        graph_config = await graph_service.get_graph(graph_name)
-        if not graph_config:
+        graph_doc = await graph_service.get_graph(graph_name, user_id=current_user.user_id)
+        if not graph_doc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"找不到图 '{graph_name}'"
             )
+
+        # 提取config
+        graph_config = graph_doc.get("config", {})
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -410,12 +415,16 @@ async def export_graph(graph_name: str):
                 json.dump(filtered_mcp_config, f, ensure_ascii=False, indent=2)
 
             model_configs = []
-            all_models = await model_service.get_all_models()
+            all_models = await model_service.get_all_models(user_id=current_user.user_id)
 
             for model in all_models:
                 if model["name"] in used_models:
                     safe_model = model.copy()
+                    # 移除敏感信息
                     safe_model["api_key"] = ""
+                    # 移除元数据
+                    for meta_field in ["user_id", "created_at", "updated_at", "_id"]:
+                        safe_model.pop(meta_field, None)
                     model_configs.append(safe_model)
 
             model_path = attachment_dir / "model.json"

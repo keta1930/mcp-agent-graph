@@ -37,7 +37,7 @@ class AIGraphGenerator:
                 return
 
             # 验证模型是否存在
-            model_config = await model_service.get_model(model_name)
+            model_config = await model_service.get_model(model_name, user_id=user_id)
             if not model_config:
                 error_chunk = {
                     "error": {
@@ -116,7 +116,8 @@ class AIGraphGenerator:
                 model_name=model_name,
                 messages=messages,
                 tools=None,
-                yield_chunks=True
+                yield_chunks=True,
+                user_id=user_id
             ):
                 if isinstance(item, str):
                     # SSE chunk，直接转发

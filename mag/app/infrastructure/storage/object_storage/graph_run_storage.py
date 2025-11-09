@@ -17,7 +17,7 @@ class GraphRunStorageManager:
     STORAGE_PREFIX = "graph-run-results"
 
     @staticmethod
-    def _get_object_path(graph_name: str, graph_run_id: str, filename: str) -> str:
+    def _get_object_path(graph_name: str, graph_run_id: str, filename: str, user_id: str = "default_user") -> str:
         """
         构建 MinIO 对象路径
 
@@ -25,25 +25,27 @@ class GraphRunStorageManager:
             graph_name: 图名称
             graph_run_id: 图运行ID
             filename: 文件名
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
-            str: 完整的对象路径
+            str: 完整的对象路径 (格式: graph-run-results/{user_id}/{graph_name}/{graph_run_id}/{filename})
         """
-        return f"{GraphRunStorageManager.STORAGE_PREFIX}/{graph_name}/{graph_run_id}/{filename}"
+        return f"{GraphRunStorageManager.STORAGE_PREFIX}/{user_id}/{graph_name}/{graph_run_id}/{filename}"
 
     @staticmethod
-    def _get_run_prefix(graph_name: str, graph_run_id: str) -> str:
+    def _get_run_prefix(graph_name: str, graph_run_id: str, user_id: str = "default_user") -> str:
         """
         获取特定 graph run 的路径前缀
 
         Args:
             graph_name: 图名称
             graph_run_id: 图运行ID
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
-            str: 路径前缀
+            str: 路径前缀 (格式: graph-run-results/{user_id}/{graph_name}/{graph_run_id}/)
         """
-        return f"{GraphRunStorageManager.STORAGE_PREFIX}/{graph_name}/{graph_run_id}/"
+        return f"{GraphRunStorageManager.STORAGE_PREFIX}/{user_id}/{graph_name}/{graph_run_id}/"
 
     @staticmethod
     def save_node_output(
@@ -51,7 +53,8 @@ class GraphRunStorageManager:
         graph_run_id: str,
         node_name: str,
         content: str,
-        file_ext: str
+        file_ext: str,
+        user_id: str = "default_user"
     ) -> Optional[str]:
         """
         保存节点输出到 MinIO
@@ -62,6 +65,7 @@ class GraphRunStorageManager:
             node_name: 节点名称
             content: 内容
             file_ext: 文件扩展名
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
             Optional[str]: MinIO 对象路径，失败时返回 None
@@ -78,7 +82,7 @@ class GraphRunStorageManager:
 
             # 构建对象路径
             object_path = GraphRunStorageManager._get_object_path(
-                graph_name, graph_run_id, filename
+                graph_name, graph_run_id, filename, user_id
             )
 
             # 检查文件是否存在，如果存在则添加计数器
@@ -87,12 +91,12 @@ class GraphRunStorageManager:
             while minio_client.object_exists(object_path) and counter <= 100:
                 filename = f"{node_name}_{full_timestamp}_{counter}.{file_ext}"
                 object_path = GraphRunStorageManager._get_object_path(
-                    graph_name, graph_run_id, filename
+                    graph_name, graph_run_id, filename, user_id
                 )
                 counter += 1
 
             if counter > 100:
-                logger.error(f"无法生成唯一文件名: {node_name}_{full_timestamp}")
+                logger.error(f"无法生成唯一文件名 (用户: {user_id}): {node_name}_{full_timestamp}")
                 return None
 
             # 上传内容到 MinIO
@@ -104,14 +108,14 @@ class GraphRunStorageManager:
             )
 
             if success:
-                logger.info(f"保存节点输出到 MinIO: {object_path}")
+                logger.info(f"保存节点输出到 MinIO (用户: {user_id}): {object_path}")
                 return object_path
             else:
-                logger.error(f"上传节点输出失败: {object_path}")
+                logger.error(f"上传节点输出失败 (用户: {user_id}): {object_path}")
                 return None
 
         except Exception as e:
-            logger.error(f"保存节点输出时出错: {str(e)}")
+            logger.error(f"保存节点输出时出错 (用户: {user_id}): {str(e)}")
             return None
 
     @staticmethod
@@ -142,19 +146,20 @@ class GraphRunStorageManager:
         return content_type_map.get(file_ext.lower(), "application/octet-stream")
 
     @staticmethod
-    def get_run_attachments(graph_name: str, graph_run_id: str) -> List[Dict[str, Any]]:
+    def get_run_attachments(graph_name: str, graph_run_id: str, user_id: str = "default_user") -> List[Dict[str, Any]]:
         """
         获取特定 graph run 的所有附件信息
 
         Args:
             graph_name: 图名称
             graph_run_id: 图运行ID
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
             List[Dict[str, Any]]: 附件信息列表
         """
         try:
-            prefix = GraphRunStorageManager._get_run_prefix(graph_name, graph_run_id)
+            prefix = GraphRunStorageManager._get_run_prefix(graph_name, graph_run_id, user_id)
             objects = minio_client.list_objects(prefix=prefix, include_metadata=False)
 
             attachments = []
@@ -179,7 +184,7 @@ class GraphRunStorageManager:
             return attachments
 
         except Exception as e:
-            logger.error(f"获取 graph run 附件时出错: {str(e)}")
+            logger.error(f"获取 graph run 附件时出错 (用户: {user_id}): {str(e)}")
             return []
 
     @staticmethod
@@ -201,34 +206,35 @@ class GraphRunStorageManager:
             return None
 
     @staticmethod
-    def delete_run_attachments(graph_name: str, graph_run_id: str) -> bool:
+    def delete_run_attachments(graph_name: str, graph_run_id: str, user_id: str = "default_user") -> bool:
         """
         删除特定 graph run 的所有附件
 
         Args:
             graph_name: 图名称
             graph_run_id: 图运行ID
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
             bool: 是否成功删除
         """
         try:
-            prefix = GraphRunStorageManager._get_run_prefix(graph_name, graph_run_id)
+            prefix = GraphRunStorageManager._get_run_prefix(graph_name, graph_run_id, user_id)
             objects = minio_client.list_objects(prefix=prefix)
 
             success = True
             for obj in objects:
                 if not minio_client.delete_object(obj["object_name"]):
                     success = False
-                    logger.error(f"删除对象失败: {obj['object_name']}")
+                    logger.error(f"删除对象失败 (用户: {user_id}): {obj['object_name']}")
 
             if success:
-                logger.info(f"成功删除 graph run 附件: {graph_name}/{graph_run_id}")
+                logger.info(f"成功删除 graph run 附件 (用户: {user_id}): {graph_name}/{graph_run_id}")
 
             return success
 
         except Exception as e:
-            logger.error(f"删除 graph run 附件时出错: {str(e)}")
+            logger.error(f"删除 graph run 附件时出错 (用户: {user_id}): {str(e)}")
             return False
 
     @staticmethod

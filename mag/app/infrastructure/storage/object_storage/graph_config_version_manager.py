@@ -37,23 +37,33 @@ class GraphConfigVersionManager:
         except Exception as e:
             logger.error(f"启用版本控制失败: {e}")
 
-    def _get_object_name(self, graph_name: str) -> str:
-        """获取对象名称"""
-        return f"{self.STORAGE_PREFIX}/{graph_name}.json"
+    def _get_object_name(self, graph_name: str, user_id: str = "default_user") -> str:
+        """
+        获取对象名称
 
-    def create_version(self, graph_name: str, config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        Args:
+            graph_name: 图名称
+            user_id: 用户ID，默认为 "default_user"
+
+        Returns:
+            str: MinIO对象路径 (格式: graph-configs/{user_id}/{graph_name}.json)
+        """
+        return f"{self.STORAGE_PREFIX}/{user_id}/{graph_name}.json"
+
+    def create_version(self, graph_name: str, config: Dict[str, Any], user_id: str = "default_user") -> Optional[Dict[str, Any]]:
         """
         创建新版本（将当前配置上传到 MinIO）
 
         Args:
             graph_name: 图名称
             config: 图配置
+            user_id: 用户ID，默认为 "default_user"
 
         Returns:
             Optional[Dict]: 版本信息 {"version_id": "...", "size": 2048}，失败返回 None
         """
         try:
-            object_name = self._get_object_name(graph_name)
+            object_name = self._get_object_name(graph_name, user_id)
             content = json.dumps(config, ensure_ascii=False, indent=2)
             content_bytes = content.encode('utf-8')
             content_stream = BytesIO(content_bytes)
@@ -68,7 +78,7 @@ class GraphConfigVersionManager:
             )
 
             version_id = result.version_id
-            logger.info(f"✓ 创建图配置版本: {graph_name}, 版本ID: {version_id}")
+            logger.info(f"✓ 创建图配置版本: {graph_name} (用户: {user_id}), 版本ID: {version_id}")
 
             return {
                 "version_id": version_id,
@@ -76,13 +86,23 @@ class GraphConfigVersionManager:
             }
 
         except Exception as e:
-            logger.error(f"创建图配置版本失败: {e}")
+            logger.error(f"创建图配置版本失败 (用户: {user_id}): {e}")
             return None
 
-    def get_version(self, graph_name: str, version_id: str) -> Optional[Dict[str, Any]]:
-        """获取特定版本的配置"""
+    def get_version(self, graph_name: str, version_id: str, user_id: str = "default_user") -> Optional[Dict[str, Any]]:
+        """
+        获取特定版本的配置
+
+        Args:
+            graph_name: 图名称
+            version_id: 版本ID
+            user_id: 用户ID，默认为 "default_user"
+
+        Returns:
+            Optional[Dict[str, Any]]: 图配置字典，失败时返回 None
+        """
         try:
-            object_name = self._get_object_name(graph_name)
+            object_name = self._get_object_name(graph_name, user_id)
 
             response = minio_client._client.get_object(
                 bucket_name=settings.MINIO_BUCKET_NAME,
@@ -98,17 +118,25 @@ class GraphConfigVersionManager:
             return config
 
         except Exception as e:
-            logger.error(f"获取版本配置失败: {e}")
+            logger.error(f"获取版本配置失败 (用户: {user_id}): {e}")
             return None
 
-    def delete_version(self, graph_name: str, version_id: str) -> bool:
+    def delete_version(self, graph_name: str, version_id: str, user_id: str = "default_user") -> bool:
         """
         删除特定版本
+
+        Args:
+            graph_name: 图名称
+            version_id: 版本ID
+            user_id: 用户ID，默认为 "default_user"
+
+        Returns:
+            bool: 是否删除成功
 
         注意：这会从 MinIO 中物理删除该版本
         """
         try:
-            object_name = self._get_object_name(graph_name)
+            object_name = self._get_object_name(graph_name, user_id)
 
             minio_client._client.remove_object(
                 bucket_name=settings.MINIO_BUCKET_NAME,
@@ -116,17 +144,26 @@ class GraphConfigVersionManager:
                 version_id=version_id
             )
 
-            logger.info(f"✓ 删除版本: {graph_name}, 版本ID: {version_id}")
+            logger.info(f"✓ 删除版本: {graph_name} (用户: {user_id}), 版本ID: {version_id}")
             return True
 
         except Exception as e:
-            logger.error(f"删除版本失败: {e}")
+            logger.error(f"删除版本失败 (用户: {user_id}): {e}")
             return False
 
-    def delete_all_versions(self, graph_name: str) -> bool:
-        """删除图的所有版本（删除图时调用）"""
+    def delete_all_versions(self, graph_name: str, user_id: str = "default_user") -> bool:
+        """
+        删除图的所有版本（删除图时调用）
+
+        Args:
+            graph_name: 图名称
+            user_id: 用户ID，默认为 "default_user"
+
+        Returns:
+            bool: 是否全部删除成功
+        """
         try:
-            object_name = self._get_object_name(graph_name)
+            object_name = self._get_object_name(graph_name, user_id)
 
             # 列出所有版本
             objects = minio_client._client.list_objects(
@@ -144,13 +181,16 @@ class GraphConfigVersionManager:
                         version_id=obj.version_id
                     )
                 except Exception as e:
-                    logger.error(f"删除版本失败: {obj.version_id}, 错误: {e}")
+                    logger.error(f"删除版本失败 (用户: {user_id}): {obj.version_id}, 错误: {e}")
                     success = False
+
+            if success:
+                logger.info(f"✓ 删除所有版本: {graph_name} (用户: {user_id})")
 
             return success
 
         except Exception as e:
-            logger.error(f"删除所有版本失败: {e}")
+            logger.error(f"删除所有版本失败 (用户: {user_id}): {e}")
             return False
 
 

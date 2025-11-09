@@ -28,7 +28,8 @@ class AgentNode(BaseModel):
     @validator('model_name')
     def validate_model_name(cls, v, values):
         is_subgraph = values.get('is_subgraph', False)
-        if not is_subgraph and not v and values.get('name'):
+        # 检查空字符串和None
+        if not is_subgraph and (not v or (isinstance(v, str) and v.strip() == "")) and values.get('name'):
             raise ValueError(f"普通节点 '{values['name']}' 必须指定模型名称")
         return v
 

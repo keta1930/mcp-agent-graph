@@ -28,14 +28,16 @@ class NodeExecutorCore:
     async def execute_node(self,
                           node: Dict[str, Any],
                           conversation_id: str,
-                          yield_sse: bool = False) -> AsyncGenerator:
+                          yield_sse: bool = False,
+                          user_id: str = "default_user") -> AsyncGenerator:
         """执行单个节点的核心逻辑
-        
+
         Args:
             node: 节点配置
             conversation_id: 会话ID
             yield_sse: 是否yield SSE消息（True=stream模式，False=background模式）
-            
+            user_id: 用户ID（可选，将从conversation中获取）
+
         Yields:
             如果yield_sse=True: yield SSE消息字符串
             最后一条: yield 执行结果字典
@@ -45,6 +47,9 @@ class NodeExecutorCore:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             if not conversation:
                 raise Exception(f"找不到会话 '{conversation_id}'")
+
+            # 从 conversation 中获取 user_id，如果没有则使用传入的参数
+            actual_user_id = conversation.get("user_id", user_id)
 
             node_name = node["name"]
             node_level = node.get("level", 0)
@@ -95,7 +100,8 @@ class NodeExecutorCore:
                     model_name=model_name,
                     messages=messages,
                     tools=all_tools if all_tools else None,
-                    yield_chunks=yield_sse  # 根据模式决定是否yield chunks
+                    yield_chunks=yield_sse,  # 根据模式决定是否yield chunks
+                    user_id=actual_user_id
                 ):
                     if isinstance(item, str):
                         if yield_sse:
@@ -246,12 +252,14 @@ class NodeExecutorCore:
             save_ext = node.get("save")
             if save_ext and final_output.strip():
                 graph_name = conversation.get("graph_name", "unknown")
+                user_id = conversation.get("user_id", "default_user")
                 graph_run_storage.save_node_output(
                     graph_name=graph_name,
                     graph_run_id=conversation_id,
                     node_name=node_name,
                     content=final_output,
-                    file_ext=save_ext
+                    file_ext=save_ext,
+                    user_id=user_id
                 )
 
             # 10. 更新执行链

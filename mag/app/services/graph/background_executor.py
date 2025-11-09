@@ -22,12 +22,12 @@ class BackgroundExecutor:
     )
 
     async def execute_graph_background(self, graph_name: str, flattened_config: Dict[str, Any],
-                                       input_text: str, model_service=None) -> Dict[str, Any]:
+                                       input_text: str, model_service=None, user_id: str = "default_user") -> Dict[str, Any]:
         """后台执行整个图，创建conversation_id后返回，图在后台继续执行"""
         try:
             # 创建conversation
             conversation_id = await self.conversation_manager.create_conversation_with_config(
-                graph_name, flattened_config
+                graph_name, flattened_config, user_id
             )
 
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -38,7 +38,7 @@ class BackgroundExecutor:
 
             # 启动后台任务执行图
             asyncio.create_task(
-                self._execute_graph_background_task(conversation_id, model_service)
+                self._execute_graph_background_task(conversation_id, model_service, user_id)
             )
 
             # 返回conversation_id
@@ -66,6 +66,9 @@ class BackgroundExecutor:
                     "message": f"找不到会话 '{conversation_id}'"
                 }
 
+            # Get user_id from conversation
+            user_id = conversation.get("user_id", "default_user")
+
             if input_text:
                 # 重置会话状态并记录新输入
                 previous_rounds = [r for r in conversation.get("rounds", []) if r.get("node_name") == "start"]
@@ -78,7 +81,7 @@ class BackgroundExecutor:
 
             # 启动后台继续执行任务
             asyncio.create_task(
-                self._continue_conversation_background_task(conversation_id, model_service)
+                self._continue_conversation_background_task(conversation_id, model_service, user_id)
             )
 
             return {
@@ -94,13 +97,13 @@ class BackgroundExecutor:
                 "message": f"后台继续会话时出错: {str(e)}"
             }
 
-    async def _execute_graph_background_task(self, conversation_id: str, model_service):
+    async def _execute_graph_background_task(self, conversation_id: str, model_service, user_id: str = "default_user"):
         """后台执行图的核心任务"""
         try:
             logger.info(f"开始后台执行图: {conversation_id}")
 
             # 执行图的所有层级
-            await self._execute_graph_by_level_background(conversation_id, model_service)
+            await self._execute_graph_by_level_background(conversation_id, model_service, user_id)
 
             # 生成最终结果
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -114,7 +117,7 @@ class BackgroundExecutor:
         except Exception as e:
             logger.error(f"后台执行图失败 {conversation_id}: {str(e)}")
 
-    async def _continue_conversation_background_task(self, conversation_id: str, model_service):
+    async def _continue_conversation_background_task(self, conversation_id: str, model_service, user_id: str = "default_user"):
         """后台继续现有会话的执行任务"""
         try:
             logger.info(f"开始后台继续执行: {conversation_id}")
@@ -127,15 +130,15 @@ class BackgroundExecutor:
                 raise Exception(resumption_info.get("message"))
             elif action == "handoffs_continue":
                 target_node = resumption_info.get("target_node")
-                await self._continue_from_handoffs_background(conversation_id, target_node, model_service)
+                await self._continue_from_handoffs_background(conversation_id, target_node, model_service, user_id)
             elif action == "handoffs_wait":
                 current_node = resumption_info.get("current_node")
-                await self._continue_waiting_handoffs_background(conversation_id, current_node, model_service)
+                await self._continue_waiting_handoffs_background(conversation_id, current_node, model_service, user_id)
             elif action == "continue":
                 from_level = resumption_info.get("from_level")
-                await self._continue_graph_by_level_background(conversation_id, from_level, None, model_service)
+                await self._continue_graph_by_level_background(conversation_id, from_level, None, model_service, user_id)
             else:
-                await self._execute_graph_by_level_background(conversation_id, model_service)
+                await self._execute_graph_by_level_background(conversation_id, model_service, user_id)
 
             # 生成最终结果
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -149,7 +152,8 @@ class BackgroundExecutor:
         except Exception as e:
             logger.error(f"后台继续执行失败 {conversation_id}: {str(e)}")
 
-    async def _execute_graph_by_level_background(self, conversation_id: str, model_service=None):
+    async def _execute_graph_by_level_background(self, conversation_id: str, model_service=None,
+                                                 user_id: str = "default_user"):
         """基于层级的后台顺序执行方法"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -165,7 +169,7 @@ class BackgroundExecutor:
 
                 for node in nodes_to_execute:
                     # 执行节点
-                    await self._execute_node_background(node, conversation_id, model_service)
+                    await self._execute_node_background(node, conversation_id, model_service, user_id)
 
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
@@ -175,7 +179,7 @@ class BackgroundExecutor:
                         if selected_node_name:
                             logger.info(f"检测到handoffs选择: {selected_node_name}，跳转执行")
                             await self._continue_from_handoffs_background(
-                                conversation_id, selected_node_name, model_service
+                                conversation_id, selected_node_name, model_service, user_id
                             )
                             return
 
@@ -185,18 +189,20 @@ class BackgroundExecutor:
             logger.error(f"后台执行图层级时出错: {str(e)}")
             raise
 
-    async def _execute_node_background(self, node: Dict[str, Any], conversation_id: str, model_service):
+    async def _execute_node_background(self, node: Dict[str, Any], conversation_id: str, model_service, user_id: str = "default_user"):
         """执行单个节点（后台模式）"""
         result = None
         async for item in self.node_executor_core.execute_node(
             node=node,
             conversation_id=conversation_id,
-            yield_sse=False  # 后台模式
+            yield_sse=False,  # 后台模式
+            user_id=user_id
         ):
             result = item  # 最后一条是结果
         return result
 
-    async def _continue_from_handoffs_background(self, conversation_id: str, target_node: str, model_service=None):
+    async def _continue_from_handoffs_background(self, conversation_id: str, target_node: str, model_service=None,
+                                                 user_id: str = "default_user"):
         """从handoffs选择后台继续执行"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -207,13 +213,14 @@ class BackgroundExecutor:
                 raise Exception(f"找不到handoffs目标节点: {target_node}")
 
             current_level = target_node_obj.get("level", 0)
-            await self._continue_graph_by_level_background(conversation_id, current_level, target_node, model_service)
+            await self._continue_graph_by_level_background(conversation_id, current_level, target_node, model_service, user_id)
 
         except Exception as e:
             logger.error(f"从handoffs选择后台继续执行时出错: {str(e)}")
             raise
 
-    async def _continue_waiting_handoffs_background(self, conversation_id: str, current_node: str, model_service=None):
+    async def _continue_waiting_handoffs_background(self, conversation_id: str, current_node: str, model_service=None,
+                                                   user_id: str = "default_user"):
         """后台继续等待handoffs的节点"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -223,7 +230,7 @@ class BackgroundExecutor:
             if not current_node_obj:
                 raise Exception(f"找不到当前节点: {current_node}")
 
-            await self._execute_node_background(current_node_obj, conversation_id, model_service)
+            await self._execute_node_background(current_node_obj, conversation_id, model_service, user_id)
 
             conversation = await self.conversation_manager.get_conversation(conversation_id)
             last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
@@ -231,20 +238,21 @@ class BackgroundExecutor:
             if HandoffsManager.check_handoffs_in_round(last_round, current_node_obj):
                 selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                 if selected_node_name:
-                    await self._continue_from_handoffs_background(conversation_id, selected_node_name, model_service)
+                    await self._continue_from_handoffs_background(conversation_id, selected_node_name, model_service, user_id)
             else:
                 current_level = current_node_obj.get("level", 0) + 1
                 max_level = GraphHelper.get_max_level(graph_config)
 
                 if current_level <= max_level:
-                    await self._continue_graph_by_level_background(conversation_id, current_level, None, model_service)
+                    await self._continue_graph_by_level_background(conversation_id, current_level, None, model_service, user_id)
 
         except Exception as e:
             logger.error(f"后台继续等待handoffs时出错: {str(e)}")
             raise
 
     async def _continue_graph_by_level_background(self, conversation_id: str, start_level: int,
-                                                  restart_node: Optional[str], model_service=None):
+                                                  restart_node: Optional[str], model_service=None,
+                                                  user_id: str = "default_user"):
         """从指定层级后台继续顺序执行图"""
         try:
             conversation = await self.conversation_manager.get_conversation(conversation_id)
@@ -257,7 +265,7 @@ class BackgroundExecutor:
                 restart_node_obj = GraphHelper.find_node_by_name(graph_config, restart_node)
                 if restart_node_obj:
                     current_level = restart_node_obj.get("level", 0)
-                    await self._execute_node_background(restart_node_obj, conversation_id, model_service)
+                    await self._execute_node_background(restart_node_obj, conversation_id, model_service, user_id)
 
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
@@ -266,7 +274,7 @@ class BackgroundExecutor:
                         selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                         if selected_node_name:
                             await self._continue_graph_by_level_background(
-                                conversation_id, current_level, selected_node_name, model_service
+                                conversation_id, current_level, selected_node_name, model_service, user_id
                             )
                             return
 
@@ -276,7 +284,7 @@ class BackgroundExecutor:
                 nodes = GraphHelper.get_nodes_at_level(graph_config, current_level)
 
                 for node in nodes:
-                    await self._execute_node_background(node, conversation_id, model_service)
+                    await self._execute_node_background(node, conversation_id, model_service, user_id)
 
                     conversation = await self.conversation_manager.get_conversation(conversation_id)
                     last_round = conversation["rounds"][-1] if conversation["rounds"] else {}
@@ -285,7 +293,7 @@ class BackgroundExecutor:
                         selected_node_name = HandoffsManager.extract_handoffs_selection(last_round)
                         if selected_node_name:
                             await self._continue_graph_by_level_background(
-                                conversation_id, current_level, selected_node_name, model_service
+                                conversation_id, current_level, selected_node_name, model_service, user_id
                             )
                             return
 
