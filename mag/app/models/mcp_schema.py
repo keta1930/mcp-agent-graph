@@ -15,7 +15,6 @@ class MCPServerConfig(BaseModel):
 
     # 团队共享字段
     provider_user_id: Optional[str] = Field(None, description="提供者用户ID")
-    provider_username: Optional[str] = Field(None, description="提供者用户名（便于前端显示）")
     created_at: Optional[str] = Field(None, description="创建时间")
 
     @root_validator(pre=False, skip_on_failure=True)

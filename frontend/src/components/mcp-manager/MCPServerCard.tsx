@@ -218,14 +218,14 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
     >
       <div className="space-y-2">
         {/* Provider信息 */}
-        {config.provider_username && (
+        {config.provider_user_id && (
           <div>
             <Text strong>
               <UserOutlined style={{ marginRight: '4px' }} />
               提供者:
             </Text>{' '}
             <Tag color={isOwnServer ? 'blue' : 'default'}>
-              {config.provider_username}
+              {config.provider_user_id}
               {isOwnServer && ' (我)'}
             </Tag>
             {config.created_at && (

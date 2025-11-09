@@ -184,7 +184,11 @@ async def import_graph_package(data: GraphFilePath, current_user: CurrentUser = 
                             logger.info(f"跳过导入已存在的MCP服务器: '{server_name}'")
                             skipped_servers.append(server_name)
                         else:
+                            # 设置导入用户为provider
+                            server_config['provider_user_id'] = current_user.user_id
+                            server_config['created_at'] = datetime.now().isoformat()
                             current_mcp_config.setdefault("mcpServers", {})[server_name] = server_config
+                            logger.info(f"导入MCP服务器 '{server_name}'，provider设置为: {current_user.user_id}")
 
                     await mcp_service.update_config(current_mcp_config, current_version)
                     logger.info("已合并导入的MCP服务器配置")
@@ -408,7 +412,11 @@ async def export_graph(graph_name: str, current_user: CurrentUser = Depends(get_
 
             for server_name in used_servers:
                 if server_name in mcp_config.get("mcpServers", {}):
-                    filtered_mcp_config["mcpServers"][server_name] = mcp_config["mcpServers"][server_name]
+                    server_config = mcp_config["mcpServers"][server_name].copy()
+                    # 移除用户相关元数据，使导出的配置可跨用户/团队使用
+                    server_config.pop('provider_user_id', None)
+                    server_config.pop('created_at', None)
+                    filtered_mcp_config["mcpServers"][server_name] = server_config
 
             mcp_path = attachment_dir / "mcp.json"
             with open(mcp_path, 'w', encoding='utf-8') as f:

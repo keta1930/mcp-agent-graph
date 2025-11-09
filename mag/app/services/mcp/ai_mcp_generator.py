@@ -494,7 +494,6 @@ class AIMCPGenerator:
                     "transportType": "stdio",
                     "ai_generated": True,
                     "provider_user_id": user_id,
-                    "provider_username": user_id,
                     "created_at": datetime.now().isoformat()
                 }
                 from app.services.mcp_service import mcp_service

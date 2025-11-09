@@ -60,16 +60,15 @@ async def update_mcp_config(request: MCPConfigWithVersion, current_user: Current
                 if server_name in current_servers:
                     old_server = current_servers[server_name]
                     # 保留provider字段（如果存在）
-                    for field in ['provider_user_id', 'provider_username', 'created_at']:
+                    for field in ['provider_user_id', 'created_at']:
                         if field in old_server and field not in server_config:
                             server_config[field] = old_server[field]
                     logger.info(
-                        f"服务器 '{server_name}' 已存在，保留原provider信息: {old_server.get('provider_username', 'unknown')}")
+                        f"服务器 '{server_name}' 已存在，保留原provider信息: {old_server.get('provider_user_id', 'unknown')}")
                 else:
                     # 新服务器，添加当前用户provider信息
                     if 'provider_user_id' not in server_config:
                         server_config['provider_user_id'] = current_user.user_id
-                        server_config['provider_username'] = current_user.user_id
                         server_config['created_at'] = datetime.now().isoformat()
                     logger.info(
                         f"新服务器 '{server_name}' 添加provider信息: {current_user.user_id}")
@@ -161,7 +160,6 @@ async def add_mcp_server(request: MCPServerAddRequest, current_user: CurrentUser
                     normalized_config = server_config.dict()
                     # 添加provider信息
                     normalized_config['provider_user_id'] = current_user.user_id
-                    normalized_config['provider_username'] = current_user.user_id
                     normalized_config['created_at'] = datetime.now().isoformat()
                     servers_to_actually_add[server_name] = normalized_config
                 except Exception as e:
