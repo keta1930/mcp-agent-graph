@@ -26,7 +26,8 @@ class StreamExecutor:
                                     tools: List[Dict[str, Any]],
                                     mcp_servers: List[str],
                                     conversation_id: Optional[str] = None,
-                                    max_iterations: int = 10) -> AsyncGenerator[str | Dict[str, Any], None]:
+                                    max_iterations: int = 10,
+                                    user_id: str = "default_user") -> AsyncGenerator[str | Dict[str, Any], None]:
         """执行完整的流式执行流程（含工具调用循环）
 
         Args:
@@ -36,6 +37,7 @@ class StreamExecutor:
             mcp_servers: MCP服务器列表
             conversation_id: 对话ID（可选，用于日志）
             max_iterations: 最大迭代次数
+            user_id: 用户ID
 
         Yields:
             - 中间yield: SSE格式字符串 "data: {...}\\n\\n"
@@ -74,7 +76,8 @@ class StreamExecutor:
                     model_name=model_name,
                     messages=filtered_messages,
                     tools=tools,
-                    yield_chunks=True
+                    yield_chunks=True,
+                    user_id=user_id
                 ):
                     if isinstance(item, str):
                         # SSE chunk，直接转发
