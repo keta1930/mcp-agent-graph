@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.infrastructure.database.mongodb.repositories import (ConversationRepository, ChatRepository,
                                 GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
                                 GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
-                                PreviewRepository)
+                                PreviewRepository, MessageRepository)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ class MongoDBClient:
         self.model_configs_collection = None
         self.mcp_configs_collection = None
         self.preview_shares_collection = None
+        self.messages_collection = None
 
         self.is_connected = False
 
@@ -41,6 +42,7 @@ class MongoDBClient:
         self.model_config_repository = None
         self.mcp_config_repository = None
         self.preview_repository = None
+        self.message_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -65,6 +67,7 @@ class MongoDBClient:
             self.model_configs_collection = self.db.model_configs
             self.mcp_configs_collection = self.db.mcp_configs
             self.preview_shares_collection = self.db.preview_shares
+            self.messages_collection = self.db.messages
 
             await self.client.admin.command('ping')
 
@@ -137,6 +140,11 @@ class MongoDBClient:
             self.preview_shares_collection
         )
 
+        self.message_repository = MessageRepository(
+            self.db,
+            self.messages_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -177,6 +185,12 @@ class MongoDBClient:
             await self.preview_shares_collection.create_index([("created_at", -1)])
             await self.preview_shares_collection.create_index([("content_hash", 1)], unique=True)
             await self.preview_shares_collection.create_index([("expires_at", 1)], expireAfterSeconds=0)
+
+            await self.messages_collection.create_index([("message_id", 1)], unique=True)
+            await self.messages_collection.create_index([("sender_id", 1), ("created_at", -1)])
+            await self.messages_collection.create_index([("receiver_id", 1), ("created_at", -1)])
+            await self.messages_collection.create_index([("receiver_id", 1), ("is_read", 1)])
+            await self.messages_collection.create_index([("sender_id", 1), ("receiver_id", 1), ("created_at", -1)])
 
             logger.info("MongoDB索引创建成功")
 
