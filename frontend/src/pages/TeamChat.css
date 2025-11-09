@@ -1,0 +1,77 @@
+/* src/pages/TeamChat.css */
+
+.messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-item {
+  display: flex;
+  width: 100%;
+}
+
+.message-item.sent {
+  justify-content: flex-end;
+}
+
+.message-item.received {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 60%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  word-wrap: break-word;
+}
+
+.message-item.sent .message-bubble {
+  background-color: #1890ff;
+  color: white;
+}
+
+.message-item.received .message-bubble {
+  background-color: white;
+  color: #262626;
+  border: 1px solid #e8e8e8;
+}
+
+.message-content {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.message-time {
+  font-size: 11px;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+.message-item.sent .message-time {
+  text-align: right;
+}
+
+.message-item.received .message-time {
+  text-align: left;
+  color: #8c8c8c;
+}
+
+/* 滚动条样式 */
+.ant-layout-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ant-layout-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.ant-layout-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.ant-layout-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

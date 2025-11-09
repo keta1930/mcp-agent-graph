@@ -15,6 +15,7 @@ import ExportManager from './pages/ExportManager';
 import TaskManager from './pages/TaskManager';
 import TaskDetail from './pages/TaskDetail';
 import PreviewPage from './pages/PreviewPage';
+import TeamChat from './pages/TeamChat';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -31,6 +32,9 @@ const App: React.FC = () => {
         {/* 对话系统 */}
         <Route path="/chat" element={<ChatSystem />} />
         <Route path="/chat/:conversationId" element={<ChatSystem />} />
+
+        {/* 团队消息 */}
+        <Route path="/team-chat" element={<TeamChat />} />
 
         {/* 任务管理 */}
         <Route path="/tasks" element={<TaskManager />} />
