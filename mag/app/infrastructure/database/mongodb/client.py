@@ -4,7 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.infrastructure.database.mongodb.repositories import (ConversationRepository, ChatRepository,
                                 GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
                                 GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
-                                PreviewRepository)
+                                PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,9 @@ class MongoDBClient:
         self.model_configs_collection = None
         self.mcp_configs_collection = None
         self.preview_shares_collection = None
+        self.users_collection = None
+        self.invite_codes_collection = None
+        self.team_settings_collection = None
 
         self.is_connected = False
 
@@ -41,6 +44,9 @@ class MongoDBClient:
         self.model_config_repository = None
         self.mcp_config_repository = None
         self.preview_repository = None
+        self.user_repository = None
+        self.invite_code_repository = None
+        self.team_settings_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -65,6 +71,9 @@ class MongoDBClient:
             self.model_configs_collection = self.db.model_configs
             self.mcp_configs_collection = self.db.mcp_configs
             self.preview_shares_collection = self.db.preview_shares
+            self.users_collection = self.db.users
+            self.invite_codes_collection = self.db.invite_codes
+            self.team_settings_collection = self.db.team_settings
 
             await self.client.admin.command('ping')
 
@@ -137,6 +146,21 @@ class MongoDBClient:
             self.preview_shares_collection
         )
 
+        self.user_repository = UserRepository(
+            self.db,
+            self.users_collection
+        )
+
+        self.invite_code_repository = InviteCodeRepository(
+            self.db,
+            self.invite_codes_collection
+        )
+
+        self.team_settings_repository = TeamSettingsRepository(
+            self.db,
+            self.team_settings_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -154,29 +178,53 @@ class MongoDBClient:
             await self.graph_run_messages_collection.create_index([("graph_name", 1)])
 
             await self.tasks_collection.create_index([("user_id", 1), ("status", 1), ("created_at", -1)])
+            await self.tasks_collection.create_index([("id", 1)], unique=True)
+            await self.tasks_collection.create_index([("user_id", 1)])
             await self.tasks_collection.create_index([("graph_name", 1)])
             await self.tasks_collection.create_index([("schedule_type", 1)])
             await self.tasks_collection.create_index([("status", 1)])
+            # 确保同一用户不能创建同名同类型的任务
             await self.tasks_collection.create_index([("user_id", 1), ("task_name", 1), ("schedule_type", 1)], unique=True)
             await self.tasks_collection.create_index([("execution_stats.last_executed_at.executed_at", -1)])
             await self.tasks_collection.create_index([("execution_stats.total_triggers", -1)])
 
             await self.agent_graphs_collection.create_index([("user_id", 1), ("updated_at", -1)])
+            await self.agent_graphs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.agent_graphs_collection.create_index([("name", 1)])
+            await self.agent_graphs_collection.create_index([("shared_with", 1)])
 
+            # prompts集合索引
             await self.prompts_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.prompts_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.prompts_collection.create_index([("category", 1)])
+            await self.prompts_collection.create_index([("shared_with", 1)])
 
-            await self.model_configs_collection.create_index([("name", 1)], unique=True)
+            # model_configs集合索引
+            await self.model_configs_collection.create_index([("user_id", 1)])
+            await self.model_configs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.model_configs_collection.create_index([("updated_at", -1)])
 
+            # mcp_configs集合索引
+            await self.mcp_configs_collection.create_index([("user_id", 1)], unique=True)
+            await self.mcp_configs_collection.create_index([("shared_with", 1)])
             await self.mcp_configs_collection.create_index([("updated_at", -1)])
 
+            # preview_shares集合索引
             await self.preview_shares_collection.create_index([("key", 1)], unique=True)
+            await self.preview_shares_collection.create_index([("user_id", 1)])
             await self.preview_shares_collection.create_index([("created_at", -1)])
             await self.preview_shares_collection.create_index([("content_hash", 1)], unique=True)
             await self.preview_shares_collection.create_index([("expires_at", 1)], expireAfterSeconds=0)
+
+            # 用户集合索引
+            await self.users_collection.create_index([("user_id", 1)], unique=True)
+            await self.users_collection.create_index([("role", 1)])
+            await self.users_collection.create_index([("is_active", 1)])
+
+            # 邀请码集合索引
+            await self.invite_codes_collection.create_index([("code", 1)], unique=True)
+            await self.invite_codes_collection.create_index([("is_active", 1)])
+            await self.invite_codes_collection.create_index([("created_by", 1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -197,48 +245,52 @@ class MongoDBClient:
         """创建图配置"""
         return await self.graph_config_repository.create_graph(graph_name, graph_config, user_id)
 
-    async def get_graph_config(self, graph_name: str) -> Optional[Dict[str, Any]]:
+    async def get_graph_config(self, graph_name: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """获取图配置"""
-        return await self.graph_config_repository.get_graph(graph_name)
+        return await self.graph_config_repository.get_graph(graph_name, user_id)
 
-    async def update_graph_config(self, graph_name: str, graph_config: Dict[str, Any]) -> bool:
+    async def update_graph_config(self, graph_name: str, graph_config: Dict[str, Any],
+                                 user_id: Optional[str] = None) -> bool:
         """更新图配置"""
-        return await self.graph_config_repository.update_graph(graph_name, graph_config)
+        return await self.graph_config_repository.update_graph(graph_name, graph_config, user_id)
 
-    async def delete_graph_config(self, graph_name: str) -> bool:
+    async def delete_graph_config(self, graph_name: str, user_id: Optional[str] = None) -> bool:
         """删除图配置"""
-        return await self.graph_config_repository.delete_graph(graph_name)
+        return await self.graph_config_repository.delete_graph(graph_name, user_id)
 
     async def list_graph_configs(self, user_id: str = "default_user") -> List[str]:
         """列出所有图"""
         return await self.graph_config_repository.list_graphs(user_id)
 
-    async def rename_graph_config(self, old_name: str, new_name: str) -> bool:
+    async def rename_graph_config(self, old_name: str, new_name: str,
+                                 user_id: Optional[str] = None) -> bool:
         """重命名图"""
-        return await self.graph_config_repository.rename_graph(old_name, new_name)
+        return await self.graph_config_repository.rename_graph(old_name, new_name, user_id)
 
-    async def graph_config_exists(self, graph_name: str) -> bool:
+    async def graph_config_exists(self, graph_name: str, user_id: str = "default_user") -> bool:
         """检查图是否存在"""
-        return await self.graph_config_repository.graph_exists(graph_name)
+        return await self.graph_config_repository.graph_exists(graph_name, user_id)
 
-    async def add_graph_version_record(self, graph_name: str, version_record: Dict[str, Any]) -> bool:
+    async def add_graph_version_record(self, graph_name: str, version_record: Dict[str, Any],
+                                       user_id: str = "default_user") -> bool:
         """添加图配置版本记录"""
-        return await self.graph_config_repository.add_version_record(graph_name, version_record)
+        return await self.graph_config_repository.add_version_record(graph_name, version_record, user_id)
 
-    async def get_graph_version_info(self, graph_name: str) -> Optional[Dict[str, Any]]:
+    async def get_graph_version_info(self, graph_name: str, user_id: str = "default_user") -> Optional[Dict[str, Any]]:
         """获取图配置版本信息"""
-        return await self.graph_config_repository.get_version_info(graph_name)
+        return await self.graph_config_repository.get_version_info(graph_name, user_id)
 
-    async def remove_graph_version_record(self, graph_name: str, version_id: str) -> bool:
+    async def remove_graph_version_record(self, graph_name: str, version_id: str,
+                                         user_id: str = "default_user") -> bool:
         """移除图配置版本记录"""
-        return await self.graph_config_repository.remove_version_record(graph_name, version_id)
+        return await self.graph_config_repository.remove_version_record(graph_name, version_id, user_id)
 
         # === 预览短链管理 ===
 
     async def create_preview_share(self, lang: str, title: Optional[str], content: str,
-                                       expire_hours: Optional[int] = 144) -> Dict[str, Any]:
+                                       expire_hours: Optional[int] = 144, user_id: str = "default_user") -> Dict[str, Any]:
         """创建预览短链"""
-        return await self.preview_repository.create_preview_share(lang, title, content, expire_hours)
+        return await self.preview_repository.create_preview_share(lang, title, content, expire_hours, user_id)
 
     async def get_preview_share(self, key: str) -> Optional[Dict[str, Any]]:
         """获取预览短链内容"""
@@ -548,75 +600,107 @@ class MongoDBClient:
 
     # === Prompt管理方法 ===
 
-    async def create_prompt(self, prompt_data):
+    async def create_prompt(self, prompt_data, user_id: str = "default_user"):
         """创建提示词"""
-        return await self.prompt_repository.create_prompt(prompt_data)
+        return await self.prompt_repository.create_prompt(prompt_data, user_id)
 
-    async def get_prompt(self, name: str):
+    async def get_prompt(self, name: str, user_id: str = "default_user", check_shared: bool = True):
         """获取提示词"""
-        return await self.prompt_repository.get_prompt(name)
+        return await self.prompt_repository.get_prompt(name, user_id, check_shared)
 
-    async def update_prompt(self, name: str, update_data):
+    async def update_prompt(self, name: str, update_data, user_id: str = "default_user"):
         """更新提示词"""
-        return await self.prompt_repository.update_prompt(name, update_data)
+        return await self.prompt_repository.update_prompt(name, update_data, user_id)
 
-    async def delete_prompt(self, name: str):
+    async def delete_prompt(self, name: str, user_id: str = "default_user"):
         """删除提示词"""
-        return await self.prompt_repository.delete_prompt(name)
+        return await self.prompt_repository.delete_prompt(name, user_id)
 
-    async def list_prompts(self):
+    async def list_prompts(self, user_id: str = "default_user"):
         """列出所有提示词"""
-        return await self.prompt_repository.list_prompts()
+        return await self.prompt_repository.list_prompts(user_id)
 
-    async def batch_delete_prompts(self, names: List[str]):
+    async def batch_delete_prompts(self, names: List[str], user_id: str = "default_user"):
         """批量删除提示词"""
-        return await self.prompt_repository.batch_delete_prompts(names)
+        return await self.prompt_repository.batch_delete_prompts(names, user_id)
 
-    async def import_prompt_by_file(self, file, import_request):
+    async def import_prompt_by_file(self, file, import_request, user_id: str = "default_user"):
         """通过文件导入提示词"""
-        return await self.prompt_repository.import_prompt_by_file(file, import_request)
+        return await self.prompt_repository.import_prompt_by_file(file, import_request, user_id)
 
-    async def export_prompts(self, export_request):
+    async def export_prompts(self, export_request, user_id: str = "default_user"):
         """批量导出提示词"""
-        return await self.prompt_repository.export_prompts(export_request)
+        return await self.prompt_repository.export_prompts(export_request, user_id)
 
     # === 模型配置管理方法 ===
 
-    async def create_model_config(self, model_config: Dict[str, Any]):
+    async def create_model_config(self, user_id: str, model_config: Dict[str, Any]):
         """创建模型配置"""
-        return await self.model_config_repository.create_model(model_config)
+        return await self.model_config_repository.create_model(user_id, model_config)
 
-    async def get_model_config(self, model_name: str, include_api_key: bool = True):
+    async def get_model_config(self, model_name: str, user_id: str, include_api_key: bool = True):
         """获取模型配置"""
-        return await self.model_config_repository.get_model(model_name, include_api_key)
+        return await self.model_config_repository.get_model(model_name, user_id, include_api_key)
 
-    async def update_model_config(self, model_name: str, model_config: Dict[str, Any]):
+    async def update_model_config(self, model_name: str, user_id: str, model_config: Dict[str, Any]):
         """更新模型配置"""
-        return await self.model_config_repository.update_model(model_name, model_config)
+        return await self.model_config_repository.update_model(model_name, user_id, model_config)
 
-    async def delete_model_config(self, model_name: str):
+    async def delete_model_config(self, model_name: str, user_id: str):
         """删除模型配置"""
-        return await self.model_config_repository.delete_model(model_name)
+        return await self.model_config_repository.delete_model(model_name, user_id)
 
-    async def list_model_configs(self, include_api_key: bool = False):
+    async def list_model_configs(self, user_id: str, include_api_key: bool = False):
         """列出所有模型配置"""
-        return await self.model_config_repository.list_models(include_api_key)
+        return await self.model_config_repository.list_models(user_id, include_api_key)
 
-    async def model_config_exists(self, model_name: str):
+    async def model_config_exists(self, model_name: str, user_id: str):
         """检查模型配置是否存在"""
-        return await self.model_config_repository.model_exists(model_name)
+        return await self.model_config_repository.model_exists(model_name, user_id)
+
+    # === MCP配置管理方法（团队级） ===
 
     async def get_mcp_config(self) -> Optional[Dict[str, Any]]:
-        """获取MCP配置"""
+        """获取团队MCP配置"""
         return await self.mcp_config_repository.get_mcp_config()
 
     async def update_mcp_config(self, config: Dict[str, Any], expected_version: int) -> Dict[str, Any]:
-        """更新MCP配置"""
+        """更新团队MCP配置"""
         return await self.mcp_config_repository.update_mcp_config(config, expected_version)
 
-    async def create_mcp_config(self, initial_config: Dict[str, Any] = None) -> bool:
-        """创建初始MCP配置"""
-        return await self.mcp_config_repository.create_mcp_config(initial_config)
+    async def initialize_mcp_config(self, initial_config: Dict[str, Any] = None) -> bool:
+        """初始化团队MCP配置"""
+        return await self.mcp_config_repository.initialize_mcp_config(initial_config)
+
+    async def check_server_provider(self, server_name: str, user_id: str) -> bool:
+        """检查用户是否是MCP服务器的提供者"""
+        return await self.mcp_config_repository.check_server_provider(server_name, user_id)
+
+    # === 用户管理方法 ===
+
+    async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """根据用户ID获取用户信息"""
+        return await self.user_repository.get_user_by_id(user_id)
+
+    async def create_user(self, user_id: str, username: str, password_hash: str, role: str = "user") -> bool:
+        """创建新用户"""
+        return await self.user_repository.create_user(user_id, username, password_hash, role)
+
+    async def list_users(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        """列出所有用户"""
+        return await self.user_repository.list_users(skip, limit)
+
+    async def update_user_role(self, user_id: str, new_role: str) -> bool:
+        """更新用户角色"""
+        return await self.user_repository.update_user_role(user_id, new_role)
+
+    async def deactivate_user(self, user_id: str) -> bool:
+        """停用用户"""
+        return await self.user_repository.deactivate_user(user_id)
+
+    async def user_exists(self, user_id: str) -> bool:
+        """检查用户是否存在"""
+        return await self.user_repository.user_exists(user_id)
 
 
 mongodb_client = MongoDBClient()
