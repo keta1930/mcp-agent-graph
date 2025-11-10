@@ -61,8 +61,8 @@ class Task(BaseModel):
     schedule_type: ScheduleType = Field(..., description="调度类型")
     schedule_config: ScheduleConfig = Field(..., description="调度配置")
     status: TaskStatus = Field(TaskStatus.ACTIVE, description="任务状态")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="创建时间")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="更新时间")
+    created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
+    updated_at: datetime = Field(default_factory=datetime.now, description="更新时间")
     execution_history: List[TaskExecutionHistory] = Field(default_factory=list, description="执行历史")
     execution_stats: ExecutionStats = Field(default_factory=ExecutionStats, description="执行统计")
 
@@ -77,8 +77,8 @@ class TaskSummary(BaseModel):
     schedule_type: ScheduleType = Field(..., description="调度类型")
     schedule_config: ScheduleConfig = Field(..., description="调度配置")
     status: TaskStatus = Field(TaskStatus.ACTIVE, description="任务状态")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="创建时间")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="更新时间")
+    created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
+    updated_at: datetime = Field(default_factory=datetime.now, description="更新时间")
     execution_stats: ExecutionStatsSummary = Field(default_factory=ExecutionStatsSummary, description="执行统计概览")
 
 

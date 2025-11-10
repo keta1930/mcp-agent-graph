@@ -28,7 +28,7 @@ def create_tokens(user_id: str, role: str) -> Tuple[str, str, str, datetime]:
     Example:
         >>> access, refresh, jti, exp = create_tokens("zhangsan", "user")
     """
-    now = datetime.utcnow()
+    now = datetime.now()
 
     # 1. 创建 Access Token (15分钟)
     access_expire = now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -80,7 +80,7 @@ def create_access_token(user_id: str, role: str, expires_delta: Optional[timedel
     Note:
         这个函数保留是为了向后兼容，建议使用 create_tokens()
     """
-    now = datetime.utcnow()
+    now = datetime.now()
 
     if expires_delta:
         expire = now + expires_delta

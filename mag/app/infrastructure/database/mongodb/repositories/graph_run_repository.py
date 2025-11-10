@@ -32,7 +32,7 @@ class GraphRunRepository:
                 return False
 
             # 2. 在mcp-agent-graph-messages集合中创建运行数据文档
-            now = datetime.utcnow()
+            now = datetime.now()
             run_doc = {
                 "_id": conversation_id,
                 "conversation_id": conversation_id,
