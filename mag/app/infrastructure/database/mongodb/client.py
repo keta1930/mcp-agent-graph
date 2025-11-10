@@ -4,7 +4,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.infrastructure.database.mongodb.repositories import (ConversationRepository, ChatRepository,
                                 GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
                                 GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
-                                PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository)
+                                PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository,
+                                RefreshTokenRepository)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class MongoDBClient:
         self.users_collection = None
         self.invite_codes_collection = None
         self.team_settings_collection = None
+        self.refresh_tokens_collection = None
 
         self.is_connected = False
 
@@ -47,6 +49,7 @@ class MongoDBClient:
         self.user_repository = None
         self.invite_code_repository = None
         self.team_settings_repository = None
+        self.refresh_token_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -74,6 +77,7 @@ class MongoDBClient:
             self.users_collection = self.db.users
             self.invite_codes_collection = self.db.invite_codes
             self.team_settings_collection = self.db.team_settings
+            self.refresh_tokens_collection = self.db.refresh_tokens
 
             await self.client.admin.command('ping')
 
@@ -161,6 +165,11 @@ class MongoDBClient:
             self.team_settings_collection
         )
 
+        self.refresh_token_repository = RefreshTokenRepository(
+            self.db,
+            self.refresh_tokens_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -225,6 +234,14 @@ class MongoDBClient:
             await self.invite_codes_collection.create_index([("code", 1)], unique=True)
             await self.invite_codes_collection.create_index([("is_active", 1)])
             await self.invite_codes_collection.create_index([("created_by", 1)])
+
+            # refresh_tokens集合索引
+            await self.refresh_tokens_collection.create_index([("token_id", 1)], unique=True)
+            await self.refresh_tokens_collection.create_index([("user_id", 1)])
+            await self.refresh_tokens_collection.create_index([("is_revoked", 1)])
+            await self.refresh_tokens_collection.create_index([("expires_at", 1)])
+            # 自动删除过期的refresh token (TTL索引)
+            await self.refresh_tokens_collection.create_index([("expires_at", 1)], expireAfterSeconds=86400)  # 过期后24小时删除
 
             logger.info("MongoDB索引创建成功")
 
