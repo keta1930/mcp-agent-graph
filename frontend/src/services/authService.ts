@@ -7,6 +7,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   access_token: string
+  refresh_token: string  // 新增
   token_type: string
   user_id: string
   role: string
@@ -48,5 +49,12 @@ export const logout = async (): Promise<void> => {
 
 export const getCurrentUser = async () => {
   const response = await api.get('/auth/me')
+  return response.data
+}
+
+export const refreshToken = async (refreshToken: string): Promise<LoginResponse> => {
+  const response = await api.post<LoginResponse>('/auth/refresh', {
+    refresh_token: refreshToken
+  })
   return response.data
 }

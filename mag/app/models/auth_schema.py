@@ -42,13 +42,21 @@ class UserLoginRequest(BaseModel):
     password: str = Field(..., description="密码")
 
 
+class RefreshTokenRequest(BaseModel):
+    """
+    刷新令牌请求模型
+    """
+    refresh_token: str = Field(..., description="刷新令牌")
+
+
 class TokenResponse(BaseModel):
     """
     Token响应模型
 
     返回JWT令牌和用户基本信息
     """
-    access_token: str = Field(..., description="JWT访问令牌")
+    access_token: str = Field(..., description="JWT访问令牌（15分钟有效）")
+    refresh_token: str = Field(..., description="JWT刷新令牌（7天有效）")
     token_type: str = Field(default="bearer", description="令牌类型")
     user_id: str = Field(..., description="用户ID")
     role: str = Field(..., description="用户角色: user|admin|super_admin")
