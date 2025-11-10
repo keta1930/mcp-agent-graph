@@ -239,9 +239,7 @@ class MongoDBClient:
             await self.refresh_tokens_collection.create_index([("token_id", 1)], unique=True)
             await self.refresh_tokens_collection.create_index([("user_id", 1)])
             await self.refresh_tokens_collection.create_index([("is_revoked", 1)])
-            await self.refresh_tokens_collection.create_index([("expires_at", 1)])
-            # 自动删除过期的refresh token (TTL索引)
-            await self.refresh_tokens_collection.create_index([("expires_at", 1)], expireAfterSeconds=86400)  # 过期后24小时删除
+            await self.refresh_tokens_collection.create_index([("expires_at", 1)], expireAfterSeconds=86400)
 
             logger.info("MongoDB索引创建成功")
 
