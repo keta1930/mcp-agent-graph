@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login } from '../services/authService';
-import { setToken, setUserInfo } from '../utils/auth';
+import { setToken, setRefreshToken, setUserInfo } from '../utils/auth';
 import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import './LoginPage.css';
 
@@ -27,6 +27,7 @@ const LoginPage: React.FC = () => {
 
       // 保存Token和用户信息
       setToken(response.access_token);
+      setRefreshToken(response.refresh_token);
       setUserInfo({
         user_id: response.user_id,
         role: response.role as 'super_admin' | 'admin' | 'user'
