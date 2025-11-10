@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Any, List
 
 from app.infrastructure.database.mongodb import mongodb_client
-from ..models.prompt_schema import (
+from app.models.prompt_schema import (
     PromptCreate, PromptUpdate, PromptImportByFileRequest,
     PromptExportRequest, PromptBatchDeleteRequest
 )

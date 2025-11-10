@@ -3,7 +3,7 @@ import shutil
 import logging
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
-from app.services.export_service import export_service
+from app.services.export.export_service import export_service
 from app.models.export_schema import (
     ExportRequest, ExportResponse, PreviewResponse,
     DeleteResponse, ListResponse

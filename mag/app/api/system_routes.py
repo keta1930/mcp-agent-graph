@@ -2,8 +2,8 @@ import logging
 from fastapi import APIRouter, HTTPException, status, BackgroundTasks
 from typing import Dict, Any
 
-from app.services.mcp_service import mcp_service
-from app.services.graph_service import graph_service
+from app.services.mcp.mcp_service import mcp_service
+from app.services.graph.graph_service import graph_service
 
 logger = logging.getLogger(__name__)
 

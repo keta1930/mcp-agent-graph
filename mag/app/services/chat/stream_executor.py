@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Dict, List, Any, Optional, AsyncGenerator
 
-from app.services.model_service import model_service
+from app.services.model.model_service import model_service
 from app.services.mcp.tool_executor import ToolExecutor
 
 logger = logging.getLogger(__name__)

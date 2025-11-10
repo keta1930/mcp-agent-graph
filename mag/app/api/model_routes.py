@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any, List
 from urllib.parse import unquote
 
-from app.services.model_service import model_service
+from app.services.model.model_service import model_service
 from app.models.model_schema import ModelConfig
 from app.auth.dependencies import get_current_user
 from app.models.auth_schema import CurrentUser

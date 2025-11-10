@@ -3,8 +3,8 @@ import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from typing import Dict
-from app.services.model_service import model_service
-from app.services.graph_service import graph_service
+from app.services.model.model_service import model_service
+from app.services.graph.graph_service import graph_service
 from app.models.graph_schema import GraphGenerationRequest, PromptTemplateRequest
 from app.services.graph.ai_graph_generator import AIGraphGenerator
 from app.auth.dependencies import get_current_user

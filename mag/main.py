@@ -6,9 +6,9 @@ from fastapi.responses import JSONResponse
 import uvicorn
 
 from app.api.routes import router
-from app.services.mcp_service import mcp_service
-from app.services.model_service import model_service
-from app.services.graph_service import graph_service
+from app.services.mcp.mcp_service import mcp_service
+from app.services.model.model_service import model_service
+from app.services.graph.graph_service import graph_service
 from app.infrastructure.database.mongodb import mongodb_client
 from app.infrastructure.storage.file_storage import FileManager
 from app.core.config import settings

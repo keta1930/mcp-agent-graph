@@ -11,7 +11,7 @@ from app.models.prompt_schema import (
     PromptCreate, PromptUpdate, PromptImportByFileRequest,
     PromptExportRequest, PromptBatchDeleteRequest, PromptResponse
 )
-from app.services.prompt_service import prompt_service
+from app.services.prompt.prompt_service import prompt_service
 from app.auth.dependencies import get_current_user
 from app.models.auth_schema import CurrentUser
 

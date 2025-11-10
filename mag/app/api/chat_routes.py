@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
-from app.services.model_service import model_service
-from app.services.chat_service import chat_service
+from app.services.model.model_service import model_service
+from app.services.chat.chat_service import chat_service
 from app.infrastructure.database.mongodb import mongodb_client
 from app.utils.sse_helper import TrajectoryCollector
 from app.models.chat_schema import (

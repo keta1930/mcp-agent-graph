@@ -5,9 +5,9 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, Set, Tuple, AsyncGenerator
 import os
 from app.infrastructure.storage.file_storage import FileManager
-from app.services.mcp_service import mcp_service
-from app.services.model_service import model_service
-from app.services.prompt_service import prompt_service
+from app.services.mcp.mcp_service import mcp_service
+from app.services.model.model_service import model_service
+from app.services.prompt.prompt_service import prompt_service
 from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor

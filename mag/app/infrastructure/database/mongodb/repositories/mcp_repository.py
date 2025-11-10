@@ -246,12 +246,12 @@ class MCPRepository:
                     # 使用指定的模型或回退到第一个可用模型
                     model_config = None
                     if model_name:
-                        from app.services.model_service import model_service
+                        from app.services.model.model_service import model_service
                         model_config = await model_service.get_model(model_name)
 
                     if not model_config:
                         # 回退到第一个可用模型
-                        from app.services.model_service import model_service
+                        from app.services.model.model_service import model_service
                         available_models = list(model_service.clients.keys())
                         if not available_models:
                             logger.warning("没有可用的模型进行标题生成")

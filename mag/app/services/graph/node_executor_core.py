@@ -3,7 +3,7 @@ import json
 import logging
 import copy
 from typing import Dict, List, Any, AsyncGenerator
-from app.services.model_service import model_service
+from app.services.model.model_service import model_service
 from app.services.graph.handoffs_manager import HandoffsManager
 from app.infrastructure.storage.object_storage import graph_run_storage
 
@@ -305,5 +305,5 @@ class NodeExecutorCore:
         if not mcp_servers:
             return []
         
-        from app.services.mcp_service import mcp_service
+        from app.services.mcp.mcp_service import mcp_service
         return await mcp_service.prepare_chat_tools(mcp_servers)

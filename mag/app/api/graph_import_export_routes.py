@@ -8,11 +8,11 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends
 from typing import Dict, Any
 from app.infrastructure.database.mongodb import mongodb_client
-from app.services.mcp_service import mcp_service
+from app.services.mcp.mcp_service import mcp_service
 from app.core.config import settings
 from app.infrastructure.storage.file_storage import FileManager
-from app.services.model_service import model_service
-from app.services.graph_service import graph_service
+from app.services.model.model_service import model_service
+from app.services.graph.graph_service import graph_service
 from app.templates.flow_diagram import FlowDiagram
 from app.models.graph_schema import GraphFilePath
 from app.auth.dependencies import get_current_user

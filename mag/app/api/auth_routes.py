@@ -5,7 +5,6 @@
 """
 import logging
 from fastapi import APIRouter, HTTPException, status, Depends
-from datetime import timedelta
 
 from app.models.auth_schema import (
     UserRegisterRequest,
@@ -17,9 +16,7 @@ from app.models.auth_schema import (
 from app.auth.dependencies import get_current_user
 from app.auth.jwt import create_access_token
 from app.services.user.user_service import UserService
-from app.services.user.invite_code_service import InviteCodeService
 from app.infrastructure.database.mongodb import mongodb_client
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

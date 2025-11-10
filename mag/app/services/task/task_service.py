@@ -5,7 +5,7 @@ from datetime import datetime
 from app.infrastructure.database.mongodb.repositories import TaskRepository
 from app.infrastructure.database.mongodb import mongodb_client
 from app.models.task_schema import TaskCreate
-from app.services.graph_service import graph_service
+from app.services.graph.graph_service import graph_service
 
 logger = logging.getLogger(__name__)
 

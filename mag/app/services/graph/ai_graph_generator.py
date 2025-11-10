@@ -3,10 +3,10 @@ import logging
 import uuid
 from typing import Dict, List, Any, Optional, AsyncGenerator
 import os
-from app.services.mcp_service import mcp_service
+from app.services.mcp.mcp_service import mcp_service
 from app.utils.text_parser import parse_ai_generation_response
 from app.models.graph_schema import GraphConfig
-from app.services.model_service import model_service
+from app.services.model.model_service import model_service
 from app.templates.flow_diagram import FlowDiagram
 from app.core.config import settings
 from app.infrastructure.database.mongodb import mongodb_client
@@ -505,7 +505,7 @@ class AIGraphGenerator:
                 return {"success": False, "error": f"图配置验证失败: {str(e)}"}
 
             # 保存图配置到数据库
-            from app.services.graph_service import graph_service
+            from app.services.graph.graph_service import graph_service
             save_success = await graph_service.save_graph(validated_config.name, validated_config.dict())
 
             if not save_success:

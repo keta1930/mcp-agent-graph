@@ -2,8 +2,8 @@ import json
 import logging
 from typing import Dict, List, Any, Optional, AsyncGenerator
 from app.infrastructure.database.mongodb import mongodb_client
-from app.services.model_service import model_service
-from app.services.mcp_service import mcp_service
+from app.services.model.model_service import model_service
+from app.services.mcp.mcp_service import mcp_service
 from app.services.mcp.tool_executor import ToolExecutor
 from app.services.chat.message_builder import MessageBuilder
 from app.services.chat.stream_executor import StreamExecutor

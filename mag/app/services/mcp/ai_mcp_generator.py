@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, AsyncGenerator
 import os
 from pathlib import Path
 from app.infrastructure.storage.file_storage import FileManager
-from app.services.model_service import model_service
+from app.services.model.model_service import model_service
 from app.utils.text_parser import parse_ai_mcp_generation_response
 from app.infrastructure.database.mongodb import mongodb_client
 
@@ -332,7 +332,7 @@ class AIMCPGenerator:
         """构建系统提示词"""
         try:
             # 1. 连接所有服务器以确保所有工具可用
-            from app.services.mcp_service import mcp_service
+            from app.services.mcp.mcp_service import mcp_service
 
             # 2. 读取MCP生成模板文件
             template_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates",
@@ -496,7 +496,7 @@ class AIMCPGenerator:
                     "provider_user_id": user_id,
                     "created_at": datetime.now().isoformat()
                 }
-                from app.services.mcp_service import mcp_service
+                from app.services.mcp.mcp_service import mcp_service
                 success = await mcp_service.update_config(current_config, current_version)
 
                 if success.get("status", {}).get("error") == "version_conflict":

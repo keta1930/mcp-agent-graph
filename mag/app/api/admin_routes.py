@@ -4,7 +4,6 @@
 处理用户管理、邀请码管理和团队设置等管理员专用操作
 """
 import logging
-from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends
 
 from app.models.auth_schema import (

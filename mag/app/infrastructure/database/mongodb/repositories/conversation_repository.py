@@ -141,7 +141,7 @@ class ConversationRepository:
             )
 
             # 调用模型生成标题和标签
-            from app.services.model_service import model_service
+            from app.services.model.model_service import model_service
             result = await model_service.call_model(
                 model_name=model_config["name"],
                 messages=[{"role": "user", "content": title_prompt}],

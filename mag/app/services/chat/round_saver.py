@@ -82,7 +82,7 @@ class RoundSaver:
         """
         try:
             # 获取模型配置
-            from app.services.model_service import model_service
+            from app.services.model.model_service import model_service
             model_config = await model_service.get_model(model_name, user_id=user_id)
 
             if not model_config:

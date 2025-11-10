@@ -6,8 +6,8 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse
 from typing import Dict, List, Any
 from app.infrastructure.storage.file_storage import FileManager
-from app.services.mcp_service import mcp_service
-from app.services.model_service import model_service
+from app.services.mcp.mcp_service import mcp_service
+from app.services.model.model_service import model_service
 from app.infrastructure.database.mongodb import mongodb_client
 from app.models.mcp_schema import (
     MCPGenerationRequest,

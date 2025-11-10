@@ -12,7 +12,7 @@ from app.models.auth_schema import CurrentUser
 
 
 # 定义HTTPBearer认证scheme
-# 使用HTTPBearer而不是OAuth2PasswordBearer，因为我们不需要OAuth2的完整流程
+# 使用HTTPBearer
 security = HTTPBearer()
 
 
