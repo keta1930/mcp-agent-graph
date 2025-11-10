@@ -19,9 +19,9 @@ from app.models.auth_schema import (
     MessageResponse
 )
 from app.auth.dependencies import require_admin
-from app.services.user_service import UserService
-from app.services.invite_code_service import InviteCodeService
-from app.services.team_service import TeamService
+from app.services.user.user_service import UserService
+from app.services.user.invite_code_service import InviteCodeService
+from app.services.user.team_service import TeamService
 from app.infrastructure.database.mongodb import mongodb_client
 
 logger = logging.getLogger(__name__)

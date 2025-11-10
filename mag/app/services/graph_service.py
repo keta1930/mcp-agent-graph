@@ -449,8 +449,8 @@ class GraphService:
         """初始化任务管理组件"""
         try:
             # 延迟导入以避免循环导入
-            from app.services.task_service import task_service
-            from app.services.task_scheduler import task_scheduler
+            from app.services.task.task_service import task_service
+            from app.services.task.task_scheduler import task_scheduler
 
             self._task_service = task_service
             self._task_scheduler = task_scheduler

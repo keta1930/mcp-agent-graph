@@ -9,7 +9,7 @@
 
 import os
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 from app.core.config import settings
 from app.auth.password import hash_password

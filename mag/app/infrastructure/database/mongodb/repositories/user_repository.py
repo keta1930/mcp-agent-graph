@@ -5,7 +5,7 @@
 """
 import logging
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timezone
+from datetime import datetime
 from bson import ObjectId
 
 logger = logging.getLogger(__name__)

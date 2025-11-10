@@ -7,13 +7,13 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends
 from fastapi.responses import JSONResponse, FileResponse
 
-from ..models.prompt_schema import (
+from app.models.prompt_schema import (
     PromptCreate, PromptUpdate, PromptImportByFileRequest,
     PromptExportRequest, PromptBatchDeleteRequest, PromptResponse
 )
-from ..services.prompt_service import prompt_service
-from ..auth.dependencies import get_current_user
-from ..models.auth_schema import CurrentUser
+from app.services.prompt_service import prompt_service
+from app.auth.dependencies import get_current_user
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 

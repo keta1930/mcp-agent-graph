@@ -7,7 +7,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.executors.asyncio import AsyncIOExecutor
 from app.models.task_schema import TaskStatus
-from app.services.task_service import task_service
+from app.services.task.task_service import task_service
 
 logger = logging.getLogger(__name__)
 
