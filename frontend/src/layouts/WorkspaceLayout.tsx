@@ -73,6 +73,16 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
 
             {/* 主导航区域 */}
             <div className="collapsed-navigation">
+              {/* Agent管理 - 机器人 */}
+              <Link
+                to="/workspace/agent-manager"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/agent-manager' ? 'active' : ''}`}
+                title="Agent管理"
+              >
+                <span className="fruit-icon">🤖</span>
+                <div className="collapsed-tooltip">Agent管理</div>
+              </Link>
+
               {/* 图形编辑器 - 西瓜 */}
               <Link
                 to="/workspace/graph-editor"
@@ -91,6 +101,16 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               >
                 <span className="fruit-icon">🍊</span>
                 <div className="collapsed-tooltip">模型管理</div>
+              </Link>
+
+              {/* 系统工具 - 工具 */}
+              <Link
+                to="/workspace/system-tools"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/system-tools' ? 'active' : ''}`}
+                title="系统工具"
+              >
+                <span className="fruit-icon">🔧</span>
+                <div className="collapsed-tooltip">系统工具</div>
               </Link>
 
               {/* MCP管理 - 樱桃 */}
@@ -169,6 +189,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
             {/* 导航列表 */}
             <div className="workspace-navigation">
               <Link
+                to="/workspace/agent-manager"
+                className={`workspace-nav-item ${location.pathname === '/workspace/agent-manager' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">🤖</span>
+                <span className="nav-label">Agent管理</span>
+              </Link>
+
+              <Link
                 to="/workspace/graph-editor"
                 className={`workspace-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
               >
@@ -182,6 +210,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               >
                 <span className="fruit-icon">🍊</span>
                 <span className="nav-label">模型管理</span>
+              </Link>
+
+              <Link
+                to="/workspace/system-tools"
+                className={`workspace-nav-item ${location.pathname === '/workspace/system-tools' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">🔧</span>
+                <span className="nav-label">系统工具</span>
               </Link>
 
               <Link

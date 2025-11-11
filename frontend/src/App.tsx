@@ -13,6 +13,8 @@ import GraphEditor from './pages/GraphEditor';
 import ModelManager from './pages/ModelManager';
 import MCPManager from './pages/MCPManager';
 import PromptManager from './pages/PromptManager';
+import AgentManager from './pages/AgentManager';
+import SystemToolsManager from './pages/SystemToolsManager';
 import ExportManager from './pages/ExportManager';
 import TaskManager from './pages/TaskManager';
 import TaskDetail from './pages/TaskDetail';
@@ -94,6 +96,16 @@ const App: React.FC = () => {
 
         {/* 受保护的路由 - 工作台子页面 */}
         <Route
+          path="/workspace/agent-manager"
+          element={
+            <PrivateRoute>
+              <WorkspaceLayout>
+                <AgentManager />
+              </WorkspaceLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/workspace/graph-editor"
           element={
             <PrivateRoute>
@@ -109,6 +121,16 @@ const App: React.FC = () => {
             <PrivateRoute>
               <WorkspaceLayout>
                 <ModelManager />
+              </WorkspaceLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workspace/system-tools"
+          element={
+            <PrivateRoute>
+              <WorkspaceLayout>
+                <SystemToolsManager />
               </WorkspaceLayout>
             </PrivateRoute>
           }
