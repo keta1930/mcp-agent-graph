@@ -13,6 +13,8 @@ from .user_repository import UserRepository
 from .invite_code_repository import InviteCodeRepository
 from .team_settings_repository import TeamSettingsRepository
 from .refresh_token_repository import RefreshTokenRepository
+from .agent_repository import AgentRepository
+from .agent_invoke_repository import AgentInvokeRepository
 
 __all__ = [
     'ConversationRepository',
@@ -29,5 +31,7 @@ __all__ = [
     'UserRepository',
     'InviteCodeRepository',
     'TeamSettingsRepository',
-    'RefreshTokenRepository'
+    'RefreshTokenRepository',
+    'AgentRepository',
+    'AgentInvokeRepository'
 ]

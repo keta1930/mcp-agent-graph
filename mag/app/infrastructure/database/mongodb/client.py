@@ -5,7 +5,7 @@ from app.infrastructure.database.mongodb.repositories import (ConversationReposi
                                 GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
                                 GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
                                 PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository,
-                                RefreshTokenRepository)
+                                RefreshTokenRepository, AgentRepository, AgentInvokeRepository)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,8 @@ class MongoDBClient:
         self.invite_codes_collection = None
         self.team_settings_collection = None
         self.refresh_tokens_collection = None
+        self.agents_collection = None
+        self.agent_invoke_collection = None
 
         self.is_connected = False
 
@@ -50,6 +52,8 @@ class MongoDBClient:
         self.invite_code_repository = None
         self.team_settings_repository = None
         self.refresh_token_repository = None
+        self.agent_repository = None
+        self.agent_invoke_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -78,6 +82,8 @@ class MongoDBClient:
             self.invite_codes_collection = self.db.invite_codes
             self.team_settings_collection = self.db.team_settings
             self.refresh_tokens_collection = self.db.refresh_tokens
+            self.agents_collection = self.db.agents
+            self.agent_invoke_collection = self.db.agent_invoke
 
             await self.client.admin.command('ping')
 
@@ -170,6 +176,16 @@ class MongoDBClient:
             self.refresh_tokens_collection
         )
 
+        self.agent_repository = AgentRepository(
+            self.db,
+            self.agents_collection
+        )
+
+        self.agent_invoke_repository = AgentInvokeRepository(
+            self.db,
+            self.agent_invoke_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -240,6 +256,17 @@ class MongoDBClient:
             await self.refresh_tokens_collection.create_index([("user_id", 1)])
             await self.refresh_tokens_collection.create_index([("is_revoked", 1)])
             await self.refresh_tokens_collection.create_index([("expires_at", 1)], expireAfterSeconds=86400)
+
+            # agents集合索引
+            await self.agents_collection.create_index([("name", 1), ("user_id", 1)], unique=True)
+            await self.agents_collection.create_index([("user_id", 1), ("updated_at", -1)])
+            await self.agents_collection.create_index([("agent_config.category", 1)])
+            await self.agents_collection.create_index([("created_at", -1)])
+
+            # agent_invoke集合索引
+            await self.agent_invoke_collection.create_index([("conversation_id", 1)])
+            await self.agent_invoke_collection.create_index([("rounds.agent_name", 1)])
+            await self.agent_invoke_collection.create_index([("tasks.task_id", 1)])
 
             logger.info("MongoDB索引创建成功")
 
