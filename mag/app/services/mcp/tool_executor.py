@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 import aiohttp
+from app.services.system_tools import is_system_tool, get_tool_handler
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +15,17 @@ class ToolExecutor:
         """初始化工具执行器"""
         self.mcp_service = mcp_service
 
-    async def execute_tools_batch(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str]) -> List[Dict[str, Any]]:
+    async def execute_tools_batch(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str],
+                                 user_id: str = None, conversation_id: str = None) -> List[Dict[str, Any]]:
         """批量执行工具调用"""
         tool_results = []
-        
+
         # 创建异步任务
         tasks = []
         for tool_call in tool_calls:
             tool_name = tool_call["function"]["name"]
             tool_id = tool_call["id"]
-            
+
             try:
                 arguments_str = tool_call["function"]["arguments"]
                 arguments = json.loads(arguments_str) if arguments_str else {}
@@ -34,8 +36,18 @@ class ToolExecutor:
                     "content": f"工具调用解析失败：{str(e)}"
                 })
                 continue
-            
-            # 查找工具所属服务器
+
+            # 检查是否为系统工具
+            if is_system_tool(tool_name):
+                logger.info(f"执行系统工具: {tool_name}")
+                # 创建系统工具执行任务
+                task = asyncio.create_task(
+                    self._call_system_tool(tool_name, arguments, tool_id, user_id, conversation_id)
+                )
+                tasks.append(task)
+                continue
+
+            # 查找MCP工具所属服务器
             server_name = await self._find_tool_server(tool_name, mcp_servers)
             if not server_name:
                 tool_results.append({
@@ -43,13 +55,13 @@ class ToolExecutor:
                     "content": f"找不到工具 '{tool_name}' 所属的服务器"
                 })
                 continue
-            
-            # 创建异步任务
+
+            # 创建MCP工具异步任务
             task = asyncio.create_task(
                 self._call_single_tool_internal(server_name, tool_name, arguments, tool_id)
             )
             tasks.append(task)
-        
+
         # 等待所有工具执行完成
         if tasks:
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -62,7 +74,7 @@ class ToolExecutor:
                     })
                 else:
                     tool_results.append(result)
-        
+
         return tool_results
 
     async def execute_single_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -206,6 +218,48 @@ class ToolExecutor:
             return {
                 "tool_call_id": tool_call_id,
                 "content": f"工具 {tool_name} 执行失败：{str(e)}"
+            }
+
+    async def _call_system_tool(self, tool_name: str, arguments: Dict[str, Any],
+                               tool_call_id: str, user_id: str = None,
+                               conversation_id: str = None) -> Dict[str, Any]:
+        """调用系统工具"""
+        try:
+            # 获取工具处理函数
+            handler = get_tool_handler(tool_name)
+            if not handler:
+                logger.error(f"系统工具未找到处理函数: {tool_name}")
+                return {
+                    "tool_call_id": tool_call_id,
+                    "content": f"系统工具 {tool_name} 未找到处理函数"
+                }
+
+            # 添加上下文参数
+            if user_id:
+                arguments["user_id"] = user_id
+            if conversation_id:
+                arguments["conversation_id"] = conversation_id
+
+            # 执行工具
+            logger.debug(f"调用系统工具 {tool_name}，参数: {arguments}")
+            result = await handler(**arguments)
+
+            # 格式化结果
+            if isinstance(result, dict):
+                content = json.dumps(result, ensure_ascii=False)
+            else:
+                content = str(result)
+
+            return {
+                "tool_call_id": tool_call_id,
+                "content": content
+            }
+
+        except Exception as e:
+            logger.error(f"系统工具 {tool_name} 执行失败: {str(e)}", exc_info=True)
+            return {
+                "tool_call_id": tool_call_id,
+                "content": f"系统工具 {tool_name} 执行失败：{str(e)}"
             }
 
     async def _find_tool_server(self, tool_name: str, mcp_servers: List[str]) -> Optional[str]:
