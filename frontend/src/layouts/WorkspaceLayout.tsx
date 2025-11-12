@@ -3,9 +3,16 @@ import React, { useState } from 'react';
 import { Button, Modal, message } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  PoweroffOutlined,
-  HomeOutlined
-} from '@ant-design/icons';
+  Bot,
+  Network,
+  Cpu,
+  Wrench,
+  Plug,
+  MessageSquareText,
+  FolderOpen,
+  Home,
+  Power
+} from 'lucide-react';
 import { shutdownSystem } from '../services/systemService';
 import '../styles/workspace.css';
 
@@ -73,73 +80,73 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
 
             {/* 主导航区域 */}
             <div className="collapsed-navigation">
-              {/* Agent管理 - 机器人 */}
+              {/* Agent管理 */}
               <Link
                 to="/workspace/agent-manager"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/agent-manager' ? 'active' : ''}`}
                 title="Agent管理"
               >
-                <span className="fruit-icon">🤖</span>
+                <Bot size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">Agent管理</div>
               </Link>
 
-              {/* 图形编辑器 - 西瓜 */}
+              {/* 图形编辑器 */}
               <Link
                 to="/workspace/graph-editor"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
                 title="图形编辑器"
               >
-                <span className="fruit-icon">🍉</span>
+                <Network size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">图形编辑器</div>
               </Link>
 
-              {/* 模型管理 - 橙子 */}
+              {/* 模型管理 */}
               <Link
                 to="/workspace/model-manager"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/model-manager' ? 'active' : ''}`}
                 title="模型管理"
               >
-                <span className="fruit-icon">🍊</span>
+                <Cpu size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">模型管理</div>
               </Link>
 
-              {/* 系统工具 - 工具 */}
+              {/* 系统工具 */}
               <Link
                 to="/workspace/system-tools"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/system-tools' ? 'active' : ''}`}
                 title="系统工具"
               >
-                <span className="fruit-icon">🔧</span>
+                <Wrench size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">系统工具</div>
               </Link>
 
-              {/* MCP管理 - 樱桃 */}
+              {/* MCP管理 */}
               <Link
                 to="/workspace/mcp-manager"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/mcp-manager' ? 'active' : ''}`}
                 title="MCP管理"
               >
-                <span className="fruit-icon">🍒</span>
+                <Plug size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">MCP管理</div>
               </Link>
 
-              {/* 提示词管理 - 葡萄 */}
+              {/* 提示词管理 */}
               <Link
                 to="/workspace/prompt-manager"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/prompt-manager' ? 'active' : ''}`}
                 title="提示词管理"
               >
-                <span className="fruit-icon">🍇</span>
+                <MessageSquareText size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">提示词管理</div>
               </Link>
 
-              {/* 文件管理 - 文件夹 */}
+              {/* 文件管理 */}
               <Link
                 to="/workspace/file-manager"
                 className={`collapsed-nav-item ${location.pathname === '/workspace/file-manager' ? 'active' : ''}`}
                 title="文件管理"
               >
-                <span className="fruit-icon">📁</span>
+                <FolderOpen size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">文件管理</div>
               </Link>
             </div>
@@ -155,7 +162,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 onClick={handleBackHome}
                 title="返回首页"
               >
-                <HomeOutlined />
+                <Home size={18} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">返回首页</div>
               </button>
 
@@ -166,7 +173,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 disabled={isShuttingDown}
                 title="关闭系统"
               >
-                <PoweroffOutlined />
+                <Power size={18} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <div className="collapsed-tooltip">关闭系统</div>
               </button>
             </div>
@@ -202,7 +209,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/agent-manager"
                 className={`workspace-nav-item ${location.pathname === '/workspace/agent-manager' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">🤖</span>
+                <Bot size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">Agent管理</span>
               </Link>
 
@@ -210,7 +217,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/graph-editor"
                 className={`workspace-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">🍉</span>
+                <Network size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">图形编辑器</span>
               </Link>
 
@@ -218,7 +225,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/model-manager"
                 className={`workspace-nav-item ${location.pathname === '/workspace/model-manager' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">🍊</span>
+                <Cpu size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">模型管理</span>
               </Link>
 
@@ -226,7 +233,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/system-tools"
                 className={`workspace-nav-item ${location.pathname === '/workspace/system-tools' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">🔧</span>
+                <Wrench size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">系统工具</span>
               </Link>
 
@@ -234,7 +241,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/mcp-manager"
                 className={`workspace-nav-item ${location.pathname === '/workspace/mcp-manager' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">🍒</span>
+                <Plug size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">MCP管理</span>
               </Link>
 
@@ -242,7 +249,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/prompt-manager"
                 className={`workspace-nav-item ${location.pathname === '/workspace/prompt-manager' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">🍇</span>
+                <MessageSquareText size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">提示词管理</span>
               </Link>
 
@@ -250,7 +257,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 to="/workspace/file-manager"
                 className={`workspace-nav-item ${location.pathname === '/workspace/file-manager' ? 'active' : ''}`}
               >
-                <span className="fruit-icon">📁</span>
+                <FolderOpen size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
                 <span className="nav-label">文件管理</span>
               </Link>
             </div>
@@ -260,14 +267,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               <div className="footer-actions">
                 <Button
                   type="text"
-                  icon={<HomeOutlined />}
+                  icon={<Home size={18} strokeWidth={1.5} />}
                   onClick={handleBackHome}
                   title="返回首页"
                 />
                 <Button
                   type="text"
                   danger
-                  icon={<PoweroffOutlined />}
+                  icon={<Power size={18} strokeWidth={1.5} />}
                   loading={isShuttingDown}
                   onClick={showConfirmModal}
                   title="关闭系统"
