@@ -1,6 +1,6 @@
-// src/pages/AgentManager.tsx
 import React, { useEffect, useState } from 'react';
 import {
+  Layout,
   Button,
   Card,
   Row,
@@ -18,16 +18,21 @@ import {
   Descriptions,
   Space,
   Popconfirm,
-  AutoComplete
+  AutoComplete,
+  Collapse,
+  Typography
 } from 'antd';
 import {
-  PlusOutlined,
-  ReloadOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  RobotOutlined
-} from '@ant-design/icons';
+  Plus,
+  RefreshCw,
+  Edit2,
+  Trash2,
+  Eye,
+  Bot,
+  ChevronDown,
+  Search as SearchIcon,
+  Sparkles
+} from 'lucide-react';
 import {
   listAgents,
   createAgent,
@@ -45,6 +50,14 @@ import { getMCPConfig } from '../services/mcpService';
 
 const { TextArea } = Input;
 const { Option } = Select;
+const { Header, Content } = Layout;
+const { Title, Text } = Typography;
+const { Panel } = Collapse;
+
+interface CategoryGroup {
+  category: string;
+  agents: AgentListItem[];
+}
 
 const AgentManager: React.FC = () => {
   const [agents, setAgents] = useState<AgentListItem[]>([]);
@@ -54,12 +67,17 @@ const AgentManager: React.FC = () => {
   const [editingAgent, setEditingAgent] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [form] = Form.useForm();
+  const [searchText, setSearchText] = useState('');
 
   // 可选项数据
   const [models, setModels] = useState<string[]>([]);
   const [systemTools, setSystemTools] = useState<string[]>([]);
   const [mcpServers, setMcpServers] = useState<string[]>([]);
   const [categories, setCategories] = useState<AgentCategoryItem[]>([]);
+
+  // 分组后的 agents
+  const [groupedAgents, setGroupedAgents] = useState<CategoryGroup[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<CategoryGroup[]>([]);
 
   // 加载数据
   const loadAgents = async () => {
@@ -96,10 +114,53 @@ const AgentManager: React.FC = () => {
     }
   };
 
+  // 按分类分组
+  const groupAgentsByCategory = (agentList: AgentListItem[]): CategoryGroup[] => {
+    const groupMap = new Map<string, CategoryGroup>();
+
+    agentList.forEach(agent => {
+      const category = agent.category || '未分类';
+      if (!groupMap.has(category)) {
+        groupMap.set(category, {
+          category,
+          agents: []
+        });
+      }
+      groupMap.get(category)!.agents.push(agent);
+    });
+
+    return Array.from(groupMap.values()).sort((a, b) => a.category.localeCompare(b.category));
+  };
+
   useEffect(() => {
     loadAgents();
     loadOptions();
   }, []);
+
+  useEffect(() => {
+    const grouped = groupAgentsByCategory(agents);
+    setGroupedAgents(grouped);
+    setFilteredGroups(grouped);
+  }, [agents]);
+
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredGroups(groupedAgents);
+    } else {
+      const keyword = searchText.toLowerCase();
+      const filtered = groupedAgents
+        .map(group => ({
+          ...group,
+          agents: group.agents.filter(agent =>
+            agent.name.toLowerCase().includes(keyword) ||
+            agent.category.toLowerCase().includes(keyword) ||
+            agent.tags?.some(tag => tag.toLowerCase().includes(keyword))
+          )
+        }))
+        .filter(group => group.agents.length > 0);
+      setFilteredGroups(filtered);
+    }
+  }, [searchText, groupedAgents]);
 
   // 显示创建 Modal
   const showCreateModal = () => {
@@ -180,259 +241,964 @@ const AgentManager: React.FC = () => {
     }
   };
 
-  return (
-    <div style={{ padding: '24px' }}>
-      {/* 页面标题和操作按钮 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px'
-      }}>
-        <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600 }}>
-          <RobotOutlined /> Agent 管理
-        </h2>
-        <Space>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={loadAgents}
-            loading={loading}
-          >
-            刷新
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={showCreateModal}
-          >
-            创建 Agent
-          </Button>
-        </Space>
-      </div>
+  const totalAgentsCount = filteredGroups.reduce((sum, group) => sum + group.agents.length, 0);
 
-      {/* Agent 列表 */}
-      {loading && agents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
+  return (
+    <Layout style={{ height: '100vh', background: '#faf8f5' }}>
+      {/* Header with gradient and blur effect */}
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
+      }}>
+        {/* Decorative gradient line */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          <Space size="large">
+            <Bot size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              智能体管理
+            </Title>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {totalAgentsCount} 个智能体
+            </Tag>
+            <Tag style={{
+              background: 'rgba(139, 115, 85, 0.08)',
+              color: '#8b7355',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {filteredGroups.length} 个分类
+            </Tag>
+          </Space>
+
+          <Space size={12}>
+            <Input
+              placeholder="搜索智能体..."
+              allowClear
+              prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                width: 280,
+                height: '40px',
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                fontSize: '14px',
+                color: '#2d2d2d',
+                letterSpacing: '0.3px'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#b85845';
+                e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08), 0 1px 3px rgba(139, 115, 85, 0.08)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
+              }}
+            />
+            <Button
+              icon={<RefreshCw size={16} strokeWidth={1.5} />}
+              onClick={loadAgents}
+              loading={loading}
+              style={{
+                height: '40px',
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                color: '#8b7355',
+                fontWeight: 500,
+                fontSize: '14px',
+                letterSpacing: '0.3px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 16px'
+              }}
+            >
+              刷新
+            </Button>
+            <Button
+              type="primary"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={showCreateModal}
+              style={{
+                height: '40px',
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontWeight: 500,
+                fontSize: '14px',
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 20px'
+              }}
+            >
+              创建智能体
+            </Button>
+          </Space>
         </div>
-      ) : agents.length === 0 ? (
-        <Empty
-          description="暂无 Agent"
-          style={{ marginTop: '50px' }}
-        >
-          <Button type="primary" icon={<PlusOutlined />} onClick={showCreateModal}>
-            创建第一个 Agent
-          </Button>
-        </Empty>
-      ) : (
-        <Row gutter={[16, 16]}>
-          {agents.map((agent) => (
-            <Col xs={24} sm={12} lg={8} xl={6} key={agent.name}>
-              <Card
-                hoverable
-                title={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <RobotOutlined />
-                    <span>{agent.name}</span>
-                  </div>
-                }
-                extra={
-                  <Tag color="blue">{agent.category}</Tag>
-                }
-                actions={[
-                  <Tooltip title="查看详情">
-                    <EyeOutlined onClick={() => showDetailModal(agent.name)} />
-                  </Tooltip>,
-                  <Tooltip title="编辑">
-                    <EditOutlined onClick={() => showEditModal(agent.name)} />
-                  </Tooltip>,
-                  <Popconfirm
-                    title="确定删除此 Agent？"
-                    onConfirm={() => handleDelete(agent.name)}
-                    okText="确定"
-                    cancelText="取消"
-                  >
-                    <Tooltip title="删除">
-                      <DeleteOutlined style={{ color: '#ff4d4f' }} />
-                    </Tooltip>
-                  </Popconfirm>
-                ]}
+      </Header>
+
+      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%'
+          }}>
+            <Spin size="large" tip="加载中..." />
+          </div>
+        ) : filteredGroups.length === 0 ? (
+          <Empty
+            image={<Sparkles size={64} color="rgba(139, 115, 85, 0.3)" strokeWidth={1} />}
+            description={
+              <span style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>
+                {searchText ? `未找到匹配 "${searchText}" 的智能体` : '暂无智能体'}
+              </span>
+            }
+            style={{ marginTop: '120px' }}
+          >
+            {!searchText && (
+              <Button
+                type="primary"
+                icon={<Plus size={16} strokeWidth={1.5} />}
+                onClick={showCreateModal}
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  height: '40px',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  letterSpacing: '0.3px',
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '0 20px'
+                }}
               >
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ color: '#666', fontSize: '12px', marginBottom: '4px' }}>模型</div>
-                  <Tag>{agent.model}</Tag>
-                </div>
-                {agent.tags && agent.tags.length > 0 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ color: '#666', fontSize: '12px', marginBottom: '4px' }}>标签</div>
-                    <div>
-                      {agent.tags.map((tag, idx) => (
-                        <Tag key={idx} style={{ marginBottom: '4px' }}>{tag}</Tag>
-                      ))}
-                    </div>
+                创建第一个智能体
+              </Button>
+            )}
+          </Empty>
+        ) : (
+          <Collapse
+            defaultActiveKey={filteredGroups.map(g => g.category)}
+            expandIconPosition="end"
+            style={{
+              background: 'transparent',
+              border: 'none'
+            }}
+            expandIcon={({ isActive }) => (
+              <ChevronDown
+                size={18}
+                strokeWidth={2}
+                style={{
+                  color: '#8b7355',
+                  transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }}
+              />
+            )}
+          >
+            {filteredGroups.map((group) => (
+              <Panel
+                key={group.category}
+                header={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+                    <Sparkles size={18} color="#b85845" strokeWidth={1.5} />
+                    <Text strong style={{
+                      fontSize: '15px',
+                      color: '#2d2d2d',
+                      fontWeight: 500,
+                      letterSpacing: '0.5px',
+                      flex: 1
+                    }}>
+                      {group.category}
+                    </Text>
+                    <Tag style={{
+                      background: 'rgba(139, 115, 85, 0.08)',
+                      color: '#8b7355',
+                      border: '1px solid rgba(139, 115, 85, 0.2)',
+                      borderRadius: '6px',
+                      fontWeight: 500,
+                      fontSize: '12px',
+                      margin: 0,
+                      padding: '2px 10px'
+                    }}>
+                      {group.agents.length}
+                    </Tag>
                   </div>
-                )}
-                <div style={{ fontSize: '12px', color: '#999' }}>
-                  创建于: {new Date(agent.created_at).toLocaleDateString()}
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
+                }
+                style={{
+                  marginBottom: '16px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(139, 115, 85, 0.15)',
+                  background: 'rgba(250, 248, 245, 0.6)',
+                  overflow: 'hidden'
+                }}
+              >
+                <Row gutter={[12, 12]} style={{ marginTop: '8px' }}>
+                  {group.agents.map((agent) => (
+                    <Col key={agent.name} xs={24} sm={12} md={12} lg={8} xl={6}>
+                      <Card
+                        hoverable
+                        style={{
+                          borderRadius: '6px',
+                          border: '1px solid rgba(139, 115, 85, 0.15)',
+                          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                          transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                          background: 'rgba(255, 255, 255, 0.85)',
+                          height: '100%'
+                        }}
+                        styles={{
+                          body: { padding: '12px 14px' }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12)';
+                          e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                          e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                        }}
+                      >
+                        {/* Agent Name and Icon */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          marginBottom: '10px'
+                        }}>
+                          <Bot size={16} strokeWidth={1.5} style={{ color: '#b85845', flexShrink: 0 }} />
+                          <Text
+                            strong
+                            style={{
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              color: '#2d2d2d',
+                              letterSpacing: '0.3px',
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title={agent.name}
+                          >
+                            {agent.name}
+                          </Text>
+                        </div>
+
+                        {/* Model Tag */}
+                        <div style={{ marginBottom: '10px' }}>
+                          <Tag style={{
+                            background: 'rgba(139, 115, 85, 0.08)',
+                            color: '#8b7355',
+                            border: '1px solid rgba(139, 115, 85, 0.2)',
+                            borderRadius: '6px',
+                            fontWeight: 500,
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            margin: 0
+                          }}>
+                            {agent.model}
+                          </Tag>
+                        </div>
+
+                        {/* Tags */}
+                        {agent.tags && agent.tags.length > 0 && (
+                          <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '4px',
+                            marginBottom: '10px'
+                          }}>
+                            {agent.tags.slice(0, 3).map((tag, idx) => (
+                              <Tag
+                                key={idx}
+                                style={{
+                                  background: 'rgba(184, 88, 69, 0.06)',
+                                  color: 'rgba(184, 88, 69, 0.85)',
+                                  border: '1px solid rgba(184, 88, 69, 0.15)',
+                                  borderRadius: '4px',
+                                  fontWeight: 500,
+                                  fontSize: '11px',
+                                  padding: '1px 6px',
+                                  margin: 0
+                                }}
+                              >
+                                {tag}
+                              </Tag>
+                            ))}
+                            {agent.tags.length > 3 && (
+                              <Tag style={{
+                                background: 'transparent',
+                                color: 'rgba(45, 45, 45, 0.45)',
+                                border: '1px dashed rgba(139, 115, 85, 0.2)',
+                                borderRadius: '4px',
+                                fontWeight: 500,
+                                fontSize: '11px',
+                                padding: '1px 6px',
+                                margin: 0
+                              }}>
+                                +{agent.tags.length - 3}
+                              </Tag>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div style={{
+                          display: 'flex',
+                          gap: '6px',
+                          paddingTop: '10px',
+                          borderTop: '1px solid rgba(139, 115, 85, 0.1)'
+                        }}>
+                          <Tooltip title="查看详情">
+                            <div
+                              style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '6px',
+                                borderRadius: '4px',
+                                color: '#8b7355',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                border: '1px solid rgba(139, 115, 85, 0.15)'
+                              }}
+                              onClick={() => showDetailModal(agent.name)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.06)';
+                                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.25)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                              }}
+                            >
+                              <Eye size={14} strokeWidth={1.5} />
+                            </div>
+                          </Tooltip>
+                          <Tooltip title="编辑">
+                            <div
+                              style={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '6px',
+                                borderRadius: '4px',
+                                color: '#8b7355',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                border: '1px solid rgba(139, 115, 85, 0.15)'
+                              }}
+                              onClick={() => showEditModal(agent.name)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.06)';
+                                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.25)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                              }}
+                            >
+                              <Edit2 size={14} strokeWidth={1.5} />
+                            </div>
+                          </Tooltip>
+                          <Popconfirm
+                            title="确定删除此智能体？"
+                            onConfirm={() => handleDelete(agent.name)}
+                            okText="确定"
+                            cancelText="取消"
+                          >
+                            <Tooltip title="删除">
+                              <div
+                                style={{
+                                  flex: 1,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: '6px',
+                                  borderRadius: '4px',
+                                  color: '#b85845',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  border: '1px solid rgba(184, 88, 69, 0.15)'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = '#d4574a';
+                                  e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = '#b85845';
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.15)';
+                                }}
+                              >
+                                <Trash2 size={14} strokeWidth={1.5} />
+                              </div>
+                            </Tooltip>
+                          </Popconfirm>
+                        </div>
+
+                        {/* Created Date */}
+                        <div style={{
+                          fontSize: '11px',
+                          color: 'rgba(45, 45, 45, 0.35)',
+                          marginTop: '8px',
+                          textAlign: 'center',
+                          letterSpacing: '0.2px'
+                        }}>
+                          {new Date(agent.created_at).toLocaleDateString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                          })}
+                        </div>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </Panel>
+            ))}
+          </Collapse>
+        )}
+      </Content>
 
       {/* 创建/编辑 Modal */}
       <Modal
-        title={editingAgent ? `编辑 Agent: ${editingAgent}` : '创建 Agent'}
+        title={
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <Bot size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
+            <span style={{
+              color: '#2d2d2d',
+              fontSize: '18px',
+              fontWeight: 600,
+              letterSpacing: '0.5px'
+            }}>
+              {editingAgent ? `编辑智能体: ${editingAgent}` : '创建智能体'}
+            </span>
+          </div>
+        }
         open={modalVisible}
         onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
-        width={700}
-        okText="确定"
-        cancelText="取消"
+        width={720}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setModalVisible(false)}
+            style={{
+              height: '40px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              color: '#8b7355',
+              fontWeight: 500,
+              fontSize: '14px',
+              letterSpacing: '0.3px',
+              padding: '0 24px'
+            }}
+          >
+            取消
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleSubmit}
+            style={{
+              height: '40px',
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              color: '#fff',
+              fontWeight: 500,
+              fontSize: '14px',
+              letterSpacing: '0.3px',
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              padding: '0 24px'
+            }}
+          >
+            确定
+          </Button>
+        ]}
+        styles={{
+          content: {
+            borderRadius: '10px',
+            boxShadow: '0 12px 40px rgba(139, 115, 85, 0.2)',
+            padding: 0,
+            overflow: 'hidden'
+          },
+          header: {
+            background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(255, 255, 255, 0.9))',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '18px 28px',
+            marginBottom: 0
+          },
+          body: {
+            padding: '28px 28px 20px',
+            background: '#fff',
+            maxHeight: '70vh',
+            overflowY: 'auto'
+          },
+          footer: {
+            borderTop: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '16px 28px',
+            background: 'rgba(250, 248, 245, 0.3)',
+            marginTop: 0
+          }
+        }}
       >
         <Form
           form={form}
           layout="vertical"
+          style={{
+            '.ant-form-item': {
+              marginBottom: '20px'
+            }
+          }}
         >
-          <Form.Item
-            label="Agent 名称"
-            name="name"
-            rules={[
-              { required: true, message: '请输入 Agent 名称' },
-              { pattern: /^[^/\\.]+$/, message: '名称不能包含 / \\ . 字符' }
-            ]}
-          >
-            <Input placeholder="例如: code_reviewer" disabled={!!editingAgent} />
-          </Form.Item>
+          {/* 基础信息区块 */}
+          <div style={{
+            background: 'rgba(250, 248, 245, 0.3)',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '1px solid rgba(139, 115, 85, 0.1)'
+          }}>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: '#b85845',
+              marginBottom: '16px',
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}>
+              基础信息
+            </div>
 
-          <Form.Item
-            label="能力描述（Card）"
-            name="card"
-            rules={[{ required: true, message: '请输入 Agent 能力描述' }]}
-          >
-            <TextArea
-              rows={3}
-              placeholder="详细说明该 Agent 的能力和适用场景"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="分类"
-            name="category"
-            rules={[{ required: true, message: '请输入或选择分类' }]}
-            tooltip="可以从现有分类中选择，也可以输入新的分类名称"
-          >
-            <AutoComplete
-              placeholder="输入或选择分类（如: coding, analysis, writing等）"
-              options={categories.map(cat => ({
-                value: cat.category,
-                label: `${cat.category} (${cat.agent_count}个Agent)`
-              }))}
-              filterOption={(inputValue, option) =>
-                option?.value.toLowerCase().indexOf(inputValue.toLowerCase()) !== -1
-              }
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="模型"
-            name="model"
-            rules={[{ required: true, message: '请选择模型' }]}
-          >
-            <Select placeholder="选择模型" showSearch>
-              {models.map((model) => (
-                <Option key={model} value={model}>{model}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="系统提示词（Instruction）"
-            name="instruction"
-          >
-            <TextArea
-              rows={4}
-              placeholder="可选：Agent 的系统提示词"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="最大工具调用次数"
-            name="max_actions"
-          >
-            <InputNumber min={1} max={200} style={{ width: '100%' }} />
-          </Form.Item>
-
-          <Form.Item
-            label="系统工具"
-            name="system_tools"
-          >
-            <Select
-              mode="multiple"
-              placeholder="选择系统工具"
-              allowClear
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>智能体名称</span>}
+              name="name"
+              rules={[
+                { required: true, message: '请输入智能体名称' },
+                { pattern: /^[^/\\.]+$/, message: '名称不能包含 / \\ . 字符' }
+              ]}
+              style={{ marginBottom: '16px' }}
             >
-              {systemTools.map((tool) => (
-                <Option key={tool} value={tool}>{tool}</Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <Input
+                placeholder="例如: code_reviewer"
+                disabled={!!editingAgent}
+                style={{
+                  height: '40px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '14px',
+                  color: '#2d2d2d',
+                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                  transition: 'all 0.3s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#b85845';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                  e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
+                }}
+              />
+            </Form.Item>
 
-          <Form.Item
-            label="MCP 服务器"
-            name="mcp"
-          >
-            <Select
-              mode="multiple"
-              placeholder="选择 MCP 服务器"
-              allowClear
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>能力描述</span>}
+              name="card"
+              rules={[{ required: true, message: '请输入智能体能力描述' }]}
+              style={{ marginBottom: '16px' }}
             >
-              {mcpServers.map((server) => (
-                <Option key={server} value={server}>{server}</Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <TextArea
+                rows={3}
+                placeholder="详细说明该智能体的能力和适用场景"
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '14px',
+                  color: '#2d2d2d',
+                  lineHeight: '1.6',
+                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                  transition: 'all 0.3s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#b85845';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                  e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                }}
+              />
+            </Form.Item>
 
-          <Form.Item
-            label="标签"
-            name="tags"
-          >
-            <Select
-              mode="tags"
-              placeholder="输入标签后按回车添加"
-              tokenSeparators={[',']}
-            />
-          </Form.Item>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>分类</span>}
+                  name="category"
+                  rules={[{ required: true, message: '请输入或选择分类' }]}
+                  tooltip={{
+                    title: '可以从现有分类中选择，也可以输入新的分类名称',
+                    overlayStyle: { fontSize: '13px' }
+                  }}
+                  style={{ marginBottom: '0' }}
+                >
+                  <AutoComplete
+                    placeholder="如: coding, analysis"
+                    options={categories.map(cat => ({
+                      value: cat.category,
+                      label: `${cat.category} (${cat.agent_count}个)`
+                    }))}
+                    filterOption={(inputValue, option) =>
+                      option?.value.toLowerCase().indexOf(inputValue.toLowerCase()) !== -1
+                    }
+                    style={{
+                      height: '40px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>模型</span>}
+                  name="model"
+                  rules={[{ required: true, message: '请选择模型' }]}
+                  style={{ marginBottom: '0' }}
+                >
+                  <Select
+                    placeholder="选择模型"
+                    showSearch
+                    style={{ fontSize: '14px' }}
+                  >
+                    {models.map((model) => (
+                      <Option key={model} value={model}>{model}</Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
+          {/* 配置信息区块 */}
+          <div style={{
+            background: 'rgba(250, 248, 245, 0.3)',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '1px solid rgba(139, 115, 85, 0.1)'
+          }}>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: '#b85845',
+              marginBottom: '16px',
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}>
+              配置信息
+            </div>
+
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>系统提示词</span>}
+              name="instruction"
+              style={{ marginBottom: '16px' }}
+            >
+              <TextArea
+                rows={4}
+                placeholder="可选：智能体的系统提示词"
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '13px',
+                  color: '#2d2d2d',
+                  lineHeight: '1.6',
+                  fontFamily: 'Monaco, Courier New, monospace',
+                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                  transition: 'all 0.3s ease'
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#b85845';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                  e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>最大工具调用次数</span>}
+              name="max_actions"
+              style={{ marginBottom: '0' }}
+            >
+              <InputNumber
+                min={1}
+                max={200}
+                placeholder="50"
+                style={{
+                  width: '100%',
+                  height: '40px',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              />
+            </Form.Item>
+          </div>
+
+          {/* 工具和服务区块 */}
+          <div style={{
+            background: 'rgba(250, 248, 245, 0.3)',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            border: '1px solid rgba(139, 115, 85, 0.1)'
+          }}>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: '#b85845',
+              marginBottom: '16px',
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase'
+            }}>
+              工具和服务
+            </div>
+
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>系统工具</span>}
+              name="system_tools"
+              style={{ marginBottom: '16px' }}
+            >
+              <Select
+                mode="multiple"
+                placeholder="选择系统工具"
+                allowClear
+                maxTagCount="responsive"
+                style={{ fontSize: '14px' }}
+              >
+                {systemTools.map((tool) => (
+                  <Option key={tool} value={tool}>{tool}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>MCP 服务器</span>}
+              name="mcp"
+              style={{ marginBottom: '16px' }}
+            >
+              <Select
+                mode="multiple"
+                placeholder="选择 MCP 服务器"
+                allowClear
+                maxTagCount="responsive"
+                style={{ fontSize: '14px' }}
+              >
+                {mcpServers.map((server) => (
+                  <Option key={server} value={server}>{server}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>标签</span>}
+              name="tags"
+              style={{ marginBottom: '0' }}
+            >
+              <Select
+                mode="tags"
+                placeholder="输入标签后按回车添加"
+                tokenSeparators={[',']}
+                maxTagCount="responsive"
+                style={{ fontSize: '14px' }}
+              />
+            </Form.Item>
+          </div>
         </Form>
       </Modal>
 
       {/* 详情 Modal */}
       <Modal
-        title={`Agent 详情: ${selectedAgent?.name}`}
+        title={
+          <div style={{
+            color: '#2d2d2d',
+            fontSize: '18px',
+            fontWeight: 600,
+            letterSpacing: '0.5px'
+          }}>
+            智能体详情: {selectedAgent?.name}
+          </div>
+        }
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+          <Button
+            key="close"
+            onClick={() => setDetailModalVisible(false)}
+            style={{
+              height: '36px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              color: '#8b7355',
+              fontWeight: 500,
+              fontSize: '14px',
+              letterSpacing: '0.3px'
+            }}
+          >
             关闭
           </Button>
         ]}
         width={800}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+            padding: 0
+          },
+          header: {
+            background: 'rgba(250, 248, 245, 0.6)',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+            padding: '16px 24px'
+          },
+          body: {
+            padding: '24px',
+            background: '#fff'
+          },
+          footer: {
+            borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+            padding: '12px 16px'
+          }
+        }}
       >
         {selectedAgent && (
-          <Descriptions bordered column={1}>
+          <Descriptions
+            bordered
+            column={1}
+            labelStyle={{
+              background: 'rgba(250, 248, 245, 0.6)',
+              color: 'rgba(45, 45, 45, 0.85)',
+              fontWeight: 500,
+              fontSize: '14px',
+              padding: '12px 16px',
+              borderRight: '1px solid rgba(139, 115, 85, 0.15)'
+            }}
+            contentStyle={{
+              background: '#fff',
+              color: '#2d2d2d',
+              fontSize: '14px',
+              padding: '12px 16px'
+            }}
+            style={{
+              border: '1px solid rgba(139, 115, 85, 0.15)',
+              borderRadius: '6px',
+              overflow: 'hidden'
+            }}
+          >
             <Descriptions.Item label="名称">{selectedAgent.agent_config.name}</Descriptions.Item>
             <Descriptions.Item label="分类">
-              <Tag color="blue">{selectedAgent.agent_config.category}</Tag>
+              <Tag style={{
+                background: 'rgba(139, 115, 85, 0.08)',
+                color: '#8b7355',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                borderRadius: '6px',
+                fontWeight: 500,
+                fontSize: '12px',
+                padding: '4px 12px'
+              }}>
+                {selectedAgent.agent_config.category}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="能力描述">
               {selectedAgent.agent_config.card}
             </Descriptions.Item>
             <Descriptions.Item label="模型">
-              <Tag>{selectedAgent.agent_config.model}</Tag>
+              <Tag style={{
+                background: 'rgba(139, 115, 85, 0.08)',
+                color: '#8b7355',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                borderRadius: '6px',
+                fontWeight: 500,
+                fontSize: '12px',
+                padding: '4px 12px'
+              }}>
+                {selectedAgent.agent_config.model}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="系统提示词">
-              <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+              <pre style={{
+                whiteSpace: 'pre-wrap',
+                margin: 0,
+                fontSize: '13px',
+                lineHeight: 1.6,
+                color: 'rgba(45, 45, 45, 0.85)',
+                background: 'rgba(250, 248, 245, 0.4)',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                border: '1px solid rgba(139, 115, 85, 0.1)'
+              }}>
                 {selectedAgent.agent_config.instruction || '（无）'}
               </pre>
             </Descriptions.Item>
@@ -441,35 +1207,87 @@ const AgentManager: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="系统工具">
               {selectedAgent.agent_config.system_tools?.length > 0 ? (
-                selectedAgent.agent_config.system_tools.map((tool: string) => (
-                  <Tag key={tool}>{tool}</Tag>
-                ))
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {selectedAgent.agent_config.system_tools.map((tool: string) => (
+                    <Tag
+                      key={tool}
+                      style={{
+                        background: 'rgba(139, 115, 85, 0.08)',
+                        color: '#8b7355',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        padding: '4px 12px',
+                        margin: 0
+                      }}
+                    >
+                      {tool}
+                    </Tag>
+                  ))}
+                </div>
               ) : '（无）'}
             </Descriptions.Item>
             <Descriptions.Item label="MCP 服务器">
               {selectedAgent.agent_config.mcp?.length > 0 ? (
-                selectedAgent.agent_config.mcp.map((server: string) => (
-                  <Tag key={server}>{server}</Tag>
-                ))
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {selectedAgent.agent_config.mcp.map((server: string) => (
+                    <Tag
+                      key={server}
+                      style={{
+                        background: 'rgba(139, 115, 85, 0.08)',
+                        color: '#8b7355',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        padding: '4px 12px',
+                        margin: 0
+                      }}
+                    >
+                      {server}
+                    </Tag>
+                  ))}
+                </div>
               ) : '（无）'}
             </Descriptions.Item>
             <Descriptions.Item label="标签">
               {selectedAgent.agent_config.tags?.length > 0 ? (
-                selectedAgent.agent_config.tags.map((tag: string) => (
-                  <Tag key={tag}>{tag}</Tag>
-                ))
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {selectedAgent.agent_config.tags.map((tag: string) => (
+                    <Tag
+                      key={tag}
+                      style={{
+                        background: 'rgba(139, 115, 85, 0.08)',
+                        color: '#8b7355',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        padding: '4px 12px',
+                        margin: 0
+                      }}
+                    >
+                      {tag}
+                    </Tag>
+                  ))}
+                </div>
               ) : '（无）'}
             </Descriptions.Item>
             <Descriptions.Item label="创建时间">
-              {new Date(selectedAgent.created_at).toLocaleString()}
+              <span style={{ color: 'rgba(45, 45, 45, 0.65)' }}>
+                {new Date(selectedAgent.created_at).toLocaleString()}
+              </span>
             </Descriptions.Item>
             <Descriptions.Item label="更新时间">
-              {new Date(selectedAgent.updated_at).toLocaleString()}
+              <span style={{ color: 'rgba(45, 45, 45, 0.65)' }}>
+                {new Date(selectedAgent.updated_at).toLocaleString()}
+              </span>
             </Descriptions.Item>
           </Descriptions>
         )}
       </Modal>
-    </div>
+    </Layout>
   );
 };
 
