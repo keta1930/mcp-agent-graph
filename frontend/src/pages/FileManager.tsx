@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Input, Card, Row, Col, Space, Typography, Spin, message, Empty, Tag } from 'antd';
+import { Layout, Input, Card, Row, Col, Space, Typography, Spin, message, Empty, Tag, Collapse } from 'antd';
 import {
-  SearchOutlined,
-  FileOutlined,
-  DownloadOutlined,
-  EditOutlined,
-  FolderOutlined,
-} from '@ant-design/icons';
+  Search as SearchIcon,
+  File,
+  Download,
+  Edit,
+  FolderOpen,
+  MessageSquare,
+  ChevronDown,
+} from 'lucide-react';
+
+const { Panel } = Collapse;
 import conversationFileService from '../services/conversationFileService';
 import { ConversationService } from '../services/conversationService';
 import FileViewModal from '../components/conversation-file/FileViewModal';
@@ -24,9 +28,16 @@ interface FileItem {
   conversationTitle: string;
 }
 
+interface ConversationGroup {
+  conversationId: string;
+  conversationTitle: string;
+  files: FileItem[];
+}
+
 const FileManager: React.FC = () => {
   const [allFiles, setAllFiles] = useState<FileItem[]>([]);
-  const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([]);
+  const [groupedConversations, setGroupedConversations] = useState<ConversationGroup[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<ConversationGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedFile, setSelectedFile] = useState<{ filename: string; conversationId: string } | null>(null);
@@ -37,20 +48,47 @@ const FileManager: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 分组文件
+    const grouped = groupFilesByConversation(allFiles);
+    setGroupedConversations(grouped);
+    setFilteredGroups(grouped);
+  }, [allFiles]);
+
+  useEffect(() => {
     // 搜索过滤
     if (!searchText.trim()) {
-      setFilteredFiles(allFiles);
+      setFilteredGroups(groupedConversations);
     } else {
       const keyword = searchText.toLowerCase();
-      setFilteredFiles(
-        allFiles.filter(
-          (file) =>
+      const filtered = groupedConversations
+        .map(group => ({
+          ...group,
+          files: group.files.filter(file =>
             file.filename.toLowerCase().includes(keyword) ||
             file.conversationTitle.toLowerCase().includes(keyword)
-        )
-      );
+          )
+        }))
+        .filter(group => group.files.length > 0);
+      setFilteredGroups(filtered);
     }
-  }, [searchText, allFiles]);
+  }, [searchText, groupedConversations]);
+
+  const groupFilesByConversation = (files: FileItem[]): ConversationGroup[] => {
+    const groupMap = new Map<string, ConversationGroup>();
+
+    files.forEach(file => {
+      if (!groupMap.has(file.conversationId)) {
+        groupMap.set(file.conversationId, {
+          conversationId: file.conversationId,
+          conversationTitle: file.conversationTitle,
+          files: []
+        });
+      }
+      groupMap.get(file.conversationId)!.files.push(file);
+    });
+
+    return Array.from(groupMap.values());
+  };
 
   const loadAllFiles = async () => {
     setLoading(true);
@@ -123,30 +161,91 @@ const FileManager: React.FC = () => {
     return filename.split('/').pop() || filename;
   };
 
+  const totalFilesCount = filteredGroups.reduce((sum, group) => sum + group.files.length, 0);
+
   return (
-    <Layout style={{ height: '100vh', background: '#f0f2f5' }}>
-      <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Space>
-            <FolderOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-            <Title level={4} style={{ margin: 0 }}>
-              文件管理器
+    <Layout style={{ height: '100vh', background: '#faf8f5' }}>
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          <Space size="large">
+            <FolderOpen size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              文件管理
             </Title>
-            <Tag color="blue">{filteredFiles.length} 个文件</Tag>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {totalFilesCount} 个文件
+            </Tag>
+            <Tag style={{
+              background: 'rgba(139, 115, 85, 0.08)',
+              color: '#8b7355',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {filteredGroups.length} 个对话
+            </Tag>
           </Space>
-          <Search
-            placeholder="搜索文件名或对话标题..."
+          <Input
+            placeholder="搜索文件或对话..."
             allowClear
-            enterButton={<SearchOutlined />}
-            size="large"
-            style={{ width: 400 }}
-            onSearch={handleSearch}
+            prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
+            value={searchText}
             onChange={(e) => handleSearch(e.target.value)}
+            style={{
+              width: 320,
+              height: '40px',
+              borderRadius: '8px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+              fontSize: '14px',
+              color: '#2d2d2d',
+              letterSpacing: '0.3px'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#b85845';
+              e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08), 0 1px 3px rgba(139, 115, 85, 0.08)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+              e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
+            }}
           />
         </div>
       </Header>
 
-      <Content style={{ padding: '24px', overflow: 'auto' }}>
+      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
         {loading ? (
           <div
             style={{
@@ -158,77 +257,199 @@ const FileManager: React.FC = () => {
           >
             <Spin size="large" tip="加载文件中..." />
           </div>
-        ) : filteredFiles.length === 0 ? (
+        ) : filteredGroups.length === 0 ? (
           <Empty
             description={
               searchText ? `未找到匹配 "${searchText}" 的文件` : '暂无文件'
             }
-            style={{ marginTop: '100px' }}
+            style={{ marginTop: '120px', color: 'rgba(45, 45, 45, 0.5)' }}
           />
         ) : (
-          <Row gutter={[16, 16]}>
-            {filteredFiles.map((file) => (
-              <Col key={`${file.conversationId}-${file.filename}`} xs={24} sm={12} md={8} lg={6} xl={4.8}>
-                <Card
-                  hoverable
-                  style={{ height: '100%' }}
-                  bodyStyle={{ padding: '16px' }}
-                  actions={[
-                    <EditOutlined key="edit" onClick={() => handleEdit(file)} />,
-                    <DownloadOutlined key="download" onClick={() => handleDownload(file)} />,
-                  ]}
-                >
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>
-                      <FileIcon filename={file.filename} />
-                    </div>
-                    <Text
-                      strong
-                      style={{
-                        display: 'block',
-                        marginBottom: '8px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                      title={getFileDisplayName(file.filename)}
-                    >
-                      {getFileDisplayName(file.filename)}
+          <Collapse
+            defaultActiveKey={filteredGroups.map(g => g.conversationId)}
+            expandIconPosition="end"
+            style={{
+              background: 'transparent',
+              border: 'none'
+            }}
+            expandIcon={({ isActive }) => (
+              <ChevronDown
+                size={18}
+                strokeWidth={2}
+                style={{
+                  color: '#8b7355',
+                  transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }}
+              />
+            )}
+          >
+            {filteredGroups.map((group) => (
+              <Panel
+                key={group.conversationId}
+                header={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+                    <MessageSquare size={18} color="#b85845" strokeWidth={1.5} />
+                    <Text strong style={{
+                      fontSize: '14px',
+                      color: '#2d2d2d',
+                      fontWeight: 500,
+                      letterSpacing: '0.3px',
+                      flex: 1
+                    }}>
+                      {group.conversationTitle}
                     </Text>
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: '12px',
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                      title={file.conversationTitle}
-                    >
-                      <FileOutlined /> {file.conversationTitle}
-                    </Text>
-                    {file.filename.includes('/') && (
-                      <Text
-                        type="secondary"
-                        style={{
-                          fontSize: '11px',
-                          display: 'block',
-                          marginTop: '4px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={file.filename}
-                      >
-                        路径: {file.filename}
-                      </Text>
-                    )}
+                    <Tag style={{
+                      background: 'rgba(139, 115, 85, 0.08)',
+                      color: '#8b7355',
+                      border: '1px solid rgba(139, 115, 85, 0.2)',
+                      borderRadius: '6px',
+                      fontWeight: 500,
+                      fontSize: '12px',
+                      margin: 0
+                    }}>
+                      {group.files.length}
+                    </Tag>
                   </div>
-                </Card>
-              </Col>
+                }
+                style={{
+                  marginBottom: '16px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(139, 115, 85, 0.15)',
+                  background: 'rgba(250, 248, 245, 0.6)',
+                  overflow: 'hidden'
+                }}
+              >
+                <Row gutter={[12, 12]} style={{ marginTop: '8px' }}>
+                  {group.files.map((file) => (
+                    <Col key={`${file.conversationId}-${file.filename}`} xs={24} sm={12} md={12} lg={8} xl={6}>
+                      <Card
+                        hoverable
+                        style={{
+                          borderRadius: '6px',
+                          border: '1px solid rgba(139, 115, 85, 0.15)',
+                          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                          transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                          background: 'rgba(255, 255, 255, 0.85)',
+                          height: '100%'
+                        }}
+                        styles={{
+                          body: { padding: '10px 12px' }
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12)';
+                          e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                          e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ flexShrink: 0, width: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FileIcon filename={file.filename} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Text
+                              strong
+                              style={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: '#2d2d2d',
+                                letterSpacing: '0.3px',
+                                marginBottom: file.filename.includes('/') ? '3px' : 0
+                              }}
+                              title={getFileDisplayName(file.filename)}
+                            >
+                              {getFileDisplayName(file.filename)}
+                            </Text>
+                            {file.filename.includes('/') && (
+                              <Text
+                                type="secondary"
+                                style={{
+                                  fontSize: '12px',
+                                  display: 'block',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  color: 'rgba(45, 45, 45, 0.45)',
+                                  fontFamily: 'Monaco, Courier New, monospace',
+                                  letterSpacing: '0.1px'
+                                }}
+                                title={file.filename}
+                              >
+                                {file.filename}
+                              </Text>
+                            )}
+                          </div>
+                          <div style={{ flexShrink: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            <div
+                              style={{
+                                color: '#8b7355',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(file);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <Edit size={15} strokeWidth={1.5} />
+                            </div>
+                            <div
+                              style={{
+                                color: '#8b7355',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(file);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <Download size={15} strokeWidth={1.5} />
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </Panel>
             ))}
-          </Row>
+          </Collapse>
         )}
       </Content>
 

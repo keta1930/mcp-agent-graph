@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { List, Card, Typography, Space, Button, Tag, message, Spin, Modal, Divider } from 'antd';
 import {
-  HistoryOutlined,
-  EyeOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  DiffOutlined,
-} from '@ant-design/icons';
+  History,
+  Eye,
+  CheckCircle,
+  Clock,
+  Diff as DiffIcon,
+} from 'lucide-react';
 import conversationFileService from '../../services/conversationFileService';
 import { FileVersion, FileVersionDetail } from '../../types/conversationFile';
 import { formatFileSize } from '../../utils/fileUtils';
@@ -108,17 +108,22 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
 
     return (
       <pre style={{
-        background: '#f5f5f5',
-        padding: '16px',
-        borderRadius: '4px',
+        background: 'linear-gradient(135deg, rgba(250, 248, 245, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%)',
+        padding: '24px',
+        borderRadius: '8px',
+        border: '1px solid rgba(139, 115, 85, 0.15)',
+        boxShadow: 'inset 0 1px 3px rgba(139, 115, 85, 0.08)',
         overflow: 'auto',
         maxHeight: '60vh',
-        fontSize: '12px',
-        lineHeight: '1.5',
+        fontSize: '13px',
+        lineHeight: '1.6',
+        fontFamily: 'Monaco, Courier New, monospace',
+        color: '#2d2d2d'
       }}>
         {diff.map((part, index) => {
-          const color = part.added ? '#b7eb8f' : part.removed ? '#ffa39e' : 'transparent';
+          const color = part.added ? 'rgba(183, 235, 143, 0.3)' : part.removed ? 'rgba(255, 163, 158, 0.3)' : 'transparent';
           const prefix = part.added ? '+ ' : part.removed ? '- ' : '  ';
+          const textColor = part.added ? '#52c41a' : part.removed ? '#ff4d4f' : '#2d2d2d';
           return (
             <div
               key={index}
@@ -126,6 +131,9 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                 background: color,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
+                color: textColor,
+                paddingLeft: '4px',
+                marginBottom: '1px'
               }}
             >
               {part.value.split('\n').map((line, i) => (
@@ -144,16 +152,8 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
   });
 
   return (
-    <div style={{ padding: '16px' }}>
+    <div style={{ padding: '0' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        <div>
-          <Space>
-            <HistoryOutlined style={{ fontSize: '18px', color: '#1890ff' }} />
-            <Text strong style={{ fontSize: '16px' }}>版本历史</Text>
-            <Tag color="blue">{versions.length} 个版本</Tag>
-          </Space>
-        </div>
-
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <Spin tip="加载中..." />
@@ -175,50 +175,91 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                 <List.Item
                   key={version.version_id}
                   style={{
-                    background: '#fff',
-                    padding: '16px',
-                    marginBottom: '8px',
-                    borderRadius: '4px',
-                    border: '1px solid #f0f0f0',
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 248, 245, 0.9) 100%)',
+                    padding: '20px 24px',
+                    marginBottom: '16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
+                    boxShadow: '0 1px 4px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(139, 115, 85, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 1px 4px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7)';
                   }}
                 >
-                  <div style={{ width: '100%' }}>
-                    <Space direction="vertical" style={{ width: '100%' }} size="small">
-                      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                        <Space>
-                          <ClockCircleOutlined style={{ color: '#1890ff' }} />
-                          <Text strong>{formatTimestamp(version.timestamp)}</Text>
-                          {isLatest && (
-                            <Tag color="green" icon={<CheckCircleOutlined />}>
-                              当前版本
-                            </Tag>
-                          )}
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            ({getRelativeTime(version.timestamp)})
-                          </Text>
-                        </Space>
-                        <Space>
-                          <Button
-                            size="small"
-                            icon={<EyeOutlined />}
-                            onClick={() => handleViewVersion(version)}
-                          >
-                            查看
-                          </Button>
-                          {!isLatest && (
-                            <Button
-                              size="small"
-                              icon={<DiffOutlined />}
-                              onClick={() => handleCompareVersion(version)}
-                            >
-                              对比
-                            </Button>
-                          )}
-                        </Space>
-                      </Space>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        版本ID: {version.version_id.substring(0, 8)}...
+                  <div style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px'
+                  }}>
+                    <Space size="middle" style={{ flex: 1 }}>
+                      <Clock size={14} style={{ color: '#b85845', flexShrink: 0 }} />
+                      <Text style={{
+                        fontWeight: 500,
+                        color: '#2d2d2d',
+                        fontSize: '13px',
+                        letterSpacing: '0.3px'
+                      }}>{formatTimestamp(version.timestamp)}</Text>
+                      <Text type="secondary" style={{
+                        fontSize: '12px',
+                        color: 'rgba(45, 45, 45, 0.45)',
+                        letterSpacing: '0.2px'
+                      }}>
+                        {getRelativeTime(version.timestamp)}
                       </Text>
+                      {isLatest && (
+                        <Tag icon={<CheckCircle size={12} />} style={{
+                          background: 'rgba(82, 196, 26, 0.08)',
+                          color: '#52c41a',
+                          border: '1px solid rgba(82, 196, 26, 0.25)',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          padding: '0 8px',
+                          height: '20px',
+                          lineHeight: '18px'
+                        }}>
+                          当前
+                        </Tag>
+                      )}
+                    </Space>
+                    <Space size="small">
+                      <Button
+                        size="small"
+                        icon={<Eye size={14} />}
+                        onClick={() => handleViewVersion(version)}
+                        style={{
+                          borderRadius: '4px',
+                          border: '1px solid rgba(139, 115, 85, 0.25)',
+                          color: '#8b7355',
+                          fontSize: '12px',
+                          height: '28px',
+                          padding: '0 12px'
+                        }}
+                      >
+                        查看
+                      </Button>
+                      {!isLatest && (
+                        <Button
+                          size="small"
+                          icon={<DiffIcon size={14} />}
+                          onClick={() => handleCompareVersion(version)}
+                          style={{
+                            borderRadius: '4px',
+                            border: '1px solid rgba(139, 115, 85, 0.25)',
+                            color: '#8b7355',
+                            fontSize: '12px',
+                            height: '28px',
+                            padding: '0 12px'
+                          }}
+                        >
+                          对比
+                        </Button>
+                      )}
                     </Space>
                   </div>
                 </List.Item>
@@ -231,10 +272,18 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
       {/* View Version Modal */}
       <Modal
         title={
-          <Space>
-            <EyeOutlined />
-            <span>查看历史版本</span>
-            {selectedVersion?.is_current && <Tag color="green">当前版本</Tag>}
+          <Space size="middle">
+            <Eye size={18} style={{ color: '#b85845' }} />
+            <span style={{ fontWeight: 500, letterSpacing: '1px' }}>查看历史版本</span>
+            {selectedVersion?.is_current && (
+              <Tag style={{
+                background: 'rgba(82, 196, 26, 0.08)',
+                color: '#52c41a',
+                border: '1px solid rgba(82, 196, 26, 0.25)',
+                borderRadius: '6px',
+                fontWeight: 500
+              }}>当前版本</Tag>
+            )}
           </Space>
         }
         open={viewModalVisible}
@@ -243,12 +292,35 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
           setSelectedVersion(null);
         }}
         width="80%"
+        styles={{
+          header: {
+            background: 'transparent',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+            padding: '24px 32px'
+          },
+          body: {
+            padding: '32px',
+            background: 'rgba(250, 248, 245, 0.3)'
+          },
+          footer: {
+            borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+            padding: '20px 32px',
+            background: 'rgba(250, 248, 245, 0.5)'
+          }
+        }}
         footer={[
           <Button
             key="close"
             onClick={() => {
               setViewModalVisible(false);
               setSelectedVersion(null);
+            }}
+            style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              color: '#8b7355',
+              fontWeight: 500,
+              letterSpacing: '0.5px'
             }}
           >
             关闭
@@ -278,14 +350,24 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
             <Divider />
             <div
               style={{
-                background: '#f5f5f5',
-                padding: '16px',
-                borderRadius: '4px',
+                background: 'linear-gradient(135deg, rgba(250, 248, 245, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%)',
+                padding: '24px',
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.15)',
+                boxShadow: 'inset 0 1px 3px rgba(139, 115, 85, 0.08)',
                 maxHeight: '60vh',
                 overflow: 'auto',
               }}
             >
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              <pre style={{
+                margin: 0,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                fontFamily: 'Monaco, Courier New, monospace',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                color: '#2d2d2d'
+              }}>
                 {selectedVersion.content}
               </pre>
             </div>
@@ -296,9 +378,9 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
       {/* Diff Modal */}
       <Modal
         title={
-          <Space>
-            <DiffOutlined />
-            <span>版本对比</span>
+          <Space size="middle">
+            <DiffIcon size={18} style={{ color: '#b85845' }} />
+            <span style={{ fontWeight: 500, letterSpacing: '1px' }}>版本对比</span>
           </Space>
         }
         open={diffModalVisible}
@@ -307,12 +389,35 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
           setSelectedVersion(null);
         }}
         width="90%"
+        styles={{
+          header: {
+            background: 'transparent',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+            padding: '24px 32px'
+          },
+          body: {
+            padding: '32px',
+            background: 'rgba(250, 248, 245, 0.3)'
+          },
+          footer: {
+            borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+            padding: '20px 32px',
+            background: 'rgba(250, 248, 245, 0.5)'
+          }
+        }}
         footer={[
           <Button
             key="close"
             onClick={() => {
               setDiffModalVisible(false);
               setSelectedVersion(null);
+            }}
+            style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              color: '#8b7355',
+              fontWeight: 500,
+              letterSpacing: '0.5px'
             }}
           >
             关闭
@@ -327,9 +432,27 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                 与当前版本的差异
               </Text>
               <div style={{ fontSize: '12px' }}>
-                <Tag color="red">- 删除的行</Tag>
-                <Tag color="green">+ 新增的行</Tag>
-                <Tag>  未变化的行</Tag>
+                <Tag style={{
+                  background: 'rgba(255, 77, 79, 0.08)',
+                  color: '#ff4d4f',
+                  border: '1px solid rgba(255, 77, 79, 0.25)',
+                  borderRadius: '6px',
+                  fontWeight: 500
+                }}>- 删除的行</Tag>
+                <Tag style={{
+                  background: 'rgba(82, 196, 26, 0.08)',
+                  color: '#52c41a',
+                  border: '1px solid rgba(82, 196, 26, 0.25)',
+                  borderRadius: '6px',
+                  fontWeight: 500
+                }}>+ 新增的行</Tag>
+                <Tag style={{
+                  background: 'rgba(139, 115, 85, 0.05)',
+                  color: 'rgba(45, 45, 45, 0.6)',
+                  border: '1px solid rgba(139, 115, 85, 0.15)',
+                  borderRadius: '6px',
+                  fontWeight: 500
+                }}>  未变化的行</Tag>
               </div>
             </Space>
             <Divider />

@@ -162,17 +162,7 @@
   transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.collapsed-nav-item:hover::before {
-  width: 24px;
-  height: 24px;
-  opacity: 0.3;
-}
 
-.collapsed-nav-item.active::before {
-  width: 24px;
-  height: 24px;
-  opacity: 0.3;
-}
 
 /* 展开按钮特殊样式 */
 .collapsed-expand-button {
