@@ -17,6 +17,8 @@
     "axios": "^1.8.4",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "katex": "^0.16.22",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.8",
