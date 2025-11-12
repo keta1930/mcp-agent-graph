@@ -68,6 +68,7 @@ class AgentStreamExecutor:
             )
 
             # 执行完整流程
+            final_result = None
             async for item in self.execute_complete_flow(
                 agent_name=agent_name,
                 model_name=agent_config.get("model"),
@@ -78,7 +79,27 @@ class AgentStreamExecutor:
                 user_id=user_id,
                 conversation_id=conversation_id
             ):
-                yield item
+                if isinstance(item, str):
+                    # SSE 字符串，直接转发给客户端
+                    yield item
+                else:
+                    # Dict 结果，保存但不转发到客户端
+                    final_result = item
+
+            # 保存执行结果到数据库
+            if final_result:
+                await self._save_agent_invoke_result(
+                    conversation_id=conversation_id,
+                    agent_name=agent_name,
+                    result=final_result,
+                    user_id=user_id,
+                    user_prompt=user_prompt,
+                    model_name=agent_config.get("model")
+                )
+                # 标题生成已移至 agent_routes.py 的后台任务中
+
+            # 发送完成信号
+            yield "data: [DONE]\n\n"
 
         except Exception as e:
             logger.error(f"execute_agent_invoke_stream 失败: {str(e)}")
@@ -279,12 +300,11 @@ class AgentStreamExecutor:
         mcp_servers = agent_config.get("mcp", [])
         if mcp_servers:
             from app.services.mcp.mcp_service import mcp_service
-            for mcp_server in mcp_servers:
-                try:
-                    mcp_tools = await mcp_service.get_server_tools(mcp_server, user_id)
-                    tools.extend(mcp_tools)
-                except Exception as e:
-                    logger.error(f"加载 MCP 工具失败 ({mcp_server}): {str(e)}")
+            try:
+                mcp_tools = await mcp_service.prepare_chat_tools(mcp_servers)
+                tools.extend(mcp_tools)
+            except Exception as e:
+                logger.error(f"加载 MCP 工具失败: {str(e)}")
 
         # 加载系统工具
         system_tool_names = agent_config.get("system_tools", []).copy()
@@ -299,3 +319,81 @@ class AgentStreamExecutor:
             tools.extend(system_tools)
 
         return tools
+
+    async def _save_agent_invoke_result(
+        self,
+        conversation_id: str,
+        agent_name: str,
+        result: Dict[str, Any],
+        user_id: str,
+        user_prompt: str,
+        model_name: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        保存 Agent 执行结果到数据库，并在第一轮时生成标题和标签
+
+        Args:
+            conversation_id: 对话 ID
+            agent_name: Agent 名称
+            result: 执行结果字典，包含 round_messages, round_token_usage, iteration_count 等
+            user_id: 用户 ID
+            user_prompt: 用户输入
+            model_name: 模型名称
+
+        Returns:
+            如果生成了新标题，返回 {"title": str, "tags": List[str]}，否则返回 None
+        """
+        try:
+            from app.infrastructure.database.mongodb.client import mongodb_client
+
+            # 确保 conversations 元数据存在（使用正确的 user_id）
+            conversation = await mongodb_client.conversation_repository.get_conversation(conversation_id)
+            if not conversation:
+                await mongodb_client.conversation_repository.create_conversation(
+                    conversation_id=conversation_id,
+                    conversation_type="agent",
+                    user_id=user_id,
+                    title=f"Agent 对话 - {agent_name}",
+                    tags=[]
+                )
+
+            # 确保 agent_invoke 文档存在（借鉴 chat_repository 的做法）
+            await mongodb_client.agent_invoke_repository.create_agent_invoke(conversation_id)
+
+            # 获取当前主线程的 round 数量，用于确定新 round 的编号
+            current_round_count = await mongodb_client.agent_invoke_repository.get_round_count(
+                conversation_id
+            )
+            next_round_number = current_round_count + 1
+
+            # 保存轮次数据到 agent_invoke 集合的主线程 rounds
+            success = await mongodb_client.agent_invoke_repository.add_round_to_main(
+                conversation_id=conversation_id,
+                round_number=next_round_number,
+                agent_name=agent_name,
+                messages=result.get("round_messages", []),
+                tools=None,
+                model=None
+            )
+
+            if not success:
+                logger.error(f"保存主线程 round 失败: {conversation_id}")
+                return None
+
+            # 更新 conversation 的 token 使用量
+            token_usage = result.get("round_token_usage", {})
+            if token_usage:
+                await mongodb_client.conversation_repository.update_conversation_token_usage(
+                    conversation_id=conversation_id,
+                    prompt_tokens=token_usage.get("prompt_tokens", 0),
+                    completion_tokens=token_usage.get("completion_tokens", 0)
+                )
+
+            logger.debug(f"Agent {agent_name} 执行结果已保存到数据库: {conversation_id}, round {next_round_number}")
+
+            # 标题生成已移至 agent_routes.py 的后台任务中
+            return None
+
+        except Exception as e:
+            logger.error(f"保存 Agent 执行结果失败: {str(e)}")
+            return None

@@ -393,12 +393,11 @@ class AgentExecutor:
         mcp_servers = agent_config.get("mcp", [])
         if mcp_servers:
             from app.services.mcp.mcp_service import mcp_service
-            for mcp_server in mcp_servers:
-                try:
-                    mcp_tools = await mcp_service.get_server_tools(mcp_server, user_id)
-                    tools.extend(mcp_tools)
-                except Exception as e:
-                    logger.error(f"加载 MCP 工具失败 ({mcp_server}): {str(e)}")
+            try:
+                mcp_tools = await mcp_service.prepare_chat_tools(mcp_servers)
+                tools.extend(mcp_tools)
+            except Exception as e:
+                logger.error(f"加载 MCP 工具失败: {str(e)}")
 
         # 加载系统工具
         system_tool_names = agent_config.get("system_tools", []).copy()

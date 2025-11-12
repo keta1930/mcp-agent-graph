@@ -1,5 +1,6 @@
 import json
 import logging
+import asyncio
 from datetime import datetime
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -406,10 +407,15 @@ async def agent_invoke(
                 )
 
         # 生成或使用现有 conversation_id
-        conversation_id = request.conversation_id
-        if not conversation_id:
-            conversation_id = str(ObjectId())
+        conversation_id = request.conversation_id or str(ObjectId())
 
+        # 查询数据库判断是否为新对话
+        existing_conversation = await mongodb_client.conversation_repository.get_conversation(
+            conversation_id
+        )
+        is_new_conversation = (existing_conversation is None)
+
+        if is_new_conversation:
             # 创建 conversation 记录
             await mongodb_client.conversation_repository.create_conversation(
                 conversation_id=conversation_id,
@@ -418,21 +424,86 @@ async def agent_invoke(
                 title=f"Agent 对话 - {request.agent_name or 'Default'}"
             )
 
+            # 初始化documents字段
+            await mongodb_client.conversation_repository.initialize_documents_field(
+                conversation_id=conversation_id
+            )
+
             # 创建 agent_invoke 记录
             await mongodb_client.agent_invoke_repository.create_agent_invoke(
                 conversation_id=conversation_id
             )
 
+        # 创建队列用于标题更新通知
+        title_queue = asyncio.Queue()
+
+        # 后台标题生成任务（提取为公共服务调用）
+        async def generate_title_background():
+            from app.services.chat.title_service import generate_title_and_tags
+            try:
+                title, tags = await generate_title_and_tags(user_id=user_id, user_prompt=request.user_prompt)
+
+                # 更新数据库中的标题和标签
+                await mongodb_client.conversation_repository.update_conversation_title_and_tags(
+                    conversation_id=conversation_id,
+                    title=title,
+                    tags=tags
+                )
+
+                logger.info(f"✓ 后台生成标题成功: {title}")
+
+                # 通知前端标题更新
+                await title_queue.put({
+                    "type": "title_update",
+                    "title": title,
+                    "tags": tags,
+                    "conversation_id": conversation_id
+                })
+
+            except Exception as e:
+                logger.error(f"后台生成标题出错: {str(e)}")
+
+        # 如果是新会话，启动后台标题生成任务
+        if is_new_conversation:
+            asyncio.create_task(generate_title_background())
+
         # 生成流式响应的生成器
         async def generate_stream():
+            stream_done = False
             try:
-                async for chunk in agent_stream_executor.execute_agent_invoke_stream(
-                    agent_name=request.agent_name,
-                    user_prompt=request.user_prompt,
-                    user_id=user_id,
-                    conversation_id=conversation_id
-                ):
+                # 创建agent执行流的异步任务
+                async def agent_stream_wrapper():
+                    nonlocal stream_done
+                    async for chunk in agent_stream_executor.execute_agent_invoke_stream(
+                        agent_name=request.agent_name,
+                        user_prompt=request.user_prompt,
+                        user_id=user_id,
+                        conversation_id=conversation_id
+                    ):
+                        yield chunk
+                    stream_done = True
+
+                # 同时监听agent流和标题队列
+                agent_stream = agent_stream_wrapper()
+                async for chunk in agent_stream:
                     yield chunk
+
+                    # 检查队列中是否有标题更新（非阻塞）
+                    try:
+                        while not title_queue.empty():
+                            title_event = await asyncio.wait_for(title_queue.get(), timeout=0.01)
+                            yield f"data: {json.dumps(title_event)}\n\n"
+                    except asyncio.TimeoutError:
+                        pass
+
+                # agent流结束后，等待并发送可能延迟的标题更新
+                if is_new_conversation:
+                    try:
+                        title_event = await asyncio.wait_for(title_queue.get(), timeout=3.0)
+                        yield f"data: {json.dumps(title_event)}\n\n"
+                    except asyncio.TimeoutError:
+                        pass
+
             except Exception as e:
                 logger.error(f"Agent 流式响应生成出错: {str(e)}")
                 error_chunk = {
@@ -517,17 +588,26 @@ async def agent_invoke_sync(
                 )
 
         # 生成或使用现有 conversation_id
-        conversation_id = request.conversation_id
-        if not conversation_id:
-            from bson import ObjectId
-            conversation_id = str(ObjectId())
+        conversation_id = request.conversation_id or str(ObjectId())
 
+        # 查询数据库判断是否为新对话
+        existing_conversation = await mongodb_client.conversation_repository.get_conversation(
+            conversation_id
+        )
+        is_new_conversation = (existing_conversation is None)
+
+        if is_new_conversation:
             # 创建 conversation 记录
             await mongodb_client.conversation_repository.create_conversation(
                 conversation_id=conversation_id,
                 user_id=user_id,
                 conversation_type="agent",
                 title=f"Agent 对话 - {request.agent_name or 'Default'}"
+            )
+
+            # 初始化documents字段
+            await mongodb_client.conversation_repository.initialize_documents_field(
+                conversation_id=conversation_id
             )
 
             # 创建 agent_invoke 记录
