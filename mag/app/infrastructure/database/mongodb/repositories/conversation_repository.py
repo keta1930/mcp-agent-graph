@@ -438,3 +438,286 @@ class ConversationRepository:
         if isinstance(doc.get("_id"), ObjectId):
             doc["_id"] = str(doc["_id"])
         return doc
+
+    # ==================== 文档管理方法 ====================
+
+    async def add_file_metadata(self, conversation_id: str, filename: str,
+                               summary: str, size: int, version_id: str,
+                               agent: str = "user") -> bool:
+        """
+        添加文件元数据到MongoDB
+
+        Args:
+            conversation_id: 会话ID
+            filename: 文件名（含路径）
+            summary: 文件摘要
+            size: 文件大小（字节）
+            version_id: MinIO版本ID
+            agent: 执行操作的agent名称
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            now = datetime.now()
+            log_id = f"log_{int(now.timestamp() * 1000)}"
+
+            file_doc = {
+                "filename": filename,
+                "summary": summary,
+                "size": size,
+                "created_at": now,
+                "updated_at": now,
+                "current_version_id": version_id,
+                "logs": [
+                    {
+                        "log_id": log_id,
+                        "agent": agent,
+                        "comment": "创建文件",
+                        "timestamp": now
+                    }
+                ]
+            }
+
+            # 先确保documents字段存在
+            await self.conversations_collection.update_one(
+                {
+                    "_id": conversation_id,
+                    "documents": {"$exists": False}
+                },
+                {
+                    "$set": {
+                        "documents": {
+                            "total_count": 0,
+                            "files": []
+                        }
+                    }
+                }
+            )
+
+            # 添加文件元数据
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id},
+                {
+                    "$push": {"documents.files": file_doc},
+                    "$inc": {"documents.total_count": 1},
+                    "$set": {"updated_at": now}
+                }
+            )
+
+            if result.matched_count > 0:
+                logger.info(f"✓ 添加文件元数据成功: {filename}")
+                return True
+            else:
+                logger.warning(f"添加文件元数据失败: {filename}, 会话不存在: {conversation_id}")
+                return False
+
+        except Exception as e:
+            logger.error(f"添加文件元数据失败: {str(e)}")
+            return False
+
+    async def update_file_metadata(self, conversation_id: str, filename: str,
+                                   summary: Optional[str] = None,
+                                   size: Optional[int] = None,
+                                   version_id: Optional[str] = None,
+                                   log_comment: Optional[str] = None,
+                                   agent: str = "user") -> bool:
+        """
+        更新文件元数据
+
+        Args:
+            conversation_id: 会话ID
+            filename: 文件名（含路径）
+            summary: 新的摘要（可选）
+            size: 新的文件大小（可选）
+            version_id: 新的版本ID（可选）
+            log_comment: 操作日志说明（可选）
+            agent: 执行操作的agent名称
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            now = datetime.now()
+            update_fields = {"documents.$.updated_at": now, "updated_at": now}
+
+            if summary is not None:
+                update_fields["documents.$.summary"] = summary
+            if size is not None:
+                update_fields["documents.$.size"] = size
+            if version_id is not None:
+                update_fields["documents.$.current_version_id"] = version_id
+
+            update_operations = {"$set": update_fields}
+
+            # 如果提供了日志说明，添加日志
+            if log_comment:
+                log_id = f"log_{int(now.timestamp() * 1000)}"
+                log_entry = {
+                    "log_id": log_id,
+                    "agent": agent,
+                    "comment": log_comment,
+                    "timestamp": now
+                }
+                # 添加到数组开头（最新的在前）
+                update_operations["$push"] = {
+                    "documents.$.logs": {
+                        "$each": [log_entry],
+                        "$position": 0
+                    }
+                }
+
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id, "documents.files.filename": filename},
+                update_operations
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"更新文件元数据成功: {filename} (会话: {conversation_id})")
+                return True
+            else:
+                logger.warning(f"更新文件元数据失败: {filename} (会话: {conversation_id})")
+                return False
+
+        except Exception as e:
+            logger.error(f"更新文件元数据失败: {str(e)}")
+            return False
+
+    async def remove_file_metadata(self, conversation_id: str, filename: str) -> bool:
+        """
+        删除文件元数据
+
+        Args:
+            conversation_id: 会话ID
+            filename: 文件名（含路径）
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id},
+                {
+                    "$pull": {"documents.files": {"filename": filename}},
+                    "$inc": {"documents.total_count": -1},
+                    "$set": {"updated_at": datetime.now()}
+                }
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"删除文件元数据成功: {filename} (会话: {conversation_id})")
+                return True
+            else:
+                logger.warning(f"删除文件元数据失败: {filename} (会话: {conversation_id})")
+                return False
+
+        except Exception as e:
+            logger.error(f"删除文件元数据失败: {str(e)}")
+            return False
+
+    async def get_file_metadata(self, conversation_id: str, filename: str) -> Optional[Dict[str, Any]]:
+        """
+        获取文件元数据
+
+        Args:
+            conversation_id: 会话ID
+            filename: 文件名（含路径）
+
+        Returns:
+            Optional[Dict]: 文件元数据，不存在返回None
+        """
+        try:
+            conversation = await self.conversations_collection.find_one(
+                {"_id": conversation_id, "documents.files.filename": filename},
+                {"documents.files.$": 1}
+            )
+
+            if conversation and "documents" in conversation and "files" in conversation["documents"]:
+                files = conversation["documents"]["files"]
+                if files:
+                    return files[0]
+
+            return None
+
+        except Exception as e:
+            logger.error(f"获取文件元数据失败: {str(e)}")
+            return None
+
+    async def get_all_files_metadata(self, conversation_id: str) -> Dict[str, Any]:
+        """
+        获取所有文件元数据
+
+        Args:
+            conversation_id: 会话ID
+
+        Returns:
+            Dict: {"total_count": 3, "files": [...]}
+        """
+        try:
+            conversation = await self.conversations_collection.find_one(
+                {"_id": conversation_id},
+                {"documents": 1}
+            )
+
+            if conversation and "documents" in conversation:
+                return conversation["documents"]
+            else:
+                return {"total_count": 0, "files": []}
+
+        except Exception as e:
+            logger.error(f"获取所有文件元数据失败: {str(e)}")
+            return {"total_count": 0, "files": []}
+
+    async def file_exists(self, conversation_id: str, filename: str) -> bool:
+        """
+        检查文件是否存在
+
+        Args:
+            conversation_id: 会话ID
+            filename: 文件名（含路径）
+
+        Returns:
+            bool: 文件是否存在
+        """
+        try:
+            count = await self.conversations_collection.count_documents({
+                "_id": conversation_id,
+                "documents.files.filename": filename
+            })
+            return count > 0
+
+        except Exception as e:
+            logger.error(f"检查文件是否存在失败: {str(e)}")
+            return False
+
+    async def initialize_documents_field(self, conversation_id: str) -> bool:
+        """
+        初始化会话的documents字段（如果不存在）
+
+        Args:
+            conversation_id: 会话ID
+
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id, "documents": {"$exists": False}},
+                {
+                    "$set": {
+                        "documents": {
+                            "total_count": 0,
+                            "files": []
+                        }
+                    }
+                }
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"初始化documents字段成功: {conversation_id}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"初始化documents字段失败: {str(e)}")
+            return False
