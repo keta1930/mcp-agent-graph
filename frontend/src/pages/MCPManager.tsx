@@ -299,9 +299,9 @@ const MCPManager: React.FC = () => {
               {serverNames.length} 个服务器
             </Tag>
             <Tag style={{
-              background: 'rgba(139, 195, 74, 0.1)',
-              color: '#689f38',
-              border: '1px solid rgba(139, 195, 74, 0.25)',
+              background: 'rgba(139, 115, 85, 0.08)',
+              color: '#8b7355',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
               borderRadius: '6px',
               fontWeight: 500,
               padding: '4px 12px',
