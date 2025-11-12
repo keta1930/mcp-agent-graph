@@ -1,6 +1,6 @@
 // src/pages/MCPManager.tsx
 import React, { useEffect, useState } from 'react';
-import { Layout, Button, Row, Col, message, Alert, Modal, Input, Tag, Space, Typography } from 'antd';
+import { Layout, Button, Row, Col, message, Alert, Modal, Input, Tag, Space, Typography, ConfigProvider } from 'antd';
 import {
   Plus,
   RefreshCw,
@@ -592,15 +592,36 @@ const MCPManager: React.FC = () => {
       />
 
       {/* 工具注册模态框 */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Wrench size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
-            <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>注册MCP工具</span>
-          </div>
-        }
-        open={toolRegistrationVisible}
-        onCancel={() => setToolRegistrationVisible(false)}
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#b85845',
+            colorPrimaryHover: '#a0826d',
+            colorBorder: 'rgba(139, 115, 85, 0.2)',
+            colorBorderSecondary: 'rgba(139, 115, 85, 0.15)',
+            colorText: '#2d2d2d',
+            colorTextPlaceholder: 'rgba(45, 45, 45, 0.35)',
+            borderRadius: 6,
+            controlHeight: 40,
+          },
+          components: {
+            Input: {
+              activeBorderColor: '#b85845',
+              hoverBorderColor: 'rgba(184, 88, 69, 0.4)',
+              activeShadow: '0 0 0 2px rgba(184, 88, 69, 0.1)',
+            },
+          },
+        }}
+      >
+        <Modal
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Wrench size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
+              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>注册MCP工具</span>
+            </div>
+          }
+          open={toolRegistrationVisible}
+          onCancel={() => setToolRegistrationVisible(false)}
         footer={[
           <Button
             key="cancel"
@@ -852,6 +873,7 @@ const MCPManager: React.FC = () => {
           </div>
         </div>
       </Modal>
+      </ConfigProvider>
       </Content>
     </Layout>
   );

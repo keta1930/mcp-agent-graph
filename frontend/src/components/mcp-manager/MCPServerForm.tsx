@@ -112,6 +112,28 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         token: {
           colorPrimary: '#b85845',
           colorPrimaryHover: '#a0826d',
+          colorBorder: 'rgba(139, 115, 85, 0.2)',
+          colorBorderSecondary: 'rgba(139, 115, 85, 0.15)',
+          colorText: '#2d2d2d',
+          colorTextPlaceholder: 'rgba(45, 45, 45, 0.35)',
+          borderRadius: 6,
+          controlHeight: 40,
+        },
+        components: {
+          Input: {
+            activeBorderColor: '#b85845',
+            hoverBorderColor: 'rgba(184, 88, 69, 0.4)',
+            activeShadow: '0 0 0 2px rgba(184, 88, 69, 0.1)',
+          },
+          InputNumber: {
+            activeBorderColor: '#b85845',
+            hoverBorderColor: 'rgba(184, 88, 69, 0.4)',
+            activeShadow: '0 0 0 2px rgba(184, 88, 69, 0.1)',
+          },
+          Select: {
+            optionSelectedBg: 'rgba(184, 88, 69, 0.08)',
+            optionActiveBg: 'rgba(184, 88, 69, 0.05)',
+          },
         },
       }}
     >
