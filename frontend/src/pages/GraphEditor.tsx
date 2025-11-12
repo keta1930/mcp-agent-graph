@@ -1,19 +1,53 @@
 // src/pages/GraphEditor.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { ReactFlowProvider } from 'reactflow';
-import { Card, Alert, Spin, Typography, Empty, Button, Tooltip, Space, Modal, Form, Input, Tour } from 'antd';
 import {
-  PlusOutlined, InfoCircleOutlined, WarningOutlined, QuestionCircleOutlined,
-  BulbOutlined, EyeOutlined, BranchesOutlined
-} from '@ant-design/icons';
+  Layout,
+  Card,
+  Alert,
+  Spin,
+  Typography,
+  Empty,
+  Button,
+  Tooltip,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  Tag,
+  message
+} from 'antd';
+import {
+  Plus,
+  Workflow,
+  Search as SearchIcon,
+  Sparkles,
+  Edit,
+  Trash2,
+  Download,
+  Server,
+  ArrowLeft,
+  FileText,
+  LayoutGrid,
+  Settings,
+  Save,
+  GitBranch,
+  Eye,
+  Code,
+  PackagePlus
+} from 'lucide-react';
 import GraphCanvas from '../components/graph-editor/GraphCanvas';
 import NodePropertiesPanel from '../components/graph-editor/NodePropertiesPanel';
-import GraphControls from '../components/graph-editor/GraphControls';
 import AddNodeModal from '../components/graph-editor/AddNodeModal';
 import GraphVersionManager from '../components/graph-editor/GraphVersionManager';
 import { useGraphEditorStore } from '../store/graphEditorStore';
+import { useMCPStore } from '../store/mcpStore';
+import { useModelStore } from '../store/modelStore';
 
-const { Text } = Typography;
+const { Header, Content } = Layout;
+const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 const GraphEditor: React.FC = () => {
@@ -26,296 +60,87 @@ const GraphEditor: React.FC = () => {
     selectedNode,
     selectNode,
     createNewGraph,
-    graphs
+    deleteGraph,
+    graphs,
+    loadGraph,
+    saveGraph,
+    dirty: hasUnsavedChanges,
+    exportGraph,
+    generateMCPScript,
+    getGraphReadme,
+    updateGraphProperties,
+    autoLayout
   } = useGraphEditorStore();
+
+  const { fetchConfig, fetchStatus } = useMCPStore();
+  const { fetchModels } = useModelStore();
+
+  // 视图模式：'list' 或 'editor'
+  const [viewMode, setViewMode] = useState<'list' | 'editor'>('list');
   const [addNodeModalVisible, setAddNodeModalVisible] = useState(false);
   const [newGraphModalVisible, setNewGraphModalVisible] = useState(false);
   const [versionManagerVisible, setVersionManagerVisible] = useState(false);
-  
-  // 教学引导相关状态
-  const [tourOpen, setTourOpen] = useState(false);
-  const [current, setCurrent] = useState(0);
-  
-  // 引用各个功能区域
-  const graphControlsRef = useRef<HTMLDivElement>(null);
-  const addNodeBtnRef = useRef<HTMLButtonElement>(null);
-  const graphCanvasRef = useRef<HTMLDivElement>(null);
-  const emptyStateRef = useRef<HTMLDivElement>(null);
-  const createGraphBtnRef = useRef<HTMLButtonElement>(null);
-  
+  const [searchText, setSearchText] = useState('');
+  const [filteredGraphs, setFilteredGraphs] = useState<string[]>(graphs);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState<string | null>(null);
+  const [promptTemplateModalVisible, setPromptTemplateModalVisible] = useState(false);
+  const [readmeModalVisible, setReadmeModalVisible] = useState(false);
+  const [readmeContent, setReadmeContent] = useState('');
+  const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
+
   const [form] = Form.useForm();
-
-  // 检查是否为首次访问
-  const isFirstVisit = () => {
-    return !localStorage.getItem('graph_editor_tour_completed');
-  };
-
-  // 标记引导已完成
-  const markTourCompleted = () => {
-    localStorage.setItem('graph_editor_tour_completed', 'true');
-  };
-
-  // 检查是否有图配置
-  const hasGraphs = graphs && graphs.length > 0;
-  const hasCurrentGraph = !!currentGraph;
-
-  // 根据当前状态生成不同的引导步骤
-  const getTourSteps = () => {
-    // 如果没有任何图配置，显示基础引导
-    if (!hasGraphs) {
-      return [
-        {
-          title: '欢迎使用图编辑器! 🎉',
-          description: (
-            <div>
-              <p>这里是图形化流程编辑器，让您轻松创建和管理复杂的AI工作流程。</p>
-              <p>看起来您还没有创建任何图配置，让我们从头开始！</p>
-            </div>
-          ),
-          target: () => graphControlsRef.current,
-          placement: 'bottom' as const,
-        },
-        {
-          title: '开始之前的准备 🛠️',
-          description: (
-            <div>
-              <p><strong>在创建第一个图之前，建议先完成以下准备工作：</strong></p>
-              <ol>
-                <li><strong>配置AI模型</strong>：前往"模型管理"页面添加至少一个AI模型</li>
-                <li><strong>连接工具服务</strong>：在"MCP管理"页面连接需要的工具服务器</li>
-                <li><strong>了解基本概念</strong>：图由节点组成，节点间通过连线传递数据</li>
-              </ol>
-              <p>准备就绪后，就可以创建您的第一个图了！</p>
-            </div>
-          ),
-          target: () => graphControlsRef.current,
-          placement: 'bottom' as const,
-        },
-        {
-          title: '创建您的第一个图 📝',
-          description: (
-            <div>
-              <p>有三种方式创建新图：</p>
-              <ol>
-                <li><strong>手动创建</strong>：点击"+"按钮 → "新建图"</li>
-                <li><strong>导入现有</strong>：点击"导入/导出"按钮导入图配置</li>
-                <li><strong>使用提示词</strong>：查看"AI生成提示词"获取创建指导</li>
-              </ol>
-              <p>💡 推荐新手先手动创建简单图，然后参考提示词模板！</p>
-            </div>
-          ),
-          target: () => graphControlsRef.current?.querySelector('.ant-row .ant-col:first-child'),
-          placement: 'bottom' as const,
-        },
-        {
-          title: '图管理功能 📁',
-          description: (
-            <div>
-              <p>这个区域包含所有图管理功能：</p>
-              <ul>
-                <li><strong>图选择下拉框</strong>：切换不同的图配置</li>
-                <li><strong>快速操作菜单</strong>：创建、生成、导入图等</li>
-                <li><strong>服务器状态指示</strong>：显示MCP服务器连接状态</li>
-              </ul>
-              <p>创建第一个图后，这里会显示更多选项。</p>
-            </div>
-          ),
-          target: () => graphControlsRef.current?.querySelector('.ant-row .ant-col:first-child'),
-          placement: 'bottom' as const,
-        },
-        {
-          title: '开始创建吧! 🚀',
-          description: (
-            <div>
-              <p><strong>立即行动：</strong></p>
-              <div style={{ 
-                background: '#f6f8fa', 
-                padding: '12px', 
-                borderRadius: '6px', 
-                margin: '8px 0' 
-              }}>
-                <p style={{ margin: 0, fontWeight: 'bold' }}>🎯 推荐流程：</p>
-                <ol style={{ margin: '8px 0 0 16px', padding: 0 }}>
-                  <li>点击下方的"创建新图"按钮</li>
-                  <li>或查看"AI生成提示词"获取指导</li>
-                  <li>创建图后再次点击引导按钮查看更多功能</li>
-                </ol>
-              </div>
-              <p>祝您使用愉快！有问题随时查看帮助文档。</p>
-            </div>
-          ),
-          target: () => emptyStateRef.current,
-          placement: 'top' as const,
-        },
-      ];
-    }
-
-    // 如果有图配置，显示完整功能引导
-    return [
-      {
-        title: '欢迎回来! 🎉',
-        description: (
-          <div>
-            <p>很好！您已经有图配置了。让我们来了解图编辑器的完整功能。</p>
-            <p>这里是图形化流程编辑器的主要功能区域。</p>
-          </div>
-        ),
-        target: () => graphControlsRef.current,
-        placement: 'bottom' as const,
-      },
-      {
-        title: '图管理区域 📁',
-        description: (
-          <div>
-            <p><strong>图选择</strong>：在下拉菜单中选择已有的图配置</p>
-            <p><strong>快速操作</strong>：点击"+"按钮可以创建新图、查看提示词等</p>
-            <p><strong>服务器状态</strong>：显示MCP服务器连接状态</p>
-          </div>
-        ),
-        target: () => graphControlsRef.current?.querySelector('.ant-row .ant-col:first-child'),
-        placement: 'bottom' as const,
-      },
-      ...(hasCurrentGraph ? [
-        {
-          title: '添加节点 ➕',
-          description: (
-            <div>
-              <p>点击此按钮可以向当前图中添加新的节点。</p>
-              <p>节点分为两种类型：</p>
-              <ul>
-                <li><strong>智能体节点</strong>：使用AI模型执行任务</li>
-                <li><strong>子图节点</strong>：引用其他已有的图配置</li>
-              </ul>
-            </div>
-          ),
-          target: () => addNodeBtnRef.current,
-          placement: 'bottom' as const,
-        },
-        {
-          title: '工具栏操作 🛠️',
-          description: (
-            <div>
-              <p><strong>自动布局</strong>：根据节点层级自动排列节点位置</p>
-              <p><strong>导入/导出</strong>：支持JSON图配置和完整图包的导入导出</p>
-              <p><strong>保存</strong>：保存当前图的修改（有修改时按钮会高亮）</p>
-            </div>
-          ),
-          target: () => graphControlsRef.current?.querySelector('.ant-row .ant-col:last-child'),
-          placement: 'bottom' as const,
-        },
-        {
-          title: '图画布区域 🎨',
-          description: (
-            <div>
-              <p>这里是主要的工作区域：</p>
-              <ul>
-                <li><strong>拖拽节点</strong>：调整节点位置</li>
-                <li><strong>连接节点</strong>：拖拽节点边缘的连接点来建立连接</li>
-                <li><strong>选择节点</strong>：点击节点查看和编辑属性</li>
-                <li><strong>删除连接</strong>：点击连接线上的"×"按钮</li>
-              </ul>
-            </div>
-          ),
-          target: () => graphCanvasRef.current,
-          placement: 'top' as const,
-        },
-        {
-          title: '背景控制 🌈',
-          description: (
-            <div>
-              <p>右上角的背景控制面板让您自定义画布背景：</p>
-              <ul>
-                <li>无背景、点状、线性、网格、交叉等多种样式</li>
-                <li>帮助您更好地组织和查看图结构</li>
-              </ul>
-            </div>
-          ),
-          target: () => document.querySelector('[style*="position: absolute"][style*="top: 16px"][style*="right: 16px"]'),
-          placement: 'left' as const,
-        },
-        {
-          title: '画布控制器 🎮',
-          description: (
-            <div>
-              <p>左下角的控制面板提供：</p>
-              <ul>
-                <li><strong>缩放</strong>：放大缩小画布</li>
-                <li><strong>适应视图</strong>：自动调整到合适的视图大小</li>
-                <li><strong>小地图</strong>：快速导航到图的不同区域</li>
-              </ul>
-            </div>
-          ),
-          target: () => document.querySelector('.react-flow__controls'),
-          placement: 'right' as const,
-        },
-        {
-          title: '节点属性编辑 ⚙️',
-          description: (
-            <div>
-              <p>点击任意节点可以打开属性编辑面板，包含：</p>
-              <ul>
-                <li><strong>基础信息</strong>：名称、描述、类型、模型选择</li>
-                <li><strong>提示词设置</strong>：系统和用户提示词</li>
-                <li><strong>执行控制</strong>：执行层级、循环次数等</li>
-                <li><strong>连接管理</strong>：输入输出节点配置</li>
-              </ul>
-            </div>
-          ),
-          target: () => graphCanvasRef.current,
-          placement: 'top' as const,
-        },
-      ] : []),
-      {
-        title: '高级功能提示 🚀',
-        description: (
-          <div>
-            <p><strong>探索更多功能：</strong></p>
-            <ul>
-              <li><strong>提示词模板</strong>：获取AI生成和优化的提示词模板</li>
-              <li><strong>导出MCP脚本</strong>：生成可执行的命令行脚本</li>
-              <li><strong>图包导出</strong>：打包图及相关配置便于分享</li>
-              <li><strong>README生成</strong>：自动生成图的说明文档</li>
-            </ul>
-            <p>🎯 尝试在"更多操作"菜单中发现这些功能！</p>
-          </div>
-        ),
-        target: () => graphControlsRef.current,
-        placement: 'bottom' as const,
-      },
-    ];
-  };
+  const [settingsForm] = Form.useForm();
 
   useEffect(() => {
-    fetchGraphs();
-
-    // 首次访问自动显示引导（延迟一点确保页面完全加载）
-    const timer = setTimeout(() => {
-      if (isFirstVisit()) {
-        setTourOpen(true);
+    // 初始化所有数据
+    const initializeData = async () => {
+      try {
+        await Promise.all([
+          fetchGraphs(),
+          fetchConfig(),
+          fetchStatus(),
+          fetchModels()
+        ]);
+      } catch (error) {
+        console.error('初始化数据获取失败:', error);
       }
-    }, 1500);
+    };
+
+    initializeData();
+
+    // 定期刷新 MCP 状态
+    const statusInterval = setInterval(() => {
+      fetchStatus();
+    }, 30000); // 每 30 秒刷新一次
 
     return () => {
-      clearTimeout(timer);
+      clearInterval(statusInterval);
     };
-  }, [fetchGraphs]);
+  }, [fetchGraphs, fetchConfig, fetchStatus, fetchModels]);
 
-  const handleAddNode = (nodeData: any) => {
-    // Preset node position at the center of canvas with some randomization
-    const baseX = 250;
-    const baseY = 150;
-    const randomOffset = () => (Math.random() - 0.5) * 100;
-    
-    const position = { 
-      x: baseX + randomOffset(), 
-      y: baseY + randomOffset() 
-    };
-    
-    addNode({ ...nodeData, position });
-    setAddNodeModalVisible(false);
-  };
+  // 搜索过滤
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredGraphs(graphs);
+    } else {
+      const keyword = searchText.toLowerCase();
+      const filtered = graphs.filter(graphName =>
+        graphName.toLowerCase().includes(keyword)
+      );
+      setFilteredGraphs(filtered);
+    }
+  }, [searchText, graphs]);
 
-  // 处理创建新图
+  // 自动切换视图模式
+  useEffect(() => {
+    if (currentGraph) {
+      setViewMode('editor');
+    } else {
+      setViewMode('list');
+    }
+  }, [currentGraph]);
+
+  // 创建新图
   const handleCreateNewGraph = () => {
     form.resetFields();
     setNewGraphModalVisible(true);
@@ -326,167 +151,771 @@ const GraphEditor: React.FC = () => {
       const values = await form.validateFields();
       createNewGraph(values.name, values.description);
       setNewGraphModalVisible(false);
-    } catch (error) {
+      message.success(`工作流 "${values.name}" 创建成功`);
+    } catch (error: any) {
+      message.error('创建失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 进入编辑模式
+  const handleEditGraph = (graphName: string) => {
+    loadGraph(graphName);
+  };
+
+  // 返回列表
+  const handleBackToList = () => {
+    if (hasUnsavedChanges) {
+      Modal.confirm({
+        title: '是否保存更改？',
+        content: '当前工作流有未保存的更改，是否保存后返回？',
+        okText: '保存并返回',
+        cancelText: '直接返回',
+        onOk: async () => {
+          await saveGraph();
+          selectNode(null);
+          setViewMode('list');
+        },
+        onCancel: () => {
+          selectNode(null);
+          setViewMode('list');
+        }
+      });
+    } else {
+      selectNode(null);
+      setViewMode('list');
+    }
+  };
+
+  // 删除图
+  const handleDeleteGraph = async (graphName: string) => {
+    try {
+      await deleteGraph(graphName);
+      message.success(`工作流 "${graphName}" 删除成功`);
+      setDeleteConfirmVisible(null);
+    } catch (error: any) {
+      message.error('删除失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 导出为压缩包
+  const handleExportPackage = async (graphName: string) => {
+    try {
+      const result = await exportGraph(graphName);
+      message.success(`工作流 "${graphName}" 导出成功`);
+      if (result.file_path) {
+        message.info(`导出文件路径: ${result.file_path}`);
+      }
+    } catch (error: any) {
+      message.error('导出失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 导出为 MCP Script
+  const handleExportMCP = async (graphName: string) => {
+    try {
+      await generateMCPScript(graphName);
+      message.success('导出 MCP 脚本成功');
+    } catch (error: any) {
+      message.error('导出失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 添加节点
+  const handleAddNode = (nodeData: any) => {
+    const baseX = 250;
+    const baseY = 150;
+    const randomOffset = () => (Math.random() - 0.5) * 100;
+
+    const position = {
+      x: baseX + randomOffset(),
+      y: baseY + randomOffset()
+    };
+
+    addNode({ ...nodeData, position });
+    setAddNodeModalVisible(false);
+  };
+
+  // 保存当前图
+  const handleSave = async () => {
+    try {
+      await saveGraph();
+      message.success('保存成功');
+    } catch (error: any) {
+      message.error('保存失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 查看 README
+  const handleViewReadme = async () => {
+    if (!currentGraph) return;
+    try {
+      const result = await getGraphReadme(currentGraph.name);
+      setReadmeContent(result.readme);
+      setReadmeModalVisible(true);
+    } catch (error: any) {
+      message.error('获取README失败: ' + (error.message || '未知错误'));
+    }
+  };
+
+  // 自动布局
+  const handleAutoLayout = () => {
+    autoLayout();
+    message.success('自动布局已应用');
+  };
+
+  // 图设置
+  const handleGraphSettings = () => {
+    if (currentGraph) {
+      settingsForm.setFieldsValue({
+        name: currentGraph.name,
+        description: currentGraph.description || '',
+        end_template: currentGraph.end_template || ''
+      });
+      setGraphSettingsModalVisible(true);
+    }
+  };
+
+  const handleUpdateGraphSettings = async () => {
+    try {
+      const values = await settingsForm.validateFields();
+      updateGraphProperties(values);
+      setGraphSettingsModalVisible(false);
+      message.success('图设置已更新');
+    } catch (error: any) {
       // Form validation error
     }
   };
 
-  // 关闭节点属性模态框
-  const handleCloseNodeProperties = () => {
-    selectNode(null);
-  };
-
-  // 开始引导
-  const startTour = () => {
-    setCurrent(0);
-    setTourOpen(true);
-  };
-
-  // 完成引导
-  const handleTourClose = () => {
-    setTourOpen(false);
-    markTourCompleted();
-  };
-
-  // 引导步骤变化
-  const handleTourChange = (current: number) => {
-    setCurrent(current);
-  };
-
-  return (
-    <div className="space-y-4">
-      {error && (
-        <Alert
-          message="错误"
-          description={error}
-          type="error"
-          showIcon
-          className="mb-4"
-          closable
-        />
-      )}
-
-      {/* 新手引导按钮 */}
-      <div style={{ 
-        position: 'fixed', 
-        top: '120px', 
-        right: '20px', 
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px'
+  // 渲染列表视图
+  const renderListView = () => (
+    <Layout style={{ minHeight: '100vh', background: '#faf8f5' }}>
+      {/* Header 顶栏 */}
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
       }}>
-        <Tooltip title="查看功能引导教程" placement="left">
-          <Button
-            type="primary"
-            shape="circle"
-            icon={<BulbOutlined />}
-            onClick={startTour}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none',
-              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-              animation: !localStorage.getItem('graph_editor_tour_completed') ? 'pulse 2s infinite' : 'none'
-            }}
-          />
-        </Tooltip>
-        {!localStorage.getItem('graph_editor_tour_completed') && (
+        {/* 装饰性底部渐变线 */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          {/* 左侧：图标 + 标题 + 统计标签 */}
+          <Space size="large">
+            <Workflow size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              工作流管理
+            </Title>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {graphs.length} 个工作流
+            </Tag>
+          </Space>
+
+          {/* 右侧：搜索框 + 操作按钮 */}
+          <Space size={12}>
+            <Input
+              placeholder="搜索工作流..."
+              allowClear
+              prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                width: 280,
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                fontSize: '14px',
+                color: '#2d2d2d',
+                letterSpacing: '0.3px'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#b85845';
+                e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08), 0 1px 3px rgba(139, 115, 85, 0.08)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
+              }}
+            />
+            <Button
+              icon={<Sparkles size={16} strokeWidth={1.5} />}
+              onClick={() => setPromptTemplateModalVisible(true)}
+              style={{
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                color: '#8b7355',
+                fontWeight: 500,
+                fontSize: '14px',
+                letterSpacing: '0.3px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 16px'
+              }}
+            >
+              AI提示词
+            </Button>
+            <Button
+              type="primary"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={handleCreateNewGraph}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontWeight: 500,
+                fontSize: '14px',
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 20px'
+              }}
+            >
+              工作流
+            </Button>
+          </Space>
+        </div>
+      </Header>
+
+      {/* Content 内容区 */}
+      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+        {loading ? (
           <div style={{
-            position: 'absolute',
-            right: '50px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: '#667eea',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '16px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-            animation: 'fadeInOut 3s infinite'
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+            gap: '12px'
           }}>
-            点击查看教程
+            <Spin size="large" />
+            <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>加载中...</Text>
           </div>
-        )}
-      </div>
-
-      <div ref={graphControlsRef}>
-        <GraphControls 
-          onAddNode={() => setAddNodeModalVisible(true)} 
-          addNodeBtnRef={addNodeBtnRef}
-        />
-      </div>
-
-      <Spin spinning={loading} tip="加载中..." delay={300}>
-        {!currentGraph ? (
-          <div ref={emptyStateRef}>
-            <Card className="text-center p-8" style={{ height: 'calc(100vh - 120px)' }}>
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="暂无图配置"
+        ) : filteredGraphs.length === 0 ? (
+          searchText ? (
+            <div style={{
+              textAlign: 'center',
+              marginTop: '120px',
+              color: 'rgba(45, 45, 45, 0.45)',
+              fontSize: '14px'
+            }}>
+              未找到匹配 "{searchText}" 的工作流
+            </div>
+          ) : (
+            <Card
+              style={{
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.15)',
+                background: 'rgba(250, 248, 245, 0.6)',
+                textAlign: 'center',
+                padding: '40px 20px'
+              }}
+            >
+              <Workflow size={48} strokeWidth={1.5} style={{ color: 'rgba(139, 115, 85, 0.3)', margin: '0 auto 16px' }} />
+              <Text style={{
+                fontSize: '14px',
+                color: 'rgba(45, 45, 45, 0.65)',
+                display: 'block',
+                marginBottom: '16px'
+              }}>
+                暂无工作流配置
+              </Text>
+              <Button
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  height: 'auto',
+                  fontWeight: 500,
+                  letterSpacing: '0.3px',
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onClick={handleCreateNewGraph}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
               >
-                <Space direction="vertical">
-                  <Button
-                    ref={createGraphBtnRef}
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={handleCreateNewGraph}
-                  >
-                    创建新图
-                  </Button>
-                  <Text type="secondary">
-                    您也可以查看提示词模板或导入现有图配置
-                  </Text>
-                </Space>
-              </Empty>
+                <Plus size={16} strokeWidth={1.5} />
+                创建第一个工作流
+              </Button>
             </Card>
-          </div>
+          )
         ) : (
-          <Card
-            bodyStyle={{ padding: 0 }}
-            className="overflow-hidden"
-            style={{ height: 'calc(100vh - 120px)' }}
-            title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>图画布 - {currentGraph.name}</span>
-                <Space>
-                  <Tooltip title="版本管理">
-                    <Button
-                      type="text"
-                      icon={<BranchesOutlined />}
-                      onClick={() => setVersionManagerVisible(true)}
-                      style={{ color: '#8c8c8c' }}
-                    />
-                  </Tooltip>
-                  {currentGraph.description && (
-                    <Tooltip title={currentGraph.description}>
-                      <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+          <Row gutter={[16, 16]}>
+            {filteredGraphs.map((graphName) => (
+              <Col xs={24} sm={12} md={12} lg={8} xl={6} key={graphName}>
+                <Card
+                  hoverable
+                  style={{
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
+                    background: 'rgba(255, 255, 255, 0.85)',
+                    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+                    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                  styles={{ body: { padding: '16px 20px', flex: 1, display: 'flex', flexDirection: 'column' } }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+                    e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+                    e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                  }}
+                >
+                  {/* 标题区 */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '12px',
+                    paddingBottom: '12px',
+                    borderBottom: '1px solid rgba(139, 115, 85, 0.1)'
+                  }}>
+                    <Workflow size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+                    <Text style={{
+                      fontWeight: 500,
+                      fontSize: '14px',
+                      color: '#2d2d2d',
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {graphName}
+                    </Text>
+                  </div>
+
+                  {/* 内容区 */}
+                  <div style={{ flex: 1, marginBottom: '12px' }}>
+                    <Text style={{
+                      fontSize: '13px',
+                      color: 'rgba(45, 45, 45, 0.45)',
+                      display: 'block',
+                      fontStyle: 'italic'
+                    }}>
+                      点击编辑查看详情
+                    </Text>
+                  </div>
+
+                  {/* 操作按钮区 */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '6px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid rgba(139, 115, 85, 0.1)'
+                  }}>
+                    <div
+                      style={{
+                        flex: 1,
+                        padding: '6px',
+                        borderRadius: '4px',
+                        color: '#8b7355',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        transition: 'all 0.2s ease',
+                        background: 'transparent'
+                      }}
+                      onClick={() => handleEditGraph(graphName)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#b85845';
+                        e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#8b7355';
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <Edit size={15} strokeWidth={1.5} />
+                      编辑
+                    </div>
+                    <Tooltip title="导出压缩包">
+                      <div
+                        style={{
+                          padding: '6px',
+                          borderRadius: '4px',
+                          color: '#8b7355',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '13px',
+                          transition: 'all 0.2s ease',
+                          background: 'transparent'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportPackage(graphName);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#b85845';
+                          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#8b7355';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <PackagePlus size={15} strokeWidth={1.5} />
+                      </div>
                     </Tooltip>
-                  )}
-                </Space>
-              </div>
-            }
-          >
-            <ReactFlowProvider>
-              <div ref={graphCanvasRef}>
-                <GraphCanvas />
-              </div>
-            </ReactFlowProvider>
-          </Card>
+                    <Tooltip title="导出MCP脚本">
+                      <div
+                        style={{
+                          padding: '6px',
+                          borderRadius: '4px',
+                          color: '#8b7355',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '13px',
+                          transition: 'all 0.2s ease',
+                          background: 'transparent'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportMCP(graphName);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#b85845';
+                          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#8b7355';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <Code size={15} strokeWidth={1.5} />
+                      </div>
+                    </Tooltip>
+                    <Tooltip title="删除工作流">
+                      <div
+                        style={{
+                          padding: '6px',
+                          borderRadius: '4px',
+                          color: '#8b7355',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '13px',
+                          transition: 'all 0.2s ease',
+                          background: 'transparent'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirmVisible(graphName);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#b85845';
+                          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#8b7355';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <Trash2 size={15} strokeWidth={1.5} />
+                      </div>
+                    </Tooltip>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
         )}
-      </Spin>
+      </Content>
+
+      {/* 删除确认弹窗 */}
+      {deleteConfirmVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(45, 45, 45, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setDeleteConfirmVisible(null)}
+        >
+          <Card
+            style={{
+              borderRadius: '8px',
+              border: '1px solid rgba(139, 115, 85, 0.15)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+              minWidth: '320px',
+              maxWidth: '400px'
+            }}
+            styles={{ body: { padding: '24px' } }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: '16px' }}>
+              <Text style={{
+                fontSize: '16px',
+                fontWeight: 500,
+                color: '#2d2d2d',
+                display: 'block',
+                marginBottom: '8px'
+              }}>
+                确认删除
+              </Text>
+              <Text style={{
+                fontSize: '14px',
+                color: 'rgba(45, 45, 45, 0.65)'
+              }}>
+                您确定要删除工作流 "{deleteConfirmVisible}" 吗？此操作无法撤销。
+              </Text>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <Button
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  color: '#8b7355',
+                  padding: '6px 16px',
+                  height: 'auto'
+                }}
+                onClick={() => setDeleteConfirmVisible(null)}
+              >
+                取消
+              </Button>
+              <Button
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  padding: '6px 16px',
+                  height: 'auto',
+                  fontWeight: 500,
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+                }}
+                onClick={() => handleDeleteGraph(deleteConfirmVisible)}
+              >
+                确定删除
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+    </Layout>
+  );
+
+  // 渲染编辑视图
+  const renderEditorView = () => (
+    <div style={{ background: '#faf8f5', minHeight: '100vh' }}>
+      {/* 顶部工具栏 */}
+      <div style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '16px 48px',
+        borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
+      }}>
+        {/* 装饰性底部渐变线 */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* 左侧：返回按钮 + 标题 */}
+          <Space size="middle">
+            <Tooltip title="返回列表">
+              <Button
+                icon={<ArrowLeft size={16} strokeWidth={1.5} />}
+                onClick={handleBackToList}
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  color: '#8b7355',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                返回
+              </Button>
+            </Tooltip>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Workflow size={24} color="#b85845" strokeWidth={1.5} />
+              <div>
+                <Text style={{
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  color: '#2d2d2d',
+                  display: 'block',
+                  letterSpacing: '0.5px'
+                }}>
+                  {currentGraph?.name}
+                </Text>
+                {currentGraph?.description && (
+                  <Text style={{
+                    fontSize: '12px',
+                    color: 'rgba(45, 45, 45, 0.65)'
+                  }}>
+                    {currentGraph.description}
+                  </Text>
+                )}
+              </div>
+            </div>
+          </Space>
+
+          {/* 右侧：工具按钮 */}
+          <Space size="small">
+            <Tooltip title="README">
+              <Button
+                type="text"
+                icon={<FileText size={16} strokeWidth={1.5} />}
+                onClick={handleViewReadme}
+                style={{ color: '#8b7355' }}
+              />
+            </Tooltip>
+            <Tooltip title="自动布局">
+              <Button
+                type="text"
+                icon={<LayoutGrid size={16} strokeWidth={1.5} />}
+                onClick={handleAutoLayout}
+                style={{ color: '#8b7355' }}
+              />
+            </Tooltip>
+            <Tooltip title="添加节点">
+              <Button
+                type="text"
+                icon={<Plus size={16} strokeWidth={1.5} />}
+                onClick={() => setAddNodeModalVisible(true)}
+                style={{ color: '#8b7355' }}
+              />
+            </Tooltip>
+            <Tooltip title="图设置">
+              <Button
+                type="text"
+                icon={<Settings size={16} strokeWidth={1.5} />}
+                onClick={handleGraphSettings}
+                style={{ color: '#8b7355' }}
+              />
+            </Tooltip>
+            <Tooltip title="版本管理">
+              <Button
+                type="text"
+                icon={<GitBranch size={16} strokeWidth={1.5} />}
+                onClick={() => setVersionManagerVisible(true)}
+                style={{ color: '#8b7355' }}
+              />
+            </Tooltip>
+            <Tooltip title={hasUnsavedChanges ? '保存更改' : '已保存'}>
+              <Button
+                type={hasUnsavedChanges ? 'primary' : 'text'}
+                icon={<Save size={16} strokeWidth={1.5} />}
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges}
+                style={hasUnsavedChanges ? {
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+                } : {
+                  color: '#8b7355'
+                }}
+              >
+                保存
+              </Button>
+            </Tooltip>
+          </Space>
+        </div>
+      </div>
+
+      {/* 画布区域 */}
+      <div style={{ padding: '24px 48px' }}>
+        <Card
+          bodyStyle={{ padding: 0 }}
+          className="overflow-hidden"
+          style={{
+            height: 'calc(100vh - 180px)',
+            background: 'rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            borderRadius: '6px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+          }}
+        >
+          <ReactFlowProvider>
+            <GraphCanvas />
+          </ReactFlowProvider>
+        </Card>
+      </div>
 
       {/* 节点属性模态框 */}
       <Modal
         title="节点属性设置"
         open={!!selectedNode}
-        onCancel={handleCloseNodeProperties}
+        onCancel={() => selectNode(null)}
         footer={null}
         width={1000}
         style={{ top: 20 }}
-        bodyStyle={{ 
-          height: '80vh', 
+        bodyStyle={{
+          height: '80vh',
           overflow: 'auto',
           padding: '0'
         }}
@@ -495,34 +924,7 @@ const GraphEditor: React.FC = () => {
         <NodePropertiesPanel />
       </Modal>
 
-      {/* 创建新图模态框 */}
-      <Modal
-        title="创建新图"
-        open={newGraphModalVisible}
-        onOk={handleNewGraphSubmit}
-        onCancel={() => setNewGraphModalVisible(false)}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="图名称"
-            rules={[
-              { required: true, message: '请输入图名称' },
-              { pattern: /^[^./\\]+$/, message: '名称不能包含特殊字符 (/, \\, .)' }
-            ]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="描述"
-          >
-            <TextArea rows={4} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
+      {/* 添加节点模态框 */}
       <AddNodeModal
         visible={addNodeModalVisible}
         onClose={() => setAddNodeModalVisible(false)}
@@ -537,104 +939,363 @@ const GraphEditor: React.FC = () => {
           graphName={currentGraph.name}
         />
       )}
+    </div>
+  );
 
-      {/* 教学引导组件 */}
-      <Tour
-        open={tourOpen}
-        onClose={handleTourClose}
-        steps={getTourSteps()}
-        current={current}
-        onChange={handleTourChange}
-        indicatorsRender={(current, total) => (
-          <span style={{ 
-            color: '#667eea', 
-            fontSize: '14px',
-            fontWeight: 'bold'
+  return (
+    <div>
+      {error && (
+        <Alert
+          message="错误"
+          description={error}
+          type="error"
+          showIcon
+          closable
+          style={{ margin: '16px' }}
+        />
+      )}
+
+      {viewMode === 'list' ? renderListView() : renderEditorView()}
+
+      {/* 创建新图模态框 */}
+      <Modal
+        title={
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
           }}>
-            {current + 1} / {total}
-          </span>
-        )}
-        type="primary"
-        arrow={true}
-        placement="bottom"
-        mask={{
-          style: {
-            boxShadow: 'inset 0 0 15px #fff',
+            <Workflow size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
+            <span style={{
+              color: '#2d2d2d',
+              fontSize: '18px',
+              fontWeight: 600,
+              letterSpacing: '0.5px'
+            }}>
+              创建新工作流
+            </span>
+          </div>
+        }
+        open={newGraphModalVisible}
+        onOk={handleNewGraphSubmit}
+        onCancel={() => setNewGraphModalVisible(false)}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setNewGraphModalVisible(false)}
+            style={{
+              height: '40px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              color: '#8b7355',
+              fontWeight: 500,
+              fontSize: '14px',
+              letterSpacing: '0.3px',
+              padding: '0 24px'
+            }}
+          >
+            取消
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleNewGraphSubmit}
+            style={{
+              height: '40px',
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              color: '#fff',
+              fontWeight: 500,
+              fontSize: '14px',
+              letterSpacing: '0.3px',
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              padding: '0 24px'
+            }}
+          >
+            确定
+          </Button>
+        ]}
+        styles={{
+          content: {
+            borderRadius: '10px',
+            boxShadow: '0 12px 40px rgba(139, 115, 85, 0.2)',
+            padding: 0,
+            overflow: 'hidden'
           },
-        }}
-        zIndex={1001}
-        gap={{
-          offset: 8,
-          radius: 8,
-        }}
-        scrollIntoViewOptions={{
-          behavior: 'smooth',
-          block: 'center'
-        }}
-      />
-
-      {/* 全局键盘事件处理 */}
-      <div
-        style={{ position: 'fixed', top: 0, left: 0, width: 0, height: 0 }}
-        tabIndex={-1}
-        onKeyDown={(e) => {
-          if (e.key === 'Delete' && selectedNode) {
-            // 这里可以触发删除选中节点的操作
-            console.log('Delete key pressed for node:', selectedNode);
-          } else if (e.key === 'Escape') {
-            // 取消选择或关闭模态框
-            if (selectedNode) {
-              selectNode(null);
-            }
+          header: {
+            background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(255, 255, 255, 0.9))',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '18px 28px',
+            marginBottom: 0
+          },
+          body: {
+            padding: '28px 28px 20px',
+            background: '#fff'
+          },
+          footer: {
+            borderTop: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '16px 28px',
+            background: 'rgba(250, 248, 245, 0.3)',
+            marginTop: 0
           }
         }}
-      />
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>工作流名称</span>}
+            rules={[
+              { required: true, message: '请输入工作流名称' },
+              { pattern: /^[^./\\]+$/, message: '名称不能包含特殊字符 (/, \\, .)' }
+            ]}
+            style={{ marginBottom: '16px' }}
+          >
+            <Input
+              placeholder="例如: data_analysis_workflow"
+              style={{
+                height: '40px',
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                color: '#2d2d2d',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
+              }}
+            />
+          </Form.Item>
 
-      {/* 添加引导相关的CSS动画 */}
-      <style jsx>{`
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          <Form.Item
+            name="description"
+            label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>描述</span>}
+            style={{ marginBottom: '0' }}
+          >
+            <TextArea
+              rows={4}
+              placeholder="详细说明该工作流的功能和用途"
+              style={{
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '14px',
+                color: '#2d2d2d',
+                lineHeight: '1.6',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+              }}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* AI 提示词模态框 */}
+      <Modal
+        title={
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <Sparkles size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
+            <span style={{
+              color: '#2d2d2d',
+              fontSize: '18px',
+              fontWeight: 600,
+              letterSpacing: '0.5px'
+            }}>
+              AI 生成提示词
+            </span>
+          </div>
+        }
+        open={promptTemplateModalVisible}
+        onCancel={() => setPromptTemplateModalVisible(false)}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => setPromptTemplateModalVisible(false)}
+            style={{
+              height: '40px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              color: '#8b7355',
+              fontWeight: 500,
+              fontSize: '14px',
+              letterSpacing: '0.3px',
+              padding: '0 24px'
+            }}
+          >
+            关闭
+          </Button>
+        ]}
+        width={700}
+        styles={{
+          content: {
+            borderRadius: '10px',
+            boxShadow: '0 12px 40px rgba(139, 115, 85, 0.2)',
+            padding: 0,
+            overflow: 'hidden'
+          },
+          header: {
+            background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(255, 255, 255, 0.9))',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '18px 28px',
+            marginBottom: 0
+          },
+          body: {
+            padding: '28px',
+            background: '#fff'
+          },
+          footer: {
+            borderTop: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '16px 28px',
+            background: 'rgba(250, 248, 245, 0.3)',
+            marginTop: 0
           }
-          50% {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-          }
-          100% {
-            transform: scale(1);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-          }
-        }
+        }}
+      >
+        <div style={{
+          textAlign: 'center',
+          padding: '20px'
+        }}>
+          <Sparkles size={48} strokeWidth={1.5} style={{ color: 'rgba(184, 88, 69, 0.5)', margin: '0 auto 16px' }} />
+          <Text style={{
+            fontSize: '16px',
+            color: 'rgba(45, 45, 45, 0.85)',
+            display: 'block',
+            marginBottom: '12px'
+          }}>
+            该功能可以帮助您生成工作流的 AI 提示词模板
+          </Text>
+          <Text style={{
+            fontSize: '14px',
+            color: 'rgba(45, 45, 45, 0.65)'
+          }}>
+            请先选择一个工作流进入编辑模式，然后从编辑器工具栏访问此功能
+          </Text>
+        </div>
+      </Modal>
 
-        @keyframes fadeInOut {
-          0%, 100% {
-            opacity: 0.7;
-            transform: translateY(-50%) translateX(5px);
-          }
-          50% {
-            opacity: 1;
-            transform: translateY(-50%) translateX(0);
-          }
-        }
+      {/* README 模态框 */}
+      <Modal
+        title="README"
+        open={readmeModalVisible}
+        onCancel={() => setReadmeModalVisible(false)}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => setReadmeModalVisible(false)}
+            style={{
+              height: '40px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              color: '#8b7355',
+              fontWeight: 500
+            }}
+          >
+            关闭
+          </Button>
+        ]}
+        width={800}
+      >
+        <div style={{
+          maxHeight: '60vh',
+          overflow: 'auto',
+          padding: '16px',
+          background: '#faf8f5',
+          borderRadius: '6px'
+        }}>
+          <pre style={{
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            lineHeight: '1.6',
+            color: '#2d2d2d'
+          }}>
+            {readmeContent}
+          </pre>
+        </div>
+      </Modal>
 
-        .ant-tour .ant-tour-content .ant-tour-close {
-          color: #667eea;
-        }
+      {/* 图设置模态框 */}
+      <Modal
+        title="图设置"
+        open={graphSettingsModalVisible}
+        onOk={handleUpdateGraphSettings}
+        onCancel={() => setGraphSettingsModalVisible(false)}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setGraphSettingsModalVisible(false)}
+            style={{
+              height: '40px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+              color: '#8b7355',
+              fontWeight: 500
+            }}
+          >
+            取消
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            onClick={handleUpdateGraphSettings}
+            style={{
+              height: '40px',
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: 500,
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+            }}
+          >
+            确定
+          </Button>
+        ]}
+        width={600}
+      >
+        <Form form={settingsForm} layout="vertical">
+          <Form.Item
+            name="name"
+            label="图名称"
+            rules={[
+              { required: true, message: '请输入图名称' },
+              { pattern: /^[^./\\]+$/, message: '名称不能包含特殊字符 (/, \\, .)' }
+            ]}
+          >
+            <Input disabled style={{
+              background: 'rgba(139, 115, 85, 0.05)',
+              cursor: 'not-allowed'
+            }} />
+          </Form.Item>
 
-        .ant-tour .ant-tour-content .ant-tour-close:hover {
-          color: #764ba2;
-        }
+          <Form.Item
+            name="description"
+            label="描述"
+          >
+            <TextArea rows={3} style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)'
+            }} />
+          </Form.Item>
 
-        .ant-tour-primary .ant-tour-next-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border: none;
-        }
-
-        .ant-tour-primary .ant-tour-next-btn:hover {
-          background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-      `}</style>
+          <Form.Item
+            name="end_template"
+            label="终止输出模板"
+            tooltip="用于自定义图执行结束后的输出格式"
+          >
+            <TextArea rows={4} style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              fontFamily: 'monospace'
+            }} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

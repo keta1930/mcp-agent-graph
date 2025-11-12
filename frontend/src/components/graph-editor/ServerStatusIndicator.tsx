@@ -1,7 +1,7 @@
 // src/components/graph-editor/ServerStatusIndicator.tsx
 import React from 'react';
 import { Tag, Tooltip } from 'antd';
-import { WarningOutlined, InfoCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
 
 /**
@@ -26,8 +26,18 @@ const ServerStatusIndicator: React.FC = () => {
   if (Object.keys(config.mcpServers || {}).length === 0) {
     return (
       <Tooltip title="Please add and connect servers in the MCP Management page first">
-        <Tag color="warning" className="text-xs">
-          <WarningOutlined /> No MCP servers configured
+        <Tag
+          className="text-xs"
+          style={{
+            background: 'rgba(212, 165, 116, 0.08)',
+            color: '#d4a574',
+            border: '1px solid rgba(212, 165, 116, 0.25)',
+            borderRadius: '6px',
+            padding: '4px 8px'
+          }}
+        >
+          <AlertTriangle size={14} strokeWidth={1.5} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+          No MCP servers configured
         </Tag>
       </Tooltip>
     );
@@ -36,8 +46,18 @@ const ServerStatusIndicator: React.FC = () => {
   // If servers are configured but not connected
   return (
     <Tooltip title="Please connect at least one server in the MCP Management page, otherwise graphs may not save or execute">
-      <Tag color="warning" className="text-xs">
-        <WarningOutlined /> MCP servers not connected
+      <Tag
+        className="text-xs"
+        style={{
+          background: 'rgba(212, 165, 116, 0.08)',
+          color: '#d4a574',
+          border: '1px solid rgba(212, 165, 116, 0.25)',
+          borderRadius: '6px',
+          padding: '4px 8px'
+        }}
+      >
+        <AlertTriangle size={14} strokeWidth={1.5} style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+        MCP servers not connected
       </Tag>
     </Tooltip>
   );

@@ -2,11 +2,10 @@
 import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { Card, Typography, Tooltip, Tag, Badge } from 'antd';
-import { 
-  BranchesOutlined, RobotOutlined, ApiOutlined, WarningOutlined,
-  GlobalOutlined, ClockCircleOutlined, SaveOutlined, LinkOutlined,
-  ReloadOutlined, ThunderboltOutlined
-} from '@ant-design/icons';
+import {
+  GitBranch, Bot, Webhook, AlertTriangle, Globe, Clock, Save, Link,
+  RefreshCw, Zap
+} from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
 
 const { Text } = Typography;
@@ -66,10 +65,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '24px' }}>
       {/* 主图标 - 只为子图显示图标 */}
       {is_subgraph && (
-        <BranchesOutlined style={{
-          color: '#1677ff',
-          fontSize: '16px'
-        }} />
+        <GitBranch size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />
       )}
 
       {/* 节点名称 */}
@@ -98,21 +94,21 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         {/* 循环次数 */}
         {hasHandoffs && (
           <Tooltip title={`循环执行: ${handoffs}次`}>
-            <ReloadOutlined style={{ color: '#fa8c16', fontSize: '12px' }} />
+            <RefreshCw size={12} strokeWidth={1.5} style={{ color: '#d4a574' }} />
           </Tooltip>
         )}
 
         {/* 文件保存 */}
         {save && (
           <Tooltip title={`保存为 ${save.toUpperCase()} 文件`}>
-            <SaveOutlined style={{ color: '#13c2c2', fontSize: '12px' }} />
+            <Save size={12} strokeWidth={1.5} style={{ color: '#a0826d' }} />
           </Tooltip>
         )}
 
         {/* 服务器连接警告 */}
         {hasDisconnectedServers && (
           <Tooltip title="使用了断开连接的服务器">
-            <WarningOutlined style={{ color: '#faad14', fontSize: '12px' }} />
+            <AlertTriangle size={12} strokeWidth={1.5} style={{ color: '#d4a574' }} />
           </Tooltip>
         )}
       </div>
@@ -138,7 +134,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
         {is_subgraph ? (
           <>
-            <BranchesOutlined style={{ marginRight: '4px', fontSize: '11px', color: '#1677ff' }} />
+            <GitBranch size={11} strokeWidth={1.5} style={{ marginRight: '4px', color: '#b85845' }} />
             <Text ellipsis style={{ maxWidth: '140px', fontSize: '11px' }}>
               {subgraph_name || 'N/A'}
             </Text>
@@ -153,7 +149,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
       {/* MCP服务器信息 */}
       {mcp_servers && mcp_servers.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '4px' }}>
-          <ApiOutlined style={{ marginRight: '4px', fontSize: '11px', color: '#fa8c16' }} />
+          <Webhook size={11} strokeWidth={1.5} style={{ marginRight: '4px', color: '#d4a574' }} />
           {mcp_servers.length > 1 ? (
             <Tooltip title={mcp_servers.join(', ')}>
               <Text style={{ fontSize: '11px' }}>{mcp_servers.length} 个服务</Text>

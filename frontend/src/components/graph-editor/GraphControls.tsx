@@ -1,16 +1,14 @@
-// src/components/graph-editor/GraphControls.tsx  
+// src/components/graph-editor/GraphControls.tsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Button, Modal, Form, Input, Select, Tooltip, message, Space, Radio, 
+import {
+  Button, Modal, Form, Input, Select, Tooltip, message, Space, Radio,
   Upload, Divider, Row, Col, Dropdown, Menu, Card, Typography, Tag
 } from 'antd';
 import {
-  PlusOutlined, SaveOutlined, CodeOutlined, CopyOutlined, CheckOutlined,
-  DeleteOutlined, InfoCircleOutlined, ImportOutlined, ExportOutlined,
-  RobotOutlined, DownOutlined, FileTextOutlined, UploadOutlined, QuestionCircleOutlined,
-  InboxOutlined, SettingOutlined, ThunderboltOutlined, FolderOpenOutlined,
-  ToolOutlined, PartitionOutlined, BulbOutlined, RocketOutlined
-} from '@ant-design/icons';
+  Plus, Save, Code, Copy, Check, Trash2, Info, Upload as UploadIcon, Download,
+  Bot, ChevronDown, FileText, HelpCircle, Inbox, Settings, Zap, FolderOpen,
+  Wrench, Network, Lightbulb, Rocket
+} from 'lucide-react';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { useModelStore } from '../../store/modelStore';
@@ -417,10 +415,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   // 快速操作菜单
   const quickActionsMenu = (
     <Menu>
-      <Menu.Item key="new" icon={<PlusOutlined />} onClick={handleCreateNewGraph}>
+      <Menu.Item key="new" icon={<Plus size={16} strokeWidth={1.5} />} onClick={handleCreateNewGraph}>
         新建图
       </Menu.Item>
-      <Menu.Item key="ai-generate-prompt" icon={<BulbOutlined />} onClick={handleGetPromptTemplate}>
+      <Menu.Item key="ai-generate-prompt" icon={<Lightbulb size={16} strokeWidth={1.5} />} onClick={handleGetPromptTemplate}>
         AI生成提示词
       </Menu.Item>
     </Menu>
@@ -429,7 +427,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   // 导入导出菜单
   const importExportMenu = (
     <Menu>
-      <Menu.Item key="import-json" icon={<ImportOutlined />} onClick={() => {
+      <Menu.Item key="import-json" icon={<UploadIcon size={16} strokeWidth={1.5} />} onClick={() => {
         setImportType('json');
         setImportMethod('file');
         setSelectedFile(null);
@@ -437,7 +435,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       }}>
         导入JSON图
       </Menu.Item>
-      <Menu.Item key="import-zip" icon={<ImportOutlined />} onClick={() => {
+      <Menu.Item key="import-zip" icon={<UploadIcon size={16} strokeWidth={1.5} />} onClick={() => {
         setImportType('zip');
         setImportMethod('file');
         setSelectedFile(null);
@@ -446,9 +444,9 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
         导入压缩包
       </Menu.Item>
       <Menu.Divider />
-      <Menu.Item 
-        key="export" 
-        icon={<ExportOutlined />} 
+      <Menu.Item
+        key="export"
+        icon={<Download size={16} strokeWidth={1.5} />}
         onClick={handleExport}
         disabled={!currentGraph?.name}
       >
@@ -462,7 +460,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
     <Menu>
       <Menu.Item
         key="readme"
-        icon={<FileTextOutlined />}
+        icon={<FileText size={16} strokeWidth={1.5} />}
         onClick={handleViewReadme}
         disabled={!currentGraph?.name}
       >
@@ -470,7 +468,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       </Menu.Item>
       <Menu.Item
         key="settings"
-        icon={<SettingOutlined />}
+        icon={<Settings size={16} strokeWidth={1.5} />}
         onClick={handleGraphSettings}
         disabled={!currentGraph?.name}
       >
@@ -478,7 +476,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       </Menu.Item>
       <Menu.Item
         key="export-mcp"
-        icon={<CodeOutlined />}
+        icon={<Code size={16} strokeWidth={1.5} />}
         onClick={handleExportMCP}
         disabled={!currentGraph?.name}
       >
@@ -487,7 +485,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
       <Menu.Divider />
       <Menu.Item
         key="delete"
-        icon={<DeleteOutlined />}
+        icon={<Trash2 size={16} strokeWidth={1.5} />}
         onClick={() => setDeleteModalVisible(true)}
         disabled={!currentGraph?.name}
         danger
@@ -498,23 +496,25 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
   );
 
   return (
-    <div style={{ 
-      background: '#fafafa',
+    <div style={{
+      background: '#faf8f5',
     }}>
       {contextHolder}
-      
+
       {/* 主工具栏 */}
       <div style={{
-        background: 'white',
+        background: 'rgba(255, 255, 255, 0.85)',
         padding: '12px 12px',
-        borderRadius: '6px'
+        borderRadius: '6px',
+        border: '1px solid rgba(139, 115, 85, 0.15)',
+        boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
       }}>
         <Row justify="space-between" align="middle" gutter={16}>
           {/* 左侧：图选择和快速操作 */}
           <Col flex="auto">
             <Space size="middle">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FolderOpenOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
+                <FolderOpen size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
                 <Select
                   placeholder="选择图"
                   style={{ width: 200 }}
@@ -526,10 +526,10 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
                     <Option key={name} value={name}>{name}</Option>
                   ))}
                 </Select>
-                
+
                 <Dropdown overlay={quickActionsMenu} trigger={['click']} placement="bottomLeft">
-                  <Button size="middle" type="text">
-                    <PlusOutlined /> <DownOutlined />
+                  <Button size="middle" type="text" style={{ color: '#8b7355' }}>
+                    <Plus size={16} strokeWidth={1.5} /> <ChevronDown size={14} strokeWidth={1.5} />
                   </Button>
                 </Dropdown>
               </div>
@@ -537,30 +537,42 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
               <Divider type="vertical" />
 
               <Button
-                ref={addNodeBtnRef} // 使用传入的 ref
+                ref={addNodeBtnRef}
                 type="primary"
-                icon={<PlusOutlined />}
+                icon={<Plus size={16} strokeWidth={1.5} />}
                 onClick={onAddNode}
                 disabled={!currentGraph}
                 size="middle"
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  fontWeight: 500,
+                  letterSpacing: '0.3px'
+                }}
               >
                 节点
               </Button>
 
               <Tooltip title="根据节点层级关系自动排列节点位置">
                 <Button
-                  icon={<PartitionOutlined />}
+                  icon={<Network size={16} strokeWidth={1.5} />}
                   onClick={handleAutoLayout}
                   disabled={!currentGraph?.name || currentGraph.nodes.length === 0}
                   size="middle"
+                  style={{
+                    borderColor: 'rgba(139, 115, 85, 0.2)',
+                    color: '#8b7355'
+                  }}
                 >
                   布局
                 </Button>
               </Tooltip>
 
               <Dropdown overlay={importExportMenu} trigger={['click']}>
-                <Button size="middle">
-                  <ImportOutlined /> 导入/导出 <DownOutlined />
+                <Button size="middle" style={{ borderColor: 'rgba(139, 115, 85, 0.2)', color: '#8b7355' }}>
+                  <UploadIcon size={16} strokeWidth={1.5} /> 导入/导出 <ChevronDown size={14} strokeWidth={1.5} />
                 </Button>
               </Dropdown>
             </Space>
@@ -572,20 +584,31 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
               <Tooltip title={!allServersConnected ? "图包含使用断开连接服务器的节点" : ""}>
                 <Button
                   type={dirty ? "primary" : "default"}
-                  icon={<SaveOutlined />}
+                  icon={<Save size={16} strokeWidth={1.5} />}
                   onClick={handleSave}
                   loading={loading}
                   disabled={!currentGraph || !dirty}
                   danger={!allServersConnected}
                   size="middle"
+                  style={dirty ? {
+                    background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                    fontWeight: 500,
+                    letterSpacing: '0.3px'
+                  } : {
+                    borderColor: 'rgba(139, 115, 85, 0.2)',
+                    color: '#8b7355'
+                  }}
                 >
                   {dirty ? '保存' : '已保存'}
                 </Button>
               </Tooltip>
 
               <Dropdown overlay={moreMenu} trigger={['click']} placement="bottomRight">
-                <Button icon={<SettingOutlined />} size="middle">
-                  <DownOutlined />
+                <Button icon={<Settings size={16} strokeWidth={1.5} />} size="middle" style={{ borderColor: 'rgba(139, 115, 85, 0.2)', color: '#8b7355' }}>
+                  <ChevronDown size={14} strokeWidth={1.5} />
                 </Button>
               </Dropdown>
             </Space>
@@ -680,7 +703,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
                 }] : []}
               >
                 <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
+                  <Inbox size={48} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                 </p>
                 <p className="ant-upload-text">
                   点击或拖拽{importType === 'json' ? 'JSON' : 'ZIP'}文件到此区域上传
@@ -701,13 +724,13 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
                   <span>
                     文件路径{' '}
                     <Tooltip title="请输入服务器上的文件绝对路径">
-                      <InfoCircleOutlined />
+                      <Info size={14} strokeWidth={1.5} />
                     </Tooltip>
                   </span>
                 }
                 rules={[{ required: true, message: '请输入文件路径' }]}
               >
-                <Input 
+                <Input
                   placeholder={importType === 'json' ? "输入JSON文件路径" : "输入ZIP文件路径"}
                 />
               </Form.Item>
@@ -782,7 +805,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
               <span>
                 终止输出模板{' '}
                 <Tooltip title="支持{node_name}格式引用其他节点的输出，输入 { 可以快速选择节点">
-                  <QuestionCircleOutlined />
+                  <HelpCircle size={14} strokeWidth={1.5} />
                 </Tooltip>
               </span>
             }
@@ -983,7 +1006,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
         onCancel={() => setMcpScriptModalVisible(false)}
         width={800}
         footer={[
-          <Button key="copy" icon={copied ? <CheckOutlined /> : <CopyOutlined />} onClick={handleCopyScript}>
+          <Button key="copy" icon={copied ? <Check size={16} strokeWidth={1.5} /> : <Copy size={16} strokeWidth={1.5} />} onClick={handleCopyScript}>
             {copied ? '已复制' : '复制脚本'}
           </Button>,
           <Button key="close" onClick={() => setMcpScriptModalVisible(false)}>
@@ -1007,7 +1030,7 @@ const GraphControls: React.FC<GraphControlsProps> = ({ onAddNode, addNodeBtnRef 
           <Tooltip title={scriptType === 'parallel' ?
             "并行执行会根据依赖级别尽可能并行运行节点" :
             "串行执行按依赖顺序逐个运行节点"}>
-            <InfoCircleOutlined style={{ marginLeft: '8px' }} />
+            <Info size={14} strokeWidth={1.5} style={{ marginLeft: '8px', color: '#8b7355' }} />
           </Tooltip>
         </div>
 

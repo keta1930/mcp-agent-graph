@@ -2,17 +2,8 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, Select, Switch, InputNumber, Tooltip, Card, Row, Col, Space, Typography } from 'antd';
 import {
-  QuestionCircleOutlined,
-  PlusOutlined,
-  DatabaseOutlined,
-  NodeIndexOutlined,
-  FunctionOutlined,
-  CodeOutlined,
-  CloudOutlined,
-  LinkOutlined,
-  ExperimentOutlined,
-  SettingOutlined
-} from '@ant-design/icons';
+  HelpCircle, Plus, Database, Network, Cpu, Code, Cloud, Link, Flask, Settings
+} from 'lucide-react';
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
@@ -86,19 +77,19 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
 
   // 简洁现代的卡片样式
   const getCardStyle = (borderColor: string) => ({
-    borderRadius: '8px',
-    border: `1px solid ${borderColor}`,
-    boxShadow: 'none',
-    background: '#fff',
-    transition: 'all 0.2s ease'
+    borderRadius: '6px',
+    border: `1px solid rgba(139, 115, 85, 0.15)`,
+    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+    background: 'rgba(255, 255, 255, 0.85)',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
   });
 
   const getCardHeadStyle = (color: string, bgColor: string) => ({
-    background: bgColor,
-    borderBottom: '1px solid #e5e7eb',
+    background: 'rgba(250, 248, 245, 0.6)',
+    borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
     fontSize: '14px',
     fontWeight: '600',
-    color: color,
+    color: '#2d2d2d',
     padding: '16px 20px',
     minHeight: 'auto'
   });
@@ -111,9 +102,9 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
           alignItems: 'center',
           fontSize: '16px',
           fontWeight: '600',
-          color: '#1f2937'
+          color: '#2d2d2d'
         }}>
-          <PlusOutlined style={{ marginRight: '8px', color: '#4f46e5' }} />
+          <Plus size={18} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
           添加新节点
         </div>
       }
@@ -123,22 +114,25 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
       width={900}
       bodyStyle={{
         padding: '24px',
-        background: '#fafafa'
+        background: '#faf8f5'
       }}
       okText="添加节点"
       cancelText="取消"
       okButtonProps={{
         style: {
-          background: '#4f46e5',
-          borderColor: '#4f46e5',
+          background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+          borderColor: 'transparent',
           borderRadius: '6px',
-          fontWeight: '500'
+          fontWeight: '500',
+          boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
         }
       }}
       cancelButtonProps={{
         style: {
           borderRadius: '6px',
-          fontWeight: '500'
+          fontWeight: '500',
+          borderColor: 'rgba(139, 115, 85, 0.2)',
+          color: '#8b7355'
         }
       }}
     >
@@ -150,7 +144,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             <Card
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <NodeIndexOutlined style={{ marginRight: '8px', fontSize: '14px', color: '#4f46e5' }} />
+                  <Network size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
                   节点信息
                 </div>
               }
@@ -184,7 +178,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     <span>
                       节点描述{' '}
                       <Tooltip title="用于帮助AI选择合适的工具和执行策略">
-                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                        <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
@@ -231,12 +225,12 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                         >
                           <Select
                             placeholder="选择一个子图"
-                            suffixIcon={<CodeOutlined style={{ color: '#4f46e5' }} />}
+                            suffixIcon={<Code size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />}
                           >
                             {availableSubgraphs.map(graph => (
                               <Option key={graph} value={graph}>
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                                  <CodeOutlined style={{ marginRight: '8px', color: '#4f46e5' }} />
+                                  <Code size={14} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
                                   {graph}
                                 </div>
                               </Option>
@@ -252,12 +246,12 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                         >
                           <Select
                             placeholder="选择AI模型"
-                            suffixIcon={<FunctionOutlined style={{ color: '#059669' }} />}
+                            suffixIcon={<Cpu size={16} strokeWidth={1.5} style={{ color: '#a0826d' }} />}
                           >
                             {models.map(model => (
                               <Option key={model.name} value={model.name}>
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                                  <FunctionOutlined style={{ marginRight: '8px', color: '#059669' }} />
+                                  <Cpu size={14} strokeWidth={1.5} style={{ marginRight: '8px', color: '#a0826d' }} />
                                   {model.name}
                                 </div>
                               </Option>
@@ -277,7 +271,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             <Card
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <CloudOutlined style={{ marginRight: '8px', fontSize: '14px', color: '#dc2626' }} />
+                  <Cloud size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
                   工具与输出
                 </div>
               }
@@ -299,7 +293,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     {mcpServers.map(server => (
                       <Option key={server} value={server}>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <CloudOutlined style={{ marginRight: '8px', color: '#f59e0b' }} />
+                          <Cloud size={14} strokeWidth={1.5} style={{ marginRight: '8px', color: '#d4a574' }} />
                           {server}
                         </div>
                       </Option>
@@ -313,7 +307,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     <span>
                       启用输出{' '}
                       <Tooltip title="是否输出节点回复内容">
-                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                        <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
@@ -329,7 +323,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     <span>
                       保存格式{' '}
                       <Tooltip title="输出内容保存到文件的格式">
-                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                        <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
@@ -337,12 +331,12 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   <Select
                     placeholder="选择文件格式（可选）"
                     allowClear
-                    suffixIcon={<DatabaseOutlined style={{ color: '#059669' }} />}
+                    suffixIcon={<Database size={16} strokeWidth={1.5} style={{ color: '#a0826d' }} />}
                   >
                     {SAVE_FORMAT_OPTIONS.map(option => (
                       <Option key={option.value} value={option.value}>
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <DatabaseOutlined style={{ marginRight: '8px', color: '#059669' }} />
+                          <Database size={14} strokeWidth={1.5} style={{ marginRight: '8px', color: '#a0826d' }} />
                           {option.label}
                         </div>
                       </Option>
@@ -361,7 +355,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             <Card
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <LinkOutlined style={{ marginRight: '8px', fontSize: '14px', color: '#f59e0b' }} />
+                  <Link size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#d4a574' }} />
                   节点连接
                 </div>
               }
@@ -377,7 +371,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     <span>
                       输入节点{' '}
                       <Tooltip title="选择为此节点提供输入的节点，包括'start'表示接收用户输入">
-                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                        <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
@@ -399,7 +393,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     {getAvailableNodes().map(nodeName => (
                       <Option key={nodeName} value={nodeName}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
-                          <NodeIndexOutlined style={{ marginRight: '8px', color: '#6b7280' }} />
+                          <Network size={14} strokeWidth={1.5} style={{ marginRight: '8px', color: '#8b7355' }} />
                           {nodeName}
                         </span>
                       </Option>
@@ -413,7 +407,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     <span>
                       输出节点{' '}
                       <Tooltip title="选择接收此节点输出的节点，包括'end'表示输出到最终结果">
-                        <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                        <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
@@ -435,7 +429,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                     {getAvailableNodes().map(nodeName => (
                       <Option key={nodeName} value={nodeName}>
                         <span style={{ display: 'flex', alignItems: 'center' }}>
-                          <NodeIndexOutlined style={{ marginRight: '8px', color: '#6b7280' }} />
+                          <Network size={14} strokeWidth={1.5} style={{ marginRight: '8px', color: '#8b7355' }} />
                           {nodeName}
                         </span>
                       </Option>
@@ -451,7 +445,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             <Card
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <SettingOutlined style={{ marginRight: '8px', fontSize: '14px', color: '#7c3aed' }} />
+                  <Settings size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#8b7355' }} />
                   执行控制
                 </div>
               }
@@ -466,7 +460,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   <span>
                     循环次数{' '}
                     <Tooltip title="节点可以重复执行的次数，用于循环流程">
-                      <QuestionCircleOutlined style={{ color: '#9ca3af' }} />
+                      <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                     </Tooltip>
                   </span>
                 }

@@ -2,12 +2,8 @@ import React from 'react';
 import { Background } from 'reactflow';
 import { Button, Tooltip } from 'antd';
 import {
-  BgColorsOutlined,
-  BorderOutlined,
-  DashOutlined,
-  EyeInvisibleOutlined,
-  AppstoreOutlined
-} from '@ant-design/icons';
+  Palette, Square, Minus, EyeOff, Grid3x3
+} from 'lucide-react';
 
 export type BackgroundType = 'none' | 'dots' | 'lines' | 'grid' | 'cross';
 
@@ -52,12 +48,12 @@ interface BackgroundControlsProps {
 
 const getBackgroundIcon = (type: BackgroundType) => {
   switch (type) {
-    case 'none': return <EyeInvisibleOutlined />;
-    case 'dots': return <AppstoreOutlined />;
-    case 'lines': return <DashOutlined />;
-    case 'grid': return <BorderOutlined />;
-    case 'cross': return <BgColorsOutlined />;
-    default: return <AppstoreOutlined />;
+    case 'none': return <EyeOff size={16} strokeWidth={1.5} />;
+    case 'dots': return <Grid3x3 size={16} strokeWidth={1.5} />;
+    case 'lines': return <Minus size={16} strokeWidth={1.5} />;
+    case 'grid': return <Square size={16} strokeWidth={1.5} />;
+    case 'cross': return <Palette size={16} strokeWidth={1.5} />;
+    default: return <Grid3x3 size={16} strokeWidth={1.5} />;
   }
 };
 
@@ -90,19 +86,19 @@ const BackgroundControls: React.FC<BackgroundControlsProps> = ({
       top: '16px',
       left: '16px',
       zIndex: 10,
-      background: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(8px)',
-      borderRadius: '8px',
+      background: 'rgba(255, 255, 255, 0.85)',
+      backdropFilter: 'blur(20px)',
+      borderRadius: '6px',
       padding: '8px',
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-      border: '1px solid rgba(229, 231, 235, 0.8)',
+      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      border: '1px solid rgba(139, 115, 85, 0.15)',
       display: 'flex',
       gap: '4px',
       alignItems: 'center'
     }}>
       <span style={{
         fontSize: '12px',
-        color: '#666',
+        color: '#8b7355',
         marginRight: '8px',
         fontWeight: '500'
       }}>
@@ -122,16 +118,16 @@ const BackgroundControls: React.FC<BackgroundControlsProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: '6px',
-              transition: 'all 0.2s ease',
+              transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
               ...(backgroundType === type ? {
-                background: '#1677ff',
-                borderColor: '#1677ff',
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                borderColor: 'transparent',
                 color: 'white',
-                boxShadow: '0 2px 8px rgba(22, 119, 255, 0.3)'
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
               } : {
                 background: 'transparent',
                 borderColor: 'transparent',
-                color: '#666'
+                color: '#8b7355'
               })
             }}
           />

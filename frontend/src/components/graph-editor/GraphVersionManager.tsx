@@ -15,9 +15,9 @@ import {
   Card
 } from 'antd';
 import {
-  PlusOutlined,
-  HistoryOutlined
-} from '@ant-design/icons';
+  Plus,
+  History
+} from 'lucide-react';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -152,7 +152,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
             </div>
             <Button
               type="primary"
-              icon={<PlusOutlined />}
+              icon={<Plus size={16} strokeWidth={1.5} />}
               onClick={() => setCreateVersionModalVisible(true)}
             >
               新版本
@@ -162,7 +162,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
           {/* 版本历史区域 */}
           <div className="version-history-section">
             <div className="version-history-title">
-              <HistoryOutlined />
+              <History size={16} strokeWidth={1.5} />
               <span>版本历史</span>
               <span className="version-history-count">({versions.length})</span>
             </div>

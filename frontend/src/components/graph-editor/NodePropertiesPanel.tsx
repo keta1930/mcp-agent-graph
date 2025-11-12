@@ -1,13 +1,12 @@
 // src/components/graph-editor/NodePropertiesPanel.tsx
 import React, { useEffect, useState } from 'react';
-import { 
-  Form, Input, Switch, Select, Button, Card, Typography, Tabs, Tag, 
+import {
+  Form, Input, Switch, Select, Button, Card, Typography, Tabs, Tag,
   Tooltip, InputNumber, Divider, Space
 } from 'antd';
-import { 
-  DeleteOutlined, WarningOutlined, RobotOutlined, BranchesOutlined,
-  QuestionCircleOutlined 
-} from '@ant-design/icons';
+import {
+  Trash2, AlertTriangle, Bot, GitBranch, HelpCircle
+} from 'lucide-react';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
@@ -146,36 +145,70 @@ const NodePropertiesPanel: React.FC = () => {
   return (
     <div style={{ padding: '24px' }}>
       {/* 节点标题区域 */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
         marginBottom: '24px',
         paddingBottom: '16px',
-        borderBottom: '1px solid #f0f0f0'
+        borderBottom: '1px solid rgba(139, 115, 85, 0.15)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           {node.is_subgraph ?
-            <BranchesOutlined style={{
-              color: '#1677ff',
-              marginRight: '12px',
-              fontSize: '24px'
-            }} /> :
-            <RobotOutlined style={{ color: '#52c41a', marginRight: '12px', fontSize: '20px' }} />
+            <GitBranch
+              size={24}
+              strokeWidth={1.5}
+              style={{
+                color: '#b85845',
+                marginRight: '12px'
+              }}
+            /> :
+            <Bot size={22} strokeWidth={1.5} style={{ color: '#a0826d', marginRight: '12px' }} />
           }
           <div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px', color: '#2d2d2d' }}>
               {node.name}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {node.input_nodes?.includes('start') && <Tag color="green">起始节点</Tag>}
-              {node.output_nodes?.includes('end') && <Tag color="blue">结束节点</Tag>}
+              {node.input_nodes?.includes('start') && (
+                <Tag style={{
+                  background: 'rgba(160, 130, 109, 0.08)',
+                  color: '#a0826d',
+                  border: '1px solid rgba(160, 130, 109, 0.25)',
+                  borderRadius: '6px'
+                }}>起始节点</Tag>
+              )}
+              {node.output_nodes?.includes('end') && (
+                <Tag style={{
+                  background: 'rgba(184, 88, 69, 0.08)',
+                  color: '#b85845',
+                  border: '1px solid rgba(184, 88, 69, 0.25)',
+                  borderRadius: '6px'
+                }}>结束节点</Tag>
+              )}
               {node.level !== undefined && node.level !== null && (
-                <Tag color="orange">执行层级: {node.level}</Tag>
+                <Tag style={{
+                  background: 'rgba(212, 165, 116, 0.08)',
+                  color: '#d4a574',
+                  border: '1px solid rgba(212, 165, 116, 0.25)',
+                  borderRadius: '6px'
+                }}>执行层级: {node.level}</Tag>
               )}
               {node.handoffs && node.handoffs > 1 && (
-                <Tag color="cyan">循环执行: {node.handoffs}次</Tag>
+                <Tag style={{
+                  background: 'rgba(139, 115, 85, 0.08)',
+                  color: '#8b7355',
+                  border: '1px solid rgba(139, 115, 85, 0.25)',
+                  borderRadius: '6px'
+                }}>循环执行: {node.handoffs}次</Tag>
               )}
-              {node.save && <Tag color="green">保存格式: {node.save}</Tag>}
+              {node.save && (
+                <Tag style={{
+                  background: 'rgba(160, 130, 109, 0.08)',
+                  color: '#a0826d',
+                  border: '1px solid rgba(160, 130, 109, 0.25)',
+                  borderRadius: '6px'
+                }}>保存格式: {node.save}</Tag>
+              )}
             </div>
           </div>
         </div>
@@ -183,7 +216,7 @@ const NodePropertiesPanel: React.FC = () => {
         {/* 断开连接警告 */}
         {disconnectedServers.length > 0 && (
           <Tooltip title={`断开的服务器: ${disconnectedServers.join(', ')}`}>
-            <WarningOutlined style={{ color: '#faad14', fontSize: '20px' }} />
+            <AlertTriangle size={20} strokeWidth={1.5} style={{ color: '#d4a574' }} />
           </Tooltip>
         )}
       </div>
@@ -220,13 +253,13 @@ const NodePropertiesPanel: React.FC = () => {
                 <span>
                   节点描述{' '}
                   <Tooltip title="用于帮助AI选择合适的工具和执行策略">
-                    <QuestionCircleOutlined />
+                    <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
-              <TextArea 
-                placeholder="描述此节点的功能和用途" 
+              <TextArea
+                placeholder="描述此节点的功能和用途"
                 rows={3}
                 showCount
                 maxLength={200}
@@ -308,13 +341,13 @@ const NodePropertiesPanel: React.FC = () => {
                   <span>
                     输入节点{' '}
                     <Tooltip title="选择为此节点提供输入的节点">
-                      <QuestionCircleOutlined />
+                      <HelpCircle size={14} strokeWidth={1.5} />
                     </Tooltip>
                   </span>
                 }
               >
-                <Select 
-                  mode="multiple" 
+                <Select
+                  mode="multiple"
                   placeholder="选择输入节点"
                   size="large"
                   showSearch
@@ -323,7 +356,7 @@ const NodePropertiesPanel: React.FC = () => {
                   }
                 >
                   <Option key="start" value="start">
-                    <span style={{ color: '#52c41a', fontWeight: 'bold' }}>🚀 start (用户输入)</span>
+                    <span style={{ color: '#a0826d', fontWeight: 'bold' }}>🚀 start (用户输入)</span>
                   </Option>
                   {getAvailableNodes().map(nodeName => (
                     <Option key={nodeName} value={nodeName}>{nodeName}</Option>
@@ -337,7 +370,7 @@ const NodePropertiesPanel: React.FC = () => {
                   <span>
                     输出节点{' '}
                     <Tooltip title="选择接收此节点输出的节点">
-                      <QuestionCircleOutlined />
+                      <HelpCircle size={14} strokeWidth={1.5} />
                     </Tooltip>
                   </span>
                 }
@@ -352,7 +385,7 @@ const NodePropertiesPanel: React.FC = () => {
                   }
                 >
                   <Option key="end" value="end">
-                    <span style={{ color: '#f5222d', fontWeight: 'bold' }}>🏁 end (最终结果)</span>
+                    <span style={{ color: '#b85845', fontWeight: 'bold' }}>🏁 end (最终结果)</span>
                   </Option>
                   {getAvailableNodes().map(nodeName => (
                     <Option key={nodeName} value={nodeName}>{nodeName}</Option>
@@ -394,7 +427,7 @@ const NodePropertiesPanel: React.FC = () => {
                 <span>
                   系统提示词{' '}
                   <Tooltip title="输入 { 可以快速插入节点引用，如 {node_name}">
-                    <QuestionCircleOutlined />
+                    <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
@@ -414,7 +447,7 @@ const NodePropertiesPanel: React.FC = () => {
                 <span>
                   用户提示词{' '}
                   <Tooltip title="输入 { 可以快速插入节点引用，如 {node_name}">
-                    <QuestionCircleOutlined />
+                    <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
@@ -461,13 +494,13 @@ const NodePropertiesPanel: React.FC = () => {
                 <span>
                   执行层级{' '}
                   <Tooltip title="数字越小越先执行，用于控制节点执行顺序">
-                    <QuestionCircleOutlined />
+                    <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
-              <InputNumber 
-                placeholder="执行优先级（可选）" 
+              <InputNumber
+                placeholder="执行优先级（可选）"
                 style={{ width: '100%' }}
                 size="large"
                 min={0}
@@ -480,13 +513,13 @@ const NodePropertiesPanel: React.FC = () => {
                 <span>
                   循环次数{' '}
                   <Tooltip title="节点可以重复执行的次数，用于循环流程">
-                    <QuestionCircleOutlined />
+                    <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
-              <InputNumber 
-                placeholder="循环执行次数（可选）" 
+              <InputNumber
+                placeholder="循环执行次数（可选）"
                 style={{ width: '100%' }}
                 size="large"
                 min={1}
@@ -499,7 +532,7 @@ const NodePropertiesPanel: React.FC = () => {
                 <span>
                   保存格式{' '}
                   <Tooltip title="输出内容保存到文件的格式">
-                    <QuestionCircleOutlined />
+                    <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
@@ -519,12 +552,22 @@ const NodePropertiesPanel: React.FC = () => {
         <TabPane tab="连接信息" key="connections">
           <div style={{ padding: '8px' }}>
             <div style={{ marginBottom: '24px' }}>
-              <Text strong style={{ fontSize: '16px' }}>输入节点:</Text>
+              <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>输入节点:</Text>
               <div style={{ marginTop: '12px' }}>
                 {node.input_nodes && node.input_nodes.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {node.input_nodes.map(input => (
-                      <Tag key={input} color={input === 'start' ? 'green' : 'blue'} style={{ fontSize: '14px', padding: '4px 8px' }}>
+                      <Tag
+                        key={input}
+                        style={{
+                          fontSize: '14px',
+                          padding: '4px 8px',
+                          background: input === 'start' ? 'rgba(160, 130, 109, 0.08)' : 'rgba(139, 115, 85, 0.08)',
+                          color: input === 'start' ? '#a0826d' : '#8b7355',
+                          border: input === 'start' ? '1px solid rgba(160, 130, 109, 0.25)' : '1px solid rgba(139, 115, 85, 0.25)',
+                          borderRadius: '6px'
+                        }}
+                      >
                         {input}
                       </Tag>
                     ))}
@@ -536,12 +579,22 @@ const NodePropertiesPanel: React.FC = () => {
             </div>
 
             <div>
-              <Text strong style={{ fontSize: '16px' }}>输出节点:</Text>
+              <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>输出节点:</Text>
               <div style={{ marginTop: '12px' }}>
                 {node.output_nodes && node.output_nodes.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {node.output_nodes.map(output => (
-                      <Tag key={output} color={output === 'end' ? 'red' : 'orange'} style={{ fontSize: '14px', padding: '4px 8px' }}>
+                      <Tag
+                        key={output}
+                        style={{
+                          fontSize: '14px',
+                          padding: '4px 8px',
+                          background: output === 'end' ? 'rgba(184, 88, 69, 0.08)' : 'rgba(212, 165, 116, 0.08)',
+                          color: output === 'end' ? '#b85845' : '#d4a574',
+                          border: output === 'end' ? '1px solid rgba(184, 88, 69, 0.25)' : '1px solid rgba(212, 165, 116, 0.25)',
+                          borderRadius: '6px'
+                        }}
+                      >
                         {output}
                       </Tag>
                     ))}
@@ -556,16 +609,16 @@ const NodePropertiesPanel: React.FC = () => {
       </Tabs>
 
       {/* 底部操作按钮 */}
-      <div style={{ 
-        marginTop: '32px', 
-        paddingTop: '24px', 
-        borderTop: '1px solid #f0f0f0',
-        display: 'flex', 
-        justifyContent: 'center' 
+      <div style={{
+        marginTop: '32px',
+        paddingTop: '24px',
+        borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+        display: 'flex',
+        justifyContent: 'center'
       }}>
         <Button
           danger
-          icon={<DeleteOutlined />}
+          icon={<Trash2 size={16} strokeWidth={1.5} />}
           onClick={handleDelete}
           size="large"
         >
