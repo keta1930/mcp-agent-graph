@@ -385,39 +385,14 @@ const AgentManager: React.FC = () => {
             <Spin size="large" tip="加载中..." />
           </div>
         ) : filteredGroups.length === 0 ? (
-          <Empty
-            image={<Sparkles size={64} color="rgba(139, 115, 85, 0.3)" strokeWidth={1} />}
-            description={
-              <span style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>
-                {searchText ? `未找到匹配 "${searchText}" 的智能体` : '暂无智能体'}
-              </span>
-            }
-            style={{ marginTop: '120px' }}
-          >
-            {!searchText && (
-              <Button
-                type="primary"
-                icon={<Plus size={16} strokeWidth={1.5} />}
-                onClick={showCreateModal}
-                style={{
-                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  height: '40px',
-                  fontWeight: 500,
-                  fontSize: '14px',
-                  letterSpacing: '0.3px',
-                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '0 20px'
-                }}
-              >
-                创建第一个智能体
-              </Button>
-            )}
-          </Empty>
+          <div style={{
+            textAlign: 'center',
+            marginTop: '120px',
+            color: 'rgba(45, 45, 45, 0.45)',
+            fontSize: '14px'
+          }}>
+            {searchText ? `未找到匹配 "${searchText}" 的智能体` : '暂无智能体'}
+          </div>
         ) : (
           <Collapse
             defaultActiveKey={filteredGroups.map(g => g.category)}
@@ -475,13 +450,13 @@ const AgentManager: React.FC = () => {
                   overflow: 'hidden'
                 }}
               >
-                <Row gutter={[12, 12]} style={{ marginTop: '8px' }}>
+                <Row gutter={[16, 16]} style={{ marginTop: '12px' }}>
                   {group.agents.map((agent) => (
-                    <Col key={agent.name} xs={24} sm={12} md={12} lg={8} xl={6}>
+                    <Col key={agent.name} xs={24} sm={24} md={24} lg={12} xl={8}>
                       <Card
                         hoverable
                         style={{
-                          borderRadius: '6px',
+                          borderRadius: '8px',
                           border: '1px solid rgba(139, 115, 85, 0.15)',
                           boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
                           transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
@@ -489,7 +464,7 @@ const AgentManager: React.FC = () => {
                           height: '100%'
                         }}
                         styles={{
-                          body: { padding: '12px 14px' }
+                          body: { padding: '16px 18px' }
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-2px)';
@@ -502,205 +477,188 @@ const AgentManager: React.FC = () => {
                           e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
                         }}
                       >
-                        {/* Agent Name and Icon */}
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          marginBottom: '10px'
-                        }}>
-                          <Bot size={16} strokeWidth={1.5} style={{ color: '#b85845', flexShrink: 0 }} />
-                          <Text
-                            strong
-                            style={{
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              color: '#2d2d2d',
-                              letterSpacing: '0.3px',
-                              flex: 1,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                            title={agent.name}
-                          >
-                            {agent.name}
-                          </Text>
-                        </div>
-
-                        {/* Model Tag */}
-                        <div style={{ marginBottom: '10px' }}>
-                          <Tag style={{
-                            background: 'rgba(139, 115, 85, 0.08)',
-                            color: '#8b7355',
-                            border: '1px solid rgba(139, 115, 85, 0.2)',
-                            borderRadius: '6px',
-                            fontWeight: 500,
-                            fontSize: '11px',
-                            padding: '2px 8px',
-                            margin: 0
-                          }}>
-                            {agent.model}
-                          </Tag>
-                        </div>
-
-                        {/* Tags */}
-                        {agent.tags && agent.tags.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          {/* Left: Icon */}
                           <div style={{
+                            flexShrink: 0,
+                            width: '48px',
+                            height: '48px',
                             display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '4px',
-                            marginBottom: '10px'
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(184, 88, 69, 0.06)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(184, 88, 69, 0.1)'
                           }}>
-                            {agent.tags.slice(0, 3).map((tag, idx) => (
-                              <Tag
-                                key={idx}
-                                style={{
-                                  background: 'rgba(184, 88, 69, 0.06)',
-                                  color: 'rgba(184, 88, 69, 0.85)',
-                                  border: '1px solid rgba(184, 88, 69, 0.15)',
-                                  borderRadius: '4px',
-                                  fontWeight: 500,
-                                  fontSize: '11px',
-                                  padding: '1px 6px',
-                                  margin: 0
-                                }}
-                              >
-                                {tag}
-                              </Tag>
-                            ))}
-                            {agent.tags.length > 3 && (
+                            <Bot size={28} strokeWidth={1.5} style={{ color: '#b85845' }} />
+                          </div>
+
+                          {/* Middle: Agent Info */}
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <Text
+                              strong
+                              style={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: '16px',
+                                fontWeight: 600,
+                                color: '#2d2d2d',
+                                letterSpacing: '0.3px',
+                                lineHeight: '1.3'
+                              }}
+                              title={agent.name}
+                            >
+                              {agent.name}
+                            </Text>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', overflow: 'hidden' }}>
                               <Tag style={{
-                                background: 'transparent',
-                                color: 'rgba(45, 45, 45, 0.45)',
-                                border: '1px dashed rgba(139, 115, 85, 0.2)',
+                                background: 'rgba(139, 115, 85, 0.08)',
+                                color: '#8b7355',
+                                border: '1px solid rgba(139, 115, 85, 0.2)',
                                 borderRadius: '4px',
                                 fontWeight: 500,
-                                fontSize: '11px',
-                                padding: '1px 6px',
-                                margin: 0
+                                fontSize: '13px',
+                                padding: '2px 10px',
+                                margin: 0,
+                                lineHeight: '1.4'
                               }}>
-                                +{agent.tags.length - 3}
+                                {agent.model}
                               </Tag>
-                            )}
+                              {agent.tags && agent.tags.length > 0 && (
+                                <>
+                                  {agent.tags.slice(0, 2).map((tag, idx) => (
+                                    <Tag
+                                      key={idx}
+                                      style={{
+                                        background: 'rgba(184, 88, 69, 0.06)',
+                                        color: 'rgba(184, 88, 69, 0.85)',
+                                        border: '1px solid rgba(184, 88, 69, 0.15)',
+                                        borderRadius: '4px',
+                                        fontWeight: 500,
+                                        fontSize: '12px',
+                                        padding: '2px 8px',
+                                        margin: 0,
+                                        lineHeight: '1.4'
+                                      }}
+                                    >
+                                      {tag}
+                                    </Tag>
+                                  ))}
+                                  {agent.tags.length > 2 && (
+                                    <Tag style={{
+                                      background: 'transparent',
+                                      color: 'rgba(45, 45, 45, 0.45)',
+                                      border: '1px dashed rgba(139, 115, 85, 0.2)',
+                                      borderRadius: '4px',
+                                      fontWeight: 500,
+                                      fontSize: '12px',
+                                      padding: '2px 8px',
+                                      margin: 0,
+                                      lineHeight: '1.4'
+                                    }}>
+                                      +{agent.tags.length - 2}
+                                    </Tag>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
-                        )}
 
-                        {/* Action Buttons */}
-                        <div style={{
-                          display: 'flex',
-                          gap: '6px',
-                          paddingTop: '10px',
-                          borderTop: '1px solid rgba(139, 115, 85, 0.1)'
-                        }}>
-                          <Tooltip title="查看详情">
-                            <div
-                              style={{
-                                flex: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '6px',
-                                borderRadius: '4px',
-                                color: '#8b7355',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                border: '1px solid rgba(139, 115, 85, 0.15)'
-                              }}
-                              onClick={() => showDetailModal(agent.name)}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = '#b85845';
-                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.06)';
-                                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.25)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = '#8b7355';
-                                e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
-                              }}
-                            >
-                              <Eye size={14} strokeWidth={1.5} />
-                            </div>
-                          </Tooltip>
-                          <Tooltip title="编辑">
-                            <div
-                              style={{
-                                flex: 1,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '6px',
-                                borderRadius: '4px',
-                                color: '#8b7355',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                border: '1px solid rgba(139, 115, 85, 0.15)'
-                              }}
-                              onClick={() => showEditModal(agent.name)}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = '#b85845';
-                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.06)';
-                                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.25)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = '#8b7355';
-                                e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
-                              }}
-                            >
-                              <Edit2 size={14} strokeWidth={1.5} />
-                            </div>
-                          </Tooltip>
-                          <Popconfirm
-                            title="确定删除此智能体？"
-                            onConfirm={() => handleDelete(agent.name)}
-                            okText="确定"
-                            cancelText="取消"
-                          >
-                            <Tooltip title="删除">
+                          {/* Right: Action Buttons */}
+                          <div style={{ flexShrink: 0, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <Tooltip title="查看详情">
                               <div
                                 style={{
-                                  flex: 1,
+                                  color: '#8b7355',
+                                  transition: 'all 0.2s ease',
+                                  cursor: 'pointer',
+                                  padding: '8px',
+                                  borderRadius: '6px',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  padding: '6px',
-                                  borderRadius: '4px',
-                                  color: '#b85845',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease',
-                                  border: '1px solid rgba(184, 88, 69, 0.15)'
+                                  border: '1px solid rgba(139, 115, 85, 0.15)'
                                 }}
+                                onClick={() => showDetailModal(agent.name)}
                                 onMouseEnter={(e) => {
-                                  e.currentTarget.style.color = '#d4574a';
+                                  e.currentTarget.style.color = '#b85845';
                                   e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
-                                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.25)';
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = '#b85845';
+                                  e.currentTarget.style.color = '#8b7355';
                                   e.currentTarget.style.background = 'transparent';
-                                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.15)';
+                                  e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
                                 }}
                               >
-                                <Trash2 size={14} strokeWidth={1.5} />
+                                <Eye size={18} strokeWidth={1.5} />
                               </div>
                             </Tooltip>
-                          </Popconfirm>
-                        </div>
-
-                        {/* Created Date */}
-                        <div style={{
-                          fontSize: '11px',
-                          color: 'rgba(45, 45, 45, 0.35)',
-                          marginTop: '8px',
-                          textAlign: 'center',
-                          letterSpacing: '0.2px'
-                        }}>
-                          {new Date(agent.created_at).toLocaleDateString('zh-CN', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                          })}
+                            <Tooltip title="编辑">
+                              <div
+                                style={{
+                                  color: '#8b7355',
+                                  transition: 'all 0.2s ease',
+                                  cursor: 'pointer',
+                                  padding: '8px',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  border: '1px solid rgba(139, 115, 85, 0.15)'
+                                }}
+                                onClick={() => showEditModal(agent.name)}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = '#b85845';
+                                  e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.25)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = '#8b7355';
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                                }}
+                              >
+                                <Edit2 size={18} strokeWidth={1.5} />
+                              </div>
+                            </Tooltip>
+                            <Popconfirm
+                              title="确定删除此智能体？"
+                              onConfirm={() => handleDelete(agent.name)}
+                              okText="确定"
+                              cancelText="取消"
+                            >
+                              <Tooltip title="删除">
+                                <div
+                                  style={{
+                                    color: '#b85845',
+                                    transition: 'all 0.2s ease',
+                                    cursor: 'pointer',
+                                    padding: '8px',
+                                    borderRadius: '6px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '1px solid rgba(184, 88, 69, 0.15)'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = '#d4574a';
+                                    e.currentTarget.style.background = 'rgba(184, 88, 69, 0.12)';
+                                    e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = '#b85845';
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.15)';
+                                  }}
+                                >
+                                  <Trash2 size={18} strokeWidth={1.5} />
+                                </div>
+                              </Tooltip>
+                            </Popconfirm>
+                          </div>
                         </div>
                       </Card>
                     </Col>
