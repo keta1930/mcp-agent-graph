@@ -200,10 +200,6 @@ html, body {
   color: #333;
 }
 
-.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
-  border-color: #40a9ff;
-}
-
 /* 状态指示器 */
 .ant-badge-status-dot {
   width: 10px;
@@ -613,13 +609,72 @@ h1.text-2xl.font-bold {
 }
 
 .ant-input:hover, .ant-input-password:hover {
-  border-color: #40a9ff;
+  border-color: rgba(184, 88, 69, 0.4) !important;
+}
+
+.ant-input-number:hover,
+.ant-input-number-wrapper:hover,
+.ant-input-number:not(.ant-input-number-disabled):hover {
+  border-color: rgba(184, 88, 69, 0.4) !important;
+}
+
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: rgba(184, 88, 69, 0.4) !important;
+}
+
+textarea.ant-input:hover {
+  border-color: rgba(184, 88, 69, 0.4) !important;
+}
+
+.ant-input-affix-wrapper:hover {
+  border-color: rgba(184, 88, 69, 0.4) !important;
+}
+
+.ant-input-affix-wrapper-focused,
+.ant-input-affix-wrapper:focus {
+  border-color: #b85845 !important;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+}
+
+/* Switch 组件样式 */
+.ant-switch-checked {
+  background-color: #b85845 !important;
+}
+
+.ant-switch-checked:hover:not(.ant-switch-disabled) {
+  background-color: #a0826d !important;
 }
 
 .ant-input:focus, .ant-input-focused,
 .ant-input-password.ant-input-affix-wrapper-focused {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: #b85845 !important;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+}
+
+.ant-input-number:focus,
+.ant-input-number-focused,
+.ant-input-number-wrapper-focused,
+.ant-input-number:not(.ant-input-number-disabled):focus {
+  border-color: #b85845 !important;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+}
+
+.ant-input-number-input:focus {
+  border-color: #b85845 !important;
+  box-shadow: none !important;
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: #b85845 !important;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+}
+
+.ant-input-textarea-show-count .ant-input:focus,
+.ant-input-textarea-show-count textarea.ant-input:focus,
+textarea.ant-input:focus,
+textarea.ant-input-focused {
+  border-color: #b85845 !important;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
 }
 
 /* Error message styling */

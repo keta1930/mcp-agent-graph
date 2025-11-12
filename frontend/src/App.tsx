@@ -1,6 +1,7 @@
 // src/App.tsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
 import WorkspaceLayout from './layouts/WorkspaceLayout';
 import PrivateRoute from './components/common/PrivateRoute';
 import { isAuthenticated } from './utils/auth';
@@ -31,7 +32,37 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <Router>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#b85845',
+          colorPrimaryHover: '#a0826d',
+          colorBorder: 'rgba(139, 115, 85, 0.2)',
+          colorBorderSecondary: 'rgba(139, 115, 85, 0.15)',
+          colorText: '#2d2d2d',
+          colorTextPlaceholder: 'rgba(45, 45, 45, 0.35)',
+          borderRadius: 6,
+          controlHeight: 40,
+        },
+        components: {
+          Input: {
+            activeBorderColor: '#b85845',
+            hoverBorderColor: 'rgba(184, 88, 69, 0.4)',
+            activeShadow: '0 0 0 2px rgba(184, 88, 69, 0.1)',
+          },
+          InputNumber: {
+            activeBorderColor: '#b85845',
+            hoverBorderColor: 'rgba(184, 88, 69, 0.4)',
+            activeShadow: '0 0 0 2px rgba(184, 88, 69, 0.1)',
+          },
+          Select: {
+            optionSelectedBg: 'rgba(184, 88, 69, 0.08)',
+            optionActiveBg: 'rgba(184, 88, 69, 0.05)',
+          },
+        },
+      }}
+    >
+      <Router>
       <Routes>
         {/* 公开路由 - 登录和注册 */}
         <Route
@@ -184,6 +215,7 @@ const App: React.FC = () => {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    </ConfigProvider>
   );
 };
 
