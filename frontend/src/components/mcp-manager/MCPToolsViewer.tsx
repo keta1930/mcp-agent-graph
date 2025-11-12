@@ -1,22 +1,22 @@
 // src/components/mcp-manager/MCPToolsViewer.tsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Modal, 
-  Tabs, 
-  Card, 
-  Typography, 
-  Descriptions, 
-  Form, 
-  Input, 
-  InputNumber, 
-  Switch, 
-  Button, 
+import {
+  Modal,
+  Tabs,
+  Card,
+  Typography,
+  Descriptions,
+  Form,
+  Input,
+  InputNumber,
+  Switch,
+  Button,
   message,
   Alert,
   Spin,
   Space
 } from 'antd';
-import { PlayCircleOutlined, BugOutlined } from '@ant-design/icons';
+import { Play, Bug } from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
 
 const { Text, Paragraph } = Typography;
@@ -226,16 +226,39 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
       >
         {formItems}
         <Form.Item>
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={() => handleTest(tool.name)}
-              loading={testLoading}
-            >
-              测试工具
-            </Button>
-          </Space>
+          <Button
+            onClick={() => handleTest(tool.name)}
+            loading={testLoading}
+            style={{
+              height: '36px',
+              background: testLoading ? 'rgba(139, 115, 85, 0.1)' : 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              color: testLoading ? 'rgba(139, 115, 85, 0.4)' : '#fff',
+              fontSize: '14px',
+              fontWeight: 500,
+              letterSpacing: '0.3px',
+              boxShadow: testLoading ? 'none' : '0 2px 6px rgba(184, 88, 69, 0.25)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: testLoading ? 'not-allowed' : 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              if (!testLoading) {
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!testLoading) {
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25)';
+              }
+            }}
+          >
+            <Play size={16} strokeWidth={1.5} />
+            测试工具
+          </Button>
         </Form.Item>
       </Form>
     );
@@ -247,46 +270,82 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
     if (!result) return null;
 
     return (
-      <Card 
-        size="small" 
+      <Card
+        size="small"
         title={
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <BugOutlined style={{ marginRight: '8px' }} />
-            测试结果
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Bug size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>测试结果</span>
           </div>
         }
-        style={{ marginTop: '16px' }}
+        style={{
+          marginTop: '16px',
+          borderRadius: '6px',
+          border: '1px solid rgba(139, 115, 85, 0.15)',
+          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+        }}
       >
         {result.status === 'success' ? (
-          <Alert 
-            type="success" 
-            message="测试成功" 
+          <Alert
+            type="success"
+            message="测试成功"
             description={
               <div>
-                <p><strong>执行时间:</strong> {result.execution_time?.toFixed(3)}秒</p>
-                <p><strong>返回结果:</strong></p>
-                <div style={{ background: '#f6ffed', padding: '8px', borderRadius: '4px' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
+                  <strong>执行时间:</strong> {result.execution_time?.toFixed(3)}秒
+                </p>
+                <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
+                  <strong>返回结果:</strong>
+                </p>
+                <div style={{
+                  background: 'rgba(139, 195, 74, 0.05)',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 195, 74, 0.2)'
+                }}>
                   {typeof result.result === 'string' ? (
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{result.result}</pre>
+                    <pre style={{
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '13px',
+                      color: 'rgba(45, 45, 45, 0.85)',
+                      fontFamily: 'Monaco, "Courier New", monospace'
+                    }}>
+                      {result.result}
+                    </pre>
                   ) : (
                     renderJsonObject(result.result)
                   )}
                 </div>
               </div>
             }
+            style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 195, 74, 0.25)',
+              background: 'rgba(139, 195, 74, 0.05)'
+            }}
           />
         ) : (
-          <Alert 
-            type="error" 
-            message="测试失败" 
+          <Alert
+            type="error"
+            message="测试失败"
             description={
               <div>
-                <p><strong>错误信息:</strong> {result.error}</p>
+                <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
+                  <strong>错误信息:</strong> {result.error}
+                </p>
                 {result.execution_time && (
-                  <p><strong>执行时间:</strong> {result.execution_time.toFixed(3)}秒</p>
+                  <p style={{ margin: 0, fontSize: '13px' }}>
+                    <strong>执行时间:</strong> {result.execution_time.toFixed(3)}秒
+                  </p>
                 )}
               </div>
             }
+            style={{
+              borderRadius: '6px',
+              border: '1px solid rgba(184, 88, 69, 0.3)',
+              background: 'rgba(255, 245, 243, 0.9)'
+            }}
           />
         )}
       </Card>
@@ -295,46 +354,123 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
 
   return (
     <Modal
-      title={`工具测试器 - ${serverName}`}
+      title={
+        <span style={{
+          fontSize: '16px',
+          fontWeight: 500,
+          color: '#2d2d2d',
+          letterSpacing: '0.5px'
+        }}>
+          工具测试器 - {serverName}
+        </span>
+      }
       open={visible}
       onCancel={onClose}
       footer={null}
       width={900}
+      styles={{
+        content: {
+          borderRadius: '8px',
+          boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)'
+        }
+      }}
     >
       {loading ? (
-        <div className="text-center py-4">
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px'
+        }}>
           <Spin size="large" />
-          <p>加载工具中...</p>
+          <p style={{
+            marginTop: '16px',
+            fontSize: '14px',
+            color: 'rgba(45, 45, 45, 0.65)'
+          }}>
+            加载工具中...
+          </p>
         </div>
       ) : serverTools.length === 0 ? (
-        <div className="text-center py-4">无可用工具</div>
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          fontSize: '14px',
+          color: 'rgba(45, 45, 45, 0.65)'
+        }}>
+          无可用工具
+        </div>
       ) : (
         <Tabs
           type="card"
           items={serverTools.map(tool => ({
             key: tool.name,
-            label: tool.name,
+            label: (
+              <span style={{
+                fontSize: '14px',
+                fontWeight: 500,
+                letterSpacing: '0.3px'
+              }}>
+                {tool.name}
+              </span>
+            ),
             children: (
               <div>
-                <Descriptions column={1} bordered style={{ marginBottom: '16px' }}>
+                <Descriptions
+                  column={1}
+                  bordered
+                  style={{
+                    marginBottom: '16px',
+                    borderRadius: '6px',
+                    overflow: 'hidden'
+                  }}
+                  contentStyle={{
+                    background: 'rgba(250, 248, 245, 0.4)',
+                    fontSize: '14px',
+                    color: 'rgba(45, 45, 45, 0.85)'
+                  }}
+                  labelStyle={{
+                    background: 'rgba(250, 248, 245, 0.6)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#2d2d2d'
+                  }}
+                >
                   <Descriptions.Item label="工具名称">
-                    <Text strong>{tool.name}</Text>
+                    <Text strong style={{ color: '#2d2d2d' }}>{tool.name}</Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="功能描述">
-                    {tool.description}
+                    <span style={{ color: 'rgba(45, 45, 45, 0.85)' }}>{tool.description}</span>
                   </Descriptions.Item>
                   <Descriptions.Item label="参数结构">
                     {renderJsonObject(tool.input_schema)}
                   </Descriptions.Item>
                 </Descriptions>
 
-                <Card title="参数测试" size="small">
+                <Card
+                  title={
+                    <span style={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: '#2d2d2d'
+                    }}>
+                      参数测试
+                    </span>
+                  }
+                  size="small"
+                  style={{
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
+                    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+                  }}
+                >
                   {generateTestForm(tool)}
                   {renderTestResult(tool.name)}
                 </Card>
               </div>
             )
           }))}
+          style={{
+            fontSize: '14px'
+          }}
         />
       )}
     </Modal>

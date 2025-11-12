@@ -1,6 +1,6 @@
 // src/components/mcp-manager/MCPServerForm.tsx
 import React, { useEffect } from 'react';
-import { Form, Input, InputNumber, Switch, Select, Modal, Button, Typography } from 'antd';
+import { Form, Input, InputNumber, Switch, Select, Modal, Button, Typography, ConfigProvider } from 'antd';
 import { MCPServerConfig } from '../../types/mcp';
 
 const { TextArea } = Input;
@@ -107,15 +107,53 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
   };
 
   return (
-    <Modal
-      title={title}
-      open={visible}
-      onCancel={onClose}
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#b85845',
+          colorPrimaryHover: '#a0826d',
+        },
+      }}
+    >
+      <Modal
+        title={title}
+        open={visible}
+        onCancel={onClose}
       footer={[
-        <Button key="cancel" onClick={onClose}>
+        <Button
+          key="cancel"
+          onClick={onClose}
+          style={{
+            height: '36px',
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            background: 'rgba(255, 255, 255, 0.85)',
+            color: '#8b7355',
+            fontSize: '14px',
+            fontWeight: 500,
+            letterSpacing: '0.3px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+            transition: 'all 0.3s ease'
+          }}
+        >
           取消
         </Button>,
-        <Button key="submit" type="primary" onClick={handleSubmit}>
+        <Button
+          key="submit"
+          onClick={handleSubmit}
+          style={{
+            height: '36px',
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#fff',
+            fontSize: '14px',
+            fontWeight: 500,
+            letterSpacing: '0.3px',
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+          }}
+        >
           提交
         </Button>,
       ]}
@@ -226,6 +264,7 @@ DATABASE_URL=your-database-url`}
         </Form.Item>
       </Form>
     </Modal>
+    </ConfigProvider>
   );
 };
 

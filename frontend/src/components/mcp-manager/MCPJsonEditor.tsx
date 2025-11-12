@@ -1,14 +1,14 @@
 // src/components/mcp-manager/MCPJsonEditor.tsx
 import React, { useState, useEffect } from 'react';
 import { Button, message, Alert, Card, Tooltip } from 'antd';
-import { 
-  CheckOutlined, 
-  CopyOutlined, 
-  SaveOutlined, 
-  FormatPainterOutlined, 
-  InfoCircleOutlined,
-  WarningOutlined 
-} from '@ant-design/icons';
+import {
+  Check,
+  Copy,
+  Save,
+  Paintbrush,
+  Info,
+  AlertTriangle
+} from 'lucide-react';
 import { MCPConfig } from '../../types/mcp';
 import Editor from "@monaco-editor/react";
 
@@ -177,14 +177,24 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   };
 
   return (
-    <div className="json-editor-container">
-      <div className="json-editor-header">
-        <div className="json-editor-title">
-          <span>编辑MCP配置JSON</span>
-          <Tooltip title="直接编辑JSON配置。配置将在保存前进行验证和清理。">
-            <InfoCircleOutlined style={{ marginLeft: '8px', color: '#1890ff' }} />
-          </Tooltip>
-        </div>
+    <div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '16px'
+      }}>
+        <span style={{
+          fontSize: '16px',
+          fontWeight: 500,
+          color: '#2d2d2d',
+          letterSpacing: '0.5px'
+        }}>
+          编辑MCP配置JSON
+        </span>
+        <Tooltip title="直接编辑JSON配置。配置将在保存前进行验证和清理。">
+          <Info size={16} strokeWidth={1.5} style={{ color: '#8b7355', cursor: 'pointer' }} />
+        </Tooltip>
       </div>
 
       {error && (
@@ -193,24 +203,67 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           description={error}
           type="error"
           showIcon
-          icon={<WarningOutlined />}
+          icon={<AlertTriangle size={16} strokeWidth={1.5} />}
           closable
           onClose={() => setError(null)}
-          style={{ margin: '12px 0' }}
+          style={{
+            margin: '0 0 16px 0',
+            borderRadius: '6px',
+            border: '1px solid rgba(184, 88, 69, 0.3)',
+            background: 'rgba(255, 245, 243, 0.9)'
+          }}
         />
       )}
 
-      <Card 
-        bodyStyle={{ padding: '0' }}
-        className="json-editor-card"
+      <Card
+        style={{
+          borderRadius: '6px',
+          border: '1px solid rgba(139, 115, 85, 0.15)',
+          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+          background: 'rgba(255, 255, 255, 0.85)',
+          overflow: 'hidden'
+        }}
+        styles={{
+          body: { padding: '0' }
+        }}
       >
         <Editor
           height="600px"
           defaultLanguage="json"
           value={jsonText}
           onChange={handleJsonTextChange}
+          onMount={(editor, monaco) => {
+            // Define custom theme
+            monaco.editor.defineTheme('mcp-editor-theme', {
+              base: 'vs',
+              inherit: true,
+              rules: [
+                { token: 'comment', foreground: '8b7355', fontStyle: 'italic' },
+                { token: 'keyword', foreground: 'b85845', fontStyle: 'bold' },
+                { token: 'string', foreground: 'a0826d' },
+                { token: 'number', foreground: 'd4a574' },
+                { token: 'type', foreground: '8b7355' },
+                { token: 'function', foreground: 'b85845' },
+              ],
+              colors: {
+                'editor.background': '#faf8f5',
+                'editor.foreground': '#2d2d2d',
+                'editor.lineHighlightBackground': '#f5f3f0',
+                'editor.selectionBackground': '#e8dfd5',
+                'editor.inactiveSelectionBackground': '#f0ebe5',
+                'editorLineNumber.foreground': '#a89f92',
+                'editorLineNumber.activeForeground': '#8b7355',
+                'editorCursor.foreground': '#b85845',
+                'editor.selectionHighlightBackground': '#e8dfd588',
+                'editorIndentGuide.background': '#e5ddd3',
+                'editorIndentGuide.activeBackground': '#8b7355',
+              },
+            });
+            // Set the custom theme
+            monaco.editor.setTheme('mcp-editor-theme');
+          }}
           options={{
-            minimap: { enabled: false },
+            minimap: { enabled: true },
             fontSize: 14,
             formatOnPaste: true,
             scrollBeyondLastLine: false,
@@ -220,41 +273,133 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
             folding: true,
             showFoldingControls: 'always',
             lineNumbers: 'on',
+            padding: { top: 16, bottom: 16 },
           }}
-          theme="vs-dark"
+          theme="mcp-editor-theme"
         />
       </Card>
 
-      <div className="json-editor-actions">
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginTop: '16px',
+        justifyContent: 'flex-start'
+      }}>
         <Button
-          icon={<FormatPainterOutlined />}
           onClick={formatJson}
-          className="json-editor-format-btn"
+          style={{
+            height: '36px',
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            background: 'rgba(255, 255, 255, 0.85)',
+            color: '#8b7355',
+            fontSize: '14px',
+            fontWeight: 500,
+            letterSpacing: '0.3px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#b85845';
+            e.currentTarget.style.color = '#b85845';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+            e.currentTarget.style.color = '#8b7355';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.85)';
+          }}
         >
+          <Paintbrush size={16} strokeWidth={1.5} />
           格式化并清理JSON
         </Button>
 
         <Button
-          icon={copied ? <CheckOutlined /> : <CopyOutlined />}
           onClick={handleCopy}
+          style={{
+            height: '36px',
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            background: 'rgba(255, 255, 255, 0.85)',
+            color: '#8b7355',
+            fontSize: '14px',
+            fontWeight: 500,
+            letterSpacing: '0.3px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#b85845';
+            e.currentTarget.style.color = '#b85845';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+            e.currentTarget.style.color = '#8b7355';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.85)';
+          }}
         >
+          {copied ? <Check size={16} strokeWidth={1.5} /> : <Copy size={16} strokeWidth={1.5} />}
           {copied ? '已复制' : '复制'}
         </Button>
 
         <Button
-          type="primary"
-          icon={<SaveOutlined />}
           onClick={handleSave}
           disabled={!!error || loading || saving}
           loading={loading || saving}
-          className="json-editor-save-btn"
+          style={{
+            height: '36px',
+            background: (!!error || loading || saving) ? 'rgba(139, 115, 85, 0.1)' : 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            color: (!!error || loading || saving) ? 'rgba(139, 115, 85, 0.4)' : '#fff',
+            fontSize: '14px',
+            fontWeight: 500,
+            letterSpacing: '0.3px',
+            boxShadow: (!!error || loading || saving) ? 'none' : '0 2px 6px rgba(184, 88, 69, 0.25)',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: (!!error || loading || saving) ? 'not-allowed' : 'pointer'
+          }}
+          onMouseEnter={(e) => {
+            if (!error && !loading && !saving) {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!error && !loading && !saving) {
+              e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25)';
+            }
+          }}
         >
+          <Save size={16} strokeWidth={1.5} />
           保存配置
         </Button>
       </div>
 
-      <div style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>
-        <p>配置将在保存前自动清理，移除不必要的字段。</p>
+      <div style={{
+        marginTop: '16px',
+        padding: '12px',
+        background: 'rgba(250, 248, 245, 0.6)',
+        borderRadius: '6px',
+        border: '1px solid rgba(139, 115, 85, 0.12)'
+      }}>
+        <p style={{
+          margin: 0,
+          fontSize: '13px',
+          color: 'rgba(45, 45, 45, 0.75)',
+          lineHeight: '1.6'
+        }}>
+          配置将在保存前自动清理，移除不必要的字段。
+        </p>
       </div>
     </div>
   );

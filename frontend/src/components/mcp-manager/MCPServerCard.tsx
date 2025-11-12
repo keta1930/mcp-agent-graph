@@ -2,19 +2,20 @@
 import React from 'react';
 import { Card, Button, Tag, Space, Typography, Tooltip, Popconfirm, Collapse } from 'antd';
 import {
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  ExclamationCircleOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  PlayCircleOutlined,
-  StopOutlined,
-  ToolOutlined,
-  EnvironmentOutlined,
-  RobotOutlined,
-  UserOutlined,
-  ClockCircleOutlined
-} from '@ant-design/icons';
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Edit2,
+  Trash2,
+  Play,
+  Square,
+  Wrench,
+  Cloud,
+  Bot,
+  User,
+  Clock,
+  ChevronDown
+} from 'lucide-react';
 import { MCPServerConfig } from '../../types/mcp';
 
 const { Text, Paragraph } = Typography;
@@ -105,23 +106,69 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
 
     return (
       <div>
-        <Text strong>
-          <EnvironmentOutlined style={{ marginRight: '4px' }} />
-          环境变量:
+        <Text strong style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
+          <Cloud size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+          环境变量
         </Text>
-        <div style={{ marginTop: '4px' }}>
-          <Collapse size="small" ghost>
-            <Panel 
-              header={`已配置 ${Object.keys(config.env).length} 个变量`} 
+        <div style={{ marginTop: '8px' }}>
+          <Collapse
+            size="small"
+            ghost
+            expandIcon={({ isActive }) => (
+              <ChevronDown
+                size={16}
+                strokeWidth={1.5}
+                style={{
+                  color: '#8b7355',
+                  transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }}
+              />
+            )}
+            style={{
+              background: 'rgba(250, 248, 245, 0.6)',
+              border: '1px solid rgba(139, 115, 85, 0.12)',
+              borderRadius: '6px'
+            }}
+          >
+            <Panel
+              header={
+                <span style={{ fontSize: '13px', color: 'rgba(45, 45, 45, 0.75)' }}>
+                  已配置 {Object.keys(config.env).length} 个变量
+                </span>
+              }
               key="env"
             >
-              <div style={{ background: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.6)',
+                padding: '10px 12px',
+                borderRadius: '4px',
+                border: '1px solid rgba(139, 115, 85, 0.1)'
+              }}>
                 {Object.entries(config.env).map(([key, value]) => (
-                  <div key={key} style={{ marginBottom: '4px' }}>
-                    <Text code style={{ marginRight: '8px' }}>{key}</Text>
-                    <Text type="secondary">
+                  <div key={key} style={{
+                    marginBottom: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <code style={{
+                      background: 'rgba(139, 115, 85, 0.08)',
+                      color: '#8b7355',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      border: '1px solid rgba(139, 115, 85, 0.15)'
+                    }}>
+                      {key}
+                    </code>
+                    <span style={{
+                      fontSize: '13px',
+                      color: 'rgba(45, 45, 45, 0.65)'
+                    }}>
                       {value.length > 20 ? `${value.substring(0, 20)}...` : value}
-                    </Text>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -135,67 +182,192 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   return (
     <Card
       title={
-        <div className="flex items-center justify-between">
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span>{serverName}</span>
-            {/* AI生成工具标识 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '15px', fontWeight: 500, color: '#2d2d2d' }}>{serverName}</span>
             {isAIGenerated && (
               <Tooltip title="AI生成的MCP工具">
-                <RobotOutlined 
-                  style={{ 
-                    marginLeft: '8px', 
-                    color: '#722ed1',
-                    fontSize: '16px'
-                  }} 
+                <Bot
+                  size={16}
+                  strokeWidth={1.5}
+                  style={{
+                    color: '#a0826d'
+                  }}
                 />
               </Tooltip>
             )}
           </div>
           {config.disabled ? (
-            <Tag color="gray">已禁用</Tag>
+            <Tag
+              style={{
+                background: 'rgba(158, 161, 159, 0.1)',
+                color: '#9ea19f',
+                border: '1px solid rgba(158, 161, 159, 0.2)',
+                borderRadius: '6px',
+                fontSize: '12px',
+                padding: '2px 10px'
+              }}
+            >
+              已禁用
+            </Tag>
           ) : connected ? (
-            <Tag icon={<CheckCircleOutlined />} color="success">已连接</Tag>
+            <Tag
+              style={{
+                background: 'rgba(139, 195, 74, 0.1)',
+                color: '#689f38',
+                border: '1px solid rgba(139, 195, 74, 0.3)',
+                borderRadius: '6px',
+                fontSize: '12px',
+                padding: '2px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <CheckCircle size={12} strokeWidth={2} />
+              已连接
+            </Tag>
           ) : initAttempted ? (
-            <Tag icon={<CloseCircleOutlined />} color="error">连接失败</Tag>
+            <Tag
+              style={{
+                background: 'rgba(184, 88, 69, 0.1)',
+                color: '#b85845',
+                border: '1px solid rgba(184, 88, 69, 0.3)',
+                borderRadius: '6px',
+                fontSize: '12px',
+                padding: '2px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <XCircle size={12} strokeWidth={2} />
+              连接失败
+            </Tag>
           ) : (
-            <Tag icon={<ExclamationCircleOutlined />} color="warning">未连接</Tag>
+            <Tag
+              style={{
+                background: 'rgba(212, 165, 116, 0.1)',
+                color: '#d4a574',
+                border: '1px solid rgba(212, 165, 116, 0.3)',
+                borderRadius: '6px',
+                fontSize: '12px',
+                padding: '2px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <AlertCircle size={12} strokeWidth={2} />
+              未连接
+            </Tag>
           )}
         </div>
       }
       extra={
-        <Space>
+        <Space size={6}>
           {connected && onDisconnect ? (
-            <Button
-              icon={<StopOutlined />}
+            <div
               onClick={() => onDisconnect(serverName)}
-              loading={loading}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '4px',
+                color: '#8b7355',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.color = '#b85845';
+                  e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
-              断开连接
-            </Button>
+              <Square size={14} strokeWidth={1.5} />
+              断开
+            </div>
           ) : (
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={() => onConnect(serverName)}
-              disabled={config.disabled || connected || loading}
-              loading={loading}
+            <div
+              onClick={() => !config.disabled && !connected && !loading && onConnect(serverName)}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '4px',
+                background: config.disabled || connected || loading ? 'rgba(139, 115, 85, 0.1)' : 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                color: config.disabled || connected || loading ? 'rgba(139, 115, 85, 0.4)' : '#fff',
+                cursor: config.disabled || connected || loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                fontWeight: 500,
+                boxShadow: config.disabled || connected || loading ? 'none' : '0 1px 3px rgba(184, 88, 69, 0.2)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!config.disabled && !connected && !loading) {
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!config.disabled && !connected && !loading) {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(184, 88, 69, 0.2)';
+                }
+              }}
             >
+              <Play size={14} strokeWidth={1.5} />
               连接
-            </Button>
+            </div>
           )}
-          <Button
-            icon={<ToolOutlined />}
-            onClick={() => onViewTools(serverName)}
-            disabled={!connected}
+          <div
+            onClick={() => !(!connected) && onViewTools(serverName)}
+            style={{
+              padding: '4px',
+              borderRadius: '4px',
+              color: !connected ? 'rgba(139, 115, 85, 0.3)' : '#8b7355',
+              cursor: !connected ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (connected) {
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = connected ? '#8b7355' : 'rgba(139, 115, 85, 0.3)';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
-            工具
-          </Button>
-          <Button
-            icon={<EditOutlined />}
+            <Wrench size={15} strokeWidth={1.5} />
+          </div>
+          <div
             onClick={() => onEdit(serverName)}
+            style={{
+              padding: '4px',
+              borderRadius: '4px',
+              color: '#8b7355',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#b85845';
+              e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#8b7355';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
-            编辑
-          </Button>
+            <Edit2 size={15} strokeWidth={1.5} />
+          </div>
           <Tooltip title={!canDelete ? '只有提供者或管理员可以删除此服务器' : ''}>
             <Popconfirm
               title="您确定要删除这个服务器吗？"
@@ -204,71 +376,206 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               cancelText="取消"
               disabled={!canDelete}
             >
-              <Button
-                icon={<DeleteOutlined />}
-                danger
-                disabled={!canDelete}
+              <div
+                style={{
+                  padding: '4px',
+                  borderRadius: '4px',
+                  color: !canDelete ? 'rgba(184, 88, 69, 0.3)' : '#b85845',
+                  cursor: !canDelete ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (canDelete) {
+                    e.currentTarget.style.background = 'rgba(184, 88, 69, 0.12)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
               >
-                删除
-              </Button>
+                <Trash2 size={15} strokeWidth={1.5} />
+              </div>
             </Popconfirm>
           </Tooltip>
         </Space>
       }
+      style={{
+        borderRadius: '6px',
+        border: '1px solid rgba(139, 115, 85, 0.15)',
+        boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        background: 'rgba(255, 255, 255, 0.85)',
+        transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+      }}
+      styles={{
+        body: { padding: '16px 20px' }
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+        e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+        e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+      }}
     >
-      <div className="space-y-2">
-        {/* Provider信息 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {config.provider_user_id && (
-          <div>
-            <Text strong>
-              <UserOutlined style={{ marginRight: '4px' }} />
-              提供者:
-            </Text>{' '}
-            <Tag color={isOwnServer ? 'blue' : 'default'}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#2d2d2d',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <User size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+              提供者
+            </span>
+            <Tag
+              style={{
+                background: isOwnServer ? 'rgba(184, 88, 69, 0.1)' : 'rgba(139, 115, 85, 0.08)',
+                color: isOwnServer ? '#b85845' : '#8b7355',
+                border: `1px solid ${isOwnServer ? 'rgba(184, 88, 69, 0.25)' : 'rgba(139, 115, 85, 0.2)'}`,
+                borderRadius: '6px',
+                fontSize: '12px',
+                padding: '2px 10px'
+              }}
+            >
               {config.provider_user_id}
               {isOwnServer && ' (我)'}
             </Tag>
             {config.created_at && (
-              <Text type="secondary" style={{ marginLeft: '8px' }}>
-                <ClockCircleOutlined style={{ marginRight: '4px' }} />
+              <span style={{
+                fontSize: '13px',
+                color: 'rgba(45, 45, 45, 0.65)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Clock size={12} strokeWidth={1.5} />
                 {new Date(config.created_at).toLocaleString('zh-CN')}
-              </Text>
+              </span>
             )}
           </div>
         )}
-        <div>
-          <Text strong>传输类型:</Text> {config.transportType}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>
+            传输类型
+          </span>
+          <span style={{ fontSize: '14px', color: 'rgba(45, 45, 45, 0.75)' }}>
+            {config.transportType}
+          </span>
           {isAIGenerated && (
-            <Tag color="purple" size="small" style={{ marginLeft: '8px' }}>
+            <Tag
+              style={{
+                background: 'rgba(160, 130, 109, 0.1)',
+                color: '#a0826d',
+                border: '1px solid rgba(160, 130, 109, 0.25)',
+                borderRadius: '6px',
+                fontSize: '11px',
+                padding: '1px 8px'
+              }}
+            >
               AI生成
             </Tag>
           )}
         </div>
-        {renderTransportInfo()}
-        <div>
-          <Text strong>超时时间:</Text> {config.timeout} 秒
+        <div style={{ fontSize: '14px', color: 'rgba(45, 45, 45, 0.85)' }}>
+          {renderTransportInfo()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>
+            超时时间
+          </span>
+          <span style={{ fontSize: '14px', color: 'rgba(45, 45, 45, 0.75)' }}>
+            {config.timeout} 秒
+          </span>
         </div>
         {renderEnvironmentVariables()}
         {Array.isArray(config.autoApprove) && config.autoApprove.length > 0 && (
           <div>
-            <Text strong>自动批准:</Text>{' '}
-            {config.autoApprove.map(tool => (
-              <Tag key={tool} color="blue">{tool}</Tag>
-            ))}
+            <div style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#2d2d2d',
+              marginBottom: '6px'
+            }}>
+              自动批准
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {config.autoApprove.map(tool => (
+                <Tag
+                  key={tool}
+                  style={{
+                    background: 'rgba(139, 115, 85, 0.08)',
+                    color: '#8b7355',
+                    border: '1px solid rgba(139, 115, 85, 0.2)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    padding: '2px 10px'
+                  }}
+                >
+                  {tool}
+                </Tag>
+              ))}
+            </div>
           </div>
         )}
         {connected && tools.length > 0 && (
           <div>
-            <Text strong>可用工具:</Text>{' '}
-            {tools.map(tool => (
-              <Tag key={tool} color="green">{tool}</Tag>
-            ))}
+            <div style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#2d2d2d',
+              marginBottom: '6px'
+            }}>
+              可用工具
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {tools.map(tool => (
+                <Tag
+                  key={tool}
+                  style={{
+                    background: 'rgba(139, 195, 74, 0.1)',
+                    color: '#689f38',
+                    border: '1px solid rgba(139, 195, 74, 0.25)',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    padding: '2px 10px'
+                  }}
+                >
+                  {tool}
+                </Tag>
+              ))}
+            </div>
           </div>
         )}
         {error && (
-          <Paragraph type="danger">
-            <Text strong>错误:</Text> {error}
-          </Paragraph>
+          <div style={{
+            padding: '12px',
+            background: 'rgba(255, 245, 243, 0.9)',
+            border: '1px solid rgba(184, 88, 69, 0.3)',
+            borderRadius: '6px'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#b85845',
+              marginBottom: '4px'
+            }}>
+              错误
+            </div>
+            <div style={{
+              fontSize: '13px',
+              color: 'rgba(184, 88, 69, 0.85)',
+              lineHeight: '1.6'
+            }}>
+              {error}
+            </div>
+          </div>
         )}
       </div>
     </Card>
