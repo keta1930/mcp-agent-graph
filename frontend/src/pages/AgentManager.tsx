@@ -309,7 +309,6 @@ const AgentManager: React.FC = () => {
               onChange={(e) => setSearchText(e.target.value)}
               style={{
                 width: 280,
-                height: '40px',
                 borderRadius: '8px',
                 border: '1px solid rgba(139, 115, 85, 0.2)',
                 background: 'rgba(255, 255, 255, 0.85)',
@@ -332,7 +331,6 @@ const AgentManager: React.FC = () => {
               onClick={loadAgents}
               loading={loading}
               style={{
-                height: '40px',
                 borderRadius: '6px',
                 border: '1px solid rgba(139, 115, 85, 0.2)',
                 background: 'rgba(255, 255, 255, 0.85)',
@@ -353,7 +351,6 @@ const AgentManager: React.FC = () => {
               icon={<Plus size={16} strokeWidth={1.5} />}
               onClick={showCreateModal}
               style={{
-                height: '40px',
                 background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
                 border: 'none',
                 borderRadius: '6px',
@@ -368,7 +365,7 @@ const AgentManager: React.FC = () => {
                 padding: '0 20px'
               }}
             >
-              创建智能体
+              智能体
             </Button>
           </Space>
         </div>
