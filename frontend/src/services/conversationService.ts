@@ -6,7 +6,8 @@ import {
   ChatRequest,
   AgentRequest,
   GraphGenerationRequest,
-  GraphExecuteRequest
+  GraphExecuteRequest,
+  AgentInvokeRequest
 } from '../types/conversation';
 
 const CONVERSATION_API_BASE = '/chat/conversations';
@@ -184,6 +185,35 @@ export class ConversationService {
       method: 'POST',
       headers,
       body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    return response.body.getReader();
+  }
+
+  static async createAgentInvokeSSE(request: AgentInvokeRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const token = localStorage.getItem('auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${api.defaults.baseURL}/agent/invoke`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...request, stream: true })
     });
 
     if (!response.ok) {

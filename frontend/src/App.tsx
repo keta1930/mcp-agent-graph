@@ -22,6 +22,7 @@ import PreviewPage from './pages/PreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/admin/AdminPanel';
+import FileManager from './pages/FileManager';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -151,6 +152,16 @@ const App: React.FC = () => {
             <PrivateRoute>
               <WorkspaceLayout>
                 <PromptManager />
+              </WorkspaceLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workspace/file-manager"
+          element={
+            <PrivateRoute>
+              <WorkspaceLayout>
+                <FileManager />
               </WorkspaceLayout>
             </PrivateRoute>
           }

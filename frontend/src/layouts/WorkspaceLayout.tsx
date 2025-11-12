@@ -132,6 +132,16 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 <span className="fruit-icon">🍇</span>
                 <div className="collapsed-tooltip">提示词管理</div>
               </Link>
+
+              {/* 文件管理 - 文件夹 */}
+              <Link
+                to="/workspace/file-manager"
+                className={`collapsed-nav-item ${location.pathname === '/workspace/file-manager' ? 'active' : ''}`}
+                title="文件管理"
+              >
+                <span className="fruit-icon">📁</span>
+                <div className="collapsed-tooltip">文件管理</div>
+              </Link>
             </div>
 
             {/* 底部区域 */}
@@ -234,6 +244,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               >
                 <span className="fruit-icon">🍇</span>
                 <span className="nav-label">提示词管理</span>
+              </Link>
+
+              <Link
+                to="/workspace/file-manager"
+                className={`workspace-nav-item ${location.pathname === '/workspace/file-manager' ? 'active' : ''}`}
+              >
+                <span className="fruit-icon">📁</span>
+                <span className="nav-label">文件管理</span>
               </Link>
             </div>
 
