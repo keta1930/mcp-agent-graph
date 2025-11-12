@@ -15,44 +15,32 @@ import {
   Modal,
   Form,
   Upload,
-  Select,
   Popconfirm,
-  Checkbox,
-  Divider,
-  Pagination
+  Collapse
 } from 'antd';
-import {
-  PlusOutlined,
-  SearchOutlined,
-  UploadOutlined,
-  DownloadOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  FileTextOutlined,
-  ClockCircleOutlined,
-  FilterOutlined
-} from '@ant-design/icons';
+import { Plus, Search, Upload as UploadIcon, Download, Trash2, Edit, FileText, ChevronDown } from 'lucide-react';
 import { promptService } from '../services/promptService';
 import { PromptInfo, PromptDetail, PromptCreate, PromptUpdate } from '../types/prompt';
+import PromptEditor from '../components/prompt/PromptEditor';
 
-const { Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
+const { Header, Content } = Layout;
+const { Title, Text } = Typography;
 
 interface CategoryStats {
   [key: string]: number;
 }
 
+interface PromptGroup {
+  category: string;
+  prompts: PromptInfo[];
+}
+
 const PromptManager: React.FC = () => {
   const [prompts, setPrompts] = useState<PromptInfo[]>([]);
-  const [filteredPrompts, setFilteredPrompts] = useState<PromptInfo[]>([]);
-  const [selectedPrompt, setSelectedPrompt] = useState<PromptDetail | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState<PromptGroup[]>([]);
+  const [editingPrompt, setEditingPrompt] = useState<PromptDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
   const [categories, setCategories] = useState<CategoryStats>({});
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -62,9 +50,9 @@ const PromptManager: React.FC = () => {
   const [importForm] = Form.useForm();
   const [editForm] = Form.useForm();
 
-  // 分页相关状态
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12);
+  // 编辑器内容状态
+  const [createContent, setCreateContent] = useState('');
+  const [editContent, setEditContent] = useState('');
 
   // 提交状态
   const [isCreating, setIsCreating] = useState(false);
@@ -77,11 +65,7 @@ const PromptManager: React.FC = () => {
 
   useEffect(() => {
     filterPrompts();
-  }, [prompts, searchText, selectedCategory]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchText, selectedCategory]);
+  }, [prompts, searchText]);
 
   const loadPrompts = async () => {
     setLoading(true);
@@ -90,6 +74,8 @@ const PromptManager: React.FC = () => {
       if (response.success && response.data) {
         setPrompts(response.data.prompts);
         calculateCategories(response.data.prompts);
+        const grouped = groupPromptsByCategory(response.data.prompts);
+        setFilteredGroups(grouped);
       } else {
         message.error(response.message || '获取提示词列表失败');
       }
@@ -110,6 +96,23 @@ const PromptManager: React.FC = () => {
     setCategories(stats);
   };
 
+  const groupPromptsByCategory = (promptList: PromptInfo[]): PromptGroup[] => {
+    const groupMap = new Map<string, PromptGroup>();
+
+    promptList.forEach(prompt => {
+      const category = prompt.category || '未分类';
+      if (!groupMap.has(category)) {
+        groupMap.set(category, {
+          category,
+          prompts: []
+        });
+      }
+      groupMap.get(category)!.prompts.push(prompt);
+    });
+
+    return Array.from(groupMap.values());
+  };
+
   const filterPrompts = () => {
     let filtered = prompts;
 
@@ -118,45 +121,26 @@ const PromptManager: React.FC = () => {
         prompt.name.toLowerCase().includes(searchText.toLowerCase())
       );
     }
-
-    if (selectedCategory) {
-      if (selectedCategory === '未分类') {
-        filtered = filtered.filter(prompt => !prompt.category);
-      } else {
-        filtered = filtered.filter(prompt => prompt.category === selectedCategory);
-      }
-    }
-
-    setFilteredPrompts(filtered);
-  };
-
-  const getCurrentPageData = () => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredPrompts.slice(startIndex, endIndex);
-  };
-
-  const handlePageChange = (page: number, size?: number) => {
-    setCurrentPage(page);
-    if (size && size !== pageSize) {
-      setPageSize(size);
-    }
+    
+    // 更新分组数据
+    const grouped = groupPromptsByCategory(filtered);
+    setFilteredGroups(grouped);
   };
 
   const loadPromptDetail = async (name: string) => {
-    setDetailLoading(true);
     try {
       const response = await promptService.getPromptContent(name);
       if (response.success && response.data) {
-        setSelectedPrompt(response.data);
+        setEditingPrompt(response.data);
+        return response.data;
       } else {
         message.error(response.message || '获取提示词内容失败');
+        return null;
       }
     } catch (error) {
       message.error('获取提示词内容失败');
       console.error('Error loading prompt detail:', error);
-    } finally {
-      setDetailLoading(false);
+      return null;
     }
   };
 
@@ -168,6 +152,7 @@ const PromptManager: React.FC = () => {
         message.success('创建提示词成功');
         setShowCreateModal(false);
         createForm.resetFields();
+        setCreateContent('');
         loadPrompts();
       } else {
         message.error(response.message || '创建提示词失败');
@@ -181,17 +166,18 @@ const PromptManager: React.FC = () => {
   };
 
   const handleUpdatePrompt = async (values: PromptUpdate) => {
-    if (!selectedPrompt) return;
+    if (!editingPrompt) return;
 
     setIsUpdating(true);
     try {
-      const response = await promptService.updatePrompt(selectedPrompt.name, values);
+      const response = await promptService.updatePrompt(editingPrompt.name, values);
       if (response.success) {
         message.success('更新提示词成功');
         setShowEditModal(false);
         editForm.resetFields();
+        setEditContent('');
+        setEditingPrompt(null);
         loadPrompts();
-        loadPromptDetail(selectedPrompt.name);
       } else {
         message.error(response.message || '更新提示词失败');
       }
@@ -209,8 +195,8 @@ const PromptManager: React.FC = () => {
       if (response.success) {
         message.success('删除提示词成功');
         loadPrompts();
-        if (selectedPrompt?.name === name) {
-          setSelectedPrompt(null);
+        if (editingPrompt?.name === name) {
+          setEditingPrompt(null);
         }
       } else {
         message.error(response.message || '删除提示词失败');
@@ -233,7 +219,7 @@ const PromptManager: React.FC = () => {
         message.success(`成功删除 ${selectedPrompts.length} 个提示词`);
         setSelectedPrompts([]);
         loadPrompts();
-        setSelectedPrompt(null);
+        setEditingPrompt(null);
       } else {
         message.error(response.message || '批量删除失败');
       }
@@ -295,146 +281,282 @@ const PromptManager: React.FC = () => {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const openEditModal = () => {
-    if (!selectedPrompt) return;
-    editForm.setFieldsValue({
-      content: selectedPrompt.content,
-      category: selectedPrompt.category
-    });
-    setShowEditModal(true);
-  };
-
   return (
     <>
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: 'calc(100vh - 64px)',
-      padding: '24px'
-    }}>
-      {/* 页面标题和工具栏 */}
-      <div style={{ marginBottom: '24px', flexShrink: 0 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={3} style={{ margin: 0 }}>
-              <FileTextOutlined /> 提示词注册中心
-            </Title>
-          </Col>
-          <Col>
-            <Space>
-              <Input
-                placeholder="搜索提示词..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{ width: 240 }}
-                allowClear
-              />
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowCreateModal(true)}>
-                创建
-              </Button>
-              <Select
-                placeholder="筛选分类"
-                value={selectedCategory || undefined}
-                onChange={(value) => setSelectedCategory(value || '')}
-                style={{ width: 150 }}
-                suffixIcon={<FilterOutlined />}
-                allowClear
-              >
-                <Option value="">全部 ({prompts.length})</Option>
-                {Object.entries(categories).map(([category, count]) => (
-                  <Option key={category} value={category}>
-                    {category} ({count})
-                  </Option>
-                ))}
-              </Select>
-              <Button icon={<UploadOutlined />} onClick={() => setShowImportModal(true)}>
-                导入
-              </Button>
-              {selectedPrompts.length > 0 && (
-                <>
-                  <Button
-                    icon={<DownloadOutlined />}
-                    onClick={handleExportPrompts}
-                  >
-                    导出
-                  </Button>
-                  <Popconfirm
-                    title={`确定要删除选中的 ${selectedPrompts.length} 个提示词吗？`}
-                    onConfirm={handleBatchDelete}
-                    okText="确定"
-                    cancelText="取消"
-                  >
-                    <Button danger icon={<DeleteOutlined />}>
-                      删除
-                    </Button>
-                  </Popconfirm>
-                </>
-              )}
-            </Space>
-          </Col>
-        </Row>
-      </div>
-
-      {/* 主内容区域 */}
-      <div style={{
-        display: 'flex',
-        gap: '24px',
-        flex: 1,
-        minHeight: 0,
-        marginBottom: '16px',
-        overflow: 'hidden'
+    <Layout style={{ height: '100vh', background: '#faf8f5' }}>
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
       }}>
-        {/* 提示词列表 */}
+        {/* 装饰性底部渐变线 */}
         <div style={{
-          flex: 1,
-          minWidth: 0,
-          overflow: 'hidden'
-        }}>
-          <Spin spinning={loading}>
-            {filteredPrompts.length === 0 ? (
-              <Empty description="暂无提示词" style={{ marginTop: '40px' }} />
-            ) : (
-              <Row gutter={[16, 16]}>
-                {getCurrentPageData().map((prompt) => (
-                  <Col key={prompt.name} span={8}>
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          {/* 左侧：图标、标题、统计标签 */}
+          <Space size="large">
+            <FileText size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              提示词管理
+            </Title>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              fontSize: '13px',
+              padding: '4px 12px'
+            }}>
+              总数: {prompts.length}
+            </Tag>
+            <Tag style={{
+              background: 'rgba(139, 115, 85, 0.08)',
+              color: '#8b7355',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              fontSize: '13px',
+              padding: '4px 12px'
+            }}>
+              分类: {Object.keys(categories).length}
+            </Tag>
+          </Space>
+          
+          {/* 右侧：搜索框和操作按钮 */}
+          <Space>
+            <Input
+              placeholder="搜索提示词..."
+              prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                width: 240,
+                height: '40px',
+                padding: '10px 14px',
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                fontSize: '14px',
+                color: '#2d2d2d',
+                letterSpacing: '0.3px',
+                transition: 'all 0.3s ease'
+              }}
+              allowClear
+            />
+            <Button
+              type="primary"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={() => setShowCreateModal(true)}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 500,
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+              }}
+            >
+              创建
+            </Button>
+            <Button icon={<UploadIcon size={16} strokeWidth={1.5} />} onClick={() => setShowImportModal(true)} style={{ color: '#8b7355', background: 'transparent', borderRadius: '6px', transition: 'all 0.2s ease' }}>
+              导入
+            </Button>
+            {selectedPrompts.length > 0 && (
+              <>
+                <Button
+                  icon={<Download size={16} strokeWidth={1.5} />}
+                  onClick={handleExportPrompts}
+                  style={{ color: '#8b7355', background: 'transparent', borderRadius: '6px' }}
+                >
+                  导出
+                </Button>
+                <Popconfirm
+                  title={`确定要删除选中的 ${selectedPrompts.length} 个提示词吗？`}
+                  onConfirm={handleBatchDelete}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button danger icon={<Trash2 size={16} strokeWidth={1.5} />} style={{ background: 'transparent', borderRadius: '6px' }}>
+                    删除
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
+          </Space>
+        </div>
+      </Header>
+
+      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+        <Spin spinning={loading}>
+          {filteredGroups.length === 0 ? (
+            <Empty description="暂无提示词" style={{ marginTop: '40px' }} />
+          ) : (
+            <Collapse
+              defaultActiveKey={filteredGroups.map(group => group.category)}
+              expandIconPosition="end"
+              expandIcon={({ isActive }) => (
+                <ChevronDown
+                  size={18}
+                  strokeWidth={1.5}
+                  style={{
+                    color: '#8b7355',
+                    transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+                  }}
+                />
+              )}
+              style={{
+                background: 'transparent',
+                border: 'none'
+              }}
+            >
+              {filteredGroups.map((group) => (
+                <Collapse.Panel
+                  key={group.category}
+                  header={
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '32px' }}>
+                      <Text strong style={{
+                        fontSize: '14px',
+                        color: '#2d2d2d',
+                        fontWeight: 500,
+                        letterSpacing: '0.3px'
+                      }}>
+                        {group.category}
+                      </Text>
+                      <Tag style={{
+                        background: 'rgba(139, 115, 85, 0.08)',
+                        color: '#8b7355',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        margin: 0
+                      }}>
+                        {group.prompts.length}
+                      </Tag>
+                    </div>
+                  }
+                  style={{
+                    marginBottom: '16px',
+                    background: 'rgba(255, 255, 255, 0.6)',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
+                    borderRadius: '8px',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <Row gutter={[12, 12]}>
+                    {group.prompts.map((prompt) => (
+                  <Col key={prompt.name} xs={24} sm={12} md={12} lg={8} xl={6}>
                     <Card
-                      size="small"
                       hoverable
-                      onClick={() => loadPromptDetail(prompt.name)}
                       style={{
-                        border: selectedPrompt?.name === prompt.name ? '2px solid #1890ff' : '1px solid #f0f0f0',
-                        cursor: 'pointer'
+                        borderRadius: '6px',
+                        border: '1px solid rgba(139, 115, 85, 0.15)',
+                        boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                        transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                        background: 'rgba(255, 255, 255, 0.85)',
+                        height: '100%'
                       }}
-                      title={
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text strong ellipsis style={{ flex: 1 }}>
+                      styles={{ body: { padding: '10px 12px' } }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12)';
+                        e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                        e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            strong
+                            style={{
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              color: '#2d2d2d',
+                              letterSpacing: '0.3px',
+                              marginBottom: '3px'
+                            }}
+                            title={prompt.name}
+                          >
                             {prompt.name}
                           </Text>
-                          <Checkbox
-                            checked={selectedPrompts.includes(prompt.name)}
-                            onChange={(e) => {
+                          <Text
+                            type="secondary"
+                            style={{
+                              fontSize: '12px',
+                              display: 'block',
+                              color: 'rgba(45, 45, 45, 0.45)',
+                              letterSpacing: '0.1px'
+                            }}
+                          >
+                            {prompt.modified_time}
+                          </Text>
+                        </div>
+                        <div style={{ flexShrink: 0, display: 'flex', gap: '4px', alignItems: 'center' }}>
+                          <div
+                            style={{
+                              color: '#8b7355',
+                              transition: 'all 0.2s ease',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              if (e.target.checked) {
-                                setSelectedPrompts([...selectedPrompts, prompt.name]);
-                              } else {
-                                setSelectedPrompts(selectedPrompts.filter(name => name !== prompt.name));
+                              const promptDetail = await loadPromptDetail(prompt.name);
+                              if (promptDetail) {
+                                setEditContent(promptDetail.content);
+                                editForm.setFieldsValue({
+                                  content: promptDetail.content,
+                                  category: promptDetail.category
+                                });
+                                setShowEditModal(true);
                               }
                             }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      }
-                      extra={
-                        <Space>
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#b85845';
+                              e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#8b7355';
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <Edit size={15} strokeWidth={1.5} />
+                          </div>
                           <Popconfirm
                             title="确定要删除这个提示词吗？"
                             onConfirm={(e) => {
@@ -444,110 +566,49 @@ const PromptManager: React.FC = () => {
                             okText="确定"
                             cancelText="取消"
                           >
-                            <Button
-                              type="text"
-                              size="small"
-                              danger
-                              icon={<DeleteOutlined />}
+                            <div
+                              style={{
+                                color: '#8b7355',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
                               onClick={(e) => e.stopPropagation()}
-                            />
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <Trash2 size={15} strokeWidth={1.5} />
+                            </div>
                           </Popconfirm>
-                        </Space>
-                      }
-                    >
-                      <div style={{ marginBottom: '8px' }}>
-                        {prompt.category && <Tag color="blue">{prompt.category}</Tag>}
-                      </div>
-                      <div style={{ color: '#666', fontSize: '12px' }}>
-                        <div><ClockCircleOutlined /> {prompt.modified_time}</div>
-                        <div>大小: {formatFileSize(prompt.size)}</div>
+                        </div>
                       </div>
                     </Card>
                   </Col>
-                ))}
-              </Row>
-            )}
-          </Spin>
-        </div>
-
-        {/* 右侧详情面板 */}
-        {selectedPrompt && (
-          <Card
-            title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <Text strong style={{ fontSize: '16px' }}>
-                    {selectedPrompt.name}
-                  </Text>
-                  {selectedPrompt.category && (
-                    <Tag color="blue" size="small" style={{ marginLeft: '8px' }}>
-                      {selectedPrompt.category}
-                    </Tag>
-                  )}
-                </div>
-                <Button
-                  type="primary"
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={openEditModal}
-                >
-                  编辑
-                </Button>
-              </div>
-            }
-            style={{ width: '400px' }}
-            bodyStyle={{
-              maxHeight: '60vh',
-              overflow: 'auto',
-              padding: '16px',
-              backgroundColor: '#fafafa'
-            }}
-          >
-            <Spin spinning={detailLoading}>
-              <Paragraph style={{
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                fontSize: '13px',
-                lineHeight: '1.6',
-                color: '#333'
-              }}>
-                {selectedPrompt.content}
-              </Paragraph>
-            </Spin>
-          </Card>
-        )}
-      </div>
-
-      {/* 固定在底部的分页组件 */}
-      {filteredPrompts.length > 0 && (
-        <div style={{
-          borderTop: '1px solid #f0f0f0',
-          paddingTop: '16px',
-          flexShrink: 0,
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          <Pagination
-            current={currentPage}
-            total={filteredPrompts.length}
-            pageSize={pageSize}
-            showSizeChanger
-            showQuickJumper
-            showTotal={(total, range) =>
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
-            }
-            pageSizeOptions={['6', '12']}
-            onChange={handlePageChange}
-          />
-        </div>
-      )}
-    </div>
+                    ))}
+                  </Row>
+                </Collapse.Panel>
+              ))}
+            </Collapse>
+          )}
+        </Spin>
+      </Content>
+    </Layout>
 
       {/* 🔥 修复后的创建提示词模态框 */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileTextOutlined />
+            <FileText size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
             创建提示词
           </div>
         }
@@ -555,6 +616,7 @@ const PromptManager: React.FC = () => {
         onCancel={() => {
           if (!isCreating) {
             createForm.resetFields();
+            setCreateContent('');
             setShowCreateModal(false);
           }
         }}
@@ -610,7 +672,7 @@ const PromptManager: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* 内容编辑区域 - 占据剩余空间，完全解耦 */}
+          {/* 内容编辑区域 - 占据剩余空间，使用分屏编辑器 */}
           <div style={{
             flex: 1,
             padding: '0 24px',
@@ -618,36 +680,33 @@ const PromptManager: React.FC = () => {
             flexDirection: 'column',
             minHeight: 0
           }}>
+            <div style={{ marginBottom: '8px', color: 'rgba(0, 0, 0, 0.85)', fontSize: '14px' }}>
+              内容
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <PromptEditor
+                content={createContent}
+                onChange={(value) => {
+                  setCreateContent(value);
+                  createForm.setFieldsValue({ content: value });
+                }}
+                readOnly={isCreating}
+                placeholder="输入提示词内容..."
+              />
+            </div>
             <Form.Item
-              label="内容"
               name="content"
               rules={[{ required: true, message: '请输入提示词内容' }]}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                marginBottom: 0
-              }}
+              style={{ display: 'none' }}
             >
-              <TextArea
-                placeholder="输入提示词内容..."
-                style={{
-                  flex: 1,
-                  resize: 'none',
-                  minHeight: '200px',
-                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-                  fontSize: '14px',
-                  lineHeight: '1.6'
-                }}
-                disabled={isCreating}
-              />
+              <Input />
             </Form.Item>
           </div>
 
           {/* 按钮区域 - 固定在底部 */}
           <div style={{
             padding: '16px 24px 24px',
-            borderTop: '1px solid #f0f0f0',
+            borderTop: '1px solid rgba(139, 115, 85, 0.15)',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: '8px',
@@ -656,6 +715,7 @@ const PromptManager: React.FC = () => {
             <Button
               onClick={() => {
                 createForm.resetFields();
+                setCreateContent('');
                 setShowCreateModal(false);
               }}
               disabled={isCreating}
@@ -666,6 +726,18 @@ const PromptManager: React.FC = () => {
               type="primary"
               htmlType="submit"
               loading={isCreating}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 500,
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+              }}
             >
               创建
             </Button>
@@ -677,7 +749,7 @@ const PromptManager: React.FC = () => {
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <EditOutlined />
+            <Edit size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
             编辑提示词
           </div>
         }
@@ -685,6 +757,7 @@ const PromptManager: React.FC = () => {
         onCancel={() => {
           if (!isUpdating) {
             editForm.resetFields();
+            setEditContent('');
             setShowEditModal(false);
           }
         }}
@@ -718,6 +791,13 @@ const PromptManager: React.FC = () => {
             flexShrink: 0
           }}>
             <Form.Item
+              label="提示词名称"
+              style={{ marginBottom: '16px' }}
+            >
+              <Input value={editingPrompt?.name} disabled style={{ color: 'rgba(0, 0, 0, 0.65)' }} />
+            </Form.Item>
+            
+            <Form.Item
               label="分类"
               name="category"
               rules={[
@@ -728,7 +808,7 @@ const PromptManager: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* 内容编辑区域 - 占据剩余空间，完全解耦 */}
+          {/* 内容编辑区域 - 占据剩余空间，使用分屏编辑器 */}
           <div style={{
             flex: 1,
             padding: '0 24px',
@@ -736,36 +816,33 @@ const PromptManager: React.FC = () => {
             flexDirection: 'column',
             minHeight: 0
           }}>
+            <div style={{ marginBottom: '8px', color: 'rgba(0, 0, 0, 0.85)', fontSize: '14px' }}>
+              内容
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <PromptEditor
+                content={editContent}
+                onChange={(value) => {
+                  setEditContent(value);
+                  editForm.setFieldsValue({ content: value });
+                }}
+                readOnly={isUpdating}
+                placeholder="输入提示词内容..."
+              />
+            </div>
             <Form.Item
-              label="内容"
               name="content"
               rules={[{ required: true, message: '请输入提示词内容' }]}
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                marginBottom: 0
-              }}
+              style={{ display: 'none' }}
             >
-              <TextArea
-                placeholder="输入提示词内容..."
-                style={{
-                  flex: 1,
-                  resize: 'none',
-                  minHeight: '300px',
-                  fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-                  fontSize: '14px',
-                  lineHeight: '1.6'
-                }}
-                disabled={isUpdating}
-              />
+              <Input />
             </Form.Item>
           </div>
 
           {/* 按钮区域 - 固定在底部 */}
           <div style={{
             padding: '16px 24px 24px',
-            borderTop: '1px solid #f0f0f0',
+            borderTop: '1px solid rgba(139, 115, 85, 0.15)',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: '8px',
@@ -774,6 +851,7 @@ const PromptManager: React.FC = () => {
             <Button
               onClick={() => {
                 editForm.resetFields();
+                setEditContent('');
                 setShowEditModal(false);
               }}
               disabled={isUpdating}
@@ -784,6 +862,18 @@ const PromptManager: React.FC = () => {
               type="primary"
               htmlType="submit"
               loading={isUpdating}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 500,
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+              }}
             >
               保存
             </Button>
@@ -795,7 +885,7 @@ const PromptManager: React.FC = () => {
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <UploadOutlined />
+            <UploadIcon size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
             导入提示词
           </div>
         }
@@ -838,7 +928,7 @@ const PromptManager: React.FC = () => {
               maxCount={1}
               disabled={isImporting}
             >
-              <Button icon={<UploadOutlined />} disabled={isImporting}>
+              <Button icon={<UploadIcon size={16} strokeWidth={1.5} />} disabled={isImporting}>
                 选择Markdown文件
               </Button>
             </Upload>
@@ -881,6 +971,18 @@ const PromptManager: React.FC = () => {
                 type="primary"
                 htmlType="submit"
                 loading={isImporting}
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  letterSpacing: '0.3px',
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+                }}
               >
                 导入
               </Button>
