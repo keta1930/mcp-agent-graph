@@ -173,6 +173,60 @@ class UserRepository:
             logger.error(f"更新最后登录时间失败: {str(e)}")
             return False
 
+    async def get_title_generation_model(self, user_id: str) -> Optional[str]:
+        """
+        获取用户配置的标题生成模型
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            Optional[str]: 模型名称，如果未设置则返回None
+        """
+        try:
+            user = await self.collection.find_one(
+                {"user_id": user_id},
+                {"title_generation_model": 1}
+            )
+            return user.get("title_generation_model") if user else None
+
+        except Exception as e:
+            logger.error(f"获取标题生成模型配置失败: {str(e)}")
+            return None
+
+    async def set_title_generation_model(self, user_id: str, model_name: str) -> bool:
+        """
+        设置用户的标题生成模型
+
+        Args:
+            user_id: 用户ID
+            model_name: 模型名称
+
+        Returns:
+            bool: 是否设置成功
+        """
+        try:
+            result = await self.collection.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "title_generation_model": model_name,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"用户 {user_id} 的标题生成模型已设置为: {model_name}")
+                return True
+            else:
+                logger.warning(f"未找到用户或模型未变更: {user_id}")
+                return False
+
+        except Exception as e:
+            logger.error(f"设置标题生成模型失败: {str(e)}")
+            return False
+
     async def deactivate_user(self, user_id: str) -> bool:
         """
         停用用户（软删除）
