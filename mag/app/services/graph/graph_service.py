@@ -492,8 +492,8 @@ class GraphService:
         """
         try:
             # 1. 获取当前 MongoDB 中的配置
-            current_config = await self.get_graph(graph_name, user_id)
-            if not current_config:
+            graph_doc = await self.get_graph(graph_name, user_id)
+            if not graph_doc:
                 return {
                     "status": "error",
                     "message": f"图 '{graph_name}' 不存在"
@@ -502,7 +502,7 @@ class GraphService:
             # 2. 创建 MinIO 版本
             version_result = graph_config_version_manager.create_version(
                 graph_name,
-                current_config,
+                graph_doc.get("config", {}),
                 user_id
             )
 
