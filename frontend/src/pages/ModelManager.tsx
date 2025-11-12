@@ -1,7 +1,7 @@
 // src/pages/ModelManager.tsx
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, message, Popconfirm, Select, Card, Row, Col, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
+import { Layout, Button, message, Select, Card, Row, Col, Typography, Input, Space, Tag as AntTag, Spin } from 'antd';
+import { Plus, Star, Edit, Trash2, Server, Globe, Tag, Search as SearchIcon, Settings } from 'lucide-react';
 import { useModelStore } from '../store/modelStore';
 import { ModelConfig } from '../types/model';
 import ModelForm from '../components/model-manager/ModelForm';
@@ -9,7 +9,8 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import * as modelService from '../services/modelService';
 import * as userSettingsService from '../services/userSettingsService';
 
-const { Title, Text } = Typography;
+const { Header, Content } = Layout;
+const { Text, Title } = Typography;
 
 const ModelManager: React.FC = () => {
   const { models, loading, error, fetchModels, addModel, updateModel, deleteModel } = useModelStore();
@@ -19,11 +20,28 @@ const ModelManager: React.FC = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [titleGenerationModel, setTitleGenerationModel] = useState<string | null>(null);
   const [titleModelLoading, setTitleModelLoading] = useState(false);
+  const [titleModelModalVisible, setTitleModelModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [filteredModels, setFilteredModels] = useState<ModelConfig[]>([]);
 
   useEffect(() => {
     fetchModels();
     loadTitleGenerationModel();
   }, [fetchModels]);
+
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredModels(models);
+    } else {
+      const keyword = searchText.toLowerCase();
+      const filtered = models.filter(model =>
+        model.name.toLowerCase().includes(keyword) ||
+        model.base_url.toLowerCase().includes(keyword) ||
+        model.model.toLowerCase().includes(keyword)
+      );
+      setFilteredModels(filtered);
+    }
+  }, [models, searchText]);
 
   const loadTitleGenerationModel = async () => {
     try {
@@ -107,120 +125,565 @@ const ModelManager: React.FC = () => {
     }
   };
 
-  const columns = [
-    {
-      title: '名称',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name: string) => (
-        <Space>
-          {name === titleGenerationModel && (
-            <StarFilled style={{ color: '#faad14' }} title="标题生成模型" />
-          )}
-          {name}
-        </Space>
-      ),
-    },
-    {
-      title: '基础URL',
-      dataIndex: 'base_url',
-      key: 'base_url',
-    },
-    {
-      title: '模型标识',
-      dataIndex: 'model',
-      key: 'model',
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      render: (_: any, record: ModelConfig) => (
-        <Space size="middle">
-          <Button
-            className="action-btn-edit"
-            icon={<EditOutlined />}
-            onClick={() => showEditModal(record)}
-            loading={editLoading}
-          >
-            编辑
-          </Button>
-          <Popconfirm
-            title="您确定要删除这个模型吗？"
-            onConfirm={() => handleDelete(record.name)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button
-              className="action-btn-delete"
-              icon={<DeleteOutlined />}
-              danger
-            >
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState<string | null>(null);
 
   return (
-    <div>
+    <Layout style={{ minHeight: '100vh', background: '#faf8f5' }}>
       {error && <ErrorMessage className="error-message" message={error} />}
 
-      {/* 标题生成模型选择器 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row align="middle" gutter={16}>
-          <Col>
-            <Text strong>标题生成模型:</Text>
-          </Col>
-          <Col flex="auto">
-            <Select
-              style={{ width: '100%', maxWidth: 400 }}
-              placeholder="选择用于生成会话标题的模型"
-              value={titleGenerationModel}
-              onChange={handleTitleModelChange}
-              loading={titleModelLoading}
-              allowClear={false}
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              options={models.map(model => ({
-                label: model.name,
-                value: model.name,
-              }))}
+      {/* Header 顶栏 */}
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
+      }}>
+        {/* 装饰性底部渐变线 */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          {/* 左侧：图标、标题和统计 */}
+          <Space size="large">
+            <Server size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              模型管理
+            </Title>
+            <AntTag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {models.length} 个模型
+            </AntTag>
+            {titleGenerationModel && (
+              <AntTag style={{
+                background: 'rgba(139, 115, 85, 0.08)',
+                color: '#8b7355',
+                border: '1px solid rgba(139, 115, 85, 0.25)',
+                borderRadius: '6px',
+                fontWeight: 500,
+                padding: '4px 12px',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Star size={12} strokeWidth={1.5} fill="#8b7355" />
+                标题: {titleGenerationModel}
+              </AntTag>
+            )}
+          </Space>
+
+          {/* 右侧：搜索和操作按钮 */}
+          <Space size={12}>
+            <Input
+              placeholder="搜索模型..."
+              allowClear
+              prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={{
+                width: 280,
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                fontSize: '14px',
+                color: '#2d2d2d',
+                letterSpacing: '0.3px'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#b85845';
+                e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08), 0 1px 3px rgba(139, 115, 85, 0.08)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
+              }}
             />
-          </Col>
-          <Col>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {titleGenerationModel ? (
-                <>选中的模型将用于自动生成新对话的标题</>
-              ) : (
-                <>未配置标题生成模型，将不会自动生成标题</>
-              )}
-            </Text>
-          </Col>
-        </Row>
-      </Card>
+            <Button
+              icon={<Settings size={16} strokeWidth={1.5} />}
+              onClick={() => setTitleModelModalVisible(true)}
+              style={{
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                color: '#8b7355',
+                fontWeight: 500,
+                fontSize: '14px',
+                letterSpacing: '0.3px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 16px'
+              }}
+            >
+              标题模型
+            </Button>
+            <Button
+              type="primary"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={showAddModal}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontWeight: 500,
+                fontSize: '14px',
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 20px'
+              }}
+            >
+              模型
+            </Button>
+          </Space>
+        </div>
+      </Header>
 
-      <Table
-        dataSource={models}
-        columns={columns}
-        rowKey="name"
-        loading={loading}
-      />
+      {/* Content 内容区 */}
+      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%'
+          }}>
+            <Spin size="large" tip="加载中..." />
+          </div>
+        ) : filteredModels.length === 0 ? (
+          searchText ? (
+            <div style={{
+              textAlign: 'center',
+              marginTop: '120px',
+              color: 'rgba(45, 45, 45, 0.45)',
+              fontSize: '14px'
+            }}>
+              未找到匹配 "{searchText}" 的模型
+            </div>
+          ) : (
+            <Card
+              style={{
+                borderRadius: '8px',
+                border: '1px solid rgba(139, 115, 85, 0.15)',
+                background: 'rgba(250, 248, 245, 0.6)',
+                textAlign: 'center',
+                padding: '40px 20px'
+              }}
+            >
+              <Server size={48} strokeWidth={1.5} style={{ color: 'rgba(139, 115, 85, 0.3)', margin: '0 auto 16px' }} />
+              <Text style={{
+                fontSize: '14px',
+                color: 'rgba(45, 45, 45, 0.65)',
+                display: 'block',
+                marginBottom: '16px'
+              }}>
+                暂无模型配置
+              </Text>
+              <Button
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  padding: '8px 16px',
+                  height: 'auto',
+                  fontWeight: 500,
+                  letterSpacing: '0.3px',
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onClick={showAddModal}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                }}
+              >
+                <Plus size={16} strokeWidth={1.5} />
+                添加第一个模型
+              </Button>
+            </Card>
+          )
+        ) : (
+          <Row gutter={[16, 16]}>
+            {filteredModels.map((model) => (
+              <Col xs={24} sm={12} md={12} lg={8} xl={6} key={model.name}>
+              <Card
+                hoverable
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.15)',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+                  transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+                styles={{ body: { padding: '16px 20px', flex: 1, display: 'flex', flexDirection: 'column' } }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+                  e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+                  e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                }}
+              >
+                {/* 标题区 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '12px',
+                  paddingBottom: '12px',
+                  borderBottom: '1px solid rgba(139, 115, 85, 0.1)'
+                }}>
+                  {model.name === titleGenerationModel && (
+                    <Star size={16} strokeWidth={1.5} style={{ color: '#b85845' }} fill="#b85845" />
+                  )}
+                  <Server size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+                  <Text style={{
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    color: '#2d2d2d',
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {model.name}
+                  </Text>
+                </div>
 
-      {/* Add Model button at bottom left with new styling */}
-      <div className="mt-6">
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={showAddModal}
-          className="add-model-btn"
+                {/* 内容区 */}
+                <div style={{ flex: 1, marginBottom: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    marginBottom: '8px'
+                  }}>
+                    <Globe size={14} strokeWidth={1.5} style={{ color: '#8b7355', marginTop: '2px', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{
+                        fontSize: '12px',
+                        color: 'rgba(45, 45, 45, 0.65)',
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}>
+                        基础URL
+                      </Text>
+                      <Text style={{
+                        fontSize: '13px',
+                        color: '#2d2d2d',
+                        wordBreak: 'break-all'
+                      }}>
+                        {model.base_url}
+                      </Text>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px'
+                  }}>
+                    <Tag size={14} strokeWidth={1.5} style={{ color: '#8b7355', marginTop: '2px', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{
+                        fontSize: '12px',
+                        color: 'rgba(45, 45, 45, 0.65)',
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}>
+                        模型标识
+                      </Text>
+                      <Text style={{
+                        fontSize: '13px',
+                        color: '#2d2d2d',
+                        wordBreak: 'break-all'
+                      }}>
+                        {model.model}
+                      </Text>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 操作按钮区 */}
+                <div style={{
+                  display: 'flex',
+                  gap: '6px',
+                  paddingTop: '12px',
+                  borderTop: '1px solid rgba(139, 115, 85, 0.1)'
+                }}>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      borderRadius: '4px',
+                      color: '#8b7355',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                      transition: 'all 0.2s ease',
+                      background: 'transparent'
+                    }}
+                    onClick={() => showEditModal(model)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#b85845';
+                      e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#8b7355';
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <Edit size={15} strokeWidth={1.5} />
+                    编辑
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: '6px',
+                      borderRadius: '4px',
+                      color: '#8b7355',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                      transition: 'all 0.2s ease',
+                      background: 'transparent'
+                    }}
+                    onClick={() => setDeleteConfirmVisible(model.name)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#b85845';
+                      e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#8b7355';
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <Trash2 size={15} strokeWidth={1.5} />
+                    删除
+                  </div>
+                </div>
+              </Card>
+            </Col>
+            ))}
+          </Row>
+        )}
+      </Content>
+
+      {/* 删除确认弹窗 */}
+      {deleteConfirmVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(45, 45, 45, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setDeleteConfirmVisible(null)}
         >
-          添加模型
-        </Button>
-      </div>
+          <Card
+            style={{
+              borderRadius: '8px',
+              border: '1px solid rgba(139, 115, 85, 0.15)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+              minWidth: '320px',
+              maxWidth: '400px'
+            }}
+            styles={{ body: { padding: '24px' } }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: '16px' }}>
+              <Text style={{
+                fontSize: '16px',
+                fontWeight: 500,
+                color: '#2d2d2d',
+                display: 'block',
+                marginBottom: '8px'
+              }}>
+                确认删除
+              </Text>
+              <Text style={{
+                fontSize: '14px',
+                color: 'rgba(45, 45, 45, 0.65)'
+              }}>
+                您确定要删除模型 "{deleteConfirmVisible}" 吗？此操作无法撤销。
+              </Text>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <Button
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  color: '#8b7355',
+                  padding: '6px 16px',
+                  height: 'auto'
+                }}
+                onClick={() => setDeleteConfirmVisible(null)}
+              >
+                取消
+              </Button>
+              <Button
+                style={{
+                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#fff',
+                  padding: '6px 16px',
+                  height: 'auto',
+                  fontWeight: 500,
+                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+                }}
+                onClick={() => {
+                  handleDelete(deleteConfirmVisible);
+                  setDeleteConfirmVisible(null);
+                }}
+              >
+                确定删除
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* 标题模型设置 Modal */}
+      {titleModelModalVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(45, 45, 45, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => setTitleModelModalVisible(false)}
+        >
+          <Card
+            style={{
+              borderRadius: '8px',
+              border: '1px solid rgba(139, 115, 85, 0.15)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+              minWidth: '480px',
+              maxWidth: '600px'
+            }}
+            styles={{ body: { padding: '24px' } }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Star size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
+                <Text style={{
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  color: '#2d2d2d'
+                }}>
+                  标题生成模型设置
+                </Text>
+              </div>
+              <Text style={{
+                fontSize: '13px',
+                color: 'rgba(45, 45, 45, 0.65)'
+              }}>
+                选择用于自动生成会话标题的模型
+              </Text>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <Select
+                style={{
+                  width: '100%'
+                }}
+                placeholder="选择标题生成模型"
+                value={titleGenerationModel}
+                onChange={handleTitleModelChange}
+                loading={titleModelLoading}
+                allowClear={false}
+                showSearch
+                size="large"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={models.map(model => ({
+                  label: model.name,
+                  value: model.name,
+                }))}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <Button
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  color: '#8b7355',
+                  padding: '6px 16px',
+                  height: 'auto'
+                }}
+                onClick={() => setTitleModelModalVisible(false)}
+              >
+                关闭
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <ModelForm
         visible={modalVisible}
@@ -229,7 +692,7 @@ const ModelManager: React.FC = () => {
         initialValues={currentModel}
         title={modalTitle}
       />
-    </div>
+    </Layout>
   );
 };
 

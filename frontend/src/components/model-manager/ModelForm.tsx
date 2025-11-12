@@ -1,9 +1,9 @@
 // src/components/model-manager/ModelForm.tsx
-import React from 'react';
-import { Form, Input, Modal, Button, InputNumber, Switch, Select, Collapse } from 'antd';
+import React, { useState } from 'react';
+import { Form, Input, Modal, Button, InputNumber, Switch, Select } from 'antd';
+import { ChevronDown } from 'lucide-react';
 import { ModelConfig } from '../../types/model';
 
-const { Panel } = Collapse;
 const { TextArea } = Input;
 
 interface ModelFormProps {
@@ -22,6 +22,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
   title
 }) => {
   const [form] = Form.useForm();
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
 
   React.useEffect(() => {
     if (visible && initialValues) {
@@ -128,11 +129,46 @@ const ModelForm: React.FC<ModelFormProps> = ({
       open={visible}
       onCancel={onClose}
       width={600}
+      styles={{
+        header: {
+          borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+          paddingBottom: '16px',
+          marginBottom: '20px'
+        },
+        body: {
+          padding: '24px'
+        }
+      }}
       footer={[
-        <Button key="cancel" onClick={onClose}>
+        <Button
+          key="cancel"
+          onClick={onClose}
+          style={{
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            background: 'rgba(255, 255, 255, 0.85)',
+            color: '#8b7355',
+            padding: '6px 16px',
+            height: 'auto'
+          }}
+        >
           取消
         </Button>,
-        <Button key="submit" type="primary" onClick={handleSubmit}>
+        <Button
+          key="submit"
+          onClick={handleSubmit}
+          style={{
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#fff',
+            padding: '6px 16px',
+            height: 'auto',
+            fontWeight: 500,
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+            marginLeft: '8px'
+          }}
+        >
           提交
         </Button>,
       ]}
@@ -161,12 +197,11 @@ const ModelForm: React.FC<ModelFormProps> = ({
           name="api_key"
           label="API密钥"
           rules={[
-            { 
-              required: !initialValues, 
-              message: '请输入API密钥!' 
+            {
+              required: !initialValues,
+              message: '请输入API密钥!'
             }
           ]}
-          help={initialValues ? "留空保持当前API密钥，或输入新密钥进行更新" : undefined}
         >
           <Input.Password placeholder={initialValues ? "••••••••••••••••" : ""} />
         </Form.Item>
@@ -179,16 +214,64 @@ const ModelForm: React.FC<ModelFormProps> = ({
         </Form.Item>
 
         {/* 高级配置 */}
-        <Collapse ghost>
-          <Panel header="高级配置" key="advanced">
-            <div style={{ paddingBottom: '24px' }}>
+        <div
+          style={{
+            marginTop: '16px',
+            borderRadius: '8px',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            background: 'rgba(250, 248, 245, 0.6)',
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            style={{
+              padding: '12px 16px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              transition: 'background 0.2s ease'
+            }}
+            onClick={() => setAdvancedExpanded(!advancedExpanded)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(250, 248, 245, 0.9)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <span style={{
+              fontWeight: 500,
+              fontSize: '14px',
+              color: '#2d2d2d'
+            }}>
+              高级配置
+            </span>
+            <ChevronDown
+              size={18}
+              strokeWidth={2}
+              style={{
+                color: '#8b7355',
+                transform: advancedExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease'
+              }}
+            />
+          </div>
+          {advancedExpanded && (
+            <div style={{ padding: '16px', paddingTop: '8px' }}>
+              <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="stream"
                 label="启用流式响应"
                 valuePropName="checked"
                 style={{ marginBottom: '24px' }}
               >
-                <Switch />
+                <Switch
+                  style={{
+                    backgroundColor: 'rgba(139, 115, 85, 0.2)'
+                  }}
+                  className="custom-switch"
+                />
               </Form.Item>
             </div>
 
@@ -342,7 +425,12 @@ const ModelForm: React.FC<ModelFormProps> = ({
                 valuePropName="checked"
                 style={{ marginBottom: '24px' }}
               >
-                <Switch />
+                <Switch
+                  style={{
+                    backgroundColor: 'rgba(139, 115, 85, 0.2)'
+                  }}
+                  className="custom-switch"
+                />
               </Form.Item>
             </div>
 
@@ -390,8 +478,9 @@ const ModelForm: React.FC<ModelFormProps> = ({
                 />
               </Form.Item>
             </div>
-          </Panel>
-        </Collapse>
+            </div>
+          )}
+        </div>
       </Form>
     </Modal>
   );
