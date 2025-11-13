@@ -23,11 +23,13 @@ import {
   SystemToolSchema,
   ToolCategory
 } from '../services/systemToolsService';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
 const SystemToolsManager: React.FC = () => {
+  const t = useT();
   const [categories, setCategories] = useState<ToolCategory[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<ToolCategory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ const SystemToolsManager: React.FC = () => {
       setCategories(response.categories || []);
       setFilteredCategories(response.categories || []);
     } catch (error: any) {
-      message.error('加载系统工具列表失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.systemToolsManager.loadFailed', { error: error.message || t('errors.unknown') }));
     } finally {
       setLoading(false);
     }
@@ -88,7 +90,7 @@ const SystemToolsManager: React.FC = () => {
         setDetailModalVisible(true);
       }
     } catch (error: any) {
-      message.error('加载工具详情失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.systemToolsManager.loadDetailFailed', { error: error.message || t('errors.unknown') }));
     }
   };
 
@@ -97,7 +99,7 @@ const SystemToolsManager: React.FC = () => {
     if (!parameters || !parameters.properties) {
       return (
         <Text style={{ color: 'rgba(45, 45, 45, 0.45)', fontStyle: 'italic' }}>
-          （无参数）
+          {t('pages.systemToolsManager.detailModal.noParameters')}
         </Text>
       );
     }
@@ -134,7 +136,7 @@ const SystemToolsManager: React.FC = () => {
                   fontSize: '11px',
                   padding: '2px 6px'
                 }}>
-                  必填
+                  {t('pages.systemToolsManager.detailModal.required')}
                 </Tag>
               )}
               <Tag style={{
@@ -153,7 +155,7 @@ const SystemToolsManager: React.FC = () => {
               color: 'rgba(45, 45, 45, 0.65)',
               lineHeight: '1.6'
             }}>
-              {value.description || '（无描述）'}
+              {value.description || t('pages.systemToolsManager.detailModal.noDescription')}
             </Text>
           </div>
         ))}
@@ -195,7 +197,7 @@ const SystemToolsManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              系统工具
+              {t('pages.systemToolsManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -206,7 +208,7 @@ const SystemToolsManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {totalTools} 个工具
+              {t('pages.systemToolsManager.toolsCount', { count: totalTools })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -217,13 +219,13 @@ const SystemToolsManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {categories.length} 个类别
+              {t('pages.systemToolsManager.categoriesCount', { count: categories.length })}
             </Tag>
           </Space>
 
           {/* 右侧：搜索框 */}
           <Input
-            placeholder="搜索工具名称或描述"
+            placeholder={t('pages.systemToolsManager.searchPlaceholder')}
             prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
             value={searchText}
             onChange={(e) => handleSearch(e.target.value)}
@@ -254,7 +256,7 @@ const SystemToolsManager: React.FC = () => {
           </div>
         ) : filteredCategories.length === 0 ? (
           <Empty
-            description={searchText ? '未找到匹配的系统工具' : '暂无系统工具'}
+            description={searchText ? t('pages.systemToolsManager.noSearchResults') : t('pages.systemToolsManager.noTools')}
             style={{ marginTop: '80px' }}
           />
         ) : (
@@ -286,7 +288,7 @@ const SystemToolsManager: React.FC = () => {
                     {category.category}
                   </Tag>
                   <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px' }}>
-                    {category.tool_count} 个工具
+                    {t('pages.systemToolsManager.categoryLabel', { count: category.tool_count })}
                   </Text>
                 </div>
 
@@ -370,7 +372,7 @@ const SystemToolsManager: React.FC = () => {
                           paddingTop: '8px',
                           borderTop: '1px solid rgba(139, 115, 85, 0.1)'
                         }}>
-                          <Tooltip title="查看详情">
+                          <Tooltip title={t('pages.systemToolsManager.viewDetail')}>
                             <div
                               style={{
                                 padding: '4px',
@@ -410,7 +412,7 @@ const SystemToolsManager: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Wrench size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
             <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>
-              工具详情: {selectedTool?.name}
+              {t('pages.systemToolsManager.detailModal.title', { name: selectedTool?.name || '' })}
             </Text>
           </div>
         }
@@ -447,7 +449,7 @@ const SystemToolsManager: React.FC = () => {
                 fontSize: '13px'
               }}
             >
-              <Descriptions.Item label="工具名称">
+              <Descriptions.Item label={t('pages.systemToolsManager.detailModal.toolName')}>
                 <code style={{
                   fontSize: '13px',
                   background: 'rgba(139, 115, 85, 0.08)',
@@ -458,12 +460,12 @@ const SystemToolsManager: React.FC = () => {
                   {selectedTool.schema.function.name}
                 </code>
               </Descriptions.Item>
-              <Descriptions.Item label="描述">
+              <Descriptions.Item label={t('pages.systemToolsManager.detailModal.description')}>
                 <Text style={{ color: 'rgba(45, 45, 45, 0.85)' }}>
                   {selectedTool.schema.function.description}
                 </Text>
               </Descriptions.Item>
-              <Descriptions.Item label="参数">
+              <Descriptions.Item label={t('pages.systemToolsManager.detailModal.parameters')}>
                 {renderParameters(selectedTool.schema.function.parameters)}
               </Descriptions.Item>
             </Descriptions>
@@ -476,7 +478,7 @@ const SystemToolsManager: React.FC = () => {
                 display: 'block',
                 marginBottom: '12px'
               }}>
-                完整 Schema
+                {t('pages.systemToolsManager.detailModal.fullSchema')}
               </Text>
               <pre 
                 className="custom-scrollbar"
