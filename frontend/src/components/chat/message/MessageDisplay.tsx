@@ -255,7 +255,7 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
   // 使用常规渲染
   return (
     <div style={{
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+      fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif",
       fontSize: 'inherit'
     }}>
       <ReactMarkdown
@@ -535,8 +535,7 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
 
   return (
     <div style={{
-      marginBottom: '16px',
-      padding: '8px 12px'
+      marginBottom: '16px'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -627,9 +626,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
       marginBottom: '24px',
       color: '#2d2d2d',
       lineHeight: '1.7',
-      fontSize: '15px',
+      fontSize: '16px',
       letterSpacing: '0.3px',
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+      fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
     }}>
       {/* 呼吸灯指示器 - 改为墨点效果 */}
       {isFirstMessageInRound && renderingMode !== 'graph_run' && (
@@ -690,9 +689,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
               <div style={{
                 color: '#2d2d2d',
                 lineHeight: '1.7',
-                fontSize: '15px',
+                fontSize: '16px',
                 letterSpacing: '0.3px',
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+                fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
               }}>
 
                 <div>
@@ -1059,9 +1058,9 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             marginBottom: '24px',
             color: '#2d2d2d',
             lineHeight: '1.7',
-            fontSize: '15px',
+            fontSize: '16px',
             letterSpacing: '0.3px',
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+            fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
           }}>
             {/* 呼吸灯指示器 - 在流式消息上方左对齐 */}
             {/* Graph执行模式不显示呼吸灯，因为有独立的节点信息显示 */}
@@ -1107,20 +1106,72 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
 
         {/* Graph执行的总结信息 */}
         {isGraphExecution && conversation.execution_chain && (
-          <div className="execution-summary glass-card">
-            <div className="summary-header">
-              <Text strong>执行总结</Text>
+          <div style={{
+            marginBottom: '24px',
+            padding: '20px 24px',
+            background: 'rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+          }}>
+            <div style={{
+              marginBottom: '20px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid rgba(139, 115, 85, 0.1)',
+            }}>
+              <Text strong style={{
+                fontSize: '16px',
+                color: '#2d2d2d',
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+              }}>执行总结</Text>
             </div>
 
-            <div className="execution-chain">
-              <Text type="secondary">执行链:</Text>
-              <div className="chain-visualization">
+            <div style={{ marginBottom: '16px' }}>
+              <Text style={{
+                fontSize: '13px',
+                color: 'rgba(45, 45, 45, 0.65)',
+                fontWeight: 500,
+                marginBottom: '8px',
+                display: 'block',
+              }}>执行链:</Text>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}>
                 {conversation.execution_chain.map((level, index) => (
-                  <div key={index} className="chain-level">
-                    <Tag color="blue">Level {index}</Tag>
-                    <Space wrap>
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 14px',
+                    background: 'rgba(245, 243, 240, 0.6)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 115, 85, 0.1)',
+                  }}>
+                    <Tag style={{
+                      background: 'rgba(160, 130, 109, 0.12)',
+                      color: '#a0826d',
+                      border: '1px solid rgba(160, 130, 109, 0.25)',
+                      borderRadius: '6px',
+                      fontWeight: 500,
+                      padding: '4px 12px',
+                      fontSize: '12px',
+                      margin: 0,
+                    }}>Level {index}</Tag>
+                    <Space wrap size={8}>
                       {level.map(nodeName => (
-                        <Tag key={nodeName}>{nodeName}</Tag>
+                        <Tag key={nodeName} style={{
+                          background: 'rgba(184, 88, 69, 0.08)',
+                          color: '#b85845',
+                          border: '1px solid rgba(184, 88, 69, 0.2)',
+                          borderRadius: '6px',
+                          fontWeight: 500,
+                          padding: '4px 10px',
+                          fontSize: '12px',
+                          margin: 0,
+                        }}>{nodeName}</Tag>
                       ))}
                     </Space>
                   </div>
@@ -1129,9 +1180,28 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             </div>
 
             {conversation.final_result && (
-              <div className="final-result">
-                <Text type="secondary">最终结果:</Text>
-                <Paragraph>
+              <div style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid rgba(139, 115, 85, 0.1)',
+              }}>
+                <Text style={{
+                  fontSize: '13px',
+                  color: 'rgba(45, 45, 45, 0.65)',
+                  fontWeight: 500,
+                  marginBottom: '8px',
+                  display: 'block',
+                }}>最终结果:</Text>
+                <Paragraph style={{
+                  margin: 0,
+                  padding: '12px 14px',
+                  background: 'rgba(245, 243, 240, 0.6)',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.1)',
+                  fontSize: '14px',
+                  color: '#2d2d2d',
+                  lineHeight: '1.7',
+                }}>
                   <Text>{conversation.final_result}</Text>
                 </Paragraph>
               </div>
