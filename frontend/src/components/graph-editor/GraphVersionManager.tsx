@@ -20,13 +20,14 @@ import {
   History
 } from 'lucide-react';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
+import { useT } from '../../i18n/hooks';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
+import 'dayjs/locale/en';
 
-// 配置 dayjs
+// Configure dayjs
 dayjs.extend(relativeTime);
-dayjs.locale('zh-cn');
 
 const { TextArea } = Input;
 
@@ -55,6 +56,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
   onClose,
   graphName
 }) => {
+  const t = useT();
   const [messageApi, contextHolder] = message.useMessage();
   const {
     versions,
@@ -69,46 +71,52 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
   const [createVersionModalVisible, setCreateVersionModalVisible] = useState(false);
   const [form] = Form.useForm();
 
-  // 加载版本列表
+  // Set dayjs locale based on current language
+  useEffect(() => {
+    const currentLang = localStorage.getItem('language') || 'zh';
+    dayjs.locale(currentLang === 'zh' ? 'zh-cn' : 'en');
+  }, []);
+
+  // Load version list
   useEffect(() => {
     if (visible && graphName) {
       fetchVersions(graphName).catch((error) => {
-        messageApi.error(`加载版本列表失败: ${error.message}`);
+        messageApi.error(t('components.graphEditor.versionManager.versionListLoadFailed', { error: error.message }));
       });
     }
-  }, [visible, graphName, fetchVersions]);
+  }, [visible, graphName, fetchVersions, t, messageApi]);
 
-  // 处理创建新版本
+  // Handle create new version
   const handleCreateVersion = async () => {
     try {
       const values = await form.validateFields();
       await createVersion(graphName, values.commit_message);
-      messageApi.success('版本创建成功');
+      messageApi.success(t('components.graphEditor.versionManager.versionCreated'));
       setCreateVersionModalVisible(false);
       form.resetFields();
     } catch (error: any) {
       if (error.errorFields) {
-        // 表单验证错误
+        // Form validation error
         return;
       }
-      messageApi.error(`创建版本失败: ${error.message || String(error)}`);
+      messageApi.error(t('components.graphEditor.versionManager.versionCreateFailed', { error: error.message || String(error) }));
     }
   };
 
-  // 处理加载版本
+  // Handle load version
   const handleLoadVersion = async (versionId: string, commitMessage: string) => {
-    // 如果有未保存的更改，先提示
+    // If there are unsaved changes, prompt first
     if (dirty) {
       Modal.confirm({
-        title: '未保存的更改',
-        content: '当前图有未保存的更改。加载版本将覆盖这些更改。是否继续？',
+        title: t('components.graphEditor.versionManager.unsavedChanges'),
+        content: t('components.graphEditor.versionManager.unsavedChangesMessage'),
         onOk: async () => {
           try {
             await loadVersion(graphName, versionId);
-            messageApi.success(`已加载版本: ${commitMessage}`);
+            messageApi.success(t('components.graphEditor.versionManager.versionLoaded', { message: commitMessage }));
             onClose();
           } catch (error: any) {
-            messageApi.error(`加载版本失败: ${error.message || String(error)}`);
+            messageApi.error(t('components.graphEditor.versionManager.versionLoadFailed', { error: error.message || String(error) }));
           }
         },
         okButtonProps: {
@@ -122,21 +130,21 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
     } else {
       try {
         await loadVersion(graphName, versionId);
-        messageApi.success(`已加载版本: ${commitMessage}`);
+        messageApi.success(t('components.graphEditor.versionManager.versionLoaded', { message: commitMessage }));
         onClose();
       } catch (error: any) {
-        messageApi.error(`加载版本失败: ${error.message || String(error)}`);
+        messageApi.error(t('components.graphEditor.versionManager.versionLoadFailed', { error: error.message || String(error) }));
       }
     }
   };
 
-  // 处理删除版本
+  // Handle delete version
   const handleDeleteVersion = async (versionId: string) => {
     try {
       await deleteVersion(graphName, versionId);
-      messageApi.success('版本已删除');
+      messageApi.success(t('components.graphEditor.versionManager.versionDeleted'));
     } catch (error: any) {
-      messageApi.error(`删除版本失败: ${error.message || String(error)}`);
+      messageApi.error(t('components.graphEditor.versionManager.versionDeleteFailed', { error: error.message || String(error) }));
     }
   };
 
@@ -292,7 +300,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <History size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
             <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d', letterSpacing: '0.5px' }}>
-              版本管理
+              {t('components.graphEditor.versionManager.title')}
             </span>
           </div>
         }
@@ -320,10 +328,10 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
         }}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
-          {/* 创建新版本区域 */}
+          {/* Create new version section */}
           <div style={createSectionStyle}>
             <div style={sectionTitleStyle}>
-              为当前图配置创建版本快照，便于追踪变更历史和版本回退
+              {t('components.graphEditor.versionManager.description')}
             </div>
             <Button
               type="primary"
@@ -341,21 +349,21 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                 flexShrink: 0
               }}
             >
-              新版本
+              {t('components.graphEditor.versionManager.createVersion')}
             </Button>
           </div>
 
-          {/* 版本历史区域 */}
+          {/* Version history section */}
           <div>
             <div style={historyTitleStyle}>
               <History size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />
-              <span>版本历史</span>
-              <span style={historyCountStyle}>({versions.length})</span>
+              <span>{t('components.graphEditor.versionManager.versionHistory')}</span>
+              <span style={historyCountStyle}>({versions.length} {t('components.graphEditor.versionManager.versions')})</span>
             </div>
 
             {loadingVersions ? (
               <div style={loadingStyle}>
-                <Spin tip="加载版本列表中..." />
+                <Spin tip={t('components.graphEditor.versionManager.loading')} />
               </div>
             ) : versions.length === 0 ? (
               <div style={emptyStyle}>
@@ -364,7 +372,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
                 <div style={emptyTextStyle}>
-                  暂无版本历史，点击上方"新版本"按钮保存当前配置
+                  {t('components.graphEditor.versionManager.noVersions')}
                 </div>
               </div>
             ) : (
@@ -401,7 +409,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                               fontSize: '12px',
                               padding: '2px 10px'
                             }}>
-                              最新版本
+                              {t('components.graphEditor.versionManager.latestVersion')}
                             </Tag>
                           )}
                         </div>
@@ -416,14 +424,14 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                               borderRadius: '4px'
                             }}
                           >
-                            加载
+                            {t('components.graphEditor.versionManager.load')}
                           </Button>
                           <Popconfirm
-                            title="确定要删除此版本吗？"
-                            description="此操作不可撤销"
+                            title={t('components.graphEditor.versionManager.deleteConfirm')}
+                            description={t('components.graphEditor.versionManager.deleteConfirmDescription')}
                             onConfirm={() => handleDeleteVersion(version.version_id)}
-                            okText="删除"
-                            cancelText="取消"
+                            okText={t('components.graphEditor.versionManager.deleteConfirmOk')}
+                            cancelText={t('components.graphEditor.versionManager.deleteConfirmCancel')}
                             okButtonProps={{
                               danger: true,
                               style: {
@@ -450,7 +458,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                                 borderRadius: '4px'
                               }}
                             >
-                              删除
+                              {t('components.graphEditor.versionManager.delete')}
                             </Button>
                           </Popconfirm>
                         </Space>
@@ -469,12 +477,12 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
         </Space>
       </Modal>
 
-      {/* 创建版本对话框 */}
+      {/* Create version dialog */}
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Plus size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
-            <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>创建新版本</span>
+            <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>{t('components.graphEditor.versionManager.createVersionTitle')}</span>
           </div>
         }
         open={createVersionModalVisible}
@@ -483,8 +491,8 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
           setCreateVersionModalVisible(false);
           form.resetFields();
         }}
-        okText="创建"
-        cancelText="取消"
+        okText={t('components.graphEditor.versionManager.create')}
+        cancelText={t('components.graphEditor.versionManager.cancel')}
         okButtonProps={{
           style: {
             background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
@@ -510,16 +518,16 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
         <Form form={form} layout="vertical">
           <Form.Item
             name="commit_message"
-            label={<span style={{ fontWeight: 500, color: '#2d2d2d', fontSize: '14px' }}>提交信息</span>}
+            label={<span style={{ fontWeight: 500, color: '#2d2d2d', fontSize: '14px' }}>{t('components.graphEditor.versionManager.commitMessage')}</span>}
             rules={[
-              { required: true, message: '请输入提交信息' },
-              { min: 5, message: '提交信息至少5个字符' },
-              { max: 1000, message: '提交信息不能超过1000个字符' }
+              { required: true, message: t('components.graphEditor.versionManager.commitMessageRequired') },
+              { min: 5, message: t('components.graphEditor.versionManager.commitMessageMinLength') },
+              { max: 1000, message: t('components.graphEditor.versionManager.commitMessageMaxLength') }
             ]}
           >
             <TextArea
               rows={4}
-              placeholder="描述本次版本的主要变更内容，例如：添加数据处理节点、优化提示词、修复连接错误等"
+              placeholder={t('components.graphEditor.versionManager.commitMessagePlaceholder')}
               showCount
               maxLength={1000}
               style={{
@@ -532,11 +540,11 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
           </Form.Item>
 
           <div style={tipsStyle}>
-            <div style={tipsTitleStyle}>提示：</div>
+            <div style={tipsTitleStyle}>{t('components.graphEditor.versionManager.tips')}</div>
             <ul style={tipsListStyle}>
-              <li style={tipsItemStyle}>提交信息应清晰描述此版本的主要变更</li>
-              <li style={tipsItemStyle}>版本将保存当前的完整图配置</li>
-              <li style={tipsItemStyle}>如果有未保存的更改，将自动先保存</li>
+              <li style={tipsItemStyle}>{t('components.graphEditor.versionManager.tip1')}</li>
+              <li style={tipsItemStyle}>{t('components.graphEditor.versionManager.tip2')}</li>
+              <li style={tipsItemStyle}>{t('components.graphEditor.versionManager.tip3')}</li>
             </ul>
           </div>
         </Form>

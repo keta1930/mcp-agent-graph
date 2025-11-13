@@ -8,6 +8,7 @@ import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { SAVE_FORMAT_OPTIONS } from '../../types/graph';
+import { useT } from '../../i18n/hooks';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -20,6 +21,7 @@ interface AddNodeModalProps {
 }
 
 const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) => {
+  const t = useT();
   const [form] = Form.useForm();
   const { models } = useModelStore();
   const { config } = useMCPStore();
@@ -105,7 +107,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
           color: '#2d2d2d'
         }}>
           <Plus size={18} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
-          添加新节点
+          {t('components.graphEditor.addNodeModal.title')}
         </div>
       }
       open={visible}
@@ -116,8 +118,8 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
         padding: '24px',
         background: '#faf8f5'
       }}
-      okText="添加节点"
-      cancelText="取消"
+      okText={t('components.graphEditor.addNodeModal.addNode')}
+      cancelText={t('components.graphEditor.addNodeModal.cancel')}
       okButtonProps={{
         style: {
           background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',

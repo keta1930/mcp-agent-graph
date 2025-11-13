@@ -7,6 +7,7 @@ import {
   RefreshCw, Zap
 } from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
+import { useT } from '../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -30,6 +31,7 @@ interface AgentNodeProps {
 }
 
 const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
+  const t = useT();
   const {
     name,
     description,
@@ -48,7 +50,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
 
   const { status } = useMCPStore();
 
-  // 从input_nodes和output_nodes判断起始和结束状态
+  // Determine start and end status from input_nodes and output_nodes
   const is_start = input_nodes?.includes('start') || false;
   const is_end = output_nodes?.includes('end') || false;
 
@@ -57,7 +59,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
     return status[server] && !status[server].connected;
   });
 
-  // 判断是否有handoffs功能
+  // Check if has handoffs feature
   const hasHandoffs = Boolean(handoffs);
 
   // 构建节点标题区域
@@ -73,11 +75,11 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         {name}
       </Text>
       
-      {/* 状态图标 */}
+      {/* Status icons */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-        {/* 执行层级 */}
+        {/* Execution level */}
         {level !== undefined && level !== null && (
-          <Tooltip title={`执行层级: ${level}`}>
+          <Tooltip title={`${t('components.graphEditor.nodePropertiesPanel.executionLevel')}: ${level}`}>
             <Badge 
               count={level} 
               style={{ 
@@ -91,23 +93,23 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
           </Tooltip>
         )}
 
-        {/* 循环次数 */}
+        {/* Loop count */}
         {hasHandoffs && (
-          <Tooltip title={`循环执行: ${handoffs}次`}>
+          <Tooltip title={`${t('components.graphEditor.nodePropertiesPanel.loopExecution')}: ${handoffs}${t('components.graphEditor.nodePropertiesPanel.times')}`}>
             <RefreshCw size={12} strokeWidth={1.5} style={{ color: '#d4a574' }} />
           </Tooltip>
         )}
 
-        {/* 文件保存 */}
+        {/* File save */}
         {save && (
-          <Tooltip title={`保存为 ${save.toUpperCase()} 文件`}>
+          <Tooltip title={`${t('components.graphEditor.nodePropertiesPanel.saveFormat')}: ${save.toUpperCase()}`}>
             <Save size={12} strokeWidth={1.5} style={{ color: '#a0826d' }} />
           </Tooltip>
         )}
 
-        {/* 服务器连接警告 */}
+        {/* Server connection warning */}
         {hasDisconnectedServers && (
-          <Tooltip title="使用了断开连接的服务器">
+          <Tooltip title={t('components.graphEditor.nodePropertiesPanel.disconnectedServers')}>
             <AlertTriangle size={12} strokeWidth={1.5} style={{ color: '#d4a574' }} />
           </Tooltip>
         )}
@@ -152,7 +154,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
           <Webhook size={11} strokeWidth={1.5} style={{ marginRight: '4px', color: '#d4a574' }} />
           {mcp_servers.length > 1 ? (
             <Tooltip title={mcp_servers.join(', ')}>
-              <Text style={{ fontSize: '11px' }}>{mcp_servers.length} 个服务</Text>
+              <Text style={{ fontSize: '11px' }}>{mcp_servers.length} {t('components.graphEditor.addNodeModal.mcpServers')}</Text>
             </Tooltip>
           ) : (
             <Text ellipsis style={{ maxWidth: '140px', fontSize: '11px' }}>
@@ -162,16 +164,16 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         </div>
       )}
 
-      {/* 连接信息 */}
+      {/* Connection info */}
       <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
         {input_nodes && input_nodes.length > 0 && (
           <div style={{ marginBottom: '2px' }}>
-            输入: {input_nodes.slice(0, 2).join(', ')}{input_nodes.length > 2 ? '...' : ''}
+            {t('components.graphEditor.nodePropertiesPanel.inputNodes')}: {input_nodes.slice(0, 2).join(', ')}{input_nodes.length > 2 ? '...' : ''}
           </div>
         )}
         {output_nodes && output_nodes.length > 0 && (
           <div>
-            输出: {output_nodes.slice(0, 2).join(', ')}{output_nodes.length > 2 ? '...' : ''}
+            {t('components.graphEditor.nodePropertiesPanel.outputNodes')}: {output_nodes.slice(0, 2).join(', ')}{output_nodes.length > 2 ? '...' : ''}
           </div>
         )}
       </div>
@@ -179,15 +181,15 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
     </div>
   );
 
-  // 构建底部标签区域
+  // Build bottom tag area
   const renderNodeTags = () => {
     const tags = [];
     
     if (is_start) {
-      tags.push(<Tag key="start" color="green" style={{ fontSize: '10px', margin: '2px 2px 0 0' }}>开始</Tag>);
+      tags.push(<Tag key="start" color="green" style={{ fontSize: '10px', margin: '2px 2px 0 0' }}>{t('components.graphEditor.nodePropertiesPanel.startNode')}</Tag>);
     }
     if (is_end) {
-      tags.push(<Tag key="end" color="blue" style={{ fontSize: '10px', margin: '2px 2px 0 0' }}>结束</Tag>);
+      tags.push(<Tag key="end" color="blue" style={{ fontSize: '10px', margin: '2px 2px 0 0' }}>{t('components.graphEditor.nodePropertiesPanel.endNode')}</Tag>);
     }
     
     return tags.length > 0 ? (

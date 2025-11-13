@@ -12,6 +12,7 @@ import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
 import { SAVE_FORMAT_OPTIONS } from '../../types/graph';
 import SmartPromptEditor from '../common/SmartPromptEditor';
+import { useT } from '../../i18n/hooks';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -19,6 +20,7 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 
 const NodePropertiesPanel: React.FC = () => {
+  const t = useT();
   const [form] = Form.useForm();
   const { currentGraph, selectedNode, updateNode, removeNode, graphs, selectNode } = useGraphEditorStore();
   const { models, fetchModels } = useModelStore();
@@ -127,15 +129,15 @@ const NodePropertiesPanel: React.FC = () => {
 
   const handleDelete = () => {
     if (selectedNode && node) {
-      console.log(`删除节点: ${node.name}`);
+      console.log(`Delete node: ${node.name}`);
       removeNode(selectedNode);
-      // 删除后关闭模态框
+      // Close modal after deletion
       selectNode(null);
     }
   };
 
 
-  // 如果没有选中节点，返回空（在模态框模式下不应该出现这种情况）
+  // If no node is selected, return null (should not happen in modal mode)
   if (!node) {
     return null;
   }
@@ -144,7 +146,7 @@ const NodePropertiesPanel: React.FC = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* 节点标题区域 */}
+      {/* Node title area */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -175,7 +177,7 @@ const NodePropertiesPanel: React.FC = () => {
                   color: '#a0826d',
                   border: '1px solid rgba(160, 130, 109, 0.25)',
                   borderRadius: '6px'
-                }}>起始节点</Tag>
+                }}>{t('components.graphEditor.nodePropertiesPanel.startNode')}</Tag>
               )}
               {node.output_nodes?.includes('end') && (
                 <Tag style={{
@@ -183,7 +185,7 @@ const NodePropertiesPanel: React.FC = () => {
                   color: '#b85845',
                   border: '1px solid rgba(184, 88, 69, 0.25)',
                   borderRadius: '6px'
-                }}>结束节点</Tag>
+                }}>{t('components.graphEditor.nodePropertiesPanel.endNode')}</Tag>
               )}
               {node.level !== undefined && node.level !== null && (
                 <Tag style={{
@@ -191,7 +193,7 @@ const NodePropertiesPanel: React.FC = () => {
                   color: '#d4a574',
                   border: '1px solid rgba(212, 165, 116, 0.25)',
                   borderRadius: '6px'
-                }}>执行层级: {node.level}</Tag>
+                }}>{t('components.graphEditor.nodePropertiesPanel.executionLevel')}: {node.level}</Tag>
               )}
               {node.handoffs && node.handoffs > 1 && (
                 <Tag style={{
@@ -199,7 +201,7 @@ const NodePropertiesPanel: React.FC = () => {
                   color: '#8b7355',
                   border: '1px solid rgba(139, 115, 85, 0.25)',
                   borderRadius: '6px'
-                }}>循环执行: {node.handoffs}次</Tag>
+                }}>{t('components.graphEditor.nodePropertiesPanel.loopExecution')}: {node.handoffs}{t('components.graphEditor.nodePropertiesPanel.times')}</Tag>
               )}
               {node.save && (
                 <Tag style={{
@@ -207,23 +209,23 @@ const NodePropertiesPanel: React.FC = () => {
                   color: '#a0826d',
                   border: '1px solid rgba(160, 130, 109, 0.25)',
                   borderRadius: '6px'
-                }}>保存格式: {node.save}</Tag>
+                }}>{t('components.graphEditor.nodePropertiesPanel.saveFormat')}: {node.save}</Tag>
               )}
             </div>
           </div>
         </div>
 
-        {/* 断开连接警告 */}
+        {/* Disconnected server warning */}
         {disconnectedServers.length > 0 && (
-          <Tooltip title={`断开的服务器: ${disconnectedServers.join(', ')}`}>
+          <Tooltip title={`${t('components.graphEditor.nodePropertiesPanel.disconnectedServers')}: ${disconnectedServers.join(', ')}`}>
             <AlertTriangle size={20} strokeWidth={1.5} style={{ color: '#d4a574' }} />
           </Tooltip>
         )}
       </div>
 
-      {/* 标签页内容 */}
+      {/* Tab content */}
       <Tabs defaultActiveKey="basic" size="large">
-        <TabPane tab="基础信息" key="basic">
+        <TabPane tab={t('components.graphEditor.nodePropertiesPanel.basicInfo')} key="basic">
           <Form
             form={form}
             layout="vertical"
@@ -231,35 +233,35 @@ const NodePropertiesPanel: React.FC = () => {
           >
             <Form.Item
               name="name"
-              label="节点名称"
+              label={t('components.graphEditor.nodePropertiesPanel.nodeName')}
               rules={[
-                { required: true, message: '请输入节点名称' },
+                { required: true, message: t('components.graphEditor.nodePropertiesPanel.nodeNameRequired') },
                 {
                   validator: (_, value) => {
                     if (value && (/[/\\.]/.test(value))) {
-                      return Promise.reject('名称不能包含特殊字符 (/, \\, .)');
+                      return Promise.reject(t('components.graphEditor.nodePropertiesPanel.nodeNameInvalid'));
                     }
                     return Promise.resolve();
                   }
                 }
               ]}
             >
-              <Input placeholder="输入节点名称" size="large" />
+              <Input placeholder={t('components.graphEditor.nodePropertiesPanel.nodeNamePlaceholder')} size="large" />
             </Form.Item>
 
             <Form.Item
               name="description"
               label={
                 <span>
-                  节点描述{' '}
-                  <Tooltip title="用于帮助AI选择合适的工具和执行策略">
+                  {t('components.graphEditor.nodePropertiesPanel.nodeDescription')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.nodeDescriptionTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
               <TextArea
-                placeholder="描述此节点的功能和用途"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.nodeDescriptionPlaceholder')}
                 rows={3}
                 showCount
                 maxLength={200}
@@ -269,12 +271,12 @@ const NodePropertiesPanel: React.FC = () => {
 
             <Form.Item
               name="is_subgraph"
-              label="节点类型"
+              label={t('components.graphEditor.nodePropertiesPanel.nodeType')}
               valuePropName="checked"
             >
               <Switch
-                checkedChildren="子图"
-                unCheckedChildren="智能体"
+                checkedChildren={t('components.graphEditor.nodePropertiesPanel.subgraph')}
+                unCheckedChildren={t('components.graphEditor.nodePropertiesPanel.agent')}
                 size="default"
               />
             </Form.Item>
@@ -282,10 +284,10 @@ const NodePropertiesPanel: React.FC = () => {
             {!node.is_subgraph ? (
               <Form.Item
                 name="model_name"
-                label="模型"
-                rules={[{ required: true, message: '请选择一个模型' }]}
+                label={t('components.graphEditor.nodePropertiesPanel.model')}
+                rules={[{ required: true, message: t('components.graphEditor.nodePropertiesPanel.modelRequired') }]}
               >
-                <Select placeholder="选择模型" size="large">
+                <Select placeholder={t('components.graphEditor.nodePropertiesPanel.modelPlaceholder')} size="large">
                   {models.map(model => (
                     <Option key={model.name} value={model.name}>{model.name}</Option>
                   ))}
@@ -294,10 +296,10 @@ const NodePropertiesPanel: React.FC = () => {
             ) : (
               <Form.Item
                 name="subgraph_name"
-                label="子图"
-                rules={[{ required: true, message: '请选择一个子图' }]}
+                label={t('components.graphEditor.nodePropertiesPanel.subgraph')}
+                rules={[{ required: true, message: t('components.graphEditor.nodePropertiesPanel.subgraphRequired') }]}
               >
-                <Select placeholder="选择子图" size="large">
+                <Select placeholder={t('components.graphEditor.nodePropertiesPanel.subgraphPlaceholder')} size="large">
                   {availableSubgraphs.map(graph => (
                     <Option key={graph} value={graph}>{graph}</Option>
                   ))}
@@ -307,11 +309,11 @@ const NodePropertiesPanel: React.FC = () => {
 
             <Form.Item
               name="mcp_servers"
-              label="MCP服务器"
+              label={t('components.graphEditor.nodePropertiesPanel.mcpServers')}
             >
               <Select
                 mode="multiple"
-                placeholder="选择MCP服务器"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.mcpServersPlaceholder')}
                 size="large"
               >
                 {mcpServers.map(server => (
@@ -322,7 +324,7 @@ const NodePropertiesPanel: React.FC = () => {
                     {server.name}
                     {!server.connected && (
                       <Text type="danger" style={{ marginLeft: '8px', fontSize: '12px' }}>
-                        (未连接)
+                        {t('components.graphEditor.nodePropertiesPanel.notConnected')}
                       </Text>
                     )}
                   </Option>
@@ -333,14 +335,14 @@ const NodePropertiesPanel: React.FC = () => {
             <Divider />
 
             <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ marginBottom: '16px' }}>节点连接</h3>
+              <h3 style={{ marginBottom: '16px' }}>{t('components.graphEditor.addNodeModal.nodeConnections')}</h3>
               
               <Form.Item
                 name="input_nodes"
                 label={
                   <span>
-                    输入节点{' '}
-                    <Tooltip title="选择为此节点提供输入的节点">
+                    {t('components.graphEditor.nodePropertiesPanel.inputNodes')}{' '}
+                    <Tooltip title={t('components.graphEditor.nodePropertiesPanel.inputNodesTooltip')}>
                       <HelpCircle size={14} strokeWidth={1.5} />
                     </Tooltip>
                   </span>
@@ -348,7 +350,7 @@ const NodePropertiesPanel: React.FC = () => {
               >
                 <Select
                   mode="multiple"
-                  placeholder="选择输入节点"
+                  placeholder={t('components.graphEditor.nodePropertiesPanel.inputNodesPlaceholder')}
                   size="large"
                   showSearch
                   filterOption={(input, option) =>
@@ -356,7 +358,7 @@ const NodePropertiesPanel: React.FC = () => {
                   }
                 >
                   <Option key="start" value="start">
-                    <span style={{ color: '#a0826d', fontWeight: 'bold' }}>🚀 start (用户输入)</span>
+                    <span style={{ color: '#a0826d', fontWeight: 'bold' }}>🚀 {t('components.graphEditor.nodePropertiesPanel.start')} ({t('components.graphEditor.nodePropertiesPanel.userInput')})</span>
                   </Option>
                   {getAvailableNodes().map(nodeName => (
                     <Option key={nodeName} value={nodeName}>{nodeName}</Option>
@@ -368,8 +370,8 @@ const NodePropertiesPanel: React.FC = () => {
                 name="output_nodes"
                 label={
                   <span>
-                    输出节点{' '}
-                    <Tooltip title="选择接收此节点输出的节点">
+                    {t('components.graphEditor.nodePropertiesPanel.outputNodes')}{' '}
+                    <Tooltip title={t('components.graphEditor.nodePropertiesPanel.outputNodesTooltip')}>
                       <HelpCircle size={14} strokeWidth={1.5} />
                     </Tooltip>
                   </span>
@@ -377,7 +379,7 @@ const NodePropertiesPanel: React.FC = () => {
               >
                 <Select 
                   mode="multiple" 
-                  placeholder="选择输出节点"
+                  placeholder={t('components.graphEditor.nodePropertiesPanel.outputNodesPlaceholder')}
                   size="large"
                   showSearch
                   filterOption={(input, option) =>
@@ -385,7 +387,7 @@ const NodePropertiesPanel: React.FC = () => {
                   }
                 >
                   <Option key="end" value="end">
-                    <span style={{ color: '#b85845', fontWeight: 'bold' }}>🏁 end (最终结果)</span>
+                    <span style={{ color: '#b85845', fontWeight: 'bold' }}>🏁 {t('components.graphEditor.nodePropertiesPanel.end')} ({t('components.graphEditor.nodePropertiesPanel.finalResult')})</span>
                   </Option>
                   {getAvailableNodes().map(nodeName => (
                     <Option key={nodeName} value={nodeName}>{nodeName}</Option>
@@ -397,7 +399,7 @@ const NodePropertiesPanel: React.FC = () => {
             <Divider />
 
             <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ marginBottom: '16px' }}>输出设置</h3>
+              <h3 style={{ marginBottom: '16px' }}>{t('components.graphEditor.nodePropertiesPanel.outputSettings')}</h3>
               <Space direction="vertical" style={{ width: '100%' }} size="large">
                 <Form.Item
                   name="output_enabled"
@@ -405,8 +407,8 @@ const NodePropertiesPanel: React.FC = () => {
                   style={{ marginBottom: 0 }}
                 >
                   <Switch
-                    checkedChildren="启用输出"
-                    unCheckedChildren="禁用输出"
+                    checkedChildren={t('components.graphEditor.nodePropertiesPanel.enableOutput')}
+                    unCheckedChildren={t('components.graphEditor.nodePropertiesPanel.disableOutput')}
                   />
                 </Form.Item>
 
@@ -415,7 +417,7 @@ const NodePropertiesPanel: React.FC = () => {
           </Form>
         </TabPane>
 
-        <TabPane tab="提示词设置" key="prompts">
+        <TabPane tab={t('components.graphEditor.nodePropertiesPanel.promptSettings')} key="prompts">
           <Form
             form={form}
             layout="vertical"
@@ -425,15 +427,15 @@ const NodePropertiesPanel: React.FC = () => {
               name="system_prompt"
               label={
                 <span>
-                  系统提示词{' '}
-                  <Tooltip title="输入 { 可以快速插入节点引用，如 {node_name}">
+                  {t('components.graphEditor.nodePropertiesPanel.systemPrompt')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.systemPromptTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
               <SmartPromptEditor
-                placeholder="输入系统提示词，可以用 {node_name} 引用其他节点的输出"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.systemPromptPlaceholder')}
                 rows={8}
                 availableNodes={availableNodesForPrompt}
                 currentNodeName={node?.name}
@@ -445,15 +447,15 @@ const NodePropertiesPanel: React.FC = () => {
               name="user_prompt"
               label={
                 <span>
-                  用户提示词{' '}
-                  <Tooltip title="输入 { 可以快速插入节点引用，如 {node_name}">
+                  {t('components.graphEditor.nodePropertiesPanel.userPrompt')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.userPromptTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
               <SmartPromptEditor
-                placeholder="输入用户提示词，可以用 {node_name} 引用其他节点的输出"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.userPromptPlaceholder')}
                 rows={8}
                 availableNodes={availableNodesForPrompt}
                 currentNodeName={node?.name}
@@ -461,7 +463,7 @@ const NodePropertiesPanel: React.FC = () => {
               />
             </Form.Item>
 
-            {/* 添加提示信息 */}
+            {/* Add prompt info */}
             <div style={{ 
               padding: '12px', 
               backgroundColor: '#f6f8fa', 
@@ -470,19 +472,19 @@ const NodePropertiesPanel: React.FC = () => {
               color: '#666',
               marginTop: '16px'
             }}>
-              <strong>💡 引用语法说明：</strong>
+              <strong>💡 {t('components.graphEditor.nodePropertiesPanel.referenceSyntax')}</strong>
               <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
-                <li>输入 <code>{`{{`}</code> 可以快速选择要引用的节点</li>
-                <li>使用 <code>{`{{start}}`}</code> 引用用户输入</li>
-                <li>使用 <code>{`{{node_name}}`}</code> 引用其他节点的输出</li>
-                <li>使用 <code>{`{{@prompt_name}}`}</code> 引用已注册的提示词模板</li>
-                <li>支持联合引用：<code>{`{{node1:3|node2:2}}`}</code> 获取多节点交错输出</li>
+                <li>{t('components.graphEditor.nodePropertiesPanel.referenceSyntaxTip1')}</li>
+                <li>{t('components.graphEditor.nodePropertiesPanel.referenceSyntaxTip2')}</li>
+                <li>{t('components.graphEditor.nodePropertiesPanel.referenceSyntaxTip3')}</li>
+                <li>{t('components.graphEditor.nodePropertiesPanel.referenceSyntaxTip4')}</li>
+                <li>{t('components.graphEditor.nodePropertiesPanel.referenceSyntaxTip5')}</li>
               </ul>
             </div>
           </Form>
         </TabPane>
 
-        <TabPane tab="执行控制" key="execution">
+        <TabPane tab={t('components.graphEditor.nodePropertiesPanel.executionControl')} key="execution">
           <Form
             form={form}
             layout="vertical"
@@ -492,15 +494,15 @@ const NodePropertiesPanel: React.FC = () => {
               name="level"
               label={
                 <span>
-                  执行层级{' '}
-                  <Tooltip title="数字越小越先执行，用于控制节点执行顺序">
+                  {t('components.graphEditor.nodePropertiesPanel.executionLevel')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.executionLevelTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
               <InputNumber
-                placeholder="执行优先级（可选）"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.executionLevelPlaceholder')}
                 style={{ width: '100%' }}
                 size="large"
                 min={0}
@@ -511,15 +513,15 @@ const NodePropertiesPanel: React.FC = () => {
               name="handoffs"
               label={
                 <span>
-                  循环次数{' '}
-                  <Tooltip title="节点可以重复执行的次数，用于循环流程">
+                  {t('components.graphEditor.nodePropertiesPanel.loopCount')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.loopCountTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
               <InputNumber
-                placeholder="循环执行次数（可选）"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.loopCountPlaceholder')}
                 style={{ width: '100%' }}
                 size="large"
                 min={1}
@@ -530,14 +532,14 @@ const NodePropertiesPanel: React.FC = () => {
               name="save"
               label={
                 <span>
-                  保存格式{' '}
-                  <Tooltip title="输出内容保存到文件的格式">
+                  {t('components.graphEditor.nodePropertiesPanel.saveFormat')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.saveFormatTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
-              <Select placeholder="选择文件格式（可选）" allowClear size="large">
+              <Select placeholder={t('components.graphEditor.nodePropertiesPanel.saveFormatPlaceholder')} allowClear size="large">
                 {SAVE_FORMAT_OPTIONS.map(option => (
                   <Option key={option.value} value={option.value}>
                     {option.label}
@@ -549,10 +551,10 @@ const NodePropertiesPanel: React.FC = () => {
         </TabPane>
 
 
-        <TabPane tab="连接信息" key="connections">
+        <TabPane tab={t('components.graphEditor.nodePropertiesPanel.connectionInfo')} key="connections">
           <div style={{ padding: '8px' }}>
             <div style={{ marginBottom: '24px' }}>
-              <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>输入节点:</Text>
+              <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>{t('components.graphEditor.nodePropertiesPanel.inputNodes')}:</Text>
               <div style={{ marginTop: '12px' }}>
                 {node.input_nodes && node.input_nodes.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -573,13 +575,13 @@ const NodePropertiesPanel: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <Text type="secondary" style={{ fontSize: '14px' }}>无输入节点</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>{t('components.graphEditor.nodePropertiesPanel.noInputNodes')}</Text>
                 )}
               </div>
             </div>
 
             <div>
-              <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>输出节点:</Text>
+              <Text strong style={{ fontSize: '16px', color: '#2d2d2d' }}>{t('components.graphEditor.nodePropertiesPanel.outputNodes')}:</Text>
               <div style={{ marginTop: '12px' }}>
                 {node.output_nodes && node.output_nodes.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -600,7 +602,7 @@ const NodePropertiesPanel: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <Text type="secondary" style={{ fontSize: '14px' }}>无输出节点</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>{t('components.graphEditor.nodePropertiesPanel.noOutputNodes')}</Text>
                 )}
               </div>
             </div>
@@ -608,7 +610,7 @@ const NodePropertiesPanel: React.FC = () => {
         </TabPane>
       </Tabs>
 
-      {/* 底部操作按钮 */}
+      {/* Bottom action buttons */}
       <div style={{
         marginTop: '32px',
         paddingTop: '24px',
@@ -622,7 +624,7 @@ const NodePropertiesPanel: React.FC = () => {
           onClick={handleDelete}
           size="large"
         >
-          删除节点
+          {t('components.graphEditor.nodePropertiesPanel.deleteNode')}
         </Button>
       </div>
     </div>

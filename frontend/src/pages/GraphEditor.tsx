@@ -45,12 +45,14 @@ import GraphVersionManager from '../components/graph-editor/GraphVersionManager'
 import { useGraphEditorStore } from '../store/graphEditorStore';
 import { useMCPStore } from '../store/mcpStore';
 import { useModelStore } from '../store/modelStore';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 const GraphEditor: React.FC = () => {
+  const t = useT();
   const {
     fetchGraphs,
     addNode,
@@ -92,7 +94,7 @@ const GraphEditor: React.FC = () => {
   const [settingsForm] = Form.useForm();
 
   useEffect(() => {
-    // 初始化所有数据
+    // Initialize all data
     const initializeData = async () => {
       try {
         await Promise.all([
@@ -102,16 +104,16 @@ const GraphEditor: React.FC = () => {
           fetchModels()
         ]);
       } catch (error) {
-        console.error('初始化数据获取失败:', error);
+        console.error('Failed to initialize data:', error);
       }
     };
 
     initializeData();
 
-    // 定期刷新 MCP 状态
+    // Periodically refresh MCP status
     const statusInterval = setInterval(() => {
       fetchStatus();
-    }, 30000); // 每 30 秒刷新一次
+    }, 30000); // Refresh every 30 seconds
 
     return () => {
       clearInterval(statusInterval);
@@ -151,9 +153,9 @@ const GraphEditor: React.FC = () => {
       const values = await form.validateFields();
       createNewGraph(values.name, values.description);
       setNewGraphModalVisible(false);
-      message.success(`工作流 "${values.name}" 创建成功`);
+      message.success(t('pages.graphEditor.createSuccess', { name: values.name }));
     } catch (error: any) {
-      message.error('创建失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.graphEditor.createFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -166,10 +168,10 @@ const GraphEditor: React.FC = () => {
   const handleBackToList = () => {
     if (hasUnsavedChanges) {
       Modal.confirm({
-        title: '是否保存更改？',
-        content: '当前工作流有未保存的更改，是否保存后返回？',
-        okText: '保存并返回',
-        cancelText: '直接返回',
+        title: t('pages.graphEditor.saveChangesTitle'),
+        content: t('pages.graphEditor.saveChangesMessage'),
+        okText: t('pages.graphEditor.saveAndReturn'),
+        cancelText: t('pages.graphEditor.returnDirectly'),
         onOk: async () => {
           await saveGraph();
           selectNode(null);
@@ -190,10 +192,10 @@ const GraphEditor: React.FC = () => {
   const handleDeleteGraph = async (graphName: string) => {
     try {
       await deleteGraph(graphName);
-      message.success(`工作流 "${graphName}" 删除成功`);
+      message.success(t('pages.graphEditor.deleteSuccess', { name: graphName }));
       setDeleteConfirmVisible(null);
     } catch (error: any) {
-      message.error('删除失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.graphEditor.deleteFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -201,12 +203,12 @@ const GraphEditor: React.FC = () => {
   const handleExportPackage = async (graphName: string) => {
     try {
       const result = await exportGraph(graphName);
-      message.success(`工作流 "${graphName}" 导出成功`);
+      message.success(t('pages.graphEditor.exportSuccess', { name: graphName }));
       if (result.file_path) {
-        message.info(`导出文件路径: ${result.file_path}`);
+        message.info(t('pages.graphEditor.exportFilePath', { path: result.file_path }));
       }
     } catch (error: any) {
-      message.error('导出失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.graphEditor.exportFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -214,9 +216,9 @@ const GraphEditor: React.FC = () => {
   const handleExportMCP = async (graphName: string) => {
     try {
       await generateMCPScript(graphName);
-      message.success('导出 MCP 脚本成功');
+      message.success(t('pages.graphEditor.exportMCPSuccess'));
     } catch (error: any) {
-      message.error('导出失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.graphEditor.exportFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -239,9 +241,9 @@ const GraphEditor: React.FC = () => {
   const handleSave = async () => {
     try {
       await saveGraph();
-      message.success('保存成功');
+      message.success(t('pages.graphEditor.saveSuccess'));
     } catch (error: any) {
-      message.error('保存失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.graphEditor.saveFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -253,14 +255,14 @@ const GraphEditor: React.FC = () => {
       setReadmeContent(result.readme);
       setReadmeModalVisible(true);
     } catch (error: any) {
-      message.error('获取README失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.graphEditor.readmeFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
   // 自动布局
   const handleAutoLayout = () => {
     autoLayout();
-    message.success('自动布局已应用');
+    message.success(t('pages.graphEditor.autoLayoutSuccess'));
   };
 
   // 图设置
@@ -280,7 +282,7 @@ const GraphEditor: React.FC = () => {
       const values = await settingsForm.validateFields();
       updateGraphProperties(values);
       setGraphSettingsModalVisible(false);
-      message.success('图设置已更新');
+      message.success(t('pages.graphEditor.graphSettingsUpdated'));
     } catch (error: any) {
       // Form validation error
     }
@@ -319,7 +321,7 @@ const GraphEditor: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              工作流管理
+              {t('pages.graphEditor.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -330,14 +332,14 @@ const GraphEditor: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {graphs.length} 个工作流
+              {t('pages.graphEditor.workflowsCount', { count: graphs.length })}
             </Tag>
           </Space>
 
           {/* 右侧：搜索框 + 操作按钮 */}
           <Space size={12}>
             <Input
-              placeholder="搜索工作流..."
+              placeholder={t('pages.graphEditor.searchPlaceholder')}
               allowClear
               prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
               value={searchText}
@@ -378,7 +380,7 @@ const GraphEditor: React.FC = () => {
                 padding: '0 16px'
               }}
             >
-              AI提示词
+              {t('pages.graphEditor.aiPrompt')}
             </Button>
             <Button
               type="primary"
@@ -399,7 +401,7 @@ const GraphEditor: React.FC = () => {
                 padding: '0 20px'
               }}
             >
-              工作流
+              {t('pages.graphEditor.createWorkflow')}
             </Button>
           </Space>
         </div>
@@ -417,7 +419,7 @@ const GraphEditor: React.FC = () => {
             gap: '12px'
           }}>
             <Spin size="large" />
-            <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>加载中...</Text>
+            <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>{t('common.loading')}</Text>
           </div>
         ) : filteredGraphs.length === 0 ? (
           searchText ? (
@@ -427,7 +429,7 @@ const GraphEditor: React.FC = () => {
               color: 'rgba(45, 45, 45, 0.45)',
               fontSize: '14px'
             }}>
-              未找到匹配 "{searchText}" 的工作流
+              {t('pages.graphEditor.noMatchingWorkflows', { search: searchText })}
             </div>
           ) : (
             <Card
@@ -446,7 +448,7 @@ const GraphEditor: React.FC = () => {
                 display: 'block',
                 marginBottom: '16px'
               }}>
-                暂无工作流配置
+                {t('pages.graphEditor.noWorkflows')}
               </Text>
               <Button
                 style={{
@@ -474,7 +476,7 @@ const GraphEditor: React.FC = () => {
                 }}
               >
                 <Plus size={16} strokeWidth={1.5} />
-                创建第一个工作流
+                {t('pages.graphEditor.createFirstWorkflow')}
               </Button>
             </Card>
           )
@@ -537,7 +539,7 @@ const GraphEditor: React.FC = () => {
                       display: 'block',
                       fontStyle: 'italic'
                     }}>
-                      点击编辑查看详情
+                      {t('pages.graphEditor.clickToView')}
                     </Text>
                   </div>
 
@@ -574,9 +576,9 @@ const GraphEditor: React.FC = () => {
                       }}
                     >
                       <Edit size={15} strokeWidth={1.5} />
-                      编辑
+                      {t('common.edit')}
                     </div>
-                    <Tooltip title="导出压缩包">
+                    <Tooltip title={t('pages.graphEditor.exportPackage')}>
                       <div
                         style={{
                           padding: '6px',
@@ -606,7 +608,7 @@ const GraphEditor: React.FC = () => {
                         <PackagePlus size={15} strokeWidth={1.5} />
                       </div>
                     </Tooltip>
-                    <Tooltip title="导出MCP脚本">
+                    <Tooltip title={t('pages.graphEditor.exportMCPScript')}>
                       <div
                         style={{
                           padding: '6px',
@@ -636,7 +638,7 @@ const GraphEditor: React.FC = () => {
                         <Code size={15} strokeWidth={1.5} />
                       </div>
                     </Tooltip>
-                    <Tooltip title="删除工作流">
+                    <Tooltip title={t('pages.graphEditor.deleteWorkflow')}>
                       <div
                         style={{
                           padding: '6px',
@@ -711,13 +713,13 @@ const GraphEditor: React.FC = () => {
                 display: 'block',
                 marginBottom: '8px'
               }}>
-                确认删除
+                {t('pages.graphEditor.deleteConfirmTitle')}
               </Text>
               <Text style={{
                 fontSize: '14px',
                 color: 'rgba(45, 45, 45, 0.65)'
               }}>
-                您确定要删除工作流 "{deleteConfirmVisible}" 吗？此操作无法撤销。
+                {t('pages.graphEditor.deleteConfirmMessage', { name: deleteConfirmVisible })}
               </Text>
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -732,7 +734,7 @@ const GraphEditor: React.FC = () => {
                 }}
                 onClick={() => setDeleteConfirmVisible(null)}
               >
-                取消
+                {t('common.cancel')}
               </Button>
               <Button
                 style={{
@@ -747,7 +749,7 @@ const GraphEditor: React.FC = () => {
                 }}
                 onClick={() => handleDeleteGraph(deleteConfirmVisible)}
               >
-                确定删除
+                {t('common.confirm')} {t('common.delete')}
               </Button>
             </div>
           </Card>
@@ -781,7 +783,7 @@ const GraphEditor: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {/* 左侧：返回按钮 + 标题 */}
           <Space size="middle">
-            <Tooltip title="返回列表">
+            <Tooltip title={t('pages.graphEditor.backToList')}>
               <Button
                 icon={<ArrowLeft size={16} strokeWidth={1.5} />}
                 onClick={handleBackToList}
@@ -795,7 +797,7 @@ const GraphEditor: React.FC = () => {
                   gap: '6px'
                 }}
               >
-                返回
+                {t('pages.graphEditor.backToList')}
               </Button>
             </Tooltip>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -824,7 +826,7 @@ const GraphEditor: React.FC = () => {
 
           {/* 右侧：工具按钮 */}
           <Space size="small">
-            <Tooltip title="README">
+            <Tooltip title={t('pages.graphEditor.readme')}>
               <Button
                 type="text"
                 icon={<FileText size={16} strokeWidth={1.5} />}
@@ -832,7 +834,7 @@ const GraphEditor: React.FC = () => {
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
-            <Tooltip title="自动布局">
+            <Tooltip title={t('pages.graphEditor.autoLayout')}>
               <Button
                 type="text"
                 icon={<LayoutGrid size={16} strokeWidth={1.5} />}
@@ -840,7 +842,7 @@ const GraphEditor: React.FC = () => {
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
-            <Tooltip title="添加节点">
+            <Tooltip title={t('pages.graphEditor.addNode')}>
               <Button
                 type="text"
                 icon={<Plus size={16} strokeWidth={1.5} />}
@@ -848,7 +850,7 @@ const GraphEditor: React.FC = () => {
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
-            <Tooltip title="图设置">
+            <Tooltip title={t('pages.graphEditor.graphSettings')}>
               <Button
                 type="text"
                 icon={<Settings size={16} strokeWidth={1.5} />}
@@ -856,7 +858,7 @@ const GraphEditor: React.FC = () => {
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
-            <Tooltip title="版本管理">
+            <Tooltip title={t('pages.graphEditor.versionManager')}>
               <Button
                 type="text"
                 icon={<GitBranch size={16} strokeWidth={1.5} />}
@@ -864,7 +866,7 @@ const GraphEditor: React.FC = () => {
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
-            <Tooltip title={hasUnsavedChanges ? '保存更改' : '已保存'}>
+            <Tooltip title={hasUnsavedChanges ? t('pages.graphEditor.saveChanges') : t('pages.graphEditor.saved')}>
               <Button
                 type={hasUnsavedChanges ? 'primary' : 'text'}
                 icon={<Save size={16} strokeWidth={1.5} />}
@@ -880,7 +882,7 @@ const GraphEditor: React.FC = () => {
                   color: '#8b7355'
                 }}
               >
-                保存
+                {t('common.save')}
               </Button>
             </Tooltip>
           </Space>
@@ -906,9 +908,9 @@ const GraphEditor: React.FC = () => {
         </Card>
       </div>
 
-      {/* 节点属性模态框 */}
+      {/* Node properties modal */}
       <Modal
-        title="节点属性设置"
+        title={t('pages.graphEditor.nodeProperties')}
         open={!!selectedNode}
         onCancel={() => selectNode(null)}
         footer={null}
@@ -946,7 +948,7 @@ const GraphEditor: React.FC = () => {
     <div>
       {error && (
         <Alert
-          message="错误"
+          message={t('pages.graphEditor.error')}
           description={error}
           type="error"
           showIcon
@@ -972,7 +974,7 @@ const GraphEditor: React.FC = () => {
               fontWeight: 600,
               letterSpacing: '0.5px'
             }}>
-              创建新工作流
+              {t('pages.graphEditor.createModalTitle')}
             </span>
           </div>
         }
@@ -995,7 +997,7 @@ const GraphEditor: React.FC = () => {
               padding: '0 24px'
             }}
           >
-            取消
+            {t('common.cancel')}
           </Button>,
           <Button
             key="submit"
@@ -1014,7 +1016,7 @@ const GraphEditor: React.FC = () => {
               padding: '0 24px'
             }}
           >
-            确定
+            {t('common.confirm')}
           </Button>
         ]}
         styles={{
@@ -1045,15 +1047,15 @@ const GraphEditor: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>工作流名称</span>}
+            label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.graphEditor.workflowName')}</span>}
             rules={[
-              { required: true, message: '请输入工作流名称' },
-              { pattern: /^[^./\\]+$/, message: '名称不能包含特殊字符 (/, \\, .)' }
+              { required: true, message: t('pages.graphEditor.workflowNameRequired') },
+              { pattern: /^[^./\\]+$/, message: t('pages.graphEditor.workflowNameInvalid') }
             ]}
             style={{ marginBottom: '16px' }}
           >
             <Input
-              placeholder="例如: data_analysis_workflow"
+              placeholder={t('pages.graphEditor.workflowNamePlaceholder')}
               style={{
                 height: '40px',
                 borderRadius: '6px',
@@ -1068,12 +1070,12 @@ const GraphEditor: React.FC = () => {
 
           <Form.Item
             name="description"
-            label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>描述</span>}
+            label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.graphEditor.description')}</span>}
             style={{ marginBottom: '0' }}
           >
             <TextArea
               rows={4}
-              placeholder="详细说明该工作流的功能和用途"
+              placeholder={t('pages.graphEditor.descriptionPlaceholder')}
               style={{
                 borderRadius: '6px',
                 border: '1px solid rgba(139, 115, 85, 0.2)',
@@ -1103,7 +1105,7 @@ const GraphEditor: React.FC = () => {
               fontWeight: 600,
               letterSpacing: '0.5px'
             }}>
-              AI 生成提示词
+              {t('pages.graphEditor.aiPromptTitle')}
             </span>
           </div>
         }
@@ -1125,7 +1127,7 @@ const GraphEditor: React.FC = () => {
               padding: '0 24px'
             }}
           >
-            关闭
+            {t('pages.graphEditor.close')}
           </Button>
         ]}
         width={700}
@@ -1165,20 +1167,20 @@ const GraphEditor: React.FC = () => {
             display: 'block',
             marginBottom: '12px'
           }}>
-            该功能可以帮助您生成工作流的 AI 提示词模板
+            {t('pages.graphEditor.aiPromptMessage')}
           </Text>
           <Text style={{
             fontSize: '14px',
             color: 'rgba(45, 45, 45, 0.65)'
           }}>
-            请先选择一个工作流进入编辑模式，然后从编辑器工具栏访问此功能
+            {t('pages.graphEditor.aiPromptHint')}
           </Text>
         </div>
       </Modal>
 
-      {/* README 模态框 */}
+      {/* README modal */}
       <Modal
-        title="README"
+        title={t('pages.graphEditor.readmeTitle')}
         open={readmeModalVisible}
         onCancel={() => setReadmeModalVisible(false)}
         footer={[
@@ -1194,7 +1196,7 @@ const GraphEditor: React.FC = () => {
               fontWeight: 500
             }}
           >
-            关闭
+            {t('pages.graphEditor.close')}
           </Button>
         ]}
         width={800}
@@ -1219,9 +1221,9 @@ const GraphEditor: React.FC = () => {
         </div>
       </Modal>
 
-      {/* 图设置模态框 */}
+      {/* Graph settings modal */}
       <Modal
-        title="图设置"
+        title={t('pages.graphEditor.graphSettingsTitle')}
         open={graphSettingsModalVisible}
         onOk={handleUpdateGraphSettings}
         onCancel={() => setGraphSettingsModalVisible(false)}
@@ -1238,7 +1240,7 @@ const GraphEditor: React.FC = () => {
               fontWeight: 500
             }}
           >
-            取消
+            {t('common.cancel')}
           </Button>,
           <Button
             key="submit"
@@ -1253,7 +1255,7 @@ const GraphEditor: React.FC = () => {
               boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
             }}
           >
-            确定
+            {t('common.confirm')}
           </Button>
         ]}
         width={600}
@@ -1261,10 +1263,10 @@ const GraphEditor: React.FC = () => {
         <Form form={settingsForm} layout="vertical">
           <Form.Item
             name="name"
-            label="图名称"
+            label={t('pages.graphEditor.graphName')}
             rules={[
-              { required: true, message: '请输入图名称' },
-              { pattern: /^[^./\\]+$/, message: '名称不能包含特殊字符 (/, \\, .)' }
+              { required: true, message: t('pages.graphEditor.workflowNameRequired') },
+              { pattern: /^[^./\\]+$/, message: t('pages.graphEditor.workflowNameInvalid') }
             ]}
           >
             <Input disabled style={{
@@ -1275,7 +1277,7 @@ const GraphEditor: React.FC = () => {
 
           <Form.Item
             name="description"
-            label="描述"
+            label={t('pages.graphEditor.description')}
           >
             <TextArea rows={3} style={{
               borderRadius: '6px',
@@ -1285,8 +1287,8 @@ const GraphEditor: React.FC = () => {
 
           <Form.Item
             name="end_template"
-            label="终止输出模板"
-            tooltip="用于自定义图执行结束后的输出格式"
+            label={t('pages.graphEditor.endTemplate')}
+            tooltip={t('pages.graphEditor.endTemplateTooltip')}
           >
             <TextArea rows={4} style={{
               borderRadius: '6px',
