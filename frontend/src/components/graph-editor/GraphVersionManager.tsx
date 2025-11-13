@@ -1,5 +1,5 @@
 // src/components/graph-editor/GraphVersionManager.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, CSSProperties } from 'react';
 import {
   Modal,
   Button,
@@ -12,7 +12,8 @@ import {
   Tooltip,
   message,
   Popconfirm,
-  Card
+  Card,
+  ConfigProvider
 } from 'antd';
 import {
   Plus,
@@ -22,7 +23,6 @@ import { useGraphEditorStore } from '../../store/graphEditorStore';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/zh-cn';
-import './GraphVersionManager.css';
 
 // 配置 dayjs
 dayjs.extend(relativeTime);
@@ -110,6 +110,13 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
           } catch (error: any) {
             messageApi.error(`加载版本失败: ${error.message || String(error)}`);
           }
+        },
+        okButtonProps: {
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px'
+          }
         }
       });
     } else {
@@ -133,52 +140,231 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
     }
   };
 
+  // 样式定义
+  const createSectionStyle: CSSProperties = {
+    background: 'rgba(255, 255, 255, 0.7)',
+    border: '1px solid rgba(139, 115, 85, 0.15)',
+    borderRadius: '8px',
+    padding: '20px',
+    marginBottom: '24px',
+    boxShadow: '0 2px 6px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px'
+  };
+
+  const sectionTitleStyle: CSSProperties = {
+    fontSize: '14px',
+    color: 'rgba(45, 45, 45, 0.65)',
+    flex: 1,
+    letterSpacing: '0.3px',
+    lineHeight: 1.6
+  };
+
+  const historyTitleStyle: CSSProperties = {
+    fontSize: '16px',
+    fontWeight: 500,
+    color: '#2d2d2d',
+    marginBottom: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    letterSpacing: '0.5px'
+  };
+
+  const historyCountStyle: CSSProperties = {
+    color: 'rgba(45, 45, 45, 0.45)',
+    fontSize: '14px',
+    fontWeight: 400
+  };
+
+  const versionItemStyle: CSSProperties = {
+    background: 'rgba(255, 255, 255, 0.7)',
+    border: '1px solid rgba(139, 115, 85, 0.15)',
+    borderRadius: '8px',
+    marginBottom: '12px',
+    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+  };
+
+  const latestVersionItemStyle: CSSProperties = {
+    ...versionItemStyle,
+    border: '1px solid rgba(184, 88, 69, 0.25)',
+    boxShadow: '0 2px 6px rgba(184, 88, 69, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+  };
+
+  const versionHeaderStyle: CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px'
+  };
+
+  const versionMetaStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    color: 'rgba(45, 45, 45, 0.65)',
+    fontSize: '13px',
+    flex: 1,
+    letterSpacing: '0.3px'
+  };
+
+  const versionIdStyle: CSSProperties = {
+    fontSize: '12px',
+    color: 'rgba(45, 45, 45, 0.45)',
+    fontFamily: 'Monaco, Menlo, monospace',
+    width: '160px',
+    display: 'inline-block'
+  };
+
+  const versionMessageStyle: CSSProperties = {
+    color: '#2d2d2d',
+    fontSize: '14px',
+    fontWeight: 500,
+    lineHeight: 1.6,
+    letterSpacing: '0.3px'
+  };
+
+  const emptyStyle: CSSProperties = {
+    textAlign: 'center',
+    padding: '60px 20px',
+    color: 'rgba(45, 45, 45, 0.45)'
+  };
+
+  const emptyTextStyle: CSSProperties = {
+    fontSize: '14px',
+    color: 'rgba(45, 45, 45, 0.45)',
+    marginTop: '12px',
+    letterSpacing: '0.3px'
+  };
+
+  const loadingStyle: CSSProperties = {
+    textAlign: 'center',
+    padding: '60px 20px'
+  };
+
+  const tipsStyle: CSSProperties = {
+    padding: '16px',
+    background: 'rgba(184, 88, 69, 0.06)',
+    borderRadius: '6px',
+    borderLeft: '3px solid #b85845',
+    marginTop: '16px'
+  };
+
+  const tipsTitleStyle: CSSProperties = {
+    fontWeight: 500,
+    color: '#2d2d2d',
+    marginBottom: '8px',
+    fontSize: '13px',
+    letterSpacing: '0.3px'
+  };
+
+  const tipsListStyle: CSSProperties = {
+    margin: '8px 0 0 20px',
+    padding: 0,
+    listStyle: 'disc'
+  };
+
+  const tipsItemStyle: CSSProperties = {
+    color: 'rgba(45, 45, 45, 0.65)',
+    fontSize: '12px',
+    lineHeight: 1.8,
+    letterSpacing: '0.3px'
+  };
+
   return (
-    <>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: '#b85845',
+          colorPrimaryHover: '#a0826d',
+          colorBorder: 'rgba(139, 115, 85, 0.2)',
+          colorText: '#2d2d2d',
+          borderRadius: 6,
+        },
+      }}
+    >
       {contextHolder}
       <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <History size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
+            <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d', letterSpacing: '0.5px' }}>
+              版本管理
+            </span>
+          </div>
+        }
         open={visible}
         onCancel={onClose}
         footer={null}
         width={800}
-        className="version-manager-modal"
-        styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+            background: 'linear-gradient(to bottom, #faf8f5 0%, #f5f3f0 100%)'
+          },
+          header: {
+            background: 'rgba(255, 255, 255, 0.6)',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.1)',
+            borderRadius: '8px 8px 0 0',
+            padding: '20px 24px'
+          },
+          body: {
+            maxHeight: '70vh',
+            overflowY: 'auto',
+            padding: '24px'
+          }
+        }}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           {/* 创建新版本区域 */}
-          <div className="version-create-section">
-            <div className="section-title">
+          <div style={createSectionStyle}>
+            <div style={sectionTitleStyle}>
               为当前图配置创建版本快照，便于追踪变更历史和版本回退
             </div>
             <Button
               type="primary"
               icon={<Plus size={16} strokeWidth={1.5} />}
               onClick={() => setCreateVersionModalVisible(true)}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                height: '36px',
+                fontSize: '14px',
+                fontWeight: 500,
+                letterSpacing: '0.3px',
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                flexShrink: 0
+              }}
             >
               新版本
             </Button>
           </div>
 
           {/* 版本历史区域 */}
-          <div className="version-history-section">
-            <div className="version-history-title">
-              <History size={16} strokeWidth={1.5} />
+          <div>
+            <div style={historyTitleStyle}>
+              <History size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />
               <span>版本历史</span>
-              <span className="version-history-count">({versions.length})</span>
+              <span style={historyCountStyle}>({versions.length})</span>
             </div>
 
             {loadingVersions ? (
-              <div className="version-loading">
+              <div style={loadingStyle}>
                 <Spin tip="加载版本列表中..." />
               </div>
             ) : versions.length === 0 ? (
-              <div className="version-empty">
+              <div style={emptyStyle}>
                 <Empty
                   description={null}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
-                <div className="version-empty-text">
-                  暂无版本历史，点击上方"创建新版本"按钮保存当前配置
+                <div style={emptyTextStyle}>
+                  暂无版本历史，点击上方"新版本"按钮保存当前配置
                 </div>
               </div>
             ) : (
@@ -187,32 +373,48 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                   <Card
                     key={version.version_id}
                     size="small"
-                    className={index === 0 ? 'version-item latest' : 'version-item'}
+                    style={index === 0 ? latestVersionItemStyle : versionItemStyle}
+                    styles={{ body: { padding: '16px' } }}
                   >
                     <Space direction="vertical" style={{ width: '100%' }}>
                       {/* 第一行：元数据和操作按钮 */}
-                      <div className="version-item-header">
-                        <div className="version-item-meta">
-                          <span className="version-item-id">
+                      <div style={versionHeaderStyle}>
+                        <div style={versionMetaStyle}>
+                          <span style={versionIdStyle}>
                             {version.version_id.substring(0, 16)}...
                           </span>
                           <Tooltip title={dayjs(version.created_at).format('YYYY-MM-DD HH:mm:ss')}>
-                            <span className="version-item-meta-item">
+                            <span style={{ width: '80px', display: 'inline-block' }}>
                               {dayjs(version.created_at).fromNow()}
                             </span>
                           </Tooltip>
-                          <span className="version-item-meta-item">
+                          <span style={{ width: '80px', display: 'inline-block' }}>
                             {formatFileSize(version.size)}
                           </span>
                           {index === 0 && (
-                            <Tag className="latest-tag">最新版本</Tag>
+                            <Tag style={{
+                              background: 'rgba(184, 88, 69, 0.1)',
+                              color: '#b85845',
+                              border: '1px solid rgba(184, 88, 69, 0.3)',
+                              borderRadius: '4px',
+                              fontWeight: 500,
+                              fontSize: '12px',
+                              padding: '2px 10px'
+                            }}>
+                              最新版本
+                            </Tag>
                           )}
                         </div>
-                        <Space className="version-item-actions">
+                        <Space>
                           <Button
                             type="link"
                             size="small"
                             onClick={() => handleLoadVersion(version.version_id, version.commit_message)}
+                            style={{
+                              color: '#8b7355',
+                              padding: '4px 8px',
+                              borderRadius: '4px'
+                            }}
                           >
                             加载
                           </Button>
@@ -222,12 +424,31 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                             onConfirm={() => handleDeleteVersion(version.version_id)}
                             okText="删除"
                             cancelText="取消"
-                            okButtonProps={{ danger: true }}
+                            okButtonProps={{
+                              danger: true,
+                              style: {
+                                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                                border: 'none',
+                                borderRadius: '6px'
+                              }
+                            }}
+                            cancelButtonProps={{
+                              style: {
+                                borderRadius: '6px',
+                                border: '1px solid rgba(139, 115, 85, 0.2)',
+                                color: '#8b7355'
+                              }
+                            }}
                           >
                             <Button
                               type="link"
                               danger
                               size="small"
+                              style={{
+                                color: '#b85845',
+                                padding: '4px 8px',
+                                borderRadius: '4px'
+                              }}
                             >
                               删除
                             </Button>
@@ -236,7 +457,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
                       </div>
 
                       {/* 第二行：提交信息 */}
-                      <div className="version-item-message">
+                      <div style={versionMessageStyle}>
                         {version.commit_message}
                       </div>
                     </Space>
@@ -250,7 +471,12 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
 
       {/* 创建版本对话框 */}
       <Modal
-        title="创建新版本"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Plus size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
+            <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>创建新版本</span>
+          </div>
+        }
         open={createVersionModalVisible}
         onOk={handleCreateVersion}
         onCancel={() => {
@@ -259,12 +485,32 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
         }}
         okText="创建"
         cancelText="取消"
-        className="create-version-modal"
+        okButtonProps={{
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            color: '#8b7355'
+          }
+        }}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)'
+          }
+        }}
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="commit_message"
-            label="提交信息"
+            label={<span style={{ fontWeight: 500, color: '#2d2d2d', fontSize: '14px' }}>提交信息</span>}
             rules={[
               { required: true, message: '请输入提交信息' },
               { min: 5, message: '提交信息至少5个字符' },
@@ -276,20 +522,26 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
               placeholder="描述本次版本的主要变更内容，例如：添加数据处理节点、优化提示词、修复连接错误等"
               showCount
               maxLength={1000}
+              style={{
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                fontSize: '14px',
+                letterSpacing: '0.3px'
+              }}
             />
           </Form.Item>
 
-          <div className="version-create-tips">
-            <div className="version-create-tips-title">提示：</div>
-            <ul>
-              <li>提交信息应清晰描述此版本的主要变更</li>
-              <li>版本将保存当前的完整图配置</li>
-              <li>如果有未保存的更改，将自动先保存</li>
+          <div style={tipsStyle}>
+            <div style={tipsTitleStyle}>提示：</div>
+            <ul style={tipsListStyle}>
+              <li style={tipsItemStyle}>提交信息应清晰描述此版本的主要变更</li>
+              <li style={tipsItemStyle}>版本将保存当前的完整图配置</li>
+              <li style={tipsItemStyle}>如果有未保存的更改，将自动先保存</li>
             </ul>
           </div>
         </Form>
       </Modal>
-    </>
+    </ConfigProvider>
   );
 };
 
