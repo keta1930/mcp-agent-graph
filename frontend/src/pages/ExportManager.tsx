@@ -36,6 +36,7 @@ import { ConversationService } from '../services/conversationService';
 import { ConversationSummary } from '../types/conversation';
 import exportService, { DatasetListItem, ListResponse, ExportResponse } from '../services/exportService';
 import RawPreviewModal from '../components/chat/modal/RawPreviewModal';
+import { useT } from '../i18n/hooks';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -43,6 +44,7 @@ const { Header, Content } = Layout;
 
 const ExportManager: React.FC = () => {
   const navigate = useNavigate();
+  const t = useT();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<string>('select');
@@ -136,7 +138,7 @@ const ExportManager: React.FC = () => {
       setExportResult(null);
       const values = await exportForm.validateFields();
       if (selectedIds.size === 0) {
-        setExportError('请先在左侧列表选择要导出的对话');
+        setExportError(t('pages.exportManager.exportErrorSelectFirst'));
         return;
       }
       const res = await exportService.exportConversations({
@@ -147,14 +149,14 @@ const ExportManager: React.FC = () => {
         conversation_ids: Array.from(selectedIds),
       });
       if (!res.success) {
-        setExportError(res.message || '导出失败');
+        setExportError(res.message || t('pages.exportManager.exportFailed'));
       } else {
         setExportResult(res);
         setActiveTab('datasets');
         await loadDatasets();
       }
     } catch (e: any) {
-      setExportError(e?.message || '导出失败');
+      setExportError(e?.message || t('pages.exportManager.exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -223,7 +225,7 @@ const ExportManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              导出管理
+              {t('pages.exportManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -234,7 +236,7 @@ const ExportManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              总对话 {stats.total}
+              {t('pages.exportManager.totalConversations', { count: stats.total })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -245,7 +247,7 @@ const ExportManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              数据集 {stats.datasets}
+              {t('pages.exportManager.datasets', { count: stats.datasets })}
             </Tag>
           </Space>
 
@@ -289,7 +291,7 @@ const ExportManager: React.FC = () => {
               key: 'select',
               label: (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Filter size={16} strokeWidth={1.5} /> 选择导出
+                  <Filter size={16} strokeWidth={1.5} /> {t('pages.exportManager.selectExport')}
                 </span>
               ),
               children: (
@@ -297,7 +299,7 @@ const ExportManager: React.FC = () => {
                   {/* 左侧：对话筛选与选择 */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'auto' }}>
                     <Card
-                      title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>对话筛选</span>}
+                      title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>{t('pages.exportManager.conversationFilter')}</span>}
                       size="small"
                       extra={
                         <Button
@@ -312,7 +314,7 @@ const ExportManager: React.FC = () => {
                             gap: '4px'
                           }}
                         >
-                          <RefreshCw size={14} strokeWidth={1.5} /> 刷新
+                          <RefreshCw size={14} strokeWidth={1.5} /> {t('pages.exportManager.refresh')}
                         </Button>
                       }
                       style={{
@@ -324,7 +326,7 @@ const ExportManager: React.FC = () => {
                     >
                       <Space direction="vertical" style={{ width: '100%' }} size="middle">
                         <Input
-                          placeholder="搜索标题或标签"
+                          placeholder={t('pages.exportManager.searchPlaceholder')}
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           allowClear
@@ -356,10 +358,10 @@ const ExportManager: React.FC = () => {
                           onChange={(v) => setTypeFilter(v as any)}
                           style={{ width: '100%' }}
                           options={[
-                            { label: 'Type:All', value: 'all' },
-                            { label: 'Chat', value: 'chat' },
-                            { label: 'Agent', value: 'agent' },
-                            { label: 'Graph', value: 'graph' },
+                            { label: t('pages.exportManager.typeAll'), value: 'all' },
+                            { label: t('pages.exportManager.typeChat'), value: 'chat' },
+                            { label: t('pages.exportManager.typeAgent'), value: 'agent' },
+                            { label: t('pages.exportManager.typeGraph'), value: 'graph' },
                           ]}
                         />
                         <Select
@@ -367,10 +369,10 @@ const ExportManager: React.FC = () => {
                           onChange={(v) => setStatusFilter(v as any)}
                           style={{ width: '100%' }}
                           options={[
-                            { label: 'Status:All', value: 'all' },
-                            { label: 'Active', value: 'active' },
-                            { label: 'Favorite', value: 'favorite' },
-                            { label: 'Deleted', value: 'deleted' },
+                            { label: t('pages.exportManager.statusAll'), value: 'all' },
+                            { label: t('pages.exportManager.statusActive'), value: 'active' },
+                            { label: t('pages.exportManager.statusFavorite'), value: 'favorite' },
+                            { label: t('pages.exportManager.statusDeleted'), value: 'deleted' },
                           ]}
                         />
                         <Divider style={{ margin: '8px 0', borderColor: 'rgba(139, 115, 85, 0.15)' }} />
@@ -385,7 +387,7 @@ const ExportManager: React.FC = () => {
                               background: 'transparent'
                             }}
                           >
-                            全选
+                            {t('pages.exportManager.selectAll')}
                           </Button>
                           <Button
                             onClick={deselectAll}
@@ -397,7 +399,7 @@ const ExportManager: React.FC = () => {
                               background: 'transparent'
                             }}
                           >
-                            取消全选
+                            {t('pages.exportManager.deselectAll')}
                           </Button>
                           <Tag style={{
                             background: 'rgba(184, 88, 69, 0.08)',
@@ -407,7 +409,7 @@ const ExportManager: React.FC = () => {
                             fontWeight: 500,
                             padding: '4px 12px'
                           }}>
-                            已选 {selectedIds.size}
+                            {t('pages.exportManager.selected', { count: selectedIds.size })}
                           </Tag>
                         </Space>
                       </Space>
@@ -421,12 +423,12 @@ const ExportManager: React.FC = () => {
                     }}>
                       {loadingConvs ? (
                         <div style={{ textAlign: 'center', padding: 40 }}>
-                          <Spin tip="加载中..." />
+                          <Spin tip={t('pages.exportManager.loading')} />
                         </div>
                       ) : filteredConversations.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: 40, color: 'rgba(45, 45, 45, 0.45)' }}>
                           <FileText size={48} strokeWidth={1.5} style={{ marginBottom: 16, color: 'rgba(139, 115, 85, 0.3)' }} />
-                          <div>暂无对话</div>
+                          <div>{t('pages.exportManager.noConversations')}</div>
                         </div>
                       ) : (
                         filteredConversations.map(conv => (
@@ -517,7 +519,7 @@ const ExportManager: React.FC = () => {
                   {/* 右侧：导出设置与结果 */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'auto' }}>
                     <Card 
-                      title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>导出设置</span>}
+                      title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>{t('pages.exportManager.exportSettings')}</span>}
                       size="small"
                       extra={
                         <Tooltip title={`总对话数：${stats.total} | 已选择：${stats.selected} | 数据集：${stats.datasets}`}>
@@ -538,11 +540,11 @@ const ExportManager: React.FC = () => {
                       >
                         <Form.Item
                           name="dataset_name"
-                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>数据集名称</span>}
-                          rules={[{ required: true, message: '请输入数据集名称' }]}
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>{t('pages.exportManager.datasetName')}</span>}
+                          rules={[{ required: true, message: t('pages.exportManager.datasetNameRequired') }]}
                         >
                           <Input
-                            placeholder="例如：my_conversations"
+                            placeholder={t('pages.exportManager.datasetNamePlaceholder')}
                             maxLength={64}
                             style={{
                               height: '40px',
@@ -555,11 +557,11 @@ const ExportManager: React.FC = () => {
                         </Form.Item>
                         <Form.Item
                           name="file_name"
-                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>文件名称（不含扩展名）</span>}
-                          rules={[{ required: true, message: '请输入文件名称' }]}
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>{t('pages.exportManager.fileName')}</span>}
+                          rules={[{ required: true, message: t('pages.exportManager.fileNameRequired') }]}
                         >
                           <Input
-                            placeholder="例如：export_2025_10_15"
+                            placeholder={t('pages.exportManager.fileNamePlaceholder')}
                             maxLength={128}
                             style={{
                               height: '40px',
@@ -572,26 +574,26 @@ const ExportManager: React.FC = () => {
                         </Form.Item>
                         <Form.Item
                           name="file_format"
-                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>文件格式</span>}
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>{t('pages.exportManager.fileFormat')}</span>}
                           rules={[{ required: true }]}
                         > 
                           <Select
                             options={[
-                              { label: 'JSONL', value: 'jsonl' },
-                              { label: 'CSV', value: 'csv' },
-                              { label: 'Parquet', value: 'parquet' },
+                              { label: t('pages.exportManager.fileFormatJsonl'), value: 'jsonl' },
+                              { label: t('pages.exportManager.fileFormatCsv'), value: 'csv' },
+                              { label: t('pages.exportManager.fileFormatParquet'), value: 'parquet' },
                             ]}
                           />
                         </Form.Item>
                         <Form.Item
                           name="data_format"
-                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>数据格式</span>}
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>{t('pages.exportManager.dataFormat')}</span>}
                           rules={[{ required: true }]}
                         > 
                           <Select
                             options={[
-                              { label: 'standard', value: 'standard' },
-                              { label: 'coming', value: 'coming' }
+                              { label: t('pages.exportManager.dataFormatStandard'), value: 'standard' },
+                              { label: t('pages.exportManager.dataFormatComing'), value: 'coming' }
                             ]}
                           />
                         </Form.Item>
@@ -631,14 +633,14 @@ const ExportManager: React.FC = () => {
                           }}
                         >
                           <Download size={16} strokeWidth={1.5} />
-                          确认导出
+                          {t('pages.exportManager.confirmExport')}
                         </Button>
                       </Form>
                     </Card>
 
                     {exportResult?.success && (
                       <Card
-                        title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>导出成功</span>}
+                        title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>{t('pages.exportManager.exportSuccess')}</span>}
                         size="small"
                         style={{
                           background: 'rgba(255, 255, 255, 0.85)',
@@ -683,13 +685,13 @@ const ExportManager: React.FC = () => {
                           }}
                         >
                           <Download size={16} strokeWidth={1.5} />
-                          下载数据集 (Zip)
+                          {t('pages.exportManager.downloadDataset')}
                         </Button>
                         <Divider style={{ margin: '12px 0', borderColor: 'rgba(139, 115, 85, 0.15)' }} />
                         <Button
                           type="text"
                           onClick={() => {
-                            setPreviewModalTitle(exportResult?.dataset_name || '导出预览');
+                            setPreviewModalTitle(exportResult?.dataset_name || t('pages.exportManager.exportPreview'));
                             setPreviewModalData(exportResult?.preview_data || []);
                             setPreviewModalVisible(true);
                           }}
@@ -703,7 +705,7 @@ const ExportManager: React.FC = () => {
                           }}
                         >
                           <Eye size={16} strokeWidth={1.5} />
-                          预览原始数据
+                          {t('pages.exportManager.previewRawData')}
                         </Button>
                       </Card>
                     )}
@@ -715,7 +717,7 @@ const ExportManager: React.FC = () => {
               key: 'datasets',
               label: (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Database size={16} strokeWidth={1.5} /> 数据集管理
+                  <Database size={16} strokeWidth={1.5} /> {t('pages.exportManager.datasetsManagement')}
                 </span>
               ),
               children: (
@@ -734,7 +736,7 @@ const ExportManager: React.FC = () => {
                       }}
                     >
                       <RefreshCw size={14} strokeWidth={1.5} />
-                      刷新
+                      {t('pages.exportManager.refresh')}
                     </Button>
                   </Space>
                   <Table
@@ -742,13 +744,13 @@ const ExportManager: React.FC = () => {
                     rowKey={(r) => `${r.data_format}/${r.dataset_name}`}
                     columns={[
                       {
-                        title: '数据集名称',
+                        title: t('pages.exportManager.datasetNameLabel'),
                         dataIndex: 'dataset_name',
                         key: 'dataset_name',
                         render: (text) => <Text strong style={{ color: '#2d2d2d' }}>{text}</Text>
                       },
                       {
-                        title: '数据格式',
+                        title: t('pages.exportManager.dataFormatLabel'),
                         dataIndex: 'data_format',
                         key: 'data_format',
                         render: (text) => (
@@ -765,13 +767,13 @@ const ExportManager: React.FC = () => {
                         )
                       },
                       {
-                        title: '创建时间',
+                        title: t('pages.exportManager.createdAt'),
                         dataIndex: 'created_at',
                         key: 'created_at',
                         render: (text) => <span style={{ color: 'rgba(45, 45, 45, 0.85)' }}>{text}</span>
                       },
                       {
-                        title: '操作',
+                        title: t('pages.exportManager.actions'),
                         key: 'actions',
                         render: (_: any, record: DatasetListItem) => (
                           <Space size="small">
@@ -797,7 +799,7 @@ const ExportManager: React.FC = () => {
                               }}
                             >
                               <Eye size={14} strokeWidth={1.5} />
-                              预览
+                              {t('pages.exportManager.preview')}
                             </div>
                             <div
                               onClick={() =>
@@ -826,10 +828,10 @@ const ExportManager: React.FC = () => {
                               }}
                             >
                               <Download size={14} strokeWidth={1.5} />
-                              下载
+                              {t('pages.exportManager.download')}
                             </div>
                             <Popconfirm
-                              title="确认删除该数据集？"
+                              title={t('pages.exportManager.deleteConfirm')}
                               onConfirm={() =>
                                 doDeleteDataset(record.dataset_name, record.data_format)
                               }
@@ -853,7 +855,7 @@ const ExportManager: React.FC = () => {
                                 }}
                               >
                                 <Trash2 size={14} strokeWidth={1.5} />
-                                删除
+                                {t('common.delete')}
                               </div>
                             </Popconfirm>
                           </Space>
