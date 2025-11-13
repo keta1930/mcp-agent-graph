@@ -13,7 +13,6 @@ import {
   InputNumber,
   Tag,
   Tooltip,
-  Empty,
   Spin,
   Descriptions,
   Space,
@@ -47,6 +46,7 @@ import {
 import { getModels } from '../services/modelService';
 import { listSystemTools } from '../services/systemToolsService';
 import { getMCPConfig } from '../services/mcpService';
+import { useT } from '../i18n/hooks';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -60,6 +60,7 @@ interface CategoryGroup {
 }
 
 const AgentManager: React.FC = () => {
+  const t = useT();
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -86,7 +87,7 @@ const AgentManager: React.FC = () => {
       const response = await listAgents();
       setAgents(response.agents || []);
     } catch (error: any) {
-      message.error('加载 Agent 列表失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.agentManager.loadFailed', { error: error.message || t('errors.serverError') }));
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,8 @@ const AgentManager: React.FC = () => {
 
       // 加载系统工具列表
       const toolsResponse = await listSystemTools();
-      setSystemTools(toolsResponse.tools.map((t: any) => t.name));
+      const allTools = toolsResponse.categories.flatMap((cat: any) => cat.tools.map((t: any) => t.name));
+      setSystemTools(allTools);
 
       // 加载 MCP 服务器列表
       const mcpResponse = await getMCPConfig();
@@ -119,7 +121,7 @@ const AgentManager: React.FC = () => {
     const groupMap = new Map<string, CategoryGroup>();
 
     agentList.forEach(agent => {
-      const category = agent.category || '未分类';
+      const category = agent.category || t('pages.agentManager.noAgents');
       if (!groupMap.has(category)) {
         groupMap.set(category, {
           category,
@@ -184,7 +186,7 @@ const AgentManager: React.FC = () => {
       form.setFieldsValue(agentData.agent_config);
       setModalVisible(true);
     } catch (error: any) {
-      message.error('加载 Agent 详情失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.agentManager.loadDetailFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -195,7 +197,7 @@ const AgentManager: React.FC = () => {
       setSelectedAgent(response.agent);
       setDetailModalVisible(true);
     } catch (error: any) {
-      message.error('加载 Agent 详情失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.agentManager.loadDetailFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -217,16 +219,16 @@ const AgentManager: React.FC = () => {
 
       if (editingAgent) {
         await updateAgent(editingAgent, agentConfig);
-        message.success(`Agent "${editingAgent}" 更新成功`);
+        message.success(t('pages.agentManager.updateSuccess', { name: editingAgent }));
       } else {
         await createAgent(agentConfig);
-        message.success(`Agent "${values.name}" 创建成功`);
+        message.success(t('pages.agentManager.createSuccess', { name: values.name }));
       }
 
       setModalVisible(false);
       loadAgents();
     } catch (error: any) {
-      message.error('操作失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.agentManager.operationFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -234,10 +236,10 @@ const AgentManager: React.FC = () => {
   const handleDelete = async (agentName: string) => {
     try {
       await deleteAgent(agentName);
-      message.success(`Agent "${agentName}" 删除成功`);
+      message.success(t('pages.agentManager.deleteSuccess', { name: agentName }));
       loadAgents();
     } catch (error: any) {
-      message.error('删除失败: ' + (error.message || '未知错误'));
+      message.error(t('pages.agentManager.deleteFailed', { error: error.message || t('errors.serverError') }));
     }
   };
 
@@ -274,7 +276,7 @@ const AgentManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              智能体管理
+              {t('pages.agentManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -285,7 +287,7 @@ const AgentManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {totalAgentsCount} 个智能体
+              {t('pages.agentManager.agentsCount', { count: totalAgentsCount })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -296,13 +298,13 @@ const AgentManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {filteredGroups.length} 个分类
+              {t('pages.agentManager.categoriesCount', { count: filteredGroups.length })}
             </Tag>
           </Space>
 
           <Space size={12}>
             <Input
-              placeholder="搜索智能体..."
+              placeholder={t('pages.agentManager.searchPlaceholder')}
               allowClear
               prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
               value={searchText}
@@ -344,7 +346,7 @@ const AgentManager: React.FC = () => {
                 padding: '0 16px'
               }}
             >
-              刷新
+              {t('pages.agentManager.refresh')}
             </Button>
             <Button
               type="primary"
@@ -365,7 +367,7 @@ const AgentManager: React.FC = () => {
                 padding: '0 20px'
               }}
             >
-              智能体
+              {t('pages.agentManager.createAgent')}
             </Button>
           </Space>
         </div>
@@ -379,7 +381,7 @@ const AgentManager: React.FC = () => {
             alignItems: 'center',
             height: '100%'
           }}>
-            <Spin size="large" tip="加载中..." />
+            <Spin size="large" tip={t('common.loading')} />
           </div>
         ) : filteredGroups.length === 0 ? (
           <div style={{
@@ -388,7 +390,7 @@ const AgentManager: React.FC = () => {
             color: 'rgba(45, 45, 45, 0.45)',
             fontSize: '14px'
           }}>
-            {searchText ? `未找到匹配 "${searchText}" 的智能体` : '暂无智能体'}
+            {searchText ? t('pages.agentManager.noMatchingAgents', { search: searchText }) : t('pages.agentManager.noAgents')}
           </div>
         ) : (
           <Collapse
@@ -565,7 +567,7 @@ const AgentManager: React.FC = () => {
 
                           {/* Right: Action Buttons */}
                           <div style={{ flexShrink: 0, display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <Tooltip title="查看详情">
+                            <Tooltip title={t('pages.agentManager.viewDetails')}>
                               <div
                                 style={{
                                   color: '#8b7355',
@@ -593,7 +595,7 @@ const AgentManager: React.FC = () => {
                                 <Eye size={18} strokeWidth={1.5} />
                               </div>
                             </Tooltip>
-                            <Tooltip title="编辑">
+                            <Tooltip title={t('common.edit')}>
                               <div
                                 style={{
                                   color: '#8b7355',
@@ -622,12 +624,12 @@ const AgentManager: React.FC = () => {
                               </div>
                             </Tooltip>
                             <Popconfirm
-                              title="确定删除此智能体？"
+                              title={t('pages.agentManager.deleteConfirm')}
                               onConfirm={() => handleDelete(agent.name)}
-                              okText="确定"
-                              cancelText="取消"
+                              okText={t('common.confirm')}
+                              cancelText={t('common.cancel')}
                             >
-                              <Tooltip title="删除">
+                              <Tooltip title={t('common.delete')}>
                                 <div
                                   style={{
                                     color: '#b85845',
@@ -682,7 +684,7 @@ const AgentManager: React.FC = () => {
               fontWeight: 600,
               letterSpacing: '0.5px'
             }}>
-              {editingAgent ? `编辑智能体: ${editingAgent}` : '创建智能体'}
+              {editingAgent ? t('pages.agentManager.editModalTitle', { name: editingAgent }) : t('pages.agentManager.createModalTitle')}
             </span>
           </div>
         }
@@ -706,7 +708,7 @@ const AgentManager: React.FC = () => {
               padding: '0 24px'
             }}
           >
-            取消
+            {t('common.cancel')}
           </Button>,
           <Button
             key="submit"
@@ -725,7 +727,7 @@ const AgentManager: React.FC = () => {
               padding: '0 24px'
             }}
           >
-            确定
+            {t('common.confirm')}
           </Button>
         ]}
         styles={{
@@ -780,20 +782,20 @@ const AgentManager: React.FC = () => {
               letterSpacing: '0.5px',
               textTransform: 'uppercase'
             }}>
-              基础信息
+              {t('pages.agentManager.basicInfo')}
             </div>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>智能体名称</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.agentName')}</span>}
               name="name"
               rules={[
-                { required: true, message: '请输入智能体名称' },
-                { pattern: /^[^/\\.]+$/, message: '名称不能包含 / \\ . 字符' }
+                { required: true, message: t('pages.agentManager.agentNameRequired') },
+                { pattern: /^[^/\\.]+$/, message: t('pages.agentManager.agentNameInvalid') }
               ]}
               style={{ marginBottom: '16px' }}
             >
               <Input
-                placeholder="例如: code_reviewer"
+                placeholder={t('pages.agentManager.agentNamePlaceholder')}
                 disabled={!!editingAgent}
                 style={{
                   height: '40px',
@@ -817,14 +819,14 @@ const AgentManager: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>能力描述</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.capability')}</span>}
               name="card"
-              rules={[{ required: true, message: '请输入智能体能力描述' }]}
+              rules={[{ required: true, message: t('pages.agentManager.capabilityRequired') }]}
               style={{ marginBottom: '16px' }}
             >
               <TextArea
                 rows={3}
-                placeholder="详细说明该智能体的能力和适用场景"
+                placeholder={t('pages.agentManager.capabilityPlaceholder')}
                 style={{
                   borderRadius: '6px',
                   border: '1px solid rgba(139, 115, 85, 0.2)',
@@ -849,17 +851,17 @@ const AgentManager: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>分类</span>}
+                  label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.category')}</span>}
                   name="category"
-                  rules={[{ required: true, message: '请输入或选择分类' }]}
+                  rules={[{ required: true, message: t('pages.agentManager.categoryRequired') }]}
                   tooltip={{
-                    title: '可以从现有分类中选择，也可以输入新的分类名称',
+                    title: t('pages.agentManager.categoryTooltip'),
                     overlayStyle: { fontSize: '13px' }
                   }}
                   style={{ marginBottom: '0' }}
                 >
                   <AutoComplete
-                    placeholder="如: coding, analysis"
+                    placeholder={t('pages.agentManager.categoryPlaceholder')}
                     options={categories.map(cat => ({
                       value: cat.category,
                       label: `${cat.category} (${cat.agent_count}个)`
@@ -876,13 +878,13 @@ const AgentManager: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>模型</span>}
+                  label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.model')}</span>}
                   name="model"
-                  rules={[{ required: true, message: '请选择模型' }]}
+                  rules={[{ required: true, message: t('pages.agentManager.modelRequired') }]}
                   style={{ marginBottom: '0' }}
                 >
                   <Select
-                    placeholder="选择模型"
+                    placeholder={t('pages.agentManager.modelPlaceholder')}
                     showSearch
                     style={{ fontSize: '14px' }}
                   >
@@ -911,17 +913,17 @@ const AgentManager: React.FC = () => {
               letterSpacing: '0.5px',
               textTransform: 'uppercase'
             }}>
-              配置信息
+              {t('pages.agentManager.configuration')}
             </div>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>系统提示词</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.instruction')}</span>}
               name="instruction"
               style={{ marginBottom: '16px' }}
             >
               <TextArea
                 rows={4}
-                placeholder="可选：智能体的系统提示词"
+                placeholder={t('pages.agentManager.instructionPlaceholder')}
                 style={{
                   borderRadius: '6px',
                   border: '1px solid rgba(139, 115, 85, 0.2)',
@@ -945,7 +947,7 @@ const AgentManager: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>最大工具调用次数</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.maxActions')}</span>}
               name="max_actions"
               style={{ marginBottom: '0' }}
             >
@@ -978,17 +980,17 @@ const AgentManager: React.FC = () => {
               letterSpacing: '0.5px',
               textTransform: 'uppercase'
             }}>
-              工具和服务
+              {t('pages.agentManager.toolsAndServices')}
             </div>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>系统工具</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.systemTools')}</span>}
               name="system_tools"
               style={{ marginBottom: '16px' }}
             >
               <Select
                 mode="multiple"
-                placeholder="选择系统工具"
+                placeholder={t('pages.agentManager.systemToolsPlaceholder')}
                 allowClear
                 maxTagCount="responsive"
                 style={{ fontSize: '14px' }}
@@ -1000,13 +1002,13 @@ const AgentManager: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>MCP 服务器</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.mcpServers')}</span>}
               name="mcp"
               style={{ marginBottom: '16px' }}
             >
               <Select
                 mode="multiple"
-                placeholder="选择 MCP 服务器"
+                placeholder={t('pages.agentManager.mcpServersPlaceholder')}
                 allowClear
                 maxTagCount="responsive"
                 style={{ fontSize: '14px' }}
@@ -1018,13 +1020,13 @@ const AgentManager: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>标签</span>}
+              label={<span style={{ color: 'rgba(45, 45, 45, 0.85)', fontWeight: 500, fontSize: '14px' }}>{t('pages.agentManager.tags')}</span>}
               name="tags"
               style={{ marginBottom: '0' }}
             >
               <Select
                 mode="tags"
-                placeholder="输入标签后按回车添加"
+                placeholder={t('pages.agentManager.tagsPlaceholder')}
                 tokenSeparators={[',']}
                 maxTagCount="responsive"
                 style={{ fontSize: '14px' }}
@@ -1043,7 +1045,7 @@ const AgentManager: React.FC = () => {
             fontWeight: 600,
             letterSpacing: '0.5px'
           }}>
-            智能体详情: {selectedAgent?.name}
+            {t('pages.agentManager.detailModalTitle', { name: selectedAgent?.name })}
           </div>
         }
         open={detailModalVisible}
@@ -1063,7 +1065,7 @@ const AgentManager: React.FC = () => {
               letterSpacing: '0.3px'
             }}
           >
-            关闭
+            {t('pages.agentManager.close')}
           </Button>
         ]}
         width={800}
@@ -1112,8 +1114,8 @@ const AgentManager: React.FC = () => {
               overflow: 'hidden'
             }}
           >
-            <Descriptions.Item label="名称">{selectedAgent.agent_config.name}</Descriptions.Item>
-            <Descriptions.Item label="分类">
+            <Descriptions.Item label={t('pages.agentManager.agentName')}>{selectedAgent.agent_config.name}</Descriptions.Item>
+            <Descriptions.Item label={t('pages.agentManager.category')}>
               <Tag style={{
                 background: 'rgba(139, 115, 85, 0.08)',
                 color: '#8b7355',
@@ -1126,10 +1128,10 @@ const AgentManager: React.FC = () => {
                 {selectedAgent.agent_config.category}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="能力描述">
+            <Descriptions.Item label={t('pages.agentManager.capability')}>
               {selectedAgent.agent_config.card}
             </Descriptions.Item>
-            <Descriptions.Item label="模型">
+            <Descriptions.Item label={t('pages.agentManager.model')}>
               <Tag style={{
                 background: 'rgba(139, 115, 85, 0.08)',
                 color: '#8b7355',
@@ -1142,7 +1144,7 @@ const AgentManager: React.FC = () => {
                 {selectedAgent.agent_config.model}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="系统提示词">
+            <Descriptions.Item label={t('pages.agentManager.instruction')}>
               <pre style={{
                 whiteSpace: 'pre-wrap',
                 margin: 0,
@@ -1154,13 +1156,13 @@ const AgentManager: React.FC = () => {
                 borderRadius: '4px',
                 border: '1px solid rgba(139, 115, 85, 0.1)'
               }}>
-                {selectedAgent.agent_config.instruction || '（无）'}
+                {selectedAgent.agent_config.instruction || t('pages.agentManager.none')}
               </pre>
             </Descriptions.Item>
-            <Descriptions.Item label="最大工具调用次数">
+            <Descriptions.Item label={t('pages.agentManager.maxActions')}>
               {selectedAgent.agent_config.max_actions}
             </Descriptions.Item>
-            <Descriptions.Item label="系统工具">
+            <Descriptions.Item label={t('pages.agentManager.systemTools')}>
               {selectedAgent.agent_config.system_tools?.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {selectedAgent.agent_config.system_tools.map((tool: string) => (
@@ -1181,9 +1183,9 @@ const AgentManager: React.FC = () => {
                     </Tag>
                   ))}
                 </div>
-              ) : '（无）'}
+              ) : t('pages.agentManager.none')}
             </Descriptions.Item>
-            <Descriptions.Item label="MCP 服务器">
+            <Descriptions.Item label={t('pages.agentManager.mcpServers')}>
               {selectedAgent.agent_config.mcp?.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {selectedAgent.agent_config.mcp.map((server: string) => (
@@ -1204,9 +1206,9 @@ const AgentManager: React.FC = () => {
                     </Tag>
                   ))}
                 </div>
-              ) : '（无）'}
+              ) : t('pages.agentManager.none')}
             </Descriptions.Item>
-            <Descriptions.Item label="标签">
+            <Descriptions.Item label={t('pages.agentManager.tags')}>
               {selectedAgent.agent_config.tags?.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {selectedAgent.agent_config.tags.map((tag: string) => (
@@ -1227,14 +1229,14 @@ const AgentManager: React.FC = () => {
                     </Tag>
                   ))}
                 </div>
-              ) : '（无）'}
+              ) : t('pages.agentManager.none')}
             </Descriptions.Item>
-            <Descriptions.Item label="创建时间">
+            <Descriptions.Item label={t('pages.agentManager.createdAt')}>
               <span style={{ color: 'rgba(45, 45, 45, 0.65)' }}>
                 {new Date(selectedAgent.created_at).toLocaleString()}
               </span>
             </Descriptions.Item>
-            <Descriptions.Item label="更新时间">
+            <Descriptions.Item label={t('pages.agentManager.updatedAt')}>
               <span style={{ color: 'rgba(45, 45, 45, 0.65)' }}>
                 {new Date(selectedAgent.updated_at).toLocaleString()}
               </span>
