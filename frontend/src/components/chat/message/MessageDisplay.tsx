@@ -158,7 +158,13 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
         </div>
       </div>
       {expanded && (
-        <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+        <div style={{
+          maxHeight: '400px',
+          overflow: 'auto',
+          // 滚动条样式
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
+        }} className="code-block-scrollbar">
           <SyntaxHighlighter
             language={language || 'text'}
             style={oneLight as any}
@@ -249,7 +255,7 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
   // 使用常规渲染
   return (
     <div style={{
-      fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif",
       fontSize: 'inherit'
     }}>
       <ReactMarkdown
@@ -345,8 +351,11 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
           padding: '0 14px 12px',
           borderTop: '1px solid rgba(139, 115, 85, 0.15)',
           maxHeight: '400px',
-          overflow: 'auto'
-        }}>
+          overflow: 'auto',
+          // 滚动条样式
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
+        }} className="tool-call-scrollbar">
           <div style={{ marginTop: '12px' }}>
             <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>参数</Text>
             <div style={{ marginTop: '8px' }}>
@@ -440,8 +449,11 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
           padding: '0 14px 12px',
           borderTop: '1px solid rgba(139, 115, 85, 0.15)',
           maxHeight: '400px',
-          overflow: 'auto'
-        }}>
+          overflow: 'auto',
+          // 滚动条样式
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
+        }} className="reasoning-scrollbar">
           <div style={{ marginTop: '12px' }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -524,11 +536,7 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
   return (
     <div style={{
       marginBottom: '16px',
-      padding: '14px 16px',
-      background: 'rgba(255, 255, 255, 0.85)',
-      border: '1px solid rgba(139, 115, 85, 0.15)',
-      borderRadius: '6px',
-      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+      padding: '8px 12px'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -619,9 +627,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
       marginBottom: '24px',
       color: '#2d2d2d',
       lineHeight: '1.7',
-      fontSize: '16px',
+      fontSize: '15px',
       letterSpacing: '0.3px',
-      fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
     }}>
       {/* 呼吸灯指示器 - 改为墨点效果 */}
       {isFirstMessageInRound && renderingMode !== 'graph_run' && (
@@ -666,8 +674,11 @@ const MessageItem: React.FC<MessageItemProps> = ({
           padding: '14px 16px',
           boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
           maxHeight: '30rem',
-          overflow: 'auto'
-        } : {}}>
+          overflow: 'auto',
+          // 滚动条样式
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(139, 115, 85, 0.08)'
+        } : {}} className={isUser ? 'user-message-scrollbar' : ''}>
           <div>
             {/* AI思考过程优先显示 */}
             {effectiveReasoningContent && (
@@ -679,9 +690,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
               <div style={{
                 color: '#2d2d2d',
                 lineHeight: '1.7',
-                fontSize: '16px',
+                fontSize: '15px',
                 letterSpacing: '0.3px',
-                fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
               }}>
 
                 <div>
@@ -945,7 +956,11 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
   const toolResults = buildToolResultsMap(conversation.rounds || []);
 
   return (
-    <div className="message-display">
+    <div className="message-display" style={{
+      // 滚动条样式
+      scrollbarWidth: 'thin',
+      scrollbarColor: 'rgba(139, 115, 85, 0.3) transparent'
+    }}>
       <div className="messages-container">
         {(conversation.rounds || []).map((round, roundIndex) => {
           if (isGraphExecution) {
@@ -1044,9 +1059,9 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             marginBottom: '24px',
             color: '#2d2d2d',
             lineHeight: '1.7',
-            fontSize: '16px',
+            fontSize: '15px',
             letterSpacing: '0.3px',
-            fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
           }}>
             {/* 呼吸灯指示器 - 在流式消息上方左对齐 */}
             {/* Graph执行模式不显示呼吸灯，因为有独立的节点信息显示 */}

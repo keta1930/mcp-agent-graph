@@ -8,6 +8,7 @@ import { getCurrentUserDisplayName } from '../../../config/user';
 import CollapsedSidebar from './CollapsedSidebar';
 import ConversationItem from './ConversationItem';
 import ExportManagerButton from '../modal/ExportManagerButton';
+import './ConversationSidebar.css';
 
 interface ConversationSidebarProps {
   onConversationSelect: (conversationId: string) => void;
@@ -363,10 +364,14 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       <div
         ref={listRef}
         onScroll={saveScrollPosition}
+        className="conversation-list-scrollbar"
         style={{
           flex: 1,
           overflowY: 'auto',
           padding: '12px',
+          // 滚动条样式 - 纸张质感
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(139, 115, 85, 0.25) transparent',
         }}
       >
         {loading ? (

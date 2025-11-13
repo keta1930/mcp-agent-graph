@@ -1,0 +1,26 @@
+/* ConversationSidebar 组件样式 - 大地色系设计 */
+
+/* 对话列表滚动条 - 纸张质感 */
+.conversation-list-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-list-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+
+.conversation-list-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 115, 85, 0.2);
+  border-radius: 3px;
+  transition: background 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.conversation-list-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 115, 85, 0.35);
+}
+
+/* 滚动时的视觉反馈 */
+.conversation-list-scrollbar::-webkit-scrollbar-thumb:active {
+  background: rgba(184, 88, 69, 0.4);
+}

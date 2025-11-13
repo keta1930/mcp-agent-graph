@@ -8,21 +8,24 @@
   background: #faf8f5;
 }
 
+/* 主消息区域滚动条 - 纸张质感 */
 .message-display::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .message-display::-webkit-scrollbar-track {
   background: transparent;
+  margin: 8px 0;
 }
 
 .message-display::-webkit-scrollbar-thumb {
-  background: rgba(139, 115, 85, 0.3);
-  border-radius: 4px;
+  background: rgba(139, 115, 85, 0.25);
+  border-radius: 3px;
+  transition: background 0.3s ease;
 }
 
 .message-display::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 115, 85, 0.5);
+  background: rgba(139, 115, 85, 0.45);
 }
 
 .messages-container {
@@ -56,29 +59,56 @@
   }
 }
 
-/* 用户消息滚动条样式 - 纸张质感 */
-.message-display div[style*="rgba(212, 196, 176"]::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* 用户消息滚动条 - 温润质感 */
+.user-message-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.message-display div[style*="rgba(212, 196, 176"]::-webkit-scrollbar-track {
-  background: rgba(139, 115, 85, 0.08);
-  border-radius: 6px;
+.user-message-scrollbar::-webkit-scrollbar-track {
+  background: rgba(139, 115, 85, 0.06);
+  border-radius: 3px;
+  margin: 6px;
+}
+
+.user-message-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 115, 85, 0.25);
+  border-radius: 3px;
+  transition: background 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.user-message-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 115, 85, 0.45);
+}
+
+/* 代码块滚动条 - 精致细腻 */
+.code-block-scrollbar::-webkit-scrollbar,
+.tool-call-scrollbar::-webkit-scrollbar,
+.reasoning-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.code-block-scrollbar::-webkit-scrollbar-track,
+.tool-call-scrollbar::-webkit-scrollbar-track,
+.reasoning-scrollbar::-webkit-scrollbar-track {
+  background: rgba(245, 243, 240, 0.6);
+  border-radius: 3px;
   margin: 4px;
 }
 
-.message-display div[style*="rgba(212, 196, 176"]::-webkit-scrollbar-thumb {
-  background: rgba(139, 115, 85, 0.3);
-  border-radius: 6px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-  transition: all 0.3s ease;
+.code-block-scrollbar::-webkit-scrollbar-thumb,
+.tool-call-scrollbar::-webkit-scrollbar-thumb,
+.reasoning-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 115, 85, 0.25);
+  border-radius: 3px;
+  transition: background 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.message-display div[style*="rgba(212, 196, 176"]::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 115, 85, 0.5);
-  border: 1px solid transparent;
+.code-block-scrollbar::-webkit-scrollbar-thumb:hover,
+.tool-call-scrollbar::-webkit-scrollbar-thumb:hover,
+.reasoning-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(184, 88, 69, 0.4);
 }
 
 /* Markdown内容样式 - 保持简洁 */
