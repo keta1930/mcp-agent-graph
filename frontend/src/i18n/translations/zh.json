@@ -1,0 +1,111 @@
+{
+  "common": {
+    "appName": "MCP 智能体图",
+    "welcome": "欢迎",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "search": "搜索",
+    "filter": "筛选",
+    "loading": "加载中...",
+    "success": "成功",
+    "error": "错误",
+    "confirm": "确认",
+    "back": "返回",
+    "next": "下一步",
+    "submit": "提交",
+    "reset": "重置"
+  },
+  "pages": {
+    "home": {
+      "title": "首页",
+      "description": "欢迎使用 MCP 智能体图"
+    },
+    "login": {
+      "title": "登录",
+      "subtitle": "欢迎回来，请登录您的账号",
+      "username": "用户名",
+      "password": "密码",
+      "usernamePlaceholder": "请输入用户名",
+      "passwordPlaceholder": "请输入密码",
+      "loginButton": "登录",
+      "loggingIn": "正在登录...",
+      "registerLink": "还没有账号？",
+      "registerLinkAction": "立即注册",
+      "defaultAdminHint": "默认管理员账号：admin / admin123",
+      "loginFailedDefault": "登录失败，请检查用户名和密码"
+    },
+    "register": {
+      "title": "创建账号",
+      "subtitle": "加入 MCP Agent Graph",
+      "inviteCode": "邀请码",
+      "inviteCodePlaceholder": "请输入邀请码（如：TEAM-ABC123）",
+      "inviteCodeHint": "请联系管理员获取邀请码",
+      "username": "用户名",
+      "usernamePlaceholder": "请输入用户名",
+      "password": "密码",
+      "passwordPlaceholder": "至少8个字符",
+      "confirmPassword": "确认密码",
+      "confirmPasswordPlaceholder": "再次输入密码",
+      "passwordStrength": "密码强度：",
+      "passwordStrengthWeak": "弱",
+      "passwordStrengthMedium": "中",
+      "passwordStrengthStrong": "强",
+      "passwordStrengthVeryStrong": "很强",
+      "registerButton": "注册",
+      "registering": "正在注册...",
+      "loginLink": "已有账号？",
+      "loginLinkAction": "立即登录",
+      "registerSuccess": "注册成功，请登录",
+      "passwordTooShort": "密码至少需要8个字符",
+      "passwordMismatch": "两次输入的密码不一致",
+      "invalidInviteCode": "邀请码无效或已被禁用",
+      "userExists": "该用户名已被注册",
+      "inviteCodeExpired": "邀请码已过期",
+      "inviteCodeMaxUses": "邀请码使用次数已达上限",
+      "registerFailedDefault": "注册失败，请稍后重试"
+    },
+    "workspace": {
+      "title": "工作台",
+      "agentManager": "智能体管理",
+      "graphEditor": "图编辑器",
+      "modelManager": "模型管理",
+      "mcpManager": "MCP 管理",
+      "promptManager": "提示词管理",
+      "systemTools": "系统工具",
+      "fileManager": "文件管理"
+    }
+  },
+  "components": {
+    "languageSwitcher": {
+      "title": "语言",
+      "english": "English",
+      "chinese": "中文"
+    },
+    "navigation": {
+      "home": "首页",
+      "chat": "对话",
+      "tasks": "任务",
+      "export": "导出",
+      "workspace": "工作台",
+      "admin": "管理"
+    }
+  },
+  "messages": {
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败",
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "deleteConfirm": "确定要删除此项吗？",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败"
+  },
+  "errors": {
+    "networkError": "网络错误，请重试",
+    "unauthorized": "未授权访问",
+    "notFound": "资源未找到",
+    "serverError": "服务器错误，请稍后重试"
+  }
+}

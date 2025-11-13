@@ -1,0 +1,111 @@
+{
+  "common": {
+    "appName": "MCP Agent Graph",
+    "welcome": "Welcome",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "reset": "Reset"
+  },
+  "pages": {
+    "home": {
+      "title": "Home",
+      "description": "Welcome to MCP Agent Graph"
+    },
+    "login": {
+      "title": "Login",
+      "subtitle": "Welcome back, please login to your account",
+      "username": "Username",
+      "password": "Password",
+      "usernamePlaceholder": "Please enter username",
+      "passwordPlaceholder": "Please enter password",
+      "loginButton": "Login",
+      "loggingIn": "Logging in...",
+      "registerLink": "Don't have an account?",
+      "registerLinkAction": "Register now",
+      "defaultAdminHint": "Default admin account: admin / admin123",
+      "loginFailedDefault": "Login failed, please check username and password"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join MCP Agent Graph",
+      "inviteCode": "Invite Code",
+      "inviteCodePlaceholder": "Please enter invite code (e.g., TEAM-ABC123)",
+      "inviteCodeHint": "Please contact administrator for invite code",
+      "username": "Username",
+      "usernamePlaceholder": "Please enter username",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Enter password again",
+      "passwordStrength": "Password strength:",
+      "passwordStrengthWeak": "Weak",
+      "passwordStrengthMedium": "Medium",
+      "passwordStrengthStrong": "Strong",
+      "passwordStrengthVeryStrong": "Very Strong",
+      "registerButton": "Register",
+      "registering": "Registering...",
+      "loginLink": "Already have an account?",
+      "loginLinkAction": "Login now",
+      "registerSuccess": "Registration successful, please login",
+      "passwordTooShort": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "invalidInviteCode": "Invalid or disabled invite code",
+      "userExists": "Username already registered",
+      "inviteCodeExpired": "Invite code has expired",
+      "inviteCodeMaxUses": "Invite code has reached maximum uses",
+      "registerFailedDefault": "Registration failed, please try again later"
+    },
+    "workspace": {
+      "title": "Workspace",
+      "agentManager": "Agent Manager",
+      "graphEditor": "Graph Editor",
+      "modelManager": "Model Manager",
+      "mcpManager": "MCP Manager",
+      "promptManager": "Prompt Manager",
+      "systemTools": "System Tools",
+      "fileManager": "File Manager"
+    }
+  },
+  "components": {
+    "languageSwitcher": {
+      "title": "Language",
+      "english": "English",
+      "chinese": "中文"
+    },
+    "navigation": {
+      "home": "Home",
+      "chat": "Chat",
+      "tasks": "Tasks",
+      "export": "Export",
+      "workspace": "Workspace",
+      "admin": "Admin"
+    }
+  },
+  "messages": {
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed",
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Save failed",
+    "deleteConfirm": "Are you sure you want to delete this item?",
+    "deleteSuccess": "Deleted successfully",
+    "deleteFailed": "Delete failed"
+  },
+  "errors": {
+    "networkError": "Network error, please try again",
+    "unauthorized": "Unauthorized access",
+    "notFound": "Resource not found",
+    "serverError": "Server error, please try again later"
+  }
+}
