@@ -8,16 +8,17 @@ import ModelForm from '../components/model-manager/ModelForm';
 import ErrorMessage from '../components/common/ErrorMessage';
 import * as modelService from '../services/modelService';
 import * as userSettingsService from '../services/userSettingsService';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Text, Title } = Typography;
 
 const ModelManager: React.FC = () => {
+  const t = useT();
   const { models, loading, error, fetchModels, addModel, updateModel, deleteModel } = useModelStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [currentModel, setCurrentModel] = useState<ModelConfig | undefined>(undefined);
-  const [modalTitle, setModalTitle] = useState('添加模型');
-  const [editLoading, setEditLoading] = useState(false);
+  const [modalTitle, setModalTitle] = useState(t('pages.modelManager.createModel'));
   const [titleGenerationModel, setTitleGenerationModel] = useState<string | null>(null);
   const [titleModelLoading, setTitleModelLoading] = useState(false);
   const [titleModelModalVisible, setTitleModelModalVisible] = useState(false);
@@ -54,7 +55,7 @@ const ModelManager: React.FC = () => {
 
   const handleTitleModelChange = async (modelName: string | null) => {
     if (!modelName) {
-      message.warning('请选择一个模型');
+      message.warning(t('pages.modelManager.titleModelSelectWarning'));
       return;
     }
 
@@ -62,10 +63,10 @@ const ModelManager: React.FC = () => {
     try {
       await userSettingsService.setTitleGenerationModel(modelName);
       setTitleGenerationModel(modelName);
-      message.success(`标题生成模型已设置为: ${modelName}`);
+      message.success(t('pages.modelManager.titleModelSetSuccess', { name: modelName }));
     } catch (error) {
-      console.error('设置标题生成模型失败:', error);
-      message.error('设置失败: ' + (error instanceof Error ? error.message : String(error)));
+      console.error(t('pages.modelManager.titleModelLoadFailed'), error);
+      message.error(t('pages.modelManager.titleModelSetFailed', { error: error instanceof Error ? error.message : String(error) }));
     } finally {
       setTitleModelLoading(false);
     }
@@ -73,12 +74,11 @@ const ModelManager: React.FC = () => {
 
   const showAddModal = () => {
     setCurrentModel(undefined);
-    setModalTitle('添加模型');
+    setModalTitle(t('pages.modelManager.createModel'));
     setModalVisible(true);
   };
 
   const showEditModal = async (model: ModelConfig) => {
-    setEditLoading(true);
     try {
       // 获取完整的模型配置用于编辑
       const response = await modelService.getModelForEdit(model.name);
@@ -86,17 +86,16 @@ const ModelManager: React.FC = () => {
         setCurrentModel(response.data);
       } else {
         // 如果获取失败，使用基本信息
-        console.warn('获取完整模型配置失败，使用基本信息');
+        console.warn(t('pages.modelManager.titleModelLoadWarning'));
         setCurrentModel(model);
       }
     } catch (error) {
       // 如果获取完整配置失败，使用基本信息
-      console.warn('获取完整模型配置失败，使用基本信息:', error);
+      console.warn(t('pages.modelManager.titleModelLoadWarning'), error);
       setCurrentModel(model);
-      message.warning('无法加载完整的模型配置，仅显示基本信息');
+      message.warning(t('pages.modelManager.titleModelLoadWarning'));
     } finally {
-      setEditLoading(false);
-      setModalTitle('编辑模型');
+      setModalTitle(t('common.edit'));
       setModalVisible(true);
     }
   };
@@ -105,23 +104,23 @@ const ModelManager: React.FC = () => {
     try {
       if (currentModel) {
         await updateModel(currentModel.name, formData);
-        message.success(`模型 "${formData.name}" 更新成功`);
+        message.success(t('pages.modelManager.updateSuccess', { name: formData.name }));
       } else {
         await addModel(formData);
-        message.success(`模型 "${formData.name}" 添加成功`);
+        message.success(t('pages.modelManager.addSuccess', { name: formData.name }));
       }
       setModalVisible(false);
     } catch (err) {
-      message.error('操作失败: ' + (err instanceof Error ? err.message : String(err)));
+      message.error(t('pages.modelManager.operationFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 
   const handleDelete = async (modelName: string) => {
     try {
       await deleteModel(modelName);
-      message.success(`模型 "${modelName}" 删除成功`);
+      message.success(t('pages.modelManager.deleteSuccess', { name: modelName }));
     } catch (err) {
-      message.error('删除失败: ' + (err instanceof Error ? err.message : String(err)));
+      message.error(t('pages.modelManager.deleteFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 
@@ -129,7 +128,7 @@ const ModelManager: React.FC = () => {
 
   return (
     <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
-      {error && <ErrorMessage className="error-message" message={error} />}
+      {error && <ErrorMessage message={error} />}
 
       {/* Header 顶栏 */}
       <Header style={{
@@ -161,7 +160,7 @@ const ModelManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              模型管理
+              {t('pages.modelManager.title')}
             </Title>
             <AntTag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -172,7 +171,7 @@ const ModelManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {models.length} 个模型
+              {t('pages.modelManager.modelsCount', { count: models.length })}
             </AntTag>
             {titleGenerationModel && (
               <AntTag style={{
@@ -188,7 +187,7 @@ const ModelManager: React.FC = () => {
                 gap: '4px'
               }}>
                 <Star size={12} strokeWidth={1.5} fill="#8b7355" />
-                标题: {titleGenerationModel}
+                {t('pages.modelManager.titleModel', { name: titleGenerationModel })}
               </AntTag>
             )}
           </Space>
@@ -196,7 +195,7 @@ const ModelManager: React.FC = () => {
           {/* 右侧：搜索和操作按钮 */}
           <Space size={12}>
             <Input
-              placeholder="搜索模型..."
+              placeholder={t('pages.modelManager.searchPlaceholder')}
               allowClear
               prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
               value={searchText}
@@ -237,7 +236,7 @@ const ModelManager: React.FC = () => {
                 padding: '0 16px'
               }}
             >
-              标题模型
+              {t('pages.modelManager.titleModelSettings')}
             </Button>
             <Button
               type="primary"
@@ -258,7 +257,7 @@ const ModelManager: React.FC = () => {
                 padding: '0 20px'
               }}
             >
-              模型
+              {t('pages.modelManager.createModel')}
             </Button>
           </Space>
         </div>
@@ -273,7 +272,7 @@ const ModelManager: React.FC = () => {
             alignItems: 'center',
             height: '100%'
           }}>
-            <Spin size="large" tip="加载中..." />
+            <Spin size="large" tip={t('common.loading')} />
           </div>
         ) : filteredModels.length === 0 ? (
           searchText ? (
@@ -283,7 +282,7 @@ const ModelManager: React.FC = () => {
               color: 'rgba(45, 45, 45, 0.45)',
               fontSize: '14px'
             }}>
-              未找到匹配 "{searchText}" 的模型
+              {t('pages.modelManager.noMatchingModels', { search: searchText })}
             </div>
           ) : (
             <Card
@@ -302,7 +301,7 @@ const ModelManager: React.FC = () => {
                 display: 'block',
                 marginBottom: '16px'
               }}>
-                暂无模型配置
+                {t('pages.modelManager.noModels')}
               </Text>
               <Button
                 style={{
@@ -330,7 +329,7 @@ const ModelManager: React.FC = () => {
                 }}
               >
                 <Plus size={16} strokeWidth={1.5} />
-                添加第一个模型
+                {t('pages.modelManager.createFirstModel')}
               </Button>
             </Card>
           )
@@ -404,7 +403,7 @@ const ModelManager: React.FC = () => {
                         display: 'block',
                         marginBottom: '2px'
                       }}>
-                        基础URL
+                        {t('pages.modelManager.baseUrl')}
                       </Text>
                       <Text style={{
                         fontSize: '13px',
@@ -429,7 +428,7 @@ const ModelManager: React.FC = () => {
                         display: 'block',
                         marginBottom: '2px'
                       }}>
-                        模型标识
+                        {t('pages.modelManager.modelIdentifier')}
                       </Text>
                       <Text style={{
                         fontSize: '13px',
@@ -475,7 +474,7 @@ const ModelManager: React.FC = () => {
                     }}
                   >
                     <Edit size={15} strokeWidth={1.5} />
-                    编辑
+                    {t('common.edit')}
                   </div>
                   <div
                     style={{
@@ -503,7 +502,7 @@ const ModelManager: React.FC = () => {
                     }}
                   >
                     <Trash2 size={15} strokeWidth={1.5} />
-                    删除
+                    {t('common.delete')}
                   </div>
                 </div>
               </Card>
@@ -550,13 +549,13 @@ const ModelManager: React.FC = () => {
                 display: 'block',
                 marginBottom: '8px'
               }}>
-                确认删除
+                {t('pages.modelManager.deleteConfirmTitle')}
               </Text>
               <Text style={{
                 fontSize: '14px',
                 color: 'rgba(45, 45, 45, 0.65)'
               }}>
-                您确定要删除模型 "{deleteConfirmVisible}" 吗？此操作无法撤销。
+                {t('pages.modelManager.deleteConfirmMessage', { name: deleteConfirmVisible })}
               </Text>
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -571,7 +570,7 @@ const ModelManager: React.FC = () => {
                 }}
                 onClick={() => setDeleteConfirmVisible(null)}
               >
-                取消
+                {t('common.cancel')}
               </Button>
               <Button
                 style={{
@@ -589,7 +588,7 @@ const ModelManager: React.FC = () => {
                   setDeleteConfirmVisible(null);
                 }}
               >
-                确定删除
+                {t('common.confirm')}
               </Button>
             </div>
           </Card>
@@ -633,14 +632,14 @@ const ModelManager: React.FC = () => {
                   fontWeight: 500,
                   color: '#2d2d2d'
                 }}>
-                  标题生成模型设置
+                  {t('pages.modelManager.titleModelModalTitle')}
                 </Text>
               </div>
               <Text style={{
                 fontSize: '13px',
                 color: 'rgba(45, 45, 45, 0.65)'
               }}>
-                选择用于自动生成会话标题的模型
+                {t('pages.modelManager.titleModelModalDescription')}
               </Text>
             </div>
 
@@ -649,7 +648,7 @@ const ModelManager: React.FC = () => {
                 style={{
                   width: '100%'
                 }}
-                placeholder="选择标题生成模型"
+                placeholder={t('pages.modelManager.titleModelSelectPlaceholder')}
                 value={titleGenerationModel}
                 onChange={handleTitleModelChange}
                 loading={titleModelLoading}
@@ -678,7 +677,7 @@ const ModelManager: React.FC = () => {
                 }}
                 onClick={() => setTitleModelModalVisible(false)}
               >
-                关闭
+                {t('pages.modelManager.close')}
               </Button>
             </div>
           </Card>

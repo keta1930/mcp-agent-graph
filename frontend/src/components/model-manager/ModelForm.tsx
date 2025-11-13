@@ -1,8 +1,9 @@
 // src/components/model-manager/ModelForm.tsx
 import React, { useState } from 'react';
-import { Form, Input, Modal, Button, InputNumber, Switch, Select } from 'antd';
+import { Form, Input, Modal, Button, InputNumber, Switch } from 'antd';
 import { ChevronDown } from 'lucide-react';
 import { ModelConfig } from '../../types/model';
+import { useT } from '../../i18n/hooks';
 
 const { TextArea } = Input;
 
@@ -21,6 +22,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
   initialValues,
   title
 }) => {
+  const t = useT();
   const [form] = Form.useForm();
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
 
@@ -111,7 +113,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
           }
         } catch (e) {
           // JSON 解析失败时忽略该字段
-          console.warn('extra_body中的JSON格式无效:', e);
+          console.warn(t('pages.modelManager.form.invalidJson'), e);
         }
       }
       
@@ -152,7 +154,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
             height: 'auto'
           }}
         >
-          取消
+          {t('common.cancel')}
         </Button>,
         <Button
           key="submit"
@@ -169,7 +171,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
             marginLeft: '8px'
           }}
         >
-          提交
+          {t('common.submit')}
         </Button>,
       ]}
     >
@@ -181,36 +183,36 @@ const ModelForm: React.FC<ModelFormProps> = ({
         {/* 基本配置 */}
         <Form.Item
           name="name"
-          label="模型名称"
-          rules={[{ required: true, message: '请输入模型名称!' }]}
+          label={t('pages.modelManager.form.modelName')}
+          rules={[{ required: true, message: t('pages.modelManager.form.modelNameRequired') }]}
         >
           <Input />
         </Form.Item>
         <Form.Item
           name="base_url"
-          label="基础URL"
-          rules={[{ required: true, message: '请输入基础URL!' }]}
+          label={t('pages.modelManager.form.baseUrlLabel')}
+          rules={[{ required: true, message: t('pages.modelManager.form.baseUrlRequired') }]}
         >
-          <Input placeholder="https://api.openai.com/v1" />
+          <Input placeholder={t('pages.modelManager.form.baseUrlPlaceholder')} />
         </Form.Item>
         <Form.Item
           name="api_key"
-          label="API密钥"
+          label={t('pages.modelManager.form.apiKey')}
           rules={[
             {
               required: !initialValues,
-              message: '请输入API密钥!'
+              message: t('pages.modelManager.form.apiKeyRequired')
             }
           ]}
         >
-          <Input.Password placeholder={initialValues ? "••••••••••••••••" : ""} />
+          <Input.Password placeholder={initialValues ? t('pages.modelManager.form.apiKeyPlaceholder') : ""} />
         </Form.Item>
         <Form.Item
           name="model"
-          label="模型标识符"
-          rules={[{ required: true, message: '请输入模型标识符!' }]}
+          label={t('pages.modelManager.form.modelIdentifierLabel')}
+          rules={[{ required: true, message: t('pages.modelManager.form.modelIdentifierRequired') }]}
         >
-          <Input placeholder="gpt-4" />
+          <Input placeholder={t('pages.modelManager.form.modelIdentifierPlaceholder')} />
         </Form.Item>
 
         {/* 高级配置 */}
@@ -245,7 +247,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
               fontSize: '14px',
               color: '#2d2d2d'
             }}>
-              高级配置
+              {t('pages.modelManager.form.advancedConfig')}
             </span>
             <ChevronDown
               size={18}
@@ -262,7 +264,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
               <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="stream"
-                label="启用流式响应"
+                label={t('pages.modelManager.form.streamResponse')}
                 valuePropName="checked"
                 style={{ marginBottom: '24px' }}
               >
@@ -278,15 +280,15 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="temperature"
-                label="温度参数"
-                help="控制随机性 (0.0 到 2.0)。留空将移除此参数。"
+                label={t('pages.modelManager.form.temperature')}
+                help={t('pages.modelManager.form.temperatureHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={0}
                   max={2}
                   step={0.1}
-                  placeholder="0.7"
+                  placeholder={t('pages.modelManager.form.temperaturePlaceholder')}
                   style={{ width: '100%' }}
                   precision={2}
                 />
@@ -296,13 +298,13 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="max_tokens"
-                label="最大令牌数"
-                help="生成的最大令牌数。留空将移除此参数。"
+                label={t('pages.modelManager.form.maxTokens')}
+                help={t('pages.modelManager.form.maxTokensHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={1}
-                  placeholder="1000"
+                  placeholder={t('pages.modelManager.form.maxTokensPlaceholder')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -311,13 +313,13 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="max_completion_tokens"
-                label="最大完成令牌数"
-                help="完成部分的最大令牌数。留空将移除此参数。"
+                label={t('pages.modelManager.form.maxCompletionTokens')}
+                help={t('pages.modelManager.form.maxCompletionTokensHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={1}
-                  placeholder="1000"
+                  placeholder={t('pages.modelManager.form.maxCompletionTokensPlaceholder')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -326,15 +328,15 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="top_p"
-                label="Top P参数"
-                help="核采样参数 (0.0 到 1.0)。留空将移除此参数。"
+                label={t('pages.modelManager.form.topP')}
+                help={t('pages.modelManager.form.topPHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={0}
                   max={1}
                   step={0.1}
-                  placeholder="1.0"
+                  placeholder={t('pages.modelManager.form.topPPlaceholder')}
                   style={{ width: '100%' }}
                   precision={2}
                 />
@@ -344,15 +346,15 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="frequency_penalty"
-                label="频率惩罚"
-                help="对频繁令牌的惩罚 (-2.0 到 2.0)。留空将移除此参数。"
+                label={t('pages.modelManager.form.frequencyPenalty')}
+                help={t('pages.modelManager.form.frequencyPenaltyHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={-2}
                   max={2}
                   step={0.1}
-                  placeholder="0.0"
+                  placeholder={t('pages.modelManager.form.frequencyPenaltyPlaceholder')}
                   style={{ width: '100%' }}
                   precision={2}
                 />
@@ -362,15 +364,15 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="presence_penalty"
-                label="存在惩罚"
-                help="对已存在令牌的惩罚 (-2.0 到 2.0)。留空将移除此参数。"
+                label={t('pages.modelManager.form.presencePenalty')}
+                help={t('pages.modelManager.form.presencePenaltyHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={-2}
                   max={2}
                   step={0.1}
-                  placeholder="0.0"
+                  placeholder={t('pages.modelManager.form.presencePenaltyPlaceholder')}
                   style={{ width: '100%' }}
                   precision={2}
                 />
@@ -380,14 +382,14 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="n"
-                label="响应数量"
-                help="生成的完成数量。留空将移除此参数。"
+                label={t('pages.modelManager.form.responseCount')}
+                help={t('pages.modelManager.form.responseCountHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={1}
                   max={10}
-                  placeholder="1"
+                  placeholder={t('pages.modelManager.form.responseCountPlaceholder')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -396,23 +398,23 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="stop"
-                label="停止序列"
-                help="逗号分隔的停止序列。留空将移除此参数。"
+                label={t('pages.modelManager.form.stopSequence')}
+                help={t('pages.modelManager.form.stopSequenceHelp')}
                 style={{ marginBottom: '24px' }}
               >
-                <Input placeholder="\\n, ." />
+                <Input placeholder={t('pages.modelManager.form.stopSequencePlaceholder')} />
               </Form.Item>
             </div>
 
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="seed"
-                label="随机种子"
-                help="用于可重现结果的随机种子。留空将移除此参数。"
+                label={t('pages.modelManager.form.seed')}
+                help={t('pages.modelManager.form.seedHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
-                  placeholder="12345"
+                  placeholder={t('pages.modelManager.form.seedPlaceholder')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -421,7 +423,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="logprobs"
-                label="返回对数概率"
+                label={t('pages.modelManager.form.logprobs')}
                 valuePropName="checked"
                 style={{ marginBottom: '24px' }}
               >
@@ -437,14 +439,14 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="top_logprobs"
-                label="Top对数概率数量"
-                help="返回最可能令牌的数量。留空将移除此参数。"
+                label={t('pages.modelManager.form.topLogprobs')}
+                help={t('pages.modelManager.form.topLogprobsHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={0}
                   max={20}
-                  placeholder="0"
+                  placeholder={t('pages.modelManager.form.topLogprobsPlaceholder')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -453,13 +455,13 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="timeout"
-                label="超时时间（秒）"
-                help="请求超时时间（秒）。留空将移除此参数。"
+                label={t('pages.modelManager.form.timeout')}
+                help={t('pages.modelManager.form.timeoutHelp')}
                 style={{ marginBottom: '24px' }}
               >
                 <InputNumber
                   min={1}
-                  placeholder="60"
+                  placeholder={t('pages.modelManager.form.timeoutPlaceholder')}
                   style={{ width: '100%' }}
                 />
               </Form.Item>
@@ -468,13 +470,13 @@ const ModelForm: React.FC<ModelFormProps> = ({
             <div style={{ paddingBottom: '12px' }}>
               <Form.Item
                 name="extra_body_json"
-                label="额外请求参数"
-                help="JSON格式的额外请求体参数。留空将移除此参数。"
+                label={t('pages.modelManager.form.extraBody')}
+                help={t('pages.modelManager.form.extraBodyHelp')}
                 style={{ marginBottom: '12px' }}
               >
                 <TextArea
                   rows={4}
-                  placeholder='{"custom_param": "value"}'
+                  placeholder={t('pages.modelManager.form.extraBodyPlaceholder')}
                 />
               </Form.Item>
             </div>
