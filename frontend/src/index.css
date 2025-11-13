@@ -127,16 +127,18 @@ html, body {
 /* 服务器卡片样式 */
 .ant-card-bordered {
   border-radius: 8px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid rgba(139, 115, 85, 0.15);
   overflow: hidden;
   margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.08);
 }
 
 .ant-card-head {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
   padding: 0 20px;
   min-height: 48px;
-  background-color: #fafafa;
+  background-color: rgba(250, 248, 245, 0.9);
 }
 
 .ant-card-body {
@@ -151,11 +153,11 @@ html, body {
 }
 
 .flex.justify-between .space-x-2 > * {
-  margin-right: 12px !important;
+  margin-right: 12px;
 }
 
 .flex.justify-between .space-x-2 > *:last-child {
-  margin-right: 0 !important;
+  margin-right: 0;
 }
 
 /* 服务器列表美化 */
@@ -166,8 +168,9 @@ html, body {
 .ant-empty {
   margin: 32px 0;
   padding: 24px;
-  background: #fafafa;
+  background: rgba(250, 248, 245, 0.6);
   border-radius: 8px;
+  border: 1px solid rgba(139, 115, 85, 0.1);
 }
 
 /* 美化表格样式 */
@@ -177,17 +180,22 @@ html, body {
 }
 
 .ant-table-thead > tr > th {
-  background-color: #fafafa;
+  background-color: rgba(250, 248, 245, 0.9);
+  color: #2d2d2d;
   font-weight: 600;
+  font-size: 13px;
   padding: 16px 12px;
+  border-bottom: 2px solid rgba(139, 115, 85, 0.15);
+  letter-spacing: 0.5px;
 }
 
 .ant-table-tbody > tr > td {
   padding: 14px 12px;
+  border-bottom: 1px solid rgba(139, 115, 85, 0.08);
 }
 
 .ant-table-tbody > tr:hover > td {
-  background-color: rgba(139, 115, 85, 0.05);
+  background-color: rgba(250, 248, 245, 0.5);
 }
 
 /* 表单样式美化 */
@@ -234,8 +242,8 @@ html, body {
 
 .ant-modal-header {
   padding: 16px 24px;
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  background: rgba(250, 248, 245, 0.9);
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
 }
 
 .ant-modal-title {
@@ -245,8 +253,8 @@ html, body {
 
 .ant-modal-footer {
   padding: 16px 24px;
-  background: #fafafa;
-  border-top: 1px solid #f0f0f0;
+  background: rgba(250, 248, 245, 0.9);
+  border-top: 1px solid rgba(139, 115, 85, 0.15);
 }
 
 /* Tools 弹出卡片优化 */
@@ -435,23 +443,24 @@ h1.text-2xl.font-bold {
 }
 
 .ant-menu-item {
-  margin: 4px 0 !important;
-  padding: 0 16px !important;
+  margin: 4px 0;
+  padding: 0 16px;
   border-radius: 0 20px 20px 0;
   transition: all 0.3s;
 }
 
 .ant-menu-item-selected {
-  background-color: #e6f7ff !important;
+  background-color: rgba(184, 88, 69, 0.08);
+  color: #b85845;
   font-weight: 500;
 }
 
 .ant-menu-item:hover {
-  color: #1890ff;
+  color: #b85845;
 }
 
 .ant-menu-item-selected::after {
-  opacity: 0 !important;
+  opacity: 0;
 }
 
 /* 标签页美化 */
@@ -469,8 +478,9 @@ h1.text-2xl.font-bold {
 }
 
 .ant-tabs-ink-bar {
-  height: 3px !important;
+  height: 3px;
   border-radius: 3px;
+  background: linear-gradient(135deg, #b85845 0%, #a0826d 100%);
 }
 
 .custom-tabs .ant-tabs-content {
@@ -479,11 +489,11 @@ h1.text-2xl.font-bold {
 
 /* Action按钮间距调整 */
 .ant-space {
-  gap: 8px !important;
+  gap: 8px;
 }
 
 .ant-space-item button {
-  margin-right: 0 !important;
+  margin-right: 0;
 }
 
 /* Enhanced Model Manager Styling */
@@ -499,26 +509,28 @@ h1.text-2xl.font-bold {
 /* Table styling */
 .ant-table-wrapper {
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  background-color: white;
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.08);
+  background-color: rgba(255, 255, 255, 0.85);
   overflow: hidden;
 }
 
 .ant-table-thead > tr > th {
-  background: #f7f9fc !important;
+  background: rgba(250, 248, 245, 0.9);
   font-weight: 600;
-  color: #333;
+  color: #2d2d2d;
+  font-size: 13px;
   padding: 14px 16px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 2px solid rgba(139, 115, 85, 0.15);
+  letter-spacing: 0.5px;
 }
 
 .ant-table-tbody > tr > td {
   padding: 14px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(139, 115, 85, 0.08);
 }
 
 .ant-table-tbody > tr:hover > td {
-  background-color: rgba(139, 115, 85, 0.05) !important;
+  background-color: rgba(250, 248, 245, 0.5);
 }
 
 /* Add model button with enhanced styling */
@@ -570,8 +582,8 @@ h1.text-2xl.font-bold {
 /* Modal styling */
 .ant-modal-header {
   padding: 16px 24px;
-  background: #f7f9fc;
-  border-bottom: 1px solid #e8e8e8;
+  background: rgba(250, 248, 245, 0.9);
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
 }
 
 .ant-modal-title {
@@ -592,8 +604,8 @@ h1.text-2xl.font-bold {
 
 .ant-modal-footer {
   padding: 16px 24px;
-  border-top: 1px solid #e8e8e8;
-  background: #f7f9fc;
+  border-top: 1px solid rgba(139, 115, 85, 0.15);
+  background: rgba(250, 248, 245, 0.9);
 }
 
 /* Form styling */
@@ -609,72 +621,72 @@ h1.text-2xl.font-bold {
 }
 
 .ant-input:hover, .ant-input-password:hover {
-  border-color: rgba(184, 88, 69, 0.4) !important;
+  border-color: rgba(184, 88, 69, 0.4);
 }
 
 .ant-input-number:hover,
 .ant-input-number-wrapper:hover,
 .ant-input-number:not(.ant-input-number-disabled):hover {
-  border-color: rgba(184, 88, 69, 0.4) !important;
+  border-color: rgba(184, 88, 69, 0.4);
 }
 
 .ant-select:not(.ant-select-disabled):hover .ant-select-selector {
-  border-color: rgba(184, 88, 69, 0.4) !important;
+  border-color: rgba(184, 88, 69, 0.4);
 }
 
 textarea.ant-input:hover {
-  border-color: rgba(184, 88, 69, 0.4) !important;
+  border-color: rgba(184, 88, 69, 0.4);
 }
 
 .ant-input-affix-wrapper:hover {
-  border-color: rgba(184, 88, 69, 0.4) !important;
+  border-color: rgba(184, 88, 69, 0.4);
 }
 
 .ant-input-affix-wrapper-focused,
 .ant-input-affix-wrapper:focus {
-  border-color: #b85845 !important;
-  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+  border-color: #b85845;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1);
 }
 
 /* Switch 组件样式 */
 .ant-switch-checked {
-  background-color: #b85845 !important;
+  background-color: #b85845;
 }
 
 .ant-switch-checked:hover:not(.ant-switch-disabled) {
-  background-color: #a0826d !important;
+  background-color: #a0826d;
 }
 
 .ant-input:focus, .ant-input-focused,
 .ant-input-password.ant-input-affix-wrapper-focused {
-  border-color: #b85845 !important;
-  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+  border-color: #b85845;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1);
 }
 
 .ant-input-number:focus,
 .ant-input-number-focused,
 .ant-input-number-wrapper-focused,
 .ant-input-number:not(.ant-input-number-disabled):focus {
-  border-color: #b85845 !important;
-  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+  border-color: #b85845;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1);
 }
 
 .ant-input-number-input:focus {
-  border-color: #b85845 !important;
-  box-shadow: none !important;
+  border-color: #b85845;
+  box-shadow: none;
 }
 
 .ant-select-focused .ant-select-selector {
-  border-color: #b85845 !important;
-  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+  border-color: #b85845;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1);
 }
 
 .ant-input-textarea-show-count .ant-input:focus,
 .ant-input-textarea-show-count textarea.ant-input:focus,
 textarea.ant-input:focus,
 textarea.ant-input-focused {
-  border-color: #b85845 !important;
-  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1) !important;
+  border-color: #b85845;
+  box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.1);
 }
 
 /* Error message styling */
@@ -738,4 +750,29 @@ textarea.ant-input-focused {
 
 .raw-preview-detail-root .ant-modal-wrap {
   overflow: auto !important;
+}
+
+/* 对话侧边栏 Checkbox 基础样式 */
+.conversation-item-checkbox .ant-checkbox-inner {
+  border-color: rgba(139, 115, 85, 0.25);
+  border-radius: 4px;
+  background-color: #ffffff;
+}
+
+.conversation-item-checkbox .ant-checkbox:hover .ant-checkbox-inner {
+  border-color: #8b7355;
+}
+
+.conversation-item-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+  background-color: #b85845;
+  border-color: #b85845;
+}
+
+.conversation-item-checkbox .ant-checkbox-checked:hover .ant-checkbox-inner {
+  background-color: #a0826d;
+  border-color: #a0826d;
+}
+
+.conversation-item-checkbox .ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: #faf8f5;
 }
