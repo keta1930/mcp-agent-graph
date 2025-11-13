@@ -13,12 +13,14 @@ import { useTaskStore } from '../store/taskStore';
 import { TaskStatus } from '../types/task';
 import TaskList from '../components/task/TaskList';
 import TaskCreateForm from '../components/task/TaskCreateForm';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
 
 const TaskManager: React.FC = () => {
   const navigate = useNavigate();
+  const t = useT();
   const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const {
@@ -51,12 +53,12 @@ const TaskManager: React.FC = () => {
   const handleReloadScheduler = async () => {
     const success = await reloadScheduler();
     if (success) {
-      message.success('调度器重新加载成功');
+      message.success(t('pages.taskManager.schedulerReloadSuccess'));
     }
   };
 
   const handleCreateSuccess = () => {
-    message.success('任务创建成功');
+    message.success(t('pages.taskManager.taskCreateSuccess'));
     loadTasks();
     loadScheduledJobs();
   };
@@ -89,7 +91,7 @@ const TaskManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              任务中心
+              {t('pages.taskManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -100,7 +102,7 @@ const TaskManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {stats.total} 个任务
+              {t('pages.taskManager.tasksCount', { count: stats.total })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -111,7 +113,7 @@ const TaskManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {stats.active} 运行中
+              {t('pages.taskManager.activeCount', { count: stats.active })}
             </Tag>
           </Space>
           
@@ -144,7 +146,7 @@ const TaskManager: React.FC = () => {
       <Content style={{ flex: 1, padding: '32px 48px', overflow: 'auto' }}>
         {error && (
           <Alert
-            message="操作失败"
+            message={t('pages.taskManager.operationFailed')}
             description={error}
             type="error"
             closable

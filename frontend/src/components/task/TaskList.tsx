@@ -31,6 +31,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TaskSummary, TaskStatus, ScheduleType } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
+import { useT } from '../../i18n/hooks';
 
 dayjs.extend(relativeTime);
 
@@ -59,6 +60,7 @@ const TaskList: React.FC<TaskListProps> = ({
   loading: externalLoading
 }) => {
   const navigate = useNavigate();
+  const t = useT();
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | undefined>();
   const [typeFilter, setTypeFilter] = useState<ScheduleType | undefined>();
@@ -111,10 +113,10 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const getStatusConfig = (status: TaskStatus) => {
     const configs = {
-      [TaskStatus.ACTIVE]: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.08)', text: '运行中' },
-      [TaskStatus.PAUSED]: { color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.08)', text: '已暂停' },
-      [TaskStatus.COMPLETED]: { color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.08)', text: '已完成' },
-      [TaskStatus.ERROR]: { color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.08)', text: '错误' }
+      [TaskStatus.ACTIVE]: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.08)', text: t('pages.taskManager.statusActive') },
+      [TaskStatus.PAUSED]: { color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.08)', text: t('pages.taskManager.statusPaused') },
+      [TaskStatus.COMPLETED]: { color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.08)', text: t('pages.taskManager.statusCompleted') },
+      [TaskStatus.ERROR]: { color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.08)', text: t('pages.taskManager.statusError') }
     };
     return configs[status];
   };
@@ -127,7 +129,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleDelete = async (task: TaskSummary, e: React.MouseEvent) => {
     e.stopPropagation();
-    const confirmed = window.confirm(`确定要删除任务"${task.task_name}"吗？此操作不可撤销。`);
+    const confirmed = window.confirm(t('pages.taskManager.deleteConfirm', { name: task.task_name }));
     if (confirmed) {
       await deleteTask(task.id);
     }
@@ -160,7 +162,7 @@ const TaskList: React.FC<TaskListProps> = ({
         boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
       }}>
         <Input
-          placeholder="搜索任务或图名称"
+          placeholder={t('pages.taskManager.searchPlaceholder')}
           prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
@@ -176,27 +178,27 @@ const TaskList: React.FC<TaskListProps> = ({
         />
 
         <Select
-          placeholder="状态"
+          placeholder={t('pages.taskManager.statusFilter')}
           value={statusFilter}
           onChange={setStatusFilter}
           allowClear
           style={{ width: '120px' }}
         >
-          <Option value={TaskStatus.ACTIVE}>运行中</Option>
-          <Option value={TaskStatus.PAUSED}>已暂停</Option>
-          <Option value={TaskStatus.COMPLETED}>已完成</Option>
-          <Option value={TaskStatus.ERROR}>错误</Option>
+          <Option value={TaskStatus.ACTIVE}>{t('pages.taskManager.statusActive')}</Option>
+          <Option value={TaskStatus.PAUSED}>{t('pages.taskManager.statusPaused')}</Option>
+          <Option value={TaskStatus.COMPLETED}>{t('pages.taskManager.statusCompleted')}</Option>
+          <Option value={TaskStatus.ERROR}>{t('pages.taskManager.statusError')}</Option>
         </Select>
 
         <Select
-          placeholder="类型"
+          placeholder={t('pages.taskManager.typeFilter')}
           value={typeFilter}
           onChange={setTypeFilter}
           allowClear
           style={{ width: '100px' }}
         >
-          <Option value={ScheduleType.SINGLE}>单次</Option>
-          <Option value={ScheduleType.RECURRING}>周期</Option>
+          <Option value={ScheduleType.SINGLE}>{t('pages.taskManager.typeSingle')}</Option>
+          <Option value={ScheduleType.RECURRING}>{t('pages.taskManager.typeRecurring')}</Option>
         </Select>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -214,10 +216,10 @@ const TaskList: React.FC<TaskListProps> = ({
               boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
             }}
           >
-            创建任务
+            {t('pages.taskManager.createTask')}
           </Button>
           
-          <Tooltip title="刷新数据">
+          <Tooltip title={t('pages.taskManager.refresh')}>
             <div
               style={{
                 padding: '8px',
@@ -246,7 +248,7 @@ const TaskList: React.FC<TaskListProps> = ({
             </div>
           </Tooltip>
 
-          <Tooltip title="重载调度器">
+          <Tooltip title={t('pages.taskManager.reloadScheduler')}>
             <div
               style={{
                 padding: '8px',
@@ -281,7 +283,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 height: '40px'
               }}
             >
-              清除筛选
+              {t('pages.taskManager.clearFilter')}
             </Button>
           )}
 
@@ -296,7 +298,7 @@ const TaskList: React.FC<TaskListProps> = ({
               fontSize: '12px',
               margin: 0
             }}>
-              {scheduledJobsCount} 个活跃
+              {t('pages.taskManager.activeJobs', { count: scheduledJobsCount })}
             </Tag>
           )}
         </div>
@@ -310,11 +312,11 @@ const TaskList: React.FC<TaskListProps> = ({
           alignItems: 'center',
           minHeight: '400px'
         }}>
-          <Spin size="large" tip="加载任务中..." />
+          <Spin size="large" tip={t('pages.taskManager.loadingTasks')} />
         </div>
       ) : filteredTasks.length === 0 ? (
         <Empty
-          description={searchText ? `未找到匹配 "${searchText}" 的任务` : '暂无任务'}
+          description={searchText ? t('pages.taskManager.noMatchingTasks', { search: searchText }) : t('pages.taskManager.noTasks')}
           style={{ marginTop: '80px', color: 'rgba(45, 45, 45, 0.5)' }}
         >
           {onCreateTask && !searchText && (
@@ -333,7 +335,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 marginTop: '16px'
               }}
             >
-              创建第一个任务
+              {t('pages.taskManager.createFirstTask')}
             </Button>
           )}
         </Empty>
@@ -410,14 +412,14 @@ const TaskList: React.FC<TaskListProps> = ({
                           alignItems: 'center',
                           gap: '4px'
                         }}>
-                          图: {task.graph_name}
+                          {t('pages.taskManager.graph')}: {task.graph_name}
                         </Text>
                         <span style={{ color: 'rgba(139, 115, 85, 0.3)' }}>•</span>
                         <Text style={{
                           fontSize: '13px',
                           color: 'rgba(45, 45, 45, 0.65)'
                         }}>
-                          并发: {task.execution_count}
+                          {t('pages.taskManager.concurrency')}: {task.execution_count}
                         </Text>
                       </div>
                     </div>
@@ -444,7 +446,7 @@ const TaskList: React.FC<TaskListProps> = ({
                           color: '#8b7355',
                           fontWeight: 500
                         }}>
-                          {task.schedule_type === ScheduleType.SINGLE ? '单次任务' : '周期任务'}
+                          {task.schedule_type === ScheduleType.SINGLE ? t('pages.taskManager.singleTask') : t('pages.taskManager.recurringTask')}
                         </Text>
                       </div>
 
@@ -456,7 +458,7 @@ const TaskList: React.FC<TaskListProps> = ({
                             color: isOverdue ? '#ef4444' : '#10b981',
                             fontWeight: 500
                           }}>
-                            {isOverdue ? '已过期' : nextRun.format('MM-DD HH:mm')}
+                            {isOverdue ? t('pages.taskManager.overdue') : nextRun.format('MM-DD HH:mm')}
                           </Text>
                         </div>
                       )}
@@ -475,13 +477,13 @@ const TaskList: React.FC<TaskListProps> = ({
                           fontSize: '12px',
                           color: 'rgba(45, 45, 45, 0.65)'
                         }}>
-                          执行 <Text strong style={{ color: '#2d2d2d' }}>{task.execution_stats.total_triggers}</Text> 次
+                          {t('pages.taskManager.executedTimes', { count: task.execution_stats.total_triggers })}
                         </Text>
                       </div>
                       
                       {/* 操作按钮 */}
                       <Space size={4}>
-                        <Tooltip title="查看详情">
+                        <Tooltip title={t('pages.taskManager.viewDetails')}>
                           <div
                             style={{
                               padding: '6px',
@@ -511,7 +513,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         </Tooltip>
 
                         {task.status !== TaskStatus.COMPLETED && (
-                          <Tooltip title={task.status === TaskStatus.ACTIVE ? '暂停' : '启动'}>
+                          <Tooltip title={task.status === TaskStatus.ACTIVE ? t('pages.taskManager.pause') : t('pages.taskManager.start')}>
                             <div
                               style={{
                                 padding: '6px',
@@ -542,7 +544,7 @@ const TaskList: React.FC<TaskListProps> = ({
                           </Tooltip>
                         )}
 
-                        <Tooltip title="删除">
+                        <Tooltip title={t('common.delete')}>
                           <div
                             style={{
                               padding: '6px',
@@ -588,7 +590,6 @@ const TaskList: React.FC<TaskListProps> = ({
                 total={filteredTasks.length}
                 onChange={setCurrentPage}
                 showSizeChanger={false}
-                showTotal={(total, range) => `第 ${range[0]}-${range[1]} 项，共 ${total} 项`}
               />
             </div>
           )}

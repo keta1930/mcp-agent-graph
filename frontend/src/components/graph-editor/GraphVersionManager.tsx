@@ -331,7 +331,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
           {/* Create new version section */}
           <div style={createSectionStyle}>
             <div style={sectionTitleStyle}>
-              {t('components.graphEditor.versionManager.description')}
+              {t('components.graphEditor.versionManager.pageDescription')}
             </div>
             <Button
               type="primary"

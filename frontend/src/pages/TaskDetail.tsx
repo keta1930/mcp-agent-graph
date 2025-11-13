@@ -30,6 +30,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TaskStatus, ScheduleType } from '../types/task';
 import { useTaskStore } from '../store/taskStore';
+import { useT } from '../i18n/hooks';
 
 dayjs.extend(relativeTime);
 
@@ -39,6 +40,7 @@ const { Title, Text } = Typography;
 const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const t = useT();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
   const {
@@ -87,7 +89,7 @@ const TaskDetail: React.FC = () => {
   if (loading) {
     return (
       <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <Spin size="large" tip="加载任务详情..." />
+        <Spin size="large" tip={t('pages.taskManager.taskDetail.loadingTask')} />
       </Layout>
     );
   }
@@ -97,7 +99,7 @@ const TaskDetail: React.FC = () => {
       <Layout style={{ height: '100vh', background: '#faf8f5' }}>
         <Content style={{ padding: '48px' }}>
           <Alert
-            message="加载失败"
+            message={t('pages.taskManager.taskDetail.loadFailed')}
             description={error}
             type="error"
             showIcon
@@ -107,7 +109,7 @@ const TaskDetail: React.FC = () => {
               background: 'rgba(254, 242, 242, 0.8)'
             }}
             action={
-              <Button onClick={() => navigate('/tasks')}>返回任务列表</Button>
+              <Button onClick={() => navigate('/tasks')}>{t('pages.taskManager.taskDetail.backToList')}</Button>
             }
           />
         </Content>
@@ -120,10 +122,10 @@ const TaskDetail: React.FC = () => {
       <Layout style={{ height: '100vh', background: '#faf8f5' }}>
         <Content style={{ padding: '48px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <Empty
-            description="任务不存在"
+            description={t('pages.taskManager.taskDetail.taskNotFound')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           >
-            <Button onClick={() => navigate('/tasks')}>返回任务列表</Button>
+            <Button onClick={() => navigate('/tasks')}>{t('pages.taskManager.taskDetail.backToList')}</Button>
           </Empty>
         </Content>
       </Layout>
@@ -132,10 +134,10 @@ const TaskDetail: React.FC = () => {
 
   const statusConfig = (() => {
     const configs = {
-      [TaskStatus.ACTIVE]: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.08)', text: '运行中', icon: <Play size={14} /> },
-      [TaskStatus.PAUSED]: { color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.08)', text: '已暂停', icon: <Pause size={14} /> },
-      [TaskStatus.COMPLETED]: { color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.08)', text: '已完成', icon: <Check size={14} /> },
-      [TaskStatus.ERROR]: { color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.08)', text: '错误', icon: <AlertCircle size={14} /> }
+      [TaskStatus.ACTIVE]: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.08)', text: t('pages.taskManager.statusActive'), icon: <Play size={14} /> },
+      [TaskStatus.PAUSED]: { color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.08)', text: t('pages.taskManager.statusPaused'), icon: <Pause size={14} /> },
+      [TaskStatus.COMPLETED]: { color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.08)', text: t('pages.taskManager.statusCompleted'), icon: <Check size={14} /> },
+      [TaskStatus.ERROR]: { color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.08)', text: t('pages.taskManager.statusError'), icon: <AlertCircle size={14} /> }
     };
     return configs[currentTask.status];
   })();
@@ -194,7 +196,7 @@ const TaskDetail: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              任务详情
+              {t('pages.taskManager.taskDetail.title')}
             </Title>
             <Tag style={{
               background: statusConfig.bgColor,
@@ -246,7 +248,7 @@ const TaskDetail: React.FC = () => {
               <Row gutter={[16, 14]}>
                 <Col span={12}>
                   <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '6px' }}>
-                    调度类型
+                    {t('pages.taskManager.taskDetail.scheduleType')}
                   </Text>
                   <Tag style={{
                     background: currentTask.schedule_type === ScheduleType.SINGLE ? 'rgba(59, 130, 246, 0.08)' : 'rgba(139, 92, 246, 0.08)',
@@ -261,16 +263,16 @@ const TaskDetail: React.FC = () => {
                     gap: '4px'
                   }}>
                     {currentTask.schedule_type === ScheduleType.SINGLE ? (
-                      <><CalendarIcon size={12} strokeWidth={1.5} /> 单次</>
+                      <><CalendarIcon size={12} strokeWidth={1.5} /> {t('pages.taskManager.typeSingle')}</>
                     ) : (
-                      <><Repeat size={12} strokeWidth={1.5} /> 周期</>
+                      <><Repeat size={12} strokeWidth={1.5} /> {t('pages.taskManager.typeRecurring')}</>
                     )}
                   </Tag>
                 </Col>
 
                 <Col span={12}>
                   <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '6px' }}>
-                    图名称
+                    {t('pages.taskManager.taskDetail.graphName')}
                   </Text>
                   <Text strong style={{ fontSize: '13px', color: '#2d2d2d' }}>
                     {currentTask.graph_name}
@@ -279,7 +281,7 @@ const TaskDetail: React.FC = () => {
 
                 <Col span={12}>
                   <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '6px' }}>
-                    并发数量
+                    {t('pages.taskManager.taskDetail.concurrency')}
                   </Text>
                   <Text strong style={{ fontSize: '13px', color: '#2d2d2d' }}>
                     {currentTask.execution_count}
@@ -288,7 +290,7 @@ const TaskDetail: React.FC = () => {
 
                 <Col span={12}>
                   <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '6px' }}>
-                    创建时间
+                    {t('pages.taskManager.taskDetail.createdAt')}
                   </Text>
                   <Text style={{ fontSize: '13px', color: '#2d2d2d' }}>
                     {dayjs(currentTask.created_at).format('MM-DD HH:mm')}
@@ -298,7 +300,7 @@ const TaskDetail: React.FC = () => {
                 {nextRun && (
                   <Col span={24}>
                     <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '6px' }}>
-                      下次运行
+                      {t('pages.taskManager.taskDetail.nextRun')}
                     </Text>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Clock size={14} color={isOverdue ? '#ef4444' : '#10b981'} strokeWidth={1.5} />
@@ -307,7 +309,7 @@ const TaskDetail: React.FC = () => {
                         color: isOverdue ? '#ef4444' : '#10b981',
                         fontWeight: 500
                       }}>
-                        {nextRun.format('MM-DD HH:mm')} ({isOverdue ? '已过期' : nextRun.fromNow()})
+                        {nextRun.format('MM-DD HH:mm')} ({isOverdue ? t('pages.taskManager.overdue') : nextRun.fromNow()})
                       </Text>
                     </div>
                   </Col>
@@ -316,7 +318,7 @@ const TaskDetail: React.FC = () => {
                 {currentTask.input_text && (
                   <Col span={24}>
                     <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '6px' }}>
-                      输入文本
+                      {t('pages.taskManager.taskDetail.inputText')}
                     </Text>
                     <Text style={{
                       fontSize: '13px',
@@ -357,7 +359,7 @@ const TaskDetail: React.FC = () => {
                     gap: '4px'
                   }}
                 >
-                  {currentTask.status === TaskStatus.ACTIVE ? '暂停' : '启动'}
+                  {currentTask.status === TaskStatus.ACTIVE ? t('pages.taskManager.pause') : t('pages.taskManager.start')}
                 </Button>
                 <Button
                   icon={<Check size={14} strokeWidth={1.5} />}
@@ -373,7 +375,7 @@ const TaskDetail: React.FC = () => {
                     gap: '4px'
                   }}
                 >
-                  完成
+                  {t('pages.taskManager.taskDetail.complete')}
                 </Button>
                 <Button
                   danger
@@ -387,7 +389,7 @@ const TaskDetail: React.FC = () => {
                     gap: '4px'
                   }}
                 >
-                  删除
+                  {t('pages.taskManager.taskDetail.delete')}
                 </Button>
               </div>
             </Card>
@@ -397,7 +399,7 @@ const TaskDetail: React.FC = () => {
           <Card
           title={
             <Text strong style={{ fontSize: '16px', color: '#2d2d2d', fontWeight: 600 }}>
-              执行历史
+              {t('pages.taskManager.taskDetail.executionHistory')}
             </Text>
           }
           style={{
@@ -409,7 +411,7 @@ const TaskDetail: React.FC = () => {
         >
           {currentTask.execution_history.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(45, 45, 45, 0.45)' }}>
-              暂无执行记录
+              {t('pages.taskManager.taskDetail.noExecutionHistory')}
             </div>
           ) : (
             <Row gutter={[16, 16]}>
@@ -460,7 +462,7 @@ const TaskDetail: React.FC = () => {
                       padding: '4px 8px',
                       marginBottom: '12px'
                     }}>
-                      {history.executions.length} 个实例
+                      {t('pages.taskManager.taskDetail.instances', { count: history.executions.length })}
                     </Tag>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -508,16 +510,16 @@ const TaskDetail: React.FC = () => {
       </Content>
 
       <Modal
-        title="确认删除"
+        title={t('pages.taskManager.taskDetail.deleteConfirmTitle')}
         open={deleteModalVisible}
         onOk={handleDelete}
         onCancel={() => setDeleteModalVisible(false)}
-        okText="确认删除"
-        cancelText="取消"
+        okText={t('pages.taskManager.taskDetail.deleteConfirmButton')}
+        cancelText={t('pages.taskManager.taskDetail.cancelButton')}
         okButtonProps={{ danger: true }}
       >
-        <p>确定要删除任务 <strong>"{currentTask.task_name}"</strong> 吗？</p>
-        <p>此操作不可撤销，任务的所有执行历史也将被删除。</p>
+        <p>{t('pages.taskManager.taskDetail.deleteConfirmMessage', { name: currentTask.task_name })}</p>
+        <p>{t('pages.taskManager.taskDetail.deleteConfirmDetail')}</p>
       </Modal>
     </Layout>
   );
