@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { Spin, message } from 'antd';
 import { getLanguageFromExtension, getFileExtension } from '../../utils/fileUtils';
+import { useT } from '../../i18n/hooks';
 
 interface FileEditorProps {
   filename: string;
@@ -22,6 +23,7 @@ const FileEditor: React.FC<FileEditorProps> = ({
   loading = false,
   readOnly = false,
 }) => {
+  const t = useT();
   const editorRef = useRef<any>(null);
 
   // Get language based on file extension
@@ -101,7 +103,7 @@ const FileEditor: React.FC<FileEditorProps> = ({
           height: '100%',
         }}
       >
-        <Spin size="large" tip="加载编辑器..." />
+        <Spin size="large" tip={t('pages.fileManager.fileEditor.loadingEditor')} />
       </div>
     );
   }
@@ -127,7 +129,7 @@ const FileEditor: React.FC<FileEditorProps> = ({
           wrappingIndent: 'indent',
           padding: { top: 16, bottom: 16 },
         }}
-        loading={<Spin size="large" tip="加载编辑器..." />}
+        loading={<Spin size="large" tip={t('pages.fileManager.fileEditor.loadingEditor')} />}
       />
       {isDirty && (
         <div
@@ -147,7 +149,7 @@ const FileEditor: React.FC<FileEditorProps> = ({
             zIndex: 10,
           }}
         >
-          未保存 (Ctrl+S 保存)
+          {t('pages.fileManager.fileEditor.unsaved')}
         </div>
       )}
     </div>

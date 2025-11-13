@@ -11,6 +11,7 @@ import conversationFileService from '../../services/conversationFileService';
 import { FileVersion, FileVersionDetail } from '../../types/conversationFile';
 import { formatFileSize } from '../../utils/fileUtils';
 import * as Diff from 'diff';
+import { useT } from '../../i18n/hooks';
 
 const { Text, Paragraph } = Typography;
 
@@ -27,6 +28,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
   versions,
   currentContent,
 }) => {
+  const t = useT();
   const [selectedVersion, setSelectedVersion] = useState<FileVersionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -57,10 +59,10 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
       const diffHours = Math.floor(diffMs / 3600000);
       const diffDays = Math.floor(diffMs / 86400000);
 
-      if (diffMins < 1) return '刚刚';
-      if (diffMins < 60) return `${diffMins}分钟前`;
-      if (diffHours < 24) return `${diffHours}小时前`;
-      if (diffDays < 7) return `${diffDays}天前`;
+      if (diffMins < 1) return t('pages.fileManager.fileVersionHistory.justNow');
+      if (diffMins < 60) return t('pages.fileManager.fileVersionHistory.minutesAgo', { count: diffMins });
+      if (diffHours < 24) return t('pages.fileManager.fileVersionHistory.hoursAgo', { count: diffHours });
+      if (diffDays < 7) return t('pages.fileManager.fileVersionHistory.daysAgo', { count: diffDays });
       return formatTimestamp(timestamp);
     } catch {
       return timestamp;
@@ -78,7 +80,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
       setSelectedVersion(response.file);
       setViewModalVisible(true);
     } catch (error: any) {
-      message.error('加载版本失败: ' + error.message);
+      message.error(t('pages.fileManager.fileVersionHistory.loadFailed', { error: error.message }));
     } finally {
       setLoading(false);
     }
@@ -95,7 +97,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
       setSelectedVersion(response.file);
       setDiffModalVisible(true);
     } catch (error: any) {
-      message.error('加载版本失败: ' + error.message);
+      message.error(t('pages.fileManager.fileVersionHistory.loadFailed', { error: error.message }));
     } finally {
       setLoading(false);
     }
@@ -156,13 +158,13 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
       <Space direction="vertical" style={{ width: '100%' }} size="large">
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <Spin tip="加载中..." />
+            <Spin tip={t('pages.fileManager.fileVersionHistory.loading')} />
           </div>
         )}
 
         {!loading && sortedVersions.length === 0 && (
           <Card>
-            <Text type="secondary">暂无历史版本</Text>
+            <Text type="secondary">{t('pages.fileManager.fileVersionHistory.noVersions')}</Text>
           </Card>
         )}
 
@@ -223,7 +225,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                           height: '20px',
                           lineHeight: '18px'
                         }}>
-                          当前
+                          {t('pages.fileManager.fileVersionHistory.current')}
                         </Tag>
                       )}
                     </Space>
@@ -241,7 +243,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                           padding: '0 12px'
                         }}
                       >
-                        查看
+                        {t('pages.fileManager.fileVersionHistory.view')}
                       </Button>
                       {!isLatest && (
                         <Button
@@ -257,7 +259,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                             padding: '0 12px'
                           }}
                         >
-                          对比
+                          {t('pages.fileManager.fileVersionHistory.compare')}
                         </Button>
                       )}
                     </Space>
@@ -274,7 +276,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
         title={
           <Space size="middle">
             <Eye size={18} style={{ color: '#b85845' }} />
-            <span style={{ fontWeight: 500, letterSpacing: '1px' }}>查看历史版本</span>
+            <span style={{ fontWeight: 500, letterSpacing: '1px' }}>{t('pages.fileManager.fileVersionHistory.viewVersionTitle')}</span>
             {selectedVersion?.is_current && (
               <Tag style={{
                 background: 'rgba(82, 196, 26, 0.08)',
@@ -282,7 +284,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                 border: '1px solid rgba(82, 196, 26, 0.25)',
                 borderRadius: '6px',
                 fontWeight: 500
-              }}>当前版本</Tag>
+              }}>{t('pages.fileManager.fileVersionHistory.currentVersion')}</Tag>
             )}
           </Space>
         }
@@ -323,7 +325,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
               letterSpacing: '0.5px'
             }}
           >
-            关闭
+            {t('pages.fileManager.fileVersionHistory.close')}
           </Button>,
         ]}
       >
@@ -331,19 +333,19 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
           <div>
             <Space direction="vertical" style={{ width: '100%', marginBottom: '16px' }}>
               <div>
-                <Text type="secondary">文件名: </Text>
+                <Text type="secondary">{t('pages.fileManager.fileVersionHistory.filename')}: </Text>
                 <Text strong>{selectedVersion.filename}</Text>
               </div>
               <div>
-                <Text type="secondary">版本ID: </Text>
+                <Text type="secondary">{t('pages.fileManager.fileVersionHistory.versionId')}: </Text>
                 <Text code>{selectedVersion.version_id}</Text>
               </div>
               <div>
-                <Text type="secondary">描述: </Text>
+                <Text type="secondary">{t('pages.fileManager.fileVersionHistory.description')}: </Text>
                 <Text>{selectedVersion.summary}</Text>
               </div>
               <div>
-                <Text type="secondary">大小: </Text>
+                <Text type="secondary">{t('pages.fileManager.fileVersionHistory.size')}: </Text>
                 <Text>{formatFileSize(new TextEncoder().encode(selectedVersion.content).length)}</Text>
               </div>
             </Space>
@@ -380,7 +382,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
         title={
           <Space size="middle">
             <DiffIcon size={18} style={{ color: '#b85845' }} />
-            <span style={{ fontWeight: 500, letterSpacing: '1px' }}>版本对比</span>
+            <span style={{ fontWeight: 500, letterSpacing: '1px' }}>{t('pages.fileManager.fileVersionHistory.compareTitle')}</span>
           </Space>
         }
         open={diffModalVisible}
@@ -420,7 +422,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
               letterSpacing: '0.5px'
             }}
           >
-            关闭
+            {t('pages.fileManager.fileVersionHistory.close')}
           </Button>,
         ]}
       >
@@ -428,8 +430,8 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
           <div>
             <Space direction="vertical" style={{ width: '100%', marginBottom: '16px' }}>
               <Text>
-                对比 <Text type="secondary">{selectedVersion.version_id.substring(0, 8)}...</Text>{' '}
-                与当前版本的差异
+                {t('pages.fileManager.fileVersionHistory.compareWith')} <Text type="secondary">{selectedVersion.version_id.substring(0, 8)}...</Text>{' '}
+                {t('pages.fileManager.fileVersionHistory.withCurrent')}
               </Text>
               <div style={{ fontSize: '12px' }}>
                 <Tag style={{
@@ -438,21 +440,21 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
                   border: '1px solid rgba(255, 77, 79, 0.25)',
                   borderRadius: '6px',
                   fontWeight: 500
-                }}>- 删除的行</Tag>
+                }}>{t('pages.fileManager.fileVersionHistory.deletedLines')}</Tag>
                 <Tag style={{
                   background: 'rgba(82, 196, 26, 0.08)',
                   color: '#52c41a',
                   border: '1px solid rgba(82, 196, 26, 0.25)',
                   borderRadius: '6px',
                   fontWeight: 500
-                }}>+ 新增的行</Tag>
+                }}>{t('pages.fileManager.fileVersionHistory.addedLines')}</Tag>
                 <Tag style={{
                   background: 'rgba(139, 115, 85, 0.05)',
                   color: 'rgba(45, 45, 45, 0.6)',
                   border: '1px solid rgba(139, 115, 85, 0.15)',
                   borderRadius: '6px',
                   fontWeight: 500
-                }}>  未变化的行</Tag>
+                }}>{t('pages.fileManager.fileVersionHistory.unchangedLines')}</Tag>
               </div>
             </Space>
             <Divider />

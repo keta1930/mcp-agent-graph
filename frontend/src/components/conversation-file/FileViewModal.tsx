@@ -13,6 +13,7 @@ import MarkdownPreview from './MarkdownPreview';
 import FileVersionHistory from './FileVersionHistory';
 import { FileDetail } from '../../types/conversationFile';
 import { isMarkdownFile, formatFileSize, downloadBlob } from '../../utils/fileUtils';
+import { useT } from '../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -33,6 +34,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const t = useT();
   const [fileDetail, setFileDetail] = useState<FileDetail | null>(null);
   const [content, setContent] = useState<string>('');
   const [originalContent, setOriginalContent] = useState<string>('');
@@ -57,7 +59,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
       setOriginalContent(response.file.content);
       setIsDirty(false);
     } catch (error: any) {
-      message.error('加载文件失败: ' + error.message);
+      message.error(t('pages.fileManager.fileViewModal.loadFailed', { error: error.message }));
     } finally {
       setLoading(false);
     }
@@ -75,15 +77,15 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
       await conversationFileService.updateFile(conversationId, filename, {
         content,
         summary: fileDetail?.summary || '',
-        log: '从对话中编辑',
+        log: t('pages.fileManager.fileViewModal.saveLog'),
       });
-      message.success('文件保存成功');
+      message.success(t('pages.fileManager.fileViewModal.saveSuccess'));
       setOriginalContent(content);
       setIsDirty(false);
       if (onSave) onSave();
       await loadFile();
     } catch (error: any) {
-      message.error('保存文件失败: ' + error.message);
+      message.error(t('pages.fileManager.fileViewModal.saveFailed', { error: error.message }));
     } finally {
       setSaving(false);
     }
@@ -94,28 +96,28 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
     try {
       const blob = await conversationFileService.downloadFile(conversationId, filename);
       downloadBlob(blob, filename.split('/').pop() || filename);
-      message.success('文件下载成功');
+      message.success(t('pages.fileManager.downloadSuccess'));
     } catch (error: any) {
-      message.error('下载文件失败: ' + error.message);
+      message.error(t('pages.fileManager.downloadFailed', { error: error.message }));
     }
   };
 
   const handleDelete = async () => {
     if (!filename) return;
     Modal.confirm({
-      title: '确认删除',
-      content: `确定要删除文件 "${filename}" 吗？此操作不可恢复。`,
-      okText: '删除',
+      title: t('pages.fileManager.fileViewModal.deleteConfirmTitle'),
+      content: t('pages.fileManager.fileViewModal.deleteConfirmMessage', { filename }),
+      okText: t('pages.fileManager.fileViewModal.deleteConfirmOk'),
       okType: 'danger',
-      cancelText: '取消',
+      cancelText: t('pages.fileManager.fileViewModal.deleteConfirmCancel'),
       onOk: async () => {
         try {
           await conversationFileService.deleteFile(conversationId, filename);
-          message.success('文件删除成功');
+          message.success(t('pages.fileManager.fileViewModal.deleteSuccess'));
           if (onDelete) onDelete();
           handleClose();
         } catch (error: any) {
-          message.error('删除文件失败: ' + error.message);
+          message.error(t('pages.fileManager.fileViewModal.deleteFailed', { error: error.message }));
         }
       },
     });
@@ -124,11 +126,11 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
   const handleClose = () => {
     if (isDirty) {
       Modal.confirm({
-        title: '未保存的更改',
-        content: '文件有未保存的更改，确定要关闭吗？',
-        okText: '关闭',
+        title: t('pages.fileManager.fileViewModal.unsavedChangesTitle'),
+        content: t('pages.fileManager.fileViewModal.unsavedChangesMessage'),
+        okText: t('pages.fileManager.fileViewModal.unsavedChangesOk'),
         okType: 'danger',
-        cancelText: '取消',
+        cancelText: t('pages.fileManager.fileViewModal.unsavedChangesCancel'),
         onOk: () => {
           setIsDirty(false);
           setContent('');
@@ -181,7 +183,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
                 })
               }}
             >
-              编辑器
+              {t('pages.fileManager.fileViewModal.editor')}
             </Button>
             <Button
               type={activeView === 'history' ? 'primary' : 'default'}
@@ -204,7 +206,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
                 })
               }}
             >
-              版本历史
+              {t('pages.fileManager.fileViewModal.versionHistory')}
             </Button>
           </Space>
         </div>
@@ -245,7 +247,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
               letterSpacing: '0.5px'
             }}
           >
-            关闭
+            {t('pages.fileManager.fileViewModal.close')}
           </Button>
           <Button
             icon={<Download size={16} />}
@@ -258,7 +260,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
               letterSpacing: '0.5px'
             }}
           >
-            下载
+            {t('pages.fileManager.fileViewModal.download')}
           </Button>
           <Button
             icon={<Trash2 size={16} />}
@@ -270,7 +272,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
               letterSpacing: '0.5px'
             }}
           >
-            删除
+            {t('pages.fileManager.fileViewModal.delete')}
           </Button>
           <Button
             type="primary"
@@ -287,7 +289,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
               letterSpacing: '0.5px'
             }}
           >
-            保存
+            {t('pages.fileManager.fileViewModal.save')}
           </Button>
         </Space>
       }
@@ -301,7 +303,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
             height: '60vh',
           }}
         >
-          <Spin size="large" tip="加载文件..." />
+          <Spin size="large" tip={t('pages.fileManager.fileViewModal.loadingFile')} />
         </div>
       ) : fileDetail ? (
         <>
@@ -319,21 +321,21 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
                 color: 'rgba(45, 45, 45, 0.75)',
                 letterSpacing: '0.3px'
               }}>
-                <strong style={{ fontWeight: 600, color: '#8b7355' }}>路径:</strong> {fileDetail.filename}
+                <strong style={{ fontWeight: 600, color: '#8b7355' }}>{t('pages.fileManager.fileViewModal.path')}:</strong> {fileDetail.filename}
               </Text>
               <Text type="secondary" style={{
                 fontSize: '13px',
                 color: 'rgba(45, 45, 45, 0.75)',
                 letterSpacing: '0.3px'
               }}>
-                <strong style={{ fontWeight: 600, color: '#8b7355' }}>描述:</strong> {fileDetail.summary}
+                <strong style={{ fontWeight: 600, color: '#8b7355' }}>{t('pages.fileManager.fileViewModal.description')}:</strong> {fileDetail.summary}
               </Text>
               <Text type="secondary" style={{
                 fontSize: '13px',
                 color: 'rgba(45, 45, 45, 0.75)',
                 letterSpacing: '0.3px'
               }}>
-                <strong style={{ fontWeight: 600, color: '#8b7355' }}>版本:</strong> {fileDetail.versions.length}
+                <strong style={{ fontWeight: 600, color: '#8b7355' }}>{t('pages.fileManager.fileViewModal.version')}:</strong> {fileDetail.versions.length}
               </Text>
             </Space>
           </div>

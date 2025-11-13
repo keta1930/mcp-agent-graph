@@ -8,6 +8,7 @@ import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
+import { useT } from '../../i18n/hooks';
 
 const { TextArea } = Input;
 
@@ -28,6 +29,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
   isDirty,
   readOnly = false,
 }) => {
+  const t = useT();
   const [activeView, setActiveView] = useState<'preview' | 'edit' | 'split'>('preview');
 
   // Handle keyboard shortcuts
@@ -147,7 +149,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               })
             }}
           >
-            预览
+            {t('pages.fileManager.markdownPreview.preview')}
           </Button>
           <Button
             type={activeView === 'edit' ? 'primary' : 'default'}
@@ -170,7 +172,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               })
             }}
           >
-            编辑
+            {t('pages.fileManager.markdownPreview.edit')}
           </Button>
           <Button
             type={activeView === 'split' ? 'primary' : 'default'}
@@ -193,7 +195,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               })
             }}
           >
-            分屏
+            {t('pages.fileManager.markdownPreview.split')}
           </Button>
         </Space>
         {isDirty && onSave && (
@@ -212,7 +214,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               height: '32px'
             }}
           >
-            保存
+            {t('pages.fileManager.markdownPreview.save')}
           </Button>
         )}
       </div>
@@ -256,7 +258,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
               e.target.style.borderColor = 'rgba(139, 115, 85, 0.25)';
               e.target.style.boxShadow = 'none';
             }}
-            placeholder="输入 Markdown 内容..."
+            placeholder={t('pages.fileManager.markdownPreview.placeholder')}
           />
           {isDirty && (
             <div style={{ marginTop: '8px', textAlign: 'right' }}>
@@ -266,7 +268,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
                 fontWeight: 500,
                 letterSpacing: '0.3px'
               }}>
-                未保存的更改 (Ctrl+S 保存)
+                {t('pages.fileManager.markdownPreview.unsavedChanges')}
               </span>
             </div>
           )}
@@ -296,7 +298,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({
                 e.target.style.borderColor = 'rgba(139, 115, 85, 0.25)';
                 e.target.style.boxShadow = 'none';
               }}
-              placeholder="输入 Markdown 内容..."
+              placeholder={t('pages.fileManager.markdownPreview.placeholder')}
             />
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
