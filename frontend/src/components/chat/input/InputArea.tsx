@@ -243,23 +243,74 @@ const InputArea: React.FC<InputAreaProps> = ({
   };
 
   return (
-    <div className="input-area">
-      <div className="input-container-new">
-        {/* 主输入框 */}
-        <div className="message-input-wrapper">
+    <div style={{
+      background: 'linear-gradient(to top, #f5f3f0 0%, #faf8f5 100%)',
+      borderTop: '1px solid rgba(139, 115, 85, 0.1)',
+      padding: '20px 32px 24px 32px',
+      display: 'flex',
+      justifyContent: 'center',
+      position: 'relative'
+    }}>
+      {/* 装饰性顶部细线 - 更微妙 */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: '20%',
+        right: '20%',
+        height: '1px',
+        background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.15) 50%, transparent)'
+      }} />
+
+      <div style={{
+        maxWidth: '850px',
+        margin: '0 auto',
+        width: '100%'
+      }}>
+        {/* 主输入框 - 凹陷式设计 */}
+        <div style={{
+          position: 'relative',
+          background: 'linear-gradient(to bottom, rgba(245, 243, 240, 0.6), rgba(250, 248, 245, 0.4))',
+          border: '1px solid rgba(139, 115, 85, 0.12)',
+          borderRadius: '10px',
+          padding: '14px 16px',
+          transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+          boxShadow: 'inset 0 1px 3px rgba(139, 115, 85, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.5)'
+        }}>
           <textarea
             ref={textareaRef}
-            className="message-input-new"
             value={getCurrentInputValue()}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={getInputPlaceholder()}
             rows={3}
             disabled={disabled}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              resize: 'none',
+              padding: '2px 0 36px 0',
+              fontSize: '14px',
+              lineHeight: '1.7',
+              color: '#2d2d2d',
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+              minHeight: '32px',
+              maxHeight: '200px',
+              overflowY: 'auto',
+              letterSpacing: '0.3px'
+            }}
           />
 
           {/* 左下角控件 */}
-          <div className="input-bottom-left">
+          <div style={{
+            position: 'absolute',
+            bottom: '14px',
+            left: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
             {/* Chat模式的系统提示词切换按钮 */}
             {mode === 'chat' && (
               <SystemPromptToggle
@@ -314,7 +365,14 @@ const InputArea: React.FC<InputAreaProps> = ({
           </div>
 
           {/* 右下角控件区域 */}
-          <div className="input-bottom-right">
+          <div style={{
+            position: 'absolute',
+            bottom: '14px',
+            right: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
             {/* 模型选择器 (Chat和Agent模式) */}
             {(mode === 'chat' || mode === 'agent') && (
               <ModelSelector
@@ -340,8 +398,39 @@ const InputArea: React.FC<InputAreaProps> = ({
               icon={<ArrowUpOutlined />}
               onClick={handleSend}
               disabled={!canSend()}
-              className="send-button-new"
               size="small"
+              style={{
+                width: '32px',
+                height: '32px',
+                minWidth: '32px',
+                borderRadius: '50%',
+                background: canSend() 
+                  ? 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)' 
+                  : 'rgba(212, 196, 176, 0.4)',
+                border: 'none',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: canSend() ? 'pointer' : 'not-allowed',
+                boxShadow: canSend() 
+                  ? '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)' 
+                  : 'inset 0 1px 2px rgba(139, 115, 85, 0.1)',
+                padding: 0,
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (canSend()) {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 3px 10px rgba(184, 88, 69, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (canSend()) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)';
+                }
+              }}
             />
           </div>
         </div>

@@ -64,9 +64,27 @@ const AgentTypeToggle: React.FC<AgentTypeToggleProps> = ({
       <Button
         type="text"
         icon={getIcon()}
-        className={`agent-type-toggle ${agentType === 'graph' ? 'active' : ''} ${className}`}
         onClick={handleToggle}
         size={size}
+        style={{
+          color: agentType === 'graph' ? '#a0826d' : 'rgba(139, 115, 85, 0.75)',
+          border: 'none',
+          background: agentType === 'graph' ? 'rgba(160, 130, 109, 0.1)' : 'transparent',
+          transition: 'all 0.2s ease',
+          height: '28px',
+          padding: '0 10px',
+          fontSize: '12px',
+          borderRadius: '6px',
+          fontWeight: 500
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = '#a0826d';
+          e.currentTarget.style.background = 'rgba(160, 130, 109, 0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = agentType === 'graph' ? '#a0826d' : 'rgba(139, 115, 85, 0.75)';
+          e.currentTarget.style.background = agentType === 'graph' ? 'rgba(160, 130, 109, 0.1)' : 'transparent';
+        }}
       >
         {getButtonText()}
       </Button>

@@ -1,14 +1,10 @@
 // src/components/chat/input/ModeSelector.tsx
 import React, { useRef, useEffect } from 'react';
 import { Button, Typography, Tooltip } from 'antd';
-import './ModeSelector.css';
 import {
-  MessageOutlined,
-  RobotOutlined,
-  ShareAltOutlined,
-  NodeIndexOutlined,
   ArrowUpOutlined
 } from '@ant-design/icons';
+import { MessageSquare, Bot, GitBranch, Layers } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
 import { useModelStore } from '../../../store/modelStore';
 import { useGraphEditorStore } from '../../../store/graphEditorStore';
@@ -181,24 +177,21 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const modes = [
     {
       key: 'chat' as ConversationMode,
-      title: 'Chat模式',
-      description: '与AI进行自然对话，支持工具调用',
-      icon: <MessageOutlined />,
-      color: '#1890ff'
+      title: 'Chat',
+      description: '自然对话',
+      icon: MessageSquare
     },
     {
       key: 'agent' as ConversationMode,
-      title: 'Agent模式',
-      description: 'AI生成MCP工具或Graph配置',
-      icon: <RobotOutlined />,
-      color: '#722ed1'
+      title: 'Agent',
+      description: '生成工具',
+      icon: Bot
     },
     {
       key: 'graph' as ConversationMode,
-      title: 'Graph模式',
-      description: '执行现有的Graph工作流',
-      icon: <ShareAltOutlined />,
-      color: '#13c2c2'
+      title: 'Graph',
+      description: '执行流程',
+      icon: GitBranch
     }
   ];
 
@@ -233,42 +226,149 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   };
 
   return (
-    <div className="mode-selector-container">
-      <div className="mode-selector-content">
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '32px',
+      background: '#faf8f5'
+    }}>
+      <div style={{
+        maxWidth: '900px',
+        width: '100%'
+      }}>
 
-        {/* 简洁的模式选择按钮 */}
-        <div className="mode-selector-simple">
-          <div className="mode-selector-label">选择对话模式:</div>
-          <div className="mode-buttons">
-            {modes.map(mode => (
-              <button
+        {/* 紧凑的模式选择卡片 */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '12px',
+          marginBottom: '28px'
+        }}>
+          {modes.map(mode => {
+            const Icon = mode.icon;
+            const isActive = currentMode === mode.key;
+            return (
+              <div
                 key={mode.key}
-                className={`mode-button ${currentMode === mode.key ? 'active' : ''}`}
                 onClick={() => handleModeChange(mode.key)}
+                style={{
+                  padding: '16px 14px',
+                  borderRadius: '6px',
+                  background: isActive 
+                    ? 'rgba(255, 255, 255, 0.85)' 
+                    : 'rgba(255, 255, 255, 0.5)',
+                  border: isActive 
+                    ? '1px solid rgba(139, 115, 85, 0.25)' 
+                    : '1px solid rgba(139, 115, 85, 0.1)',
+                  boxShadow: isActive 
+                    ? '0 2px 6px rgba(139, 115, 85, 0.08)' 
+                    : '0 1px 2px rgba(139, 115, 85, 0.04)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.7)';
+                    e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(139, 115, 85, 0.06)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)';
+                    e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.1)';
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(139, 115, 85, 0.04)';
+                  }
+                }}
               >
-                <span className="mode-button-icon">{mode.icon}</span>
-                {mode.title}
-              </button>
-            ))}
-          </div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Icon 
+                    size={20} 
+                    strokeWidth={1.5} 
+                    style={{ 
+                      color: isActive ? '#8b7355' : 'rgba(139, 115, 85, 0.5)',
+                      transition: 'color 0.2s ease'
+                    }} 
+                  />
+                  <div>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: isActive ? 500 : 400,
+                      color: isActive ? '#2d2d2d' : 'rgba(45, 45, 45, 0.75)',
+                      marginBottom: '3px',
+                      letterSpacing: '0.3px',
+                      transition: 'color 0.2s ease'
+                    }}>
+                      {mode.title}
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'rgba(45, 45, 45, 0.45)',
+                      letterSpacing: '0.2px'
+                    }}>
+                      {mode.description}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* 输入区域 - 使用与InputArea一致的样式 */}
+        {/* 宽敞的输入区域 */}
         {currentMode && (
-          <div className="input-area">
-            <div className="input-container-new">
-              <div className="message-input-wrapper">
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.7)',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            borderRadius: '6px',
+            padding: '20px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
+          }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                position: 'relative'
+              }}>
                 <textarea
-                  className="message-input-new"
                   value={getCurrentInputValue()}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder={getInputPlaceholder()}
                   rows={4}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    resize: 'none',
+                    padding: '0 0 36px 0',
+                    fontSize: '14px',
+                    lineHeight: '1.7',
+                    color: '#2d2d2d',
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+                    minHeight: '100px',
+                    maxHeight: '240px',
+                    overflowY: 'auto',
+                    letterSpacing: '0.2px'
+                  }}
                 />
 
                 {/* 左下角控件 */}
-                <div className="input-bottom-left">
+                <div style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  left: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
                   {/* Chat模式的系统提示词切换按钮 */}
                   {currentMode === 'chat' && (
                     <SystemPromptToggle
@@ -319,51 +419,140 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
 
                   {/* Agent Graph模式的图配置选择 */}
                   {currentMode === 'agent' && agentType === 'graph' && (
-                    <div className="graph-selector-container" ref={graphDropdownRef}>
+                    <div style={{ position: 'relative' }} ref={graphDropdownRef}>
                       <Tooltip title={selectedGraph ? `已选择图: ${selectedGraph}` : "选择基础图配置（可选）"}>
-                        <Button
-                          type="text"
-                          icon={<NodeIndexOutlined />}
-                          className={`graph-selector-button ${showGraphSelector ? 'active' : ''} ${selectedGraph ? 'has-selected' : ''}`}
+                        <div
                           onClick={() => setShowGraphSelector(!showGraphSelector)}
-                          size="small"
-                        />
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '4px',
+                            color: selectedGraph ? '#8b7355' : 'rgba(139, 115, 85, 0.65)',
+                            border: `1px solid ${selectedGraph ? 'rgba(139, 115, 85, 0.25)' : 'rgba(139, 115, 85, 0.15)'}`,
+                            background: selectedGraph ? 'rgba(139, 115, 85, 0.06)' : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            fontSize: '12px',
+                            fontWeight: 400,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = selectedGraph ? 'rgba(139, 115, 85, 0.06)' : 'transparent';
+                          }}
+                        >
+                          <Layers size={12} strokeWidth={1.5} />
+                          {selectedGraph || '基础图'}
+                        </div>
                       </Tooltip>
 
                       {/* 图选择面板 */}
                       {showGraphSelector && (
-                        <div className="graph-selector-panel">
-                          <div className="graph-selector-header">
-                            <Text strong>基础图配置</Text>
-                            <Text type="secondary" style={{ fontSize: '11px' }}>（可选）</Text>
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '100%',
+                          left: 0,
+                          marginBottom: '8px',
+                          minWidth: '280px',
+                          maxHeight: '320px',
+                          overflowY: 'auto',
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(20px)',
+                          border: '1px solid rgba(139, 115, 85, 0.2)',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 16px rgba(139, 115, 85, 0.15)',
+                          zIndex: 1000
+                        }}>
+                          <div style={{
+                            padding: '12px 14px',
+                            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}>
+                            <Text strong style={{ fontSize: '13px', color: '#2d2d2d' }}>基础图配置</Text>
+                            <Text style={{ fontSize: '11px', color: 'rgba(45, 45, 45, 0.65)' }}>（可选）</Text>
                           </div>
-                          <div className="graph-selector-list">
-                            <div className="graph-option-item">
-                              <div className="graph-option-info">
-                                <span className="graph-option-name">不使用基础配置</span>
-                              </div>
-                              <Button
-                                type={!selectedGraph ? "primary" : "default"}
-                                size="small"
-                                onClick={() => setSelectedGraph('')}
-                              >
-                                {!selectedGraph ? '已选择' : '选择'}
-                              </Button>
+                          <div style={{ padding: '8px' }}>
+                            <div style={{
+                              padding: '10px 12px',
+                              marginBottom: '6px',
+                              borderRadius: '6px',
+                              background: !selectedGraph ? 'rgba(184, 88, 69, 0.08)' : 'transparent',
+                              border: `1px solid ${!selectedGraph ? 'rgba(184, 88, 69, 0.25)' : 'rgba(139, 115, 85, 0.12)'}`,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between'
+                            }}
+                            onClick={() => setSelectedGraph('')}
+                            onMouseEnter={(e) => {
+                              if (selectedGraph) {
+                                e.currentTarget.style.background = 'rgba(245, 243, 240, 0.6)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedGraph) {
+                                e.currentTarget.style.background = 'transparent';
+                              }
+                            }}>
+                              <span style={{ fontSize: '13px', color: '#2d2d2d' }}>不使用基础配置</span>
+                              {!selectedGraph && (
+                                <span style={{
+                                  fontSize: '12px',
+                                  color: '#b85845',
+                                  fontWeight: 500
+                                }}>已选择</span>
+                              )}
                             </div>
                             {availableGraphs && availableGraphs.length > 0 && availableGraphs.map(graphName => (
-                              <div key={graphName} className="graph-option-item">
-                                <div className="graph-option-info">
-                                  <Tooltip title={graphName} placement="left">
-                                    <span className="graph-option-name">{graphName}</span>
-                                  </Tooltip>
-                                </div>
-                                <Button
-                                  type={selectedGraph === graphName ? "primary" : "default"}
-                                  size="small"
-                                  onClick={() => setSelectedGraph(graphName)}
-                                >
-                                  {selectedGraph === graphName ? '已选择' : '选择'}
-                                </Button>
+                              <div
+                                key={graphName}
+                                style={{
+                                  padding: '10px 12px',
+                                  marginBottom: '6px',
+                                  borderRadius: '6px',
+                                  background: selectedGraph === graphName ? 'rgba(184, 88, 69, 0.08)' : 'transparent',
+                                  border: `1px solid ${selectedGraph === graphName ? 'rgba(184, 88, 69, 0.25)' : 'rgba(139, 115, 85, 0.12)'}`,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between'
+                                }}
+                                onClick={() => setSelectedGraph(graphName)}
+                                onMouseEnter={(e) => {
+                                  if (selectedGraph !== graphName) {
+                                    e.currentTarget.style.background = 'rgba(245, 243, 240, 0.6)';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (selectedGraph !== graphName) {
+                                    e.currentTarget.style.background = 'transparent';
+                                  }
+                                }}
+                              >
+                                <Tooltip title={graphName} placement="left">
+                                  <span style={{
+                                    fontSize: '13px',
+                                    color: '#2d2d2d',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: '180px'
+                                  }}>{graphName}</span>
+                                </Tooltip>
+                                {selectedGraph === graphName && (
+                                  <span style={{
+                                    fontSize: '12px',
+                                    color: '#b85845',
+                                    fontWeight: 500
+                                  }}>已选择</span>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -374,7 +563,14 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                 </div>
 
                 {/* 右下角控件 */}
-                <div className="input-bottom-right">
+                <div style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  right: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
                   {/* 模型选择器 (Chat和Agent模式) */}
                   {(currentMode === 'chat' || currentMode === 'agent') && (
                     <ModelSelector
@@ -393,15 +589,42 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                     />
                   )}
 
-                  {/* 开始按钮 */}
+                  {/* 开始按钮 - 平衡设计 */}
                   <Button
                     type="primary"
                     shape="circle"
                     icon={<ArrowUpOutlined />}
                     onClick={handleStart}
                     disabled={!canStart()}
-                    className="send-button-new"
                     size="small"
+                    style={{
+                      width: '30px',
+                      height: '30px',
+                      minWidth: '30px',
+                      borderRadius: '50%',
+                      background: canStart() ? '#8b7355' : 'rgba(139, 115, 85, 0.25)',
+                      border: 'none',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: canStart() ? 'pointer' : 'not-allowed',
+                      boxShadow: canStart() ? '0 1px 3px rgba(139, 115, 85, 0.2)' : 'none',
+                      padding: 0,
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (canStart()) {
+                        e.currentTarget.style.background = '#a0826d';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(139, 115, 85, 0.25)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (canStart()) {
+                        e.currentTarget.style.background = '#8b7355';
+                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.2)';
+                      }
+                    }}
                   />
                 </div>
               </div>

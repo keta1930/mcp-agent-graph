@@ -533,25 +533,57 @@ const ChatSystem: React.FC = () => {
             /* 有对话时显示消息和输入区域 */
             <>
               {/* 对话头部 */}
-              <div className="conversation-header-bar">
-                <div className="conversation-title-display">
-                  {getDisplayTitle()}
+              <div style={{
+                padding: '20px 32px',
+                background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(245, 243, 240, 0.9))',
+                borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+                boxShadow: '0 2px 8px rgba(139, 115, 85, 0.06), inset 0 -1px 0 rgba(255, 255, 255, 0.6)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'relative'
+              }}>
+                {/* 装饰性纸张纹理 */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: '15%',
+                  right: '15%',
+                  height: '1px',
+                  background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.2) 50%, transparent)'
+                }} />
+
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <span style={{
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    color: '#2d2d2d',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {getDisplayTitle()}
+                  </span>
                   {/* Graph模式显示选择的图名称 */}
                   {currentMode === 'graph' && selectedGraphName && (
-                    <span className="graph-name-indicator">
+                    <span style={{
+                      fontSize: '14px',
+                      color: 'rgba(45, 45, 45, 0.65)',
+                      fontWeight: 'normal'
+                    }}>
                       {' - '}
-                      <span style={{ color: '#1890ff', fontWeight: 'normal' }}>
+                      <span style={{ color: '#a0826d' }}>
                         {selectedGraphName}
                       </span>
                     </span>
                   )}
                 </div>
-                <div className="conversation-actions">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {/* Chat模式的压缩按钮 */}
                   {displayConversation?.generation_type === 'chat' && (() => {
                     const isCurrentConversationCompacting = activeConversationId ? compactingConversations.has(activeConversationId) : false;
-                    // 调试信息（可选，生产环境可移除）
-                    // console.log('Compact button state:', { activeConversationId, isCurrentConversationCompacting, compactingConversations: Array.from(compactingConversations) });
                     return (
                       <Dropdown
                         overlay={
@@ -559,7 +591,7 @@ const ChatSystem: React.FC = () => {
                             <Menu.Item key="precise">
                               <div>
                                 <div>精确压缩</div>
-                                <div style={{ fontSize: '12px', color: '#666' }}>
+                                <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>
                                   AI总结工具内容，保留完整对话结构
                                 </div>
                               </div>
@@ -567,7 +599,7 @@ const ChatSystem: React.FC = () => {
                             <Menu.Item key="brutal">
                               <div>
                                 <div>暴力压缩</div>
-                                <div style={{ fontSize: '12px', color: '#666' }}>
+                                <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>
                                   每轮只保留用户和最终AI回复
                                 </div>
                               </div>
@@ -583,9 +615,32 @@ const ChatSystem: React.FC = () => {
                             type="text"
                             icon={<CompressOutlined />}
                             size="small"
-                            className="compact-button"
                             loading={isCurrentConversationCompacting}
                             disabled={isCurrentConversationCompacting}
+                            style={{
+                              color: isCurrentConversationCompacting ? 'rgba(45, 45, 45, 0.45)' : '#8b7355',
+                              border: '1px solid rgba(139, 115, 85, 0.2)',
+                              borderRadius: '6px',
+                              background: 'rgba(255, 255, 255, 0.6)',
+                              padding: '4px 12px',
+                              fontSize: '13px',
+                              fontWeight: 500,
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isCurrentConversationCompacting) {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.05)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isCurrentConversationCompacting) {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)';
+                              }
+                            }}
                           >
                             {isCurrentConversationCompacting ? '压缩中' : '压缩'} <DownOutlined />
                           </Button>

@@ -1,6 +1,6 @@
 // src/components/chat/message/AgentXMLRenderer.tsx
 import React, { useState } from 'react';
-import { Typography, Tag, Button } from 'antd';
+import { Typography, Tag } from 'antd';
 import {
   FileTextOutlined,
   CodeOutlined,
@@ -415,7 +415,14 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => 
                     {String(children).replace(/\n$/, '')}
                   </SyntaxHighlighter>
                 ) : (
-                  <code className={className} {...props}>
+                  <code style={{
+                    background: 'rgba(139, 115, 85, 0.08)',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    fontSize: '0.9em',
+                    fontFamily: "'SF Mono', monospace",
+                    color: '#b85845'
+                  }} {...props}>
                     {children}
                   </code>
                 );
@@ -444,32 +451,109 @@ const XMLTagRenderer: React.FC<XMLTagRendererProps> = ({ tag, contentType }) => 
     );
   };
 
+  const getIconColor = () => {
+    if (tag.tagName.includes('delete')) return '#b85845';
+    if (tag.tagName === 'analysis') return '#b85845';
+    if (tag.tagName === 'todo') return '#d4a574';
+    if (tag.tagName === 'script_file' || tag.tagName === 'node') return '#a0826d';
+    return '#8b7355';
+  };
+
+  const getTagStyle = () => {
+    if (tag.tagName.includes('delete')) {
+      return {
+        background: 'rgba(184, 88, 69, 0.08)',
+        color: '#b85845',
+        border: '1px solid rgba(184, 88, 69, 0.25)'
+      };
+    }
+    if (tag.tagName === 'analysis') {
+      return {
+        background: 'rgba(184, 88, 69, 0.08)',
+        color: '#b85845',
+        border: '1px solid rgba(184, 88, 69, 0.25)'
+      };
+    }
+    if (tag.tagName === 'todo') {
+      return {
+        background: 'rgba(212, 165, 116, 0.08)',
+        color: '#d4a574',
+        border: '1px solid rgba(212, 165, 116, 0.25)'
+      };
+    }
+    return {
+      background: 'rgba(160, 130, 109, 0.08)',
+      color: '#a0826d',
+      border: '1px solid rgba(160, 130, 109, 0.2)'
+    };
+  };
+
   return (
-    <div className={`xml-tag-container glass-card ${tag.isIncomplete ? 'incomplete' : ''}`} data-tag={tag.tagName}>
+    <div style={{
+      margin: '12px 0',
+      borderRadius: '6px',
+      background: 'rgba(255, 255, 255, 0.85)',
+      border: '1px solid rgba(139, 115, 85, 0.15)',
+      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+      opacity: tag.isIncomplete ? 0.95 : 1
+    }}>
       <div
-        className="xml-tag-header"
         onClick={() => setExpanded(!expanded)}
+        style={{
+          padding: '12px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
       >
-        <div className="xml-tag-info">
-          {getTagIcon()}
-          <Text strong>{getTagTitle()}</Text>
-          <Tag color={getTagColor()} size="small">{tag.tagName}</Tag>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ color: getIconColor(), fontSize: '16px' }}>
+            {getTagIcon()}
+          </span>
+          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>{getTagTitle()}</Text>
+          <Tag style={{
+            ...getTagStyle(),
+            borderRadius: '6px',
+            fontWeight: 500,
+            padding: '2px 10px',
+            fontSize: '12px'
+          }}>
+            {tag.tagName}
+          </Tag>
           {tag.isIncomplete && (
-            <Tag color="processing" size="small" className="streaming-tag">
-              <span className="streaming-dots">实时生成中</span>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '2px 10px',
+              fontSize: '12px'
+            }}>
+              <span style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>生成中</span>
             </Tag>
           )}
         </div>
-        <Button
-          type="text"
-          size="small"
-          icon={expanded ? <DownOutlined /> : <RightOutlined />}
-        />
+        {expanded ? (
+          <DownOutlined style={{ color: '#8b7355', fontSize: '14px' }} />
+        ) : (
+          <RightOutlined style={{ color: '#8b7355', fontSize: '14px' }} />
+        )}
       </div>
 
       {expanded && (
-        <div className="xml-tag-content">
-          {renderContent()}
+        <div style={{
+          padding: '0 14px 12px',
+          borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+          maxHeight: '400px',
+          overflow: 'auto'
+        }}>
+          <div style={{ marginTop: '12px' }}>
+            {renderContent()}
+          </div>
         </div>
       )}
     </div>
@@ -519,7 +603,14 @@ const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generation
                 {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
             ) : (
-              <code className={className} {...props}>
+              <code style={{
+                background: 'rgba(139, 115, 85, 0.08)',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                fontSize: '0.9em',
+                fontFamily: "'SF Mono', monospace",
+                color: '#b85845'
+              }} {...props}>
                 {children}
               </code>
             );
@@ -532,7 +623,7 @@ const AgentXMLRenderer: React.FC<AgentXMLRendererProps> = ({ content, generation
   }
 
   return (
-    <div className="agent-xml-renderer">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {xmlTags.map((tag, index) => (
         <XMLTagRenderer
           key={`${tag.tagName}-${index}`}

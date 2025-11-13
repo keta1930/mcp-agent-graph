@@ -1,19 +1,16 @@
 // src/components/chat/message/MessageDisplay.tsx
 import React, { useState, useEffect } from 'react';
-import { Typography, Tag, Button, Space, Tooltip, message } from 'antd';
+import { Typography, Tag, Space, Tooltip, message } from 'antd';
 import './MessageDisplay.css';
 import {
-  UserOutlined,
-  RobotOutlined,
   ToolOutlined,
-  DownOutlined,
-  RightOutlined,
   PlayCircleOutlined,
   CheckCircleOutlined,
   LoadingOutlined,
   CopyOutlined,
   CheckOutlined
 } from '@ant-design/icons';
+import { Bot, ChevronDown, ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -71,12 +68,13 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
   conversationId
 }) => {
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(children);
       setCopied(true);
-      message.success('代码已复制到剪贴板');
+      message.success('代码已复制');
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       message.error('复制失败');
@@ -84,41 +82,100 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
   };
 
   return (
-    <div className="glass-code-block">
-      <div className="code-header">
-        <span className="code-language">{language || 'text'}</span>
-        <div className="code-actions">
+    <div style={{
+      margin: '12px 0',
+      borderRadius: '6px',
+      background: 'rgba(255, 255, 255, 0.85)',
+      border: '1px solid rgba(139, 115, 85, 0.15)',
+      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      overflow: 'hidden',
+      transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+    }}>
+      <div 
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '10px 14px',
+          cursor: 'pointer',
+          background: 'rgba(245, 243, 240, 0.6)',
+          borderBottom: expanded ? '1px solid rgba(139, 115, 85, 0.15)' : 'none',
+          transition: 'all 0.2s ease'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {expanded ? (
+            <ChevronDown size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+          ) : (
+            <ChevronRight size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+          )}
+          <span style={{
+            color: '#8b7355',
+            fontWeight: 500,
+            fontSize: '12px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {language || 'text'}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <CodeBlockPreview
             language={language || 'text'}
             content={children}
             isStreaming={isStreaming}
             conversationId={conversationId}
           />
-          <Button
-            type="text"
-            size="small"
-            icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-            onClick={handleCopy}
-            className="copy-button"
-          />
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy();
+            }}
+            style={{
+              padding: '4px',
+              borderRadius: '4px',
+              color: copied ? '#b85845' : '#8b7355',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              background: 'transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!copied) {
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!copied) {
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            {copied ? <CheckOutlined style={{ fontSize: '14px' }} /> : <CopyOutlined style={{ fontSize: '14px' }} />}
+          </div>
         </div>
       </div>
-      <SyntaxHighlighter
-        language={language || 'text'}
-        style={oneLight as any}
-        PreTag="div"
-        customStyle={{
-          background: 'transparent',
-          margin: 0,
-          padding: '12px 16px',
-          fontSize: '13px',
-          lineHeight: '1.5',
-          maxHeight: '30rem',
-          overflow: 'auto'
-        } as any}
-      >
-        {children}
-      </SyntaxHighlighter>
+      {expanded && (
+        <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+          <SyntaxHighlighter
+            language={language || 'text'}
+            style={oneLight as any}
+            PreTag="div"
+            customStyle={{
+              background: 'transparent',
+              margin: 0,
+              padding: '14px 16px',
+              fontSize: '13px',
+              lineHeight: '1.6',
+              fontFamily: "'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace"
+            } as any}
+          >
+            {children}
+          </SyntaxHighlighter>
+        </div>
+      )}
     </div>
   );
 };
@@ -191,26 +248,37 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
 
   // 使用常规渲染
   return (
-    <ReactMarkdown
+    <div style={{
+      fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif",
+      fontSize: 'inherit'
+    }}>
+      <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        code({ node, inline, className, children, ...props }) {
-          const match = /language-(\w+)/.exec(className || '');
+        code({ node, ...codeProps }) {
+          const { children: codeChildren, className: codeClassName, ...restProps } = codeProps;
+          const match = /language-(\w+)/.exec(codeClassName || '');
           const language = match ? match[1] : '';
+          const inline = !match;
 
-
-          return !inline && match ? (
+          return !inline ? (
             <GlassCodeBlock
               language={language}
-              className={className}
               isStreaming={isStreaming}
               conversationId={conversationId}
             >
-              {String(children).replace(/\n$/, '')}
+              {String(codeChildren).replace(/\n$/, '')}
             </GlassCodeBlock>
           ) : (
-            <code className={className} {...props}>
-              {children}
+            <code style={{
+              background: 'rgba(139, 115, 85, 0.08)',
+              padding: '2px 6px',
+              borderRadius: '3px',
+              fontSize: '0.9em',
+              fontFamily: "'SF Mono', monospace",
+              color: '#b85845'
+            }} {...restProps}>
+              {codeChildren}
             </code>
           );
         }
@@ -218,6 +286,7 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
     >
       {content}
     </ReactMarkdown>
+    </div>
   );
 };
 
@@ -230,35 +299,66 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="tool-call-container glass-card">
+    <div style={{
+      margin: '12px 0',
+      borderRadius: '6px',
+      background: 'rgba(255, 255, 255, 0.85)',
+      border: '1px solid rgba(160, 130, 109, 0.2)',
+      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+    }}>
       <div
-        className="tool-call-header"
         onClick={() => setExpanded(!expanded)}
+        style={{
+          padding: '12px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
       >
-        <div className="tool-call-info">
-          <ToolOutlined className="tool-icon" />
-          <Text strong>{toolCall.function?.name}</Text>
-          <Tag color="blue">工具调用</Tag>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ToolOutlined style={{ color: '#a0826d', fontSize: '16px' }} />
+          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>{toolCall.function?.name}</Text>
+          <Tag style={{
+            background: 'rgba(160, 130, 109, 0.08)',
+            color: '#a0826d',
+            border: '1px solid rgba(160, 130, 109, 0.2)',
+            borderRadius: '6px',
+            fontWeight: 500,
+            padding: '2px 10px',
+            fontSize: '12px'
+          }}>
+            工具调用
+          </Tag>
         </div>
-        <Button
-          type="text"
-          size="small"
-          icon={expanded ? <DownOutlined /> : <RightOutlined />}
-        />
+        {expanded ? (
+          <ChevronDown size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+        ) : (
+          <ChevronRight size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+        )}
       </div>
 
       {expanded && (
-        <div className="tool-call-details">
-          <div className="tool-call-section">
-            <Text type="secondary">参数:</Text>
-            <div className="tool-call-arguments">
+        <div style={{
+          padding: '0 14px 12px',
+          borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+          maxHeight: '400px',
+          overflow: 'auto'
+        }}>
+          <div style={{ marginTop: '12px' }}>
+            <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>参数</Text>
+            <div style={{ marginTop: '8px' }}>
               <SyntaxHighlighter
                 language="json"
                 style={oneLight}
                 customStyle={{
-                  background: 'transparent',
-                  padding: '8px',
-                  fontSize: '12px'
+                  background: 'rgba(245, 243, 240, 0.6)',
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(139, 115, 85, 0.1)'
                 }}
               >
                 {toolCall.function?.arguments || '{}'}
@@ -267,12 +367,16 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) =
           </div>
 
           {result && (
-            <div className="tool-call-section">
-              <Text type="secondary">结果:</Text>
-              <div className="tool-call-result">
-                <Paragraph>
-                  <Text code>{result}</Text>
-                </Paragraph>
+            <div style={{ marginTop: '12px' }}>
+              <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>结果</Text>
+              <div style={{
+                marginTop: '8px',
+                padding: '10px 12px',
+                background: 'rgba(245, 243, 240, 0.6)',
+                borderRadius: '4px',
+                border: '1px solid rgba(139, 115, 85, 0.1)'
+              }}>
+                <Text style={{ fontSize: '13px', color: '#2d2d2d', fontFamily: "'SF Mono', monospace" }}>{result}</Text>
               </div>
             </div>
           )}
@@ -290,47 +394,86 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="reasoning-container glass-card">
+    <div style={{
+      margin: '12px 0',
+      borderRadius: '6px',
+      background: 'rgba(255, 255, 255, 0.85)',
+      border: '1px solid rgba(184, 88, 69, 0.2)',
+      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+    }}>
       <div
-        className="reasoning-header"
         onClick={() => setExpanded(!expanded)}
+        style={{
+          padding: '12px 14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}
       >
-        <div className="reasoning-info">
-          <RobotOutlined className="reasoning-icon" />
-          <Text strong>AI思考过程</Text>
-          <Tag color="purple">推理</Tag>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Bot size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />
+          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>AI思考过程</Text>
+          <Tag style={{
+            background: 'rgba(184, 88, 69, 0.08)',
+            color: '#b85845',
+            border: '1px solid rgba(184, 88, 69, 0.25)',
+            borderRadius: '6px',
+            fontWeight: 500,
+            padding: '2px 10px',
+            fontSize: '12px'
+          }}>
+            推理
+          </Tag>
         </div>
-        <Button
-          type="text"
-          size="small"
-          icon={expanded ? <DownOutlined /> : <RightOutlined />}
-        />
+        {expanded ? (
+          <ChevronDown size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+        ) : (
+          <ChevronRight size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
+        )}
       </div>
 
       {expanded && (
-        <div className="reasoning-content">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ node, inline, className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const language = match ? match[1] : '';
+        <div style={{
+          padding: '0 14px 12px',
+          borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+          maxHeight: '400px',
+          overflow: 'auto'
+        }}>
+          <div style={{ marginTop: '12px' }}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ node, ...codeProps }) {
+                  const { children: codeChildren, className: codeClassName, ...restProps } = codeProps;
+                  const match = /language-(\w+)/.exec(codeClassName || '');
+                  const language = match ? match[1] : '';
+                  const inline = !match;
 
-
-                return !inline && match ? (
-                  <GlassCodeBlock language={language} className={className}>
-                    {String(children).replace(/\n$/, '')}
-                  </GlassCodeBlock>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              }
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+                  return !inline ? (
+                    <GlassCodeBlock language={language}>
+                      {String(codeChildren).replace(/\n$/, '')}
+                    </GlassCodeBlock>
+                  ) : (
+                    <code style={{
+                      background: 'rgba(139, 115, 85, 0.08)',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      fontSize: '0.9em',
+                      fontFamily: "'SF Mono', monospace",
+                      color: '#b85845'
+                    }} {...restProps}>
+                      {codeChildren}
+                    </code>
+                  );
+                }
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
     </div>
@@ -368,40 +511,59 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
   const getStatusColor = () => {
     switch (status) {
       case 'running':
-        return '#1890ff';
+        return '#b85845';
       case 'completed':
-        return '#52c41a';
+        return '#a0826d';
       case 'pending':
-        return '#faad14';
+        return '#d4a574';
       default:
-        return '#d9d9d9';
+        return '#9ea19f';
     }
   };
 
   return (
-    <div className="node-execution-info">
-      <div className="node-header">
-        <div className="node-status">
-          <div
-            className={`breathing-indicator ${status}`}
-          />
+    <div style={{
+      marginBottom: '16px',
+      padding: '14px 16px',
+      background: 'rgba(255, 255, 255, 0.85)',
+      border: '1px solid rgba(139, 115, 85, 0.15)',
+      borderRadius: '6px',
+      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: getStatusColor(),
+            animation: status === 'running' ? 'pulse 2s ease-in-out infinite' : 'none'
+          }} />
           {getStatusIcon()}
         </div>
-        <div className="node-details">
-          <Text strong>节点: {nodeName}</Text>
-          <Text type="secondary"> (Level {level})</Text>
+        <div>
+          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>节点: {nodeName}</Text>
+          <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px', marginLeft: '6px' }}>(Level {level})</Text>
         </div>
       </div>
 
-      <div className="node-meta">
-        {mcpServers && mcpServers.length > 0 && (
+      {mcpServers && mcpServers.length > 0 && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <Tooltip title={mcpServers.join(', ')}>
-            <Tag color="blue">
+            <Tag style={{
+              background: 'rgba(160, 130, 109, 0.08)',
+              color: '#a0826d',
+              border: '1px solid rgba(160, 130, 109, 0.2)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '2px 10px',
+              fontSize: '12px'
+            }}>
               MCP工具: {mcpServers.length}个
             </Tag>
           </Tooltip>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -453,15 +615,38 @@ const MessageItem: React.FC<MessageItemProps> = ({
   }
 
   return (
-    <div className={`message-item ${isUser ? 'user-message' : 'assistant-message'}`}>
-      {/* 呼吸灯指示器 - 在每个round的第一条消息时显示在消息块上方左对齐 */}
-      {/* Graph执行模式不显示呼吸灯，因为有独立的节点信息显示 */}
+    <div style={{
+      marginBottom: '24px',
+      color: '#2d2d2d',
+      lineHeight: '1.7',
+      fontSize: '16px',
+      letterSpacing: '0.3px',
+      fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
+    }}>
+      {/* 呼吸灯指示器 - 改为墨点效果 */}
       {isFirstMessageInRound && renderingMode !== 'graph_run' && (
-        <div className="message-breathing-indicator">
-          <div
-            className={`breathing-dot ${isUser ? 'user-indicator' : 'assistant-indicator'}`}
-          />
-          <span className="breathing-label">
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '10px',
+          gap: '8px'
+        }}>
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: isUser ? '#a0826d' : '#b85845',
+            boxShadow: isUser 
+              ? '0 0 0 0 rgba(160, 130, 109, 0.4)' 
+              : '0 0 0 0 rgba(184, 88, 69, 0.4)',
+            animation: 'inkDotPulse 2s ease-in-out infinite'
+          }} />
+          <span style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: 'rgba(45, 45, 45, 0.65)',
+            letterSpacing: '0.3px'
+          }}>
             {isUser ? getCurrentUserDisplayName() : (renderingMode === 'agent' ? 'Agent' : 'Assistant')}
           </span>
         </div>
@@ -474,8 +659,16 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
       {/* Graph执行模式下用户消息：只有start节点显示消息内容，其他节点不显示 */}
       {!(renderingMode === 'graph_run' && isUser && nodeInfo?.nodeName !== 'start') && (
-        <div className="message-content">
-          <div className="message-body">
+        <div style={isUser ? {
+          background: 'rgba(212, 196, 176, 0.15)',
+          border: '1px solid rgba(139, 115, 85, 0.2)',
+          borderRadius: '8px',
+          padding: '14px 16px',
+          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+          maxHeight: '30rem',
+          overflow: 'auto'
+        } : {}}>
+          <div>
             {/* AI思考过程优先显示 */}
             {effectiveReasoningContent && (
               <ReasoningDisplay content={effectiveReasoningContent} />
@@ -483,11 +676,17 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
             {/* 主要消息内容 */}
             {message.content && (
-              <div className="message-text">
+              <div style={{
+                color: '#2d2d2d',
+                lineHeight: '1.7',
+                fontSize: '16px',
+                letterSpacing: '0.3px',
+                fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
+              }}>
 
-                <div className="message-content-body">
+                <div>
                   {showTyping ? (
-                    <div className="streaming-content">
+                    <div>
                       {/* 流式消息根据渲染模式选择渲染器 */}
                       {!isUser && renderingMode === 'agent' ? (
                         <AgentXMLRenderer
@@ -514,22 +713,29 @@ const MessageItem: React.FC<MessageItemProps> = ({
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
-                          code({ node, inline, className, children, ...props }) {
-                            const match = /language-(\w+)/.exec(className || '');
+                          code({ node, ...codeProps }) {
+                            const { children: codeChildren, className: codeClassName, ...restProps } = codeProps;
+                            const match = /language-(\w+)/.exec(codeClassName || '');
                             const language = match ? match[1] : '';
+                            const inline = !match;
 
-
-                            return !inline && match ? (
+                            return !inline ? (
                               <GlassCodeBlock
                                 language={language}
-                                className={className}
                                 conversationId={conversationId}
                               >
-                                {String(children).replace(/\n$/, '')}
+                                {String(codeChildren).replace(/\n$/, '')}
                               </GlassCodeBlock>
                             ) : (
-                              <code className={className} {...props}>
-                                {children}
+                              <code style={{
+                                background: 'rgba(139, 115, 85, 0.08)',
+                                padding: '2px 6px',
+                                borderRadius: '3px',
+                                fontSize: '0.9em',
+                                fontFamily: "'SF Mono', monospace",
+                                color: '#b85845'
+                              }} {...restProps}>
+                                {codeChildren}
                               </code>
                             );
                           }
@@ -545,12 +751,12 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
             {/* 工具调用 */}
             {message.tool_calls && message.tool_calls.length > 0 && (
-              <div className="tool-calls">
+              <div style={{ marginTop: '12px' }}>
                 {message.tool_calls.map((toolCall, index) => (
                   <ToolCallDisplay
                     key={toolCall.id || index}
                     toolCall={toolCall}
-                    result={toolResults[toolCall.id]}
+                    result={toolCall.id ? toolResults[toolCall.id] : undefined}
                   />
                 ))}
               </div>
@@ -582,8 +788,8 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
 
     case 'content':
       return (
-        <div className="streaming-content-block">
-          <div className={`message-content-body ${block.isComplete ? 'completed' : ''}`}>
+        <div>
+          <div style={{ position: 'relative' }}>
             {renderingMode === 'agent' ? (
               <AgentXMLRenderer
                 content={block.content}
@@ -596,6 +802,14 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
                 isStreaming={!block.isComplete}
                 conversationId={conversationId}
               />
+            )}
+            {!block.isComplete && (
+              <span style={{
+                marginLeft: '2px',
+                color: '#b85845',
+                fontWeight: 'bold',
+                animation: 'typingCursor 1s infinite'
+              }}>▋</span>
             )}
           </div>
         </div>
@@ -621,7 +835,7 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
             <ToolCallDisplay
               key={toolCall.id || index}
               toolCall={toolCall}
-              result={combinedToolResults[toolCall.id]}
+              result={toolCall.id ? combinedToolResults[toolCall.id] : undefined}
             />
           ))}
         </div>
@@ -660,26 +874,6 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
   currentMode,
   agentType
 }) => {
-  // 容错处理：确保conversation存在
-  if (!conversation) {
-    return <div className="message-display">
-      <div className="messages-container">
-        {pendingUserMessage && (
-          <div className="pending-user-message">
-            <MessageItem
-              message={{
-                role: 'user',
-                content: pendingUserMessage
-              }}
-              isFirstMessageInRound={true}
-              renderingMode={getRenderingMode()}
-            />
-          </div>
-        )}
-      </div>
-    </div>;
-  }
-
   // 根据前端当前模式确定渲染模式，不依赖后端数据
   const getRenderingMode = (): 'chat' | 'agent' | 'graph_run' => {
     // 优先使用当前对话模式
@@ -705,6 +899,26 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
   };
 
   const renderingMode = getRenderingMode();
+
+  // 容错处理：确保conversation存在
+  if (!conversation) {
+    return <div className="message-display">
+      <div className="messages-container">
+        {pendingUserMessage && (
+          <div className="pending-user-message">
+            <MessageItem
+              message={{
+                role: 'user',
+                content: pendingUserMessage
+              }}
+              isFirstMessageInRound={true}
+              renderingMode={renderingMode}
+            />
+          </div>
+        )}
+      </div>
+    </div>;
+  }
 
   // 根据generation_type决定消息显示方式
   const isGraphExecution = renderingMode === 'graph_run';
@@ -826,13 +1040,37 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
 
         {/* 流式消息显示 - 仅使用增强分块模式 */}
         {enhancedStreamingState && enhancedStreamingState.isStreaming && (
-          <div className="enhanced-streaming-message">
+          <div style={{
+            marginBottom: '24px',
+            color: '#2d2d2d',
+            lineHeight: '1.7',
+            fontSize: '16px',
+            letterSpacing: '0.3px',
+            fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
+          }}>
             {/* 呼吸灯指示器 - 在流式消息上方左对齐 */}
             {/* Graph执行模式不显示呼吸灯，因为有独立的节点信息显示 */}
             {renderingMode !== 'graph_run' && (
-              <div className="message-breathing-indicator">
-                <div className="breathing-dot assistant-indicator" />
-                <span className="breathing-label">
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '10px',
+                gap: '8px'
+              }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#b85845',
+                  boxShadow: '0 0 0 0 rgba(184, 88, 69, 0.4)',
+                  animation: 'inkDotPulse 2s ease-in-out infinite'
+                }} />
+                <span style={{
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'rgba(45, 45, 45, 0.65)',
+                  letterSpacing: '0.3px'
+                }}>
                   {renderingMode === 'agent' ? 'Agent' : 'Assistant'}
                 </span>
               </div>

@@ -64,35 +64,107 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
   }
 
   return (
-    <div className={`mcp-tools-container ${className}`} ref={dropdownRef}>
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
       <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
         <Button
           type="text"
           icon={<ToolOutlined />}
-          className={`mcp-tools-button ${showPanel ? 'active' : ''} ${enabledMcpCount > 0 ? 'has-enabled' : ''}`}
           onClick={() => setShowPanel(!showPanel)}
           size={size}
+          style={{
+            color: enabledMcpCount > 0 ? '#a0826d' : 'rgba(139, 115, 85, 0.75)',
+            border: 'none',
+            background: showPanel ? 'rgba(160, 130, 109, 0.1)' : 'transparent',
+            transition: 'all 0.2s ease',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#a0826d';
+            e.currentTarget.style.background = 'rgba(160, 130, 109, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = enabledMcpCount > 0 ? '#a0826d' : 'rgba(139, 115, 85, 0.75)';
+            e.currentTarget.style.background = showPanel ? 'rgba(160, 130, 109, 0.1)' : 'transparent';
+          }}
         />
       </Tooltip>
 
       {/* MCP工具面板 */}
       {showPanel && (
-        <div className="mcp-tools-panel">
-          <div className="mcp-tools-header">
-            <Text strong>MCP工具</Text>
+        <div style={{
+          position: 'absolute',
+          bottom: '100%',
+          left: 0,
+          marginBottom: '8px',
+          minWidth: '260px',
+          maxWidth: '320px',
+          background: 'rgba(255, 255, 255, 0.95)',
+          border: '1px solid rgba(139, 115, 85, 0.2)',
+          borderRadius: '8px',
+          boxShadow: '0 4px 16px rgba(139, 115, 85, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+          zIndex: 1000,
+          animation: 'slideUp 0.2s ease-out'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.15)'
+          }}>
+            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>MCP工具</Text>
           </div>
-          <div className="mcp-tools-list">
+          <div style={{
+            padding: '8px',
+            maxHeight: '300px',
+            overflowY: 'auto'
+          }}>
             {availableMCPServers.map(serverName => {
               const isConnected = getServerConnectionStatus(serverName);
               return (
-                <div key={serverName} className="mcp-tool-item">
-                  <div className="mcp-tool-info">
+                <div key={serverName} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(160, 130, 109, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    flex: 1,
+                    minWidth: 0
+                  }}>
                     <div
-                      className={`mcp-connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background: isConnected ? '#a0826d' : '#d4c4b0',
+                        boxShadow: isConnected ? '0 0 0 2px rgba(160, 130, 109, 0.2)' : 'none'
+                      }}
                       title={isConnected ? '已连接' : '未连接'}
                     />
                     <Tooltip title={serverName} placement="top">
-                      <span className="mcp-tool-name">{serverName}</span>
+                      <span style={{
+                        fontSize: '13px',
+                        color: '#2d2d2d',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>{serverName}</span>
                     </Tooltip>
                   </div>
                   <Switch

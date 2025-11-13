@@ -48,9 +48,27 @@ const SystemPromptToggle: React.FC<SystemPromptToggleProps> = ({
       <Button
         type="text"
         icon={<SwapOutlined />}
-        className={`system-prompt-toggle ${isSystemPromptMode ? 'active' : ''} ${className}`}
         onClick={onToggle}
         size={size}
+        style={{
+          color: isSystemPromptMode ? '#b85845' : 'rgba(139, 115, 85, 0.75)',
+          border: 'none',
+          background: isSystemPromptMode ? 'rgba(184, 88, 69, 0.1)' : 'transparent',
+          transition: 'all 0.2s ease',
+          height: '28px',
+          padding: '0 10px',
+          fontSize: '12px',
+          borderRadius: '6px',
+          fontWeight: 500
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = '#b85845';
+          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = isSystemPromptMode ? '#b85845' : 'rgba(139, 115, 85, 0.75)';
+          e.currentTarget.style.background = isSystemPromptMode ? 'rgba(184, 88, 69, 0.1)' : 'transparent';
+        }}
       >
         {getButtonText()}
       </Button>

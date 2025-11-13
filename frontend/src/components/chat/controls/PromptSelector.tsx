@@ -87,37 +87,100 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
   };
 
   return (
-    <div className={`prompt-selector-container ${className}`} ref={dropdownRef}>
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
       <Tooltip title="选择提示词">
         <Button
           type="text"
           icon={<FileTextOutlined />}
-          className={`prompt-selector-button ${showPanel ? 'active' : ''}`}
           onClick={handlePromptButtonClick}
           size={size}
           loading={loadingPrompts}
+          style={{
+            color: showPanel ? '#d4a574' : 'rgba(139, 115, 85, 0.75)',
+            border: 'none',
+            background: showPanel ? 'rgba(212, 165, 116, 0.1)' : 'transparent',
+            transition: 'all 0.2s ease',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#d4a574';
+            e.currentTarget.style.background = 'rgba(212, 165, 116, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = showPanel ? '#d4a574' : 'rgba(139, 115, 85, 0.75)';
+            e.currentTarget.style.background = showPanel ? 'rgba(212, 165, 116, 0.1)' : 'transparent';
+          }}
         />
       </Tooltip>
 
       {/* 提示词面板 */}
       {showPanel && (
-        <div className="prompt-selector-panel">
-          <div className="prompt-selector-header">
-            <Text strong>选择提示词</Text>
+        <div style={{
+          position: 'absolute',
+          bottom: '100%',
+          left: 0,
+          marginBottom: '8px',
+          minWidth: '260px',
+          maxWidth: '320px',
+          background: 'rgba(255, 255, 255, 0.95)',
+          border: '1px solid rgba(139, 115, 85, 0.2)',
+          borderRadius: '8px',
+          boxShadow: '0 4px 16px rgba(139, 115, 85, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+          zIndex: 1000,
+          animation: 'slideUp 0.2s ease-out'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.15)'
+          }}>
+            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>选择提示词</Text>
           </div>
-          <div className="prompt-selector-list">
+          <div style={{
+            padding: '8px',
+            maxHeight: '300px',
+            overflowY: 'auto'
+          }}>
             {availablePrompts.length === 0 ? (
-              <div className="prompt-empty">暂无提示词</div>
+              <div style={{
+                padding: '20px',
+                textAlign: 'center',
+                color: 'rgba(45, 45, 45, 0.45)',
+                fontSize: '13px'
+              }}>暂无提示词</div>
             ) : (
               availablePrompts.map(prompt => (
                 <div
                   key={prompt.name}
-                  className="prompt-item"
                   onClick={() => handleSelectPrompt(prompt.name)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(212, 165, 116, 0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
                 >
-                  <div className="prompt-item-name">{prompt.name}</div>
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#2d2d2d',
+                    marginBottom: '2px'
+                  }}>{prompt.name}</div>
                   {prompt.category && (
-                    <div className="prompt-item-category">{prompt.category}</div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: 'rgba(45, 45, 45, 0.45)'
+                    }}>{prompt.category}</div>
                   )}
                 </div>
               ))

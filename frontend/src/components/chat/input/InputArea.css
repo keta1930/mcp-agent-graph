@@ -1,212 +1,111 @@
-/* InputArea 组件样式 */
+/* InputArea 组件样式 - 大地色系设计 */
 
-/* 输入区域容器 */
-.input-area {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0 24px 16px 24px;
-  display: flex;
-  justify-content: center;
+/* 模型选择器样式覆盖 */
+.model-selector-new .ant-select,
+.model-selector-new .ant-select.ant-select-sm {
+  min-width: 120px !important;
+  font-size: 13px !important;
 }
 
-/* 新版输入容器 */
-.input-container-new {
-  max-width: 850px;
-  margin: 0 auto;
-  width: 100%;
+.model-selector-new .ant-select .ant-select-selector,
+.model-selector-new .ant-select.ant-select-sm .ant-select-selector {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(139, 115, 85, 0.75) !important;
+  padding: 4px 8px !important;
+  height: auto !important;
+  font-weight: 500 !important;
 }
 
-/* 消息输入包装器 */
-.message-input-wrapper {
-  position: relative;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 12px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px var(--shadow-light);
+.model-selector-new .ant-select .ant-select-selection-item,
+.model-selector-new .ant-select.ant-select-sm .ant-select-selection-item {
+  color: rgba(139, 115, 85, 0.75) !important;
+  font-weight: 500 !important;
 }
 
-.message-input-wrapper:hover {
-  box-shadow: 0 6px 24px var(--shadow-medium);
+.model-selector-new .ant-select:hover .ant-select-selector,
+.model-selector-new .ant-select.ant-select-sm:hover .ant-select-selector {
+  color: #b85845 !important;
 }
 
-.message-input-wrapper:focus-within {
-  border-color: #1890ff;
-  box-shadow: 0 6px 24px rgba(24, 144, 255, 0.15);
+.model-selector-new .ant-select:hover .ant-select-selection-item {
+  color: #b85845 !important;
 }
 
-/* 消息输入框 */
-.message-input-new {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 0 0 32px 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  min-height: 32px;
-  max-height: 200px;
-  overflow-y: auto;
+.model-selector-new .ant-select .ant-select-arrow,
+.model-selector-new .ant-select.ant-select-sm .ant-select-arrow {
+  color: rgba(139, 115, 85, 0.65) !important;
+  font-size: 10px !important;
 }
 
-.message-input-new::placeholder {
-  color: var(--text-tertiary);
+/* Graph选择器样式覆盖 */
+.graph-selector-new .ant-select,
+.graph-selector-new .ant-select.ant-select-sm {
+  min-width: 120px !important;
+  font-size: 13px !important;
 }
 
-.message-input-new::-webkit-scrollbar {
-  width: 6px;
+.graph-selector-new .ant-select .ant-select-selector,
+.graph-selector-new .ant-select.ant-select-sm .ant-select-selector {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(139, 115, 85, 0.75) !important;
+  padding: 4px 8px !important;
+  height: auto !important;
+  font-weight: 500 !important;
 }
 
-.message-input-new::-webkit-scrollbar-track {
-  background: transparent;
+.graph-selector-new .ant-select .ant-select-selection-item,
+.graph-selector-new .ant-select.ant-select-sm .ant-select-selection-item {
+  color: rgba(139, 115, 85, 0.75) !important;
+  font-weight: 500 !important;
 }
 
-.message-input-new::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 3px;
+.graph-selector-new .ant-select:hover .ant-select-selector,
+.graph-selector-new .ant-select.ant-select-sm:hover .ant-select-selector {
+  color: #a0826d !important;
 }
 
-/* 输入框底部控件容器 */
-.input-bottom-left {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.graph-selector-new .ant-select:hover .ant-select-selection-item {
+  color: #a0826d !important;
 }
 
-.input-bottom-right {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.graph-selector-new .ant-select .ant-select-arrow,
+.graph-selector-new .ant-select.ant-select-sm .ant-select-arrow {
+  color: rgba(139, 115, 85, 0.65) !important;
+  font-size: 10px !important;
 }
 
-/* 系统提示词切换按钮 */
-.system-prompt-toggle {
-  color: var(--text-tertiary);
-  border: none;
-  background: transparent;
-  transition: all 0.2s ease;
-  height: 28px;
-  padding: 0 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  font-weight: 500;
+/* 下拉菜单样式覆盖 */
+.ant-select-dropdown {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(139, 115, 85, 0.2) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(139, 115, 85, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  padding: 4px !important;
 }
 
-.system-prompt-toggle:hover {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
+.ant-select-item {
+  color: #2d2d2d !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  transition: all 0.2s ease !important;
 }
 
-.system-prompt-toggle.active {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.15);
+.ant-select-item:hover {
+  background: rgba(160, 130, 109, 0.08) !important;
 }
 
-/* Agent类型切换按钮 */
-.agent-type-toggle {
-  color: var(--text-tertiary);
-  border: none;
-  background: transparent;
-  transition: all 0.2s ease;
-  height: 28px;
-  padding: 0 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  font-weight: 500;
+.ant-select-item-option-selected {
+  background: rgba(184, 88, 69, 0.08) !important;
+  color: #b85845 !important;
+  font-weight: 500 !important;
 }
 
-.agent-type-toggle:hover {
-  color: #722ed1;
-  background: rgba(114, 46, 209, 0.1);
-}
-
-.agent-type-toggle.active {
-  color: #722ed1;
-  background: rgba(114, 46, 209, 0.15);
-}
-
-/* 完成创建按钮 */
-.complete-creation-button {
-  color: #52c41a;
-  border: none;
-  background: transparent;
-  transition: all 0.2s ease;
-  height: 28px;
-  padding: 0 8px;
-  font-size: 12px;
-  border-radius: 6px;
-  font-weight: 500;
-}
-
-.complete-creation-button:hover {
-  color: #52c41a;
-  background: rgba(82, 196, 26, 0.1);
-}
-
-/* MCP工具按钮 */
-.mcp-tools-button {
-  color: var(--text-tertiary);
-  border: none;
-  background: transparent;
-  transition: all 0.2s ease;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mcp-tools-button:hover {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
-}
-
-.mcp-tools-button.active {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.15);
-}
-
-.mcp-tools-button.has-enabled {
-  color: #1890ff;
-}
-
-/* MCP工具面板 */
-.mcp-tools-container {
-  position: relative;
-}
-
-.mcp-tools-panel {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 8px;
-  min-width: 260px;
-  max-width: 320px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
-  animation: slideUp 0.2s ease-out;
-}
-
+/* 滑入动画 */
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -218,429 +117,10 @@
   }
 }
 
-.mcp-tools-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.mcp-tools-list {
-  padding: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.mcp-tools-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.mcp-tools-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.mcp-tools-list::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 3px;
-}
-
-.mcp-tool-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.mcp-tool-item:hover {
-  background: rgba(24, 144, 255, 0.05);
-}
-
-.mcp-tool-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.mcp-connection-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.mcp-connection-indicator.connected {
-  background-color: #52c41a;
-  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
-}
-
-.mcp-connection-indicator.disconnected {
-  background-color: #d9d9d9;
-}
-
-.mcp-tool-name {
-  font-size: 13px;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 提示词选择器 */
-.prompt-selector-container {
-  position: relative;
-}
-
-.prompt-selector-button {
-  color: var(--text-tertiary);
-  border: none;
-  background: transparent;
-  transition: all 0.2s ease;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.prompt-selector-button:hover {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.1);
-}
-
-.prompt-selector-button.active {
-  color: #1890ff;
-  background: rgba(24, 144, 255, 0.15);
-}
-
-.prompt-selector-panel {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 8px;
-  min-width: 260px;
-  max-width: 320px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
-  animation: slideUp 0.2s ease-out;
-}
-
-.prompt-selector-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.prompt-selector-list {
-  padding: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.prompt-selector-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.prompt-selector-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.prompt-selector-list::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 3px;
-}
-
-.prompt-item {
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.prompt-item:hover {
-  background: rgba(24, 144, 255, 0.05);
-}
-
-.prompt-item-name {
-  font-size: 13px;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-.prompt-item-category {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.prompt-empty {
-  padding: 20px;
-  text-align: center;
-  color: var(--text-tertiary);
-  font-size: 13px;
-}
-
-/* 图选择器 */
-.graph-selector-container {
-  position: relative;
-}
-
-.graph-selector-button {
-  color: var(--text-tertiary);
-  border: none;
-  background: transparent;
-  transition: all 0.2s ease;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.graph-selector-button:hover {
-  color: #13c2c2;
-  background: rgba(19, 194, 194, 0.1);
-}
-
-.graph-selector-button.active {
-  color: #13c2c2;
-  background: rgba(19, 194, 194, 0.15);
-}
-
-.graph-selector-button.has-selected {
-  color: #13c2c2;
-}
-
-.graph-selector-panel {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 8px;
-  min-width: 260px;
-  max-width: 320px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
-  animation: slideUp 0.2s ease-out;
-}
-
-.graph-selector-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--glass-border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.graph-selector-list {
-  padding: 8px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.graph-selector-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.graph-selector-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.graph-selector-list::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 3px;
-}
-
-.graph-option-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.graph-option-item:hover {
-  background: rgba(19, 194, 194, 0.05);
-}
-
-.graph-option-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.graph-option-name {
-  font-size: 13px;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 模型选择器 - 覆盖 Ant Design 样式 */
-.model-selector-new {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.model-select-dropdown.ant-select,
-.model-select-dropdown.ant-select.ant-select-sm {
-  min-width: 120px !important;
-  font-size: 13px !important;
-}
-
-.model-select-dropdown.ant-select .ant-select-selector,
-.model-select-dropdown.ant-select.ant-select-sm .ant-select-selector {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--text-secondary) !important;
-  padding: 4px 8px !important;
-  height: auto !important;
-}
-
-.model-select-dropdown.ant-select .ant-select-selection-item,
-.model-select-dropdown.ant-select.ant-select-sm .ant-select-selection-item {
-  color: var(--text-secondary) !important;
-  font-weight: 500 !important;
-}
-
-.model-select-dropdown.ant-select:hover .ant-select-selector,
-.model-select-dropdown.ant-select.ant-select-sm:hover .ant-select-selector {
-  color: var(--text-primary) !important;
-}
-
-.model-select-dropdown.ant-select .ant-select-arrow,
-.model-select-dropdown.ant-select.ant-select-sm .ant-select-arrow {
-  color: var(--text-tertiary) !important;
-  font-size: 10px !important;
-}
-
-/* Graph选择器 - 覆盖 Ant Design 样式 */
-.graph-selector-new {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.graph-select-dropdown.ant-select,
-.graph-select-dropdown.ant-select.ant-select-sm {
-  min-width: 120px !important;
-  font-size: 13px !important;
-}
-
-.graph-select-dropdown.ant-select .ant-select-selector,
-.graph-select-dropdown.ant-select.ant-select-sm .ant-select-selector {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--text-secondary) !important;
-  padding: 4px 8px !important;
-  height: auto !important;
-}
-
-.graph-select-dropdown.ant-select .ant-select-selection-item,
-.graph-select-dropdown.ant-select.ant-select-sm .ant-select-selection-item {
-  color: var(--text-secondary) !important;
-  font-weight: 500 !important;
-}
-
-.graph-select-dropdown.ant-select:hover .ant-select-selector,
-.graph-select-dropdown.ant-select.ant-select-sm:hover .ant-select-selector {
-  color: var(--text-primary) !important;
-}
-
-.graph-select-dropdown.ant-select .ant-select-arrow,
-.graph-select-dropdown.ant-select.ant-select-sm .ant-select-arrow {
-  color: var(--text-tertiary) !important;
-  font-size: 10px !important;
-}
-
-/* 发送按钮 - 覆盖 Ant Design 样式 */
-.send-button-new.ant-btn,
-.send-button-new.ant-btn.ant-btn-sm,
-.send-button-new.ant-btn.ant-btn-icon-only,
-.send-button-new.ant-btn.ant-btn-circle {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  border-radius: 50% !important;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
-  border: none !important;
-  color: white !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3) !important;
-  padding: 0 !important;
-}
-
-.send-button-new.ant-btn:hover:not(:disabled),
-.send-button-new.ant-btn.ant-btn-sm:hover:not(:disabled) {
-  border: none !important;
-  color: white !important;
-}
-
-.send-button-new.ant-btn:active:not(:disabled),
-.send-button-new.ant-btn.ant-btn-sm:active:not(:disabled) {
-  border: none !important;
-  color: white !important;
-}
-
-.send-button-new.ant-btn:disabled,
-.send-button-new.ant-btn[disabled],
-.send-button-new.ant-btn.ant-btn-sm:disabled,
-.send-button-new.ant-btn.ant-btn-sm[disabled] {
-  background: var(--text-tertiary) !important;
-  color: var(--bg-primary) !important;
-  opacity: 0.5 !important;
-  cursor: not-allowed !important;
-  box-shadow: none !important;
-  border: none !important;
-}
-
-.send-button-new .anticon,
-.send-button-new.ant-btn .anticon {
-  font-size: 14px !important;
-  color: white !important;
-}
-
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .input-area {
-    padding: 12px 16px;
-  }
-
-  .message-input-wrapper {
-    border-radius: 12px;
-    padding: 10px;
-  }
-
-  .message-input-new {
-    padding: 0 0 28px 0;
-    font-size: 14px;
-  }
-
-  .input-bottom-left,
-  .input-bottom-right {
-    bottom: 10px;
-  }
-
-  .mcp-tools-panel,
-  .prompt-selector-panel,
-  .graph-selector-panel {
-    min-width: 240px;
+  .model-selector-new .ant-select,
+  .graph-selector-new .ant-select {
+    min-width: 100px !important;
   }
 }
