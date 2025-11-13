@@ -1,325 +1,13 @@
 // src/components/chat/sidebar/ConversationSidebar.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  Input,
-  Dropdown,
-  Button,
-  Modal,
-  Tag,
-  Tooltip,
-  Empty,
-  Spin,
-  Checkbox
-} from 'antd';
-import './ConversationSidebar.css';
-import {
-  SearchOutlined,
-  MoreOutlined,
-  StarOutlined,
-  StarFilled,
-  DeleteOutlined,
-  EditOutlined,
-  TagOutlined,
-  HomeOutlined,
-  UserOutlined,
-  PlusOutlined,
-  ClockCircleOutlined,
-  CheckOutlined
-} from '@ant-design/icons';
+import { Input, Button, Empty, Spin, Tooltip } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { Search, Plus, User, Home, Clock, ChevronLeft } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
-import { ConversationSummary } from '../../../types/conversation';
-import { getCurrentUserDisplayName, setUserConfig, getUserConfig } from '../../../config/user';
-import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { getCurrentUserDisplayName } from '../../../config/user';
+import CollapsedSidebar from './CollapsedSidebar';
+import ConversationItem from './ConversationItem';
 import ExportManagerButton from '../modal/ExportManagerButton';
-
-const { TextArea } = Input;
-
-interface ConversationItemProps {
-  conversation: ConversationSummary;
-  isActive: boolean;
-  onClick: () => void;
-  isBatchMode?: boolean;
-  isSelected?: boolean;
-  onSelect?: (conversationId: string, selected: boolean) => void;
-}
-
-const ConversationItem: React.FC<ConversationItemProps> = ({
-  conversation,
-  isActive,
-  onClick,
-  isBatchMode = false,
-  isSelected = false,
-  onSelect
-}) => {
-  const navigate = useNavigate();
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [tagsModalVisible, setTagsModalVisible] = useState(false);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [newTitle, setNewTitle] = useState(conversation.title);
-  const [newTags, setNewTags] = useState(conversation.tags.join(', '));
-
-  const {
-    updateConversationStatus,
-    updateConversationTitle,
-    updateConversationTags,
-    deleteConversationPermanent,
-    showNotification
-  } = useConversationStore();
-
-  const getStatusColor = () => {
-    switch (conversation.status) {
-      case 'active':
-        return '#52c41a'; // 绿色
-      case 'favorite':
-        return '#fa8c16'; // 橙色
-      case 'deleted':
-        return '#f5222d'; // 红色
-      default:
-        return '#d9d9d9';
-    }
-  };
-
-  const getTypeIcon = () => {
-    switch (conversation.type) {
-      case 'chat':
-        return '💬';
-      case 'agent':
-        return '🤖';
-      case 'graph':
-        return '📊';
-      default:
-        return '💬';
-    }
-  };
-
-  const handleStatusToggle = async (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    try {
-      const newStatus = conversation.status === 'favorite' ? 'active' : 'favorite';
-      await updateConversationStatus(conversation._id, newStatus);
-      showNotification(`已${newStatus === 'favorite' ? '收藏' : '取消收藏'}`, 'success');
-    } catch (error) {
-      console.error('Status toggle failed:', error);
-      showNotification('操作失败', 'error');
-    }
-  };
-
-  const handleDelete = async (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    try {
-      if (conversation.status === 'deleted') {
-        setDeleteModalVisible(true);
-      } else {
-        await updateConversationStatus(conversation._id, 'deleted');
-        showNotification('已移除到回收站', 'success');
-      }
-    } catch (error) {
-      console.error('Delete failed:', error);
-      showNotification('删除失败', 'error');
-    }
-  };
-
-  const handleRestore = async (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    try {
-      await updateConversationStatus(conversation._id, 'active');
-      showNotification('已恢复为普通', 'success');
-    } catch (error) {
-      console.error('Restore failed:', error);
-      showNotification('恢复失败', 'error');
-    }
-  };
-
-  const handleEditTitle = async () => {
-    if (newTitle.trim() && newTitle !== conversation.title) {
-      await updateConversationTitle(conversation._id, newTitle.trim());
-    }
-    setEditModalVisible(false);
-  };
-
-  const handleEditTags = async () => {
-    const tags = newTags.split(',').map(tag => tag.trim()).filter(Boolean);
-    await updateConversationTags(conversation._id, tags);
-    setTagsModalVisible(false);
-  };
-
-  const handlePermanentDelete = async () => {
-    await deleteConversationPermanent(conversation._id);
-    setDeleteModalVisible(false);
-    showNotification('对话已永久删除', 'success');
-  };
-
-  const menuItems = [
-    ...(conversation.status === 'deleted' ? [
-      {
-        key: 'restore',
-        icon: <CheckOutlined />,
-        label: '恢复为普通',
-        onClick: (e: any) => {
-          e.domEvent?.stopPropagation();
-          handleRestore();
-        }
-      } as const
-    ] : []),
-    {
-      key: 'star',
-      icon: conversation.status === 'favorite' ? <StarFilled /> : <StarOutlined />,
-      label: conversation.status === 'favorite' ? '取消收藏' : '收藏',
-      onClick: (e: any) => {
-        e.domEvent?.stopPropagation();
-        handleStatusToggle();
-      }
-    },
-    {
-      key: 'edit',
-      icon: <EditOutlined />,
-      label: '编辑标题',
-      onClick: (e: any) => {
-        e.domEvent?.stopPropagation();
-        setEditModalVisible(true);
-      }
-    },
-    {
-      key: 'tags',
-      icon: <TagOutlined />,
-      label: '编辑标签',
-      onClick: (e: any) => {
-        e.domEvent?.stopPropagation();
-        setTagsModalVisible(true);
-      }
-    },
-    {
-      key: 'delete',
-      icon: <DeleteOutlined />,
-      label: conversation.status === 'deleted' ? '永久删除' : '删除',
-      onClick: (e: any) => {
-        e.domEvent?.stopPropagation();
-        handleDelete();
-      },
-      danger: true
-    }
-  ];
-
-  // 悬停时显示的详细信息
-  const hoverContent = (
-    <div className="conversation-hover-details">
-      <div className="hover-meta">
-        <div><strong>类型:</strong> {conversation.type}</div>
-        <div><strong>创建时间:</strong> {formatDistanceToNow(new Date(conversation.created_at), { addSuffix: true, locale: zhCN })}</div>
-        <div><strong>更新时间:</strong> {formatDistanceToNow(new Date(conversation.updated_at), { addSuffix: true, locale: zhCN })}</div>
-        <div><strong>轮次:</strong> {conversation.round_count}</div>
-        <div><strong>Token使用:</strong> {conversation.total_token_usage.total_tokens}</div>
-      </div>
-      {conversation.tags.length > 0 && (
-        <div className="hover-tags">
-          <div><strong>标签:</strong></div>
-          <div className="tags-list">
-            {conversation.tags.map(tag => (
-              <Tag key={tag} size="small">{tag}</Tag>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      <Tooltip 
-        title={hoverContent} 
-        placement="right"
-        overlayClassName="conversation-hover-tooltip"
-      >
-        <div
-          className={`conversation-item status-${conversation.status} ${isActive ? 'active' : ''} ${isBatchMode ? 'batch-mode' : ''} ${isSelected ? 'selected' : ''}`}
-          onClick={isBatchMode ? () => onSelect?.(conversation._id, !isSelected) : onClick}
-        >
-          <div className="conversation-header">
-            {isBatchMode && (
-              <div className="conversation-checkbox">
-                <Checkbox
-                  checked={isSelected}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onSelect?.(conversation._id, e.target.checked);
-                  }}
-                />
-              </div>
-            )}
-            <div className="conversation-info">
-              <div className="conversation-title">{conversation.title}</div>
-            </div>
-
-            {!isBatchMode && (
-              <Dropdown 
-                menu={{ items: menuItems }} 
-                trigger={['click']}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Button 
-                  type="text" 
-                  size="small" 
-                  icon={<MoreOutlined />}
-                  className="conversation-menu"
-                />
-              </Dropdown>
-            )}
-          </div>
-        </div>
-      </Tooltip>
-
-      {/* 编辑标题模态框 */}
-      <Modal
-        title="编辑对话标题"
-        open={editModalVisible}
-        onOk={handleEditTitle}
-        onCancel={() => setEditModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Input
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="请输入新标题"
-          maxLength={100}
-        />
-      </Modal>
-
-      {/* 编辑标签模态框 */}
-      <Modal
-        title="编辑对话标签"
-        open={tagsModalVisible}
-        onOk={handleEditTags}
-        onCancel={() => setTagsModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
-      >
-        <TextArea
-          value={newTags}
-          onChange={(e) => setNewTags(e.target.value)}
-          placeholder="请输入标签，用逗号分隔"
-          rows={3}
-        />
-      </Modal>
-
-      {/* 永久删除确认模态框 */}
-      <Modal
-        title="确认永久删除"
-        open={deleteModalVisible}
-        onOk={handlePermanentDelete}
-        onCancel={() => setDeleteModalVisible(false)}
-        okText="确认删除"
-        cancelText="取消"
-        okButtonProps={{ danger: true }}
-      >
-        <p>确定要永久删除这个对话吗？此操作不可撤销。</p>
-        <p><strong>{conversation.title}</strong></p>
-      </Modal>
-    </>
-  );
-};
 
 interface ConversationSidebarProps {
   onConversationSelect: (conversationId: string) => void;
@@ -332,14 +20,16 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   onConversationSelect,
   onNewConversation,
   activeConversationId,
-  onUserNameUpdate
 }) => {
   const navigate = useNavigate();
   const [scrollPosition, setScrollPosition] = useState(0);
   const currentUserDisplayName = getCurrentUserDisplayName();
   const [isBatchMode, setIsBatchMode] = useState(false);
-  const [selectedConversations, setSelectedConversations] = useState<Set<string>>(new Set());
+  const [selectedConversations, setSelectedConversations] = useState<
+    Set<string>
+  >(new Set());
   const listRef = useRef<HTMLDivElement>(null);
+
   const {
     conversations,
     loading,
@@ -350,17 +40,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     loadConversations,
     silentUpdateConversations,
     showNotification,
-    batchDeleteConversations
+    batchDeleteConversations,
   } = useConversationStore();
 
-  // 保存滚动位置
   const saveScrollPosition = () => {
     if (listRef.current) {
       setScrollPosition(listRef.current.scrollTop);
     }
   };
 
-  // 恢复滚动位置
   const restoreScrollPosition = () => {
     if (listRef.current && scrollPosition > 0) {
       requestAnimationFrame(() => {
@@ -373,17 +61,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
   useEffect(() => {
     loadConversations();
-    
-    // 定期静默更新对话列表（不显示loading状态，不重置滚动位置）
+
     const interval = setInterval(() => {
-      saveScrollPosition(); // 保存当前滚动位置
+      saveScrollPosition();
       silentUpdateConversations();
     }, 15000);
 
     return () => clearInterval(interval);
   }, [loadConversations, silentUpdateConversations]);
 
-  // 监听conversations变化，在静默更新后恢复滚动位置
   useEffect(() => {
     if (!loading && conversations.length > 0) {
       restoreScrollPosition();
@@ -391,17 +77,17 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   }, [conversations, loading]);
 
   const visibleConversations = useMemo(() => {
-    const filtered = conversations.filter(conv => {
-      // 搜索过滤（不按状态与类型过滤）
+    const filtered = conversations.filter((conv) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        return conv.title.toLowerCase().includes(query) ||
-               conv.tags.some(tag => tag.toLowerCase().includes(query));
+        return (
+          conv.title.toLowerCase().includes(query) ||
+          conv.tags.some((tag) => tag.toLowerCase().includes(query))
+        );
       }
       return true;
     });
 
-    // 按创建时间倒序（最新创建的在顶部）
     return filtered.sort((a, b) => {
       const ta = new Date(a.created_at).getTime() || 0;
       const tb = new Date(b.created_at).getTime() || 0;
@@ -409,15 +95,15 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     });
   }, [conversations, searchQuery]);
 
-  // 处理用户名编辑
-
-  // 批量选择相关处理函数
   const handleBatchModeToggle = () => {
     setIsBatchMode(!isBatchMode);
     setSelectedConversations(new Set());
   };
 
-  const handleConversationSelect = (conversationId: string, selected: boolean) => {
+  const handleConversationSelect = (
+    conversationId: string,
+    selected: boolean
+  ) => {
     const newSelected = new Set(selectedConversations);
     if (selected) {
       newSelected.add(conversationId);
@@ -428,7 +114,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   };
 
   const handleSelectAll = () => {
-    const allIds = new Set(filteredConversations.map(conv => conv._id));
+    const allIds = new Set(visibleConversations.map((conv) => conv._id));
     setSelectedConversations(allIds);
   };
 
@@ -438,22 +124,35 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
   const handleBatchDelete = async () => {
     if (selectedConversations.size === 0) return;
-    
+
     try {
-      const selectedList = conversations.filter(conv => selectedConversations.has(conv._id));
-      const toPermanent = selectedList.filter(conv => conv.status === 'deleted').map(conv => conv._id);
-      const toSoft = selectedList.filter(conv => conv.status !== 'deleted').map(conv => conv._id);
+      const selectedList = conversations.filter((conv) =>
+        selectedConversations.has(conv._id)
+      );
+      const toPermanent = selectedList
+        .filter((conv) => conv.status === 'deleted')
+        .map((conv) => conv._id);
+      const toSoft = selectedList
+        .filter((conv) => conv.status !== 'deleted')
+        .map((conv) => conv._id);
 
       if (toSoft.length > 0) {
         const res = await batchDeleteConversations(toSoft, false);
-        if (res.success > 0) showNotification(`已将 ${res.success} 个对话移至回收站`, 'success');
-        if (res.failed > 0) showNotification(`${res.failed} 个对话软删除失败`, 'error');
+        if (res.success > 0)
+          showNotification(
+            `已将 ${res.success} 个对话移至回收站`,
+            'success'
+          );
+        if (res.failed > 0)
+          showNotification(`${res.failed} 个对话软删除失败`, 'error');
       }
 
       if (toPermanent.length > 0) {
         const res2 = await batchDeleteConversations(toPermanent, true);
-        if (res2.success > 0) showNotification(`已永久删除 ${res2.success} 个对话`, 'success');
-        if (res2.failed > 0) showNotification(`${res2.failed} 个对话永久删除失败`, 'error');
+        if (res2.success > 0)
+          showNotification(`已永久删除 ${res2.success} 个对话`, 'success');
+        if (res2.failed > 0)
+          showNotification(`${res2.failed} 个对话永久删除失败`, 'error');
       }
 
       setSelectedConversations(new Set());
@@ -465,126 +164,157 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   };
 
   if (sidebarCollapsed) {
-
     return (
-      <div className="conversation-sidebar collapsed">
-        {/* 顶部区域 */}
-        <div className="collapsed-header">
-          <button
-            onClick={toggleSidebar}
-            className="collapsed-nav-item collapsed-expand-button"
-            title="展开侧边栏"
-          >
-            <img src="/starstar.png" alt="展开" style={{ width: 16, height: 16 }} />
-            <div className="collapsed-tooltip">展开侧边栏</div>
-          </button>
-        </div>
-
-        {/* 主导航区域 - 移除类型筛选入口，仅保留功能入口 */}
-        <div className="collapsed-navigation">
-          {/* 新建对话 */}
-          {onNewConversation && (
-            <button
-              className="collapsed-nav-item"
-              onClick={onNewConversation}
-              title="新建对话"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              <div className="collapsed-tooltip">新建对话</div>
-            </button>
-          )}
-
-          {/* 任务中心 */}
-          <button
-            className="collapsed-nav-item"
-            onClick={() => navigate('/tasks')}
-            title="任务中心"
-          >
-            <ClockCircleOutlined />
-            <div className="collapsed-tooltip">任务中心</div>
-          </button>
-        </div>
-
-        {/* 底部区域 */}
-        <div className="collapsed-footer">
-          {/* 状态指示器 */}
-          <div className="collapsed-status-indicator" title="系统在线"></div>
-
-          {/* 用户信息 */}
-          <div
-            className="collapsed-nav-item"
-            title={`用户: ${currentUserDisplayName}`}
-          >
-            <UserOutlined />
-            <div className="collapsed-tooltip">用户: {currentUserDisplayName}</div>
-          </div>
-
-          {/* 回到主页 */}
-          <button
-            className="collapsed-nav-item"
-            onClick={() => navigate('/')}
-            title="返回主页"
-          >
-            <HomeOutlined />
-            <div className="collapsed-tooltip">返回主页</div>
-          </button>
-        </div>
-      </div>
+      <CollapsedSidebar
+        onExpand={toggleSidebar}
+        onNewConversation={onNewConversation}
+        currentUserDisplayName={currentUserDisplayName}
+      />
     );
   }
 
   return (
-    <div className="conversation-sidebar">
-      {/* 侧边栏头部 */}
-      <div className="sidebar-header">
-        <div className="search-and-actions">
-          <Input
-            prefix={<SearchOutlined />}
-            placeholder="搜索对话..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            allowClear
-            style={{ flex: 1 }}
-          />
-          <div className="header-actions">
-            {onNewConversation && (
-              <Tooltip title="新建对话">
-                <Button
-                  type="text"
-                  icon={<PlusOutlined />}
-                  onClick={onNewConversation}
-                  className="new-conversation-btn"
-                />
-              </Tooltip>
-            )}
-            {/* 解耦式导出按钮 */}
-            <ExportManagerButton />
-            {/* 已移除筛选按钮，仅保留新建与折叠操作 */}
+    <div
+      style={{
+        width: '300px',
+        background: '#faf8f5',
+        borderRight: '1px solid rgba(139, 115, 85, 0.12)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* 头部 */}
+      <div
+        style={{
+          padding: '20px 16px 16px',
+          borderBottom: '1px solid rgba(139, 115, 85, 0.08)',
+        }}
+      >
+        {/* 搜索框 */}
+        <Input
+          prefix={
+            <Search
+              size={16}
+              strokeWidth={1.5}
+              style={{ color: 'rgba(45, 45, 45, 0.45)' }}
+            />
+          }
+          placeholder="搜索对话..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          allowClear
+          style={{
+            height: '36px',
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            background: '#ffffff',
+            fontSize: '14px',
+            marginBottom: '12px',
+          }}
+        />
+
+        {/* 功能按钮区 */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+          }}
+        >
+          {onNewConversation && (
             <Button
               type="text"
-              onClick={toggleSidebar}
-              className="sidebar-toggle"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={onNewConversation}
+              style={{
+                flex: 1,
+                height: '32px',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'transparent',
+                color: '#8b7355',
+                fontSize: '13px',
+                fontWeight: 400,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
-              <img src="/starstar.png" alt="折叠" style={{ width: 16, height: 16 }} />
+              新建
             </Button>
-          </div>
+          )}
+
+          <ExportManagerButton />
+
+          <Button
+            type="text"
+            icon={<ChevronLeft size={16} strokeWidth={1.5} />}
+            onClick={toggleSidebar}
+            style={{
+              height: '32px',
+              width: '32px',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'transparent',
+              color: '#8b7355',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          />
         </div>
       </div>
 
       {/* 批量操作工具栏 */}
       {isBatchMode && (
-        <div className="batch-toolbar">
-          <div className="batch-info">
-            <span>选择 {selectedConversations.size}</span>
+        <div
+          style={{
+            padding: '12px 16px',
+            background: 'rgba(139, 115, 85, 0.03)',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.08)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '13px',
+              color: 'rgba(45, 45, 45, 0.65)',
+              fontWeight: 400,
+            }}
+          >
+            已选 {selectedConversations.size} 项
           </div>
-          <div className="batch-actions">
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <Button
               type="text"
               size="small"
               onClick={handleSelectAll}
-              disabled={selectedConversations.size === visibleConversations.length}
+              disabled={
+                selectedConversations.size === visibleConversations.length
+              }
+              style={{
+                fontSize: '12px',
+                height: '24px',
+                padding: '0 8px',
+                color: '#8b7355',
+                border: 'none',
+              }}
             >
               全选
             </Button>
@@ -593,16 +323,35 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               size="small"
               onClick={handleDeselectAll}
               disabled={selectedConversations.size === 0}
+              style={{
+                fontSize: '12px',
+                height: '24px',
+                padding: '0 8px',
+                color: '#8b7355',
+                border: 'none',
+              }}
             >
-              取消全选
+              清空
             </Button>
+            <div
+              style={{
+                width: '1px',
+                height: '14px',
+                background: 'rgba(139, 115, 85, 0.15)',
+              }}
+            />
             <Button
-              type="primary"
+              type="text"
               size="small"
-              danger
-              icon={<DeleteOutlined />}
               onClick={handleBatchDelete}
               disabled={selectedConversations.size === 0}
+              style={{
+                fontSize: '12px',
+                height: '24px',
+                padding: '0 8px',
+                color: '#b85845',
+                border: 'none',
+              }}
             >
               删除
             </Button>
@@ -611,18 +360,36 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       )}
 
       {/* 对话列表 */}
-      <div className="conversation-list" ref={listRef} onScroll={saveScrollPosition}>
+      <div
+        ref={listRef}
+        onScroll={saveScrollPosition}
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '12px',
+        }}
+      >
         {loading ? (
-          <div className="loading-container">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '200px',
+            }}
+          >
             <Spin size="large" />
           </div>
         ) : visibleConversations.length === 0 ? (
           <Empty
-            description={searchQuery ? "没有找到匹配的对话" : "暂无对话"}
+            description={searchQuery ? '没有找到匹配的对话' : '暂无对话'}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{
+              padding: '40px 20px',
+            }}
           />
         ) : (
-          visibleConversations.map(conversation => (
+          visibleConversations.map((conversation) => (
             <ConversationItem
               key={conversation._id}
               conversation={conversation}
@@ -636,51 +403,111 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         )}
       </div>
 
-      {/* 底部操作区 */}
-      <div className="sidebar-footer">
-        <div className="user-info">
-          <UserOutlined />
+      {/* 底部 */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderTop: '1px solid rgba(139, 115, 85, 0.08)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'rgba(45, 45, 45, 0.65)',
+            fontSize: '13px',
+            fontWeight: 400,
+          }}
+        >
+          <User size={16} strokeWidth={1.5} />
           <span>{currentUserDisplayName}</span>
         </div>
-        
-        <div className="footer-actions">
-          <Tooltip title={isBatchMode ? "退出批量选择" : "批量选择"}>
-            <div 
-              className={`modern-batch-btn ${isBatchMode ? 'active' : ''}`}
-              onClick={handleBatchModeToggle}
-            >
-              {isBatchMode ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 12l2 2 4-4"/>
-                  <path d="M21 12c0 1.66-.41 3.22-1.14 4.58-.73 1.36-1.85 2.48-3.21 3.21C15.22 20.59 13.66 21 12 21s-3.22-.41-4.58-1.14c-1.36-.73-2.48-1.85-3.21-3.21C3.41 15.22 3 13.66 3 12s.41-3.22 1.14-4.58c.73-1.36 1.85-2.48 3.21-3.21C8.78 3.41 10.34 3 12 3s3.22.41 4.58 1.14c1.36.73 2.48 1.85 3.21 3.21C20.59 8.78 21 10.34 21 12z"/>
-                </svg>
-              )}
-              {selectedConversations.size > 0 && (
-                <span className="selection-count">{selectedConversations.size}</span>
-              )}
-            </div>
-          </Tooltip>
+
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <Button
+            type="text"
+            onClick={handleBatchModeToggle}
+            style={{
+              height: '28px',
+              padding: '0 10px',
+              borderRadius: '4px',
+              border: 'none',
+              background: isBatchMode
+                ? 'rgba(139, 115, 85, 0.08)'
+                : 'transparent',
+              color: isBatchMode ? '#8b7355' : 'rgba(45, 45, 45, 0.65)',
+              fontSize: '12px',
+              fontWeight: 400,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = isBatchMode
+                ? 'rgba(139, 115, 85, 0.08)'
+                : 'transparent';
+            }}
+          >
+            {isBatchMode ? '取消选择' : '批量'}
+          </Button>
+
           <Tooltip title="任务中心">
             <Button
               type="text"
-              icon={<ClockCircleOutlined />}
+              icon={<Clock size={16} strokeWidth={1.5} />}
               onClick={() => navigate('/tasks')}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '4px',
+                border: 'none',
+                background: 'transparent',
+                color: 'rgba(45, 45, 45, 0.65)',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             />
           </Tooltip>
+
           <Tooltip title="返回主页">
             <Button
               type="text"
-              icon={<HomeOutlined />}
+              icon={<Home size={16} strokeWidth={1.5} />}
               onClick={() => navigate('/')}
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '4px',
+                border: 'none',
+                background: 'transparent',
+                color: 'rgba(45, 45, 45, 0.65)',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             />
           </Tooltip>
         </div>
       </div>
-
     </div>
   );
 };
