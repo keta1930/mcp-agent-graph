@@ -34,7 +34,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ConversationService } from '../services/conversationService';
 import { ConversationSummary } from '../types/conversation';
-import exportService, { DatasetListItem, ListResponse, PreviewResponse, ExportResponse } from '../services/exportService';
+import exportService, { DatasetListItem, ListResponse, ExportResponse } from '../services/exportService';
 import RawPreviewModal from '../components/chat/modal/RawPreviewModal';
 
 const { RangePicker } = DatePicker;
