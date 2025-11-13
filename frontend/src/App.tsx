@@ -22,7 +22,7 @@ import TaskDetail from './pages/TaskDetail';
 import PreviewPage from './pages/PreviewPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import AdminPanel from './pages/admin/AdminPanel';
+import AdminPanel from './pages/AdminPanel';
 import FileManager from './pages/FileManager';
 
 const App: React.FC = () => {
