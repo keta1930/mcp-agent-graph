@@ -1,31 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Button,
-  Typography,
+  Layout,
   Space,
-  Statistic,
-  Row,
-  Col,
-  Card,
+  Tag,
+  Typography,
   message,
   Alert
 } from 'antd';
-import {
-  PlusOutlined,
-  ClockCircleOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  CloseOutlined,
-  SyncOutlined
-} from '@ant-design/icons';
+import { Calendar, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTaskStore } from '../store/taskStore';
 import { TaskStatus } from '../types/task';
 import TaskList from '../components/task/TaskList';
 import TaskCreateForm from '../components/task/TaskCreateForm';
 
+const { Header, Content } = Layout;
 const { Title } = Typography;
 
 const TaskManager: React.FC = () => {
@@ -43,13 +32,11 @@ const TaskManager: React.FC = () => {
     clearError
   } = useTaskStore();
 
-  // 初始化加载
   useEffect(() => {
     loadTasks();
     loadScheduledJobs();
   }, [loadTasks, loadScheduledJobs]);
 
-  // 统计数据
   const stats = React.useMemo(() => {
     return {
       total: tasks.length,
@@ -61,7 +48,6 @@ const TaskManager: React.FC = () => {
     };
   }, [tasks, scheduledJobs]);
 
-  // 处理调度器重载
   const handleReloadScheduler = async () => {
     const success = await reloadScheduler();
     if (success) {
@@ -69,76 +55,109 @@ const TaskManager: React.FC = () => {
     }
   };
 
-  // 创建任务成功回调
   const handleCreateSuccess = () => {
     message.success('任务创建成功');
     loadTasks();
     loadScheduledJobs();
   };
 
-  // 刷新所有数据
-  const handleRefreshAll = () => {
-    loadTasks();
-    loadScheduledJobs();
-  };
-
   return (
-    <div style={{
-      padding: '24px',
-      minHeight: '100vh'
-    }}>
-      {/* 页面头部 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '24px'
+    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <ClockCircleOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: '12px' }} />
-          <Title level={2} style={{ margin: 0 }}>
-            任务中心
-          </Title>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          <Space size="large">
+            <Calendar size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              任务中心
+            </Title>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {stats.total} 个任务
+            </Tag>
+            <Tag style={{
+              background: 'rgba(139, 115, 85, 0.08)',
+              color: '#8b7355',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              {stats.active} 运行中
+            </Tag>
+          </Space>
+          
+          <div
+            style={{
+              padding: '8px',
+              borderRadius: '6px',
+              color: '#8b7355',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={() => navigate('/chat')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#b85845';
+              e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#8b7355';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <X size={20} strokeWidth={1.5} />
+          </div>
         </div>
+      </Header>
 
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={() => navigate('/chat')}
-          style={{
-            fontSize: '18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '32px',
-            height: '32px'
-          }}
-        />
-      </div>
+      <Content style={{ flex: 1, padding: '32px 48px', overflow: 'auto' }}>
+        {error && (
+          <Alert
+            message="操作失败"
+            description={error}
+            type="error"
+            closable
+            onClose={clearError}
+            style={{
+              marginBottom: 24,
+              borderRadius: '8px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(254, 242, 242, 0.8)'
+            }}
+          />
+        )}
 
-      {/* 错误提示 */}
-      {error && (
-        <Alert
-          message="操作失败"
-          description={error}
-          type="error"
-          closable
-          onClose={clearError}
-          style={{ marginBottom: 24 }}
-        />
-      )}
-
-      {/* 任务列表 */}
-      <Card 
-        style={{ 
-          backgroundColor: 'transparent',
-          border: 'none',
-          boxShadow: 'none'
-        }}
-        bodyStyle={{
-          padding: 0
-        }}
-      >
         <TaskList 
           onCreateTask={() => setCreateModalVisible(true)}
           scheduledJobsCount={scheduledJobs.length}
@@ -146,15 +165,14 @@ const TaskManager: React.FC = () => {
           loading={loading}
           stats={stats}
         />
-      </Card>
+      </Content>
 
-      {/* 创建任务表单 */}
       <TaskCreateForm
         visible={createModalVisible}
         onCancel={() => setCreateModalVisible(false)}
         onSuccess={handleCreateSuccess}
       />
-    </div>
+    </Layout>
   );
 };
 

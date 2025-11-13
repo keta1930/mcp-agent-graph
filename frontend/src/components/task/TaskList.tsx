@@ -1,39 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
-  Tag,
+  Card,
   Button,
-  Space,
-  Dropdown,
-  Modal,
-  message,
-  Tooltip,
   Input,
   Select,
+  Empty,
+  Spin,
+  Typography,
   Row,
   Col,
-  Typography,
-  Empty,
-  Popover
+  Tag,
+  Tooltip,
+  Space,
+  Pagination
 } from 'antd';
 import {
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  DeleteOutlined,
-  EllipsisOutlined,
-  SearchOutlined,
-  SyncOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  EyeOutlined,
-  PlusOutlined,
-  BarChartOutlined
-} from '@ant-design/icons';
-import { ColumnsType } from 'antd/es/table';
+  Search,
+  Play,
+  Pause,
+  Eye,
+  Trash2,
+  Plus,
+  RefreshCw,
+  Clock,
+  Calendar as CalendarIcon,
+  Repeat
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useNavigate } from 'react-router-dom';
 import { TaskSummary, TaskStatus, ScheduleType } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
 
@@ -42,40 +37,37 @@ dayjs.extend(relativeTime);
 const { Option } = Select;
 const { Text } = Typography;
 
-interface TaskStats {
-  total: number;
-  active: number;
-  paused: number;
-  completed: number;
-  error: number;
-  scheduled: number;
-}
-
 interface TaskListProps {
   onCreateTask?: () => void;
   scheduledJobsCount?: number;
   onReloadScheduler?: () => void;
   loading?: boolean;
-  stats?: TaskStats;
+  stats?: {
+    total: number;
+    active: number;
+    paused: number;
+    completed: number;
+    error: number;
+    scheduled: number;
+  };
 }
 
 const TaskList: React.FC<TaskListProps> = ({ 
   onCreateTask, 
   scheduledJobsCount = 0, 
   onReloadScheduler, 
-  loading: externalLoading,
-  stats
+  loading: externalLoading
 }) => {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | undefined>();
   const [typeFilter, setTypeFilter] = useState<ScheduleType | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
 
   const {
     tasks,
     loading: storeLoading,
-    queryParams,
-    setQueryParams,
     loadTasks,
     updateTaskStatus,
     deleteTask,
@@ -85,22 +77,14 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const loading = storeLoading || externalLoading;
 
-  // 初始加载
   useEffect(() => {
     loadTasks();
     loadScheduledJobs();
   }, [loadTasks, loadScheduledJobs]);
 
-  // 查询参数变化时重新加载
-  useEffect(() => {
-    loadTasks();
-  }, [queryParams, loadTasks]);
-
-  // 前端筛选逻辑
   const filteredTasks = React.useMemo(() => {
     let filtered = tasks;
 
-    // 搜索筛选：任务名称或图名称包含搜索文本
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase().trim();
       filtered = filtered.filter(task =>
@@ -109,12 +93,10 @@ const TaskList: React.FC<TaskListProps> = ({
       );
     }
 
-    // 状态筛选
     if (statusFilter) {
       filtered = filtered.filter(task => task.status === statusFilter);
     }
 
-    // 类型筛选（前端处理，因为后端可能不支持）
     if (typeFilter) {
       filtered = filtered.filter(task => task.schedule_type === typeFilter);
     }
@@ -122,395 +104,83 @@ const TaskList: React.FC<TaskListProps> = ({
     return filtered;
   }, [tasks, searchText, statusFilter, typeFilter]);
 
-  // 获取状态标签配置
-  const getStatusTag = (status: TaskStatus) => {
+  const paginatedTasks = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredTasks.slice(startIndex, startIndex + pageSize);
+  }, [filteredTasks, currentPage]);
+
+  const getStatusConfig = (status: TaskStatus) => {
     const configs = {
-      [TaskStatus.ACTIVE]: { color: 'green', icon: <PlayCircleOutlined />, text: '运行中' },
-      [TaskStatus.PAUSED]: { color: 'orange', icon: <PauseCircleOutlined />, text: '已暂停' },
-      [TaskStatus.COMPLETED]: { color: 'blue', icon: <CheckCircleOutlined />, text: '已完成' },
-      [TaskStatus.ERROR]: { color: 'red', icon: <ExclamationCircleOutlined />, text: '错误' }
+      [TaskStatus.ACTIVE]: { color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.08)', text: '运行中' },
+      [TaskStatus.PAUSED]: { color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.08)', text: '已暂停' },
+      [TaskStatus.COMPLETED]: { color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.08)', text: '已完成' },
+      [TaskStatus.ERROR]: { color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.08)', text: '错误' }
     };
-    const config = configs[status];
-    return (
-      <Tag color={config.color} icon={config.icon}>
-        {config.text}
-      </Tag>
-    );
+    return configs[status];
   };
 
-  // 获取调度类型标签
-  const getScheduleTypeTag = (type: ScheduleType) => {
-    return type === ScheduleType.SINGLE ? (
-      <Tag color="cyan">单次</Tag>
-    ) : (
-      <Tag color="purple">周期</Tag>
-    );
-  };
-
-  // 处理状态切换
-  const handleStatusToggle = async (task: TaskSummary) => {
+  const handleStatusToggle = async (task: TaskSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
     const newStatus = task.status === TaskStatus.ACTIVE ? TaskStatus.PAUSED : TaskStatus.ACTIVE;
-    const success = await updateTaskStatus(task.id, newStatus);
-    if (success) {
-      message.success(`任务已${newStatus === TaskStatus.ACTIVE ? '启动' : '暂停'}`);
+    await updateTaskStatus(task.id, newStatus);
+  };
+
+  const handleDelete = async (task: TaskSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmed = window.confirm(`确定要删除任务"${task.task_name}"吗？此操作不可撤销。`);
+    if (confirmed) {
+      await deleteTask(task.id);
     }
   };
 
-  // 处理删除任务
-  const handleDelete = (task: TaskSummary) => {
-    Modal.confirm({
-      title: '确认删除',
-      content: `确定要删除任务"${task.task_name}"吗？此操作不可撤销。`,
-      okText: '删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: async () => {
-        const success = await deleteTask(task.id);
-        if (success) {
-          message.success('任务删除成功');
-        }
-      }
-    });
+  const handleCardClick = (taskId: string) => {
+    navigate(`/tasks/${taskId}`);
   };
 
-  // 处理执行历史点击
-  const handleExecutionClick = (conversationId: string) => {
-    navigate(`/chat/${conversationId}`);
-  };
-
-  // 清除筛选
   const handleClearFilter = () => {
     setSearchText('');
     setStatusFilter(undefined);
     setTypeFilter(undefined);
+    setCurrentPage(1);
   };
-
-  // 创建统计悬停内容
-  const renderStatsContent = () => {
-    if (!stats) return null;
-    
-    return (
-      <div style={{ padding: '8px 0', minWidth: '200px' }}>
-        <div style={{ marginBottom: '12px', fontWeight: '600', color: '#1e293b' }}>
-          任务统计
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', backgroundColor: '#94a3b8', borderRadius: '50%' }}></div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>总任务</span>
-            </div>
-            <span style={{ fontWeight: '600', color: '#1e293b' }}>{stats.total}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ 
-                width: '6px', 
-                height: '6px', 
-                backgroundColor: '#10b981', 
-                borderRadius: '50%',
-                animation: stats.active > 0 ? 'pulse 2s infinite' : 'none'
-              }}></div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>运行中</span>
-            </div>
-            <span style={{ fontWeight: '600', color: '#059669' }}>{stats.active}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', backgroundColor: '#f59e0b', borderRadius: '50%' }}></div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>已暂停</span>
-            </div>
-            <span style={{ fontWeight: '600', color: '#d97706' }}>{stats.paused}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', backgroundColor: '#3b82f6', borderRadius: '50%' }}></div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>已完成</span>
-            </div>
-            <span style={{ fontWeight: '600', color: '#2563eb' }}>{stats.completed}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', backgroundColor: '#ef4444', borderRadius: '50%' }}></div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>错误</span>
-            </div>
-            <span style={{ fontWeight: '600', color: '#dc2626' }}>{stats.error}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '6px', height: '6px', backgroundColor: '#8b5cf6', borderRadius: '50%' }}></div>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>调度中</span>
-            </div>
-            <span style={{ fontWeight: '600', color: '#7c3aed' }}>{stats.scheduled}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 表格列定义
-  const columns: ColumnsType<TaskSummary> = [
-    {
-      title: '任务信息',
-      key: 'taskInfo',
-      render: (_, task) => (
-        <div>
-          <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-            <Button
-              type="link"
-              style={{ padding: 0, fontWeight: 'bold', fontSize: '14px' }}
-              onClick={() => navigate(`/tasks/${task.id}`)}
-            >
-              {task.task_name}
-            </Button>
-          </div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            图: {task.graph_name} | 并发数: {task.execution_count}
-          </div>
-        </div>
-      )
-    },
-    {
-      title: '类型',
-      dataIndex: 'schedule_type',
-      key: 'schedule_type',
-      width: 80,
-      render: (type: ScheduleType) => getScheduleTypeTag(type)
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: TaskStatus) => getStatusTag(status)
-    },
-    {
-      title: '调度配置',
-      key: 'schedule',
-      width: 200,
-      render: (_, task) => {
-        if (task.schedule_type === ScheduleType.SINGLE && task.schedule_config.execute_at) {
-          const executeTime = dayjs(task.schedule_config.execute_at);
-          const isPast = executeTime.isBefore(dayjs());
-          return (
-            <div>
-              <div style={{ fontSize: '12px', color: isPast ? '#f5222d' : '#389e0d' }}>
-                {executeTime.format('MM-DD HH:mm')}
-              </div>
-              <div style={{ fontSize: '11px', color: '#666' }}>
-                {isPast ? '已过期' : executeTime.fromNow()}
-              </div>
-            </div>
-          );
-        } else if (task.schedule_type === ScheduleType.RECURRING && task.schedule_config.cron_expression) {
-          return (
-            <div>
-              <div style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-                {task.schedule_config.cron_expression}
-              </div>
-            </div>
-          );
-        }
-        return '-';
-      }
-    },
-    {
-      title: '下次运行',
-      key: 'next_run',
-      width: 120,
-      render: (_, task) => {
-        const nextRunTime = getTaskNextRunTime(task.id);
-        if (!nextRunTime) {
-          if (task.status === TaskStatus.ACTIVE) {
-            return <Text type="secondary">未调度</Text>;
-          } else {
-            return <Text type="secondary">-</Text>;
-          }
-        }
-
-        // 处理时区转换，后端返回的时间带有时区信息
-        const nextRun = dayjs(nextRunTime);
-        const now = dayjs();
-        const isOverdue = nextRun.isBefore(now);
-
-        // 判断是否是今天
-        const isToday = nextRun.isSame(now, 'day');
-        const isTomorrow = nextRun.isSame(now.add(1, 'day'), 'day');
-
-        return (
-          <Tooltip
-            title={`完整时间: ${nextRun.format('YYYY-MM-DD HH:mm:ss')}`}
-            placement="left"
-          >
-            <div>
-              <div style={{
-                fontSize: '12px',
-                color: isOverdue ? '#f5222d' : task.status === TaskStatus.ACTIVE ? '#389e0d' : '#666',
-                fontWeight: isToday || isTomorrow ? 'bold' : 'normal'
-              }}>
-                {isToday ? '今天 ' : isTomorrow ? '明天 ' : nextRun.format('MM-DD ')}{nextRun.format('HH:mm')}
-              </div>
-              <div style={{ fontSize: '11px', color: '#666' }}>
-                {isOverdue ? '已过期' : nextRun.fromNow()}
-              </div>
-            </div>
-          </Tooltip>
-        );
-      }
-    },
-    {
-      title: '执行统计',
-      key: 'stats',
-      width: 150,
-      render: (_, task) => (
-        <div>
-          <div style={{ fontSize: '12px' }}>
-            总执行: <Text strong>{task.execution_stats.total_triggers}</Text> 次
-          </div>
-          {task.execution_stats.last_executed_at ? (
-            <div style={{ fontSize: '11px', color: '#666' }}>
-              最后执行: {dayjs(task.execution_stats.last_executed_at.executed_at).format('MM-DD HH:mm')}
-            </div>
-          ) : (
-            <div style={{ fontSize: '11px', color: '#999' }}>未执行过</div>
-          )}
-        </div>
-      )
-    },
-    {
-      title: '最近执行',
-      key: 'recent_executions',
-      width: 120,
-      render: (_, task) => {
-        const lastExecution = task.execution_stats.last_executed_at;
-        if (!lastExecution || !lastExecution.executions.length) {
-          return <Text type="secondary">无</Text>;
-        }
-
-        return (
-          <Space direction="vertical" size={2}>
-            {lastExecution.executions.slice(0, 2).map((execution, index) => (
-              <Button
-                key={execution.conversation_id}
-                type="link"
-                size="small"
-                onClick={() => handleExecutionClick(execution.conversation_id)}
-                style={{ padding: 0, fontSize: '11px', height: 'auto' }}
-              >
-                {execution.conversation_id.slice(-8)}
-              </Button>
-            ))}
-            {lastExecution.executions.length > 2 && (
-              <Text type="secondary" style={{ fontSize: '11px' }}>
-                +{lastExecution.executions.length - 2} 个
-              </Text>
-            )}
-          </Space>
-        );
-      }
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      width: 120,
-      render: (time: string) => (
-        <Tooltip title={dayjs(time).format('YYYY-MM-DD HH:mm:ss')}>
-          <div style={{ fontSize: '12px' }}>
-            {dayjs(time).format('MM-DD HH:mm')}
-          </div>
-        </Tooltip>
-      )
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      width: 120,
-      render: (_, task) => (
-        <Space size="small">
-          <Tooltip title="查看详情">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/tasks/${task.id}`)}
-            />
-          </Tooltip>
-          <Tooltip title={task.status === TaskStatus.ACTIVE ? '暂停' : '启动'}>
-            <Button
-              type="text"
-              size="small"
-              icon={task.status === TaskStatus.ACTIVE ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
-              onClick={() => handleStatusToggle(task)}
-              disabled={task.status === TaskStatus.COMPLETED}
-            />
-          </Tooltip>
-          <Tooltip title="删除任务">
-            <Button
-              type="text"
-              size="small"
-              icon={<DeleteOutlined />}
-              danger
-              onClick={async (e) => {
-                e.stopPropagation();
-                
-                // 使用原生确认对话框
-                const confirmed = window.confirm(`确定要删除任务"${task.task_name}"吗？此操作不可撤销。`);
-                
-                if (confirmed) {
-                  try {
-                    const success = await deleteTask(task.id);
-                    if (success) {
-                      message.success('任务删除成功');
-                    } else {
-                      message.error('删除任务失败');
-                    }
-                  } catch (error) {
-                    console.error('删除任务时出错:', error);
-                    message.error('删除任务时出错');
-                  }
-                }
-              }}
-            />
-          </Tooltip>
-        </Space>
-      )
-    }
-  ];
 
   return (
     <div>
-      {/* 简化的搜索和操作栏 */}
+      {/* 操作栏 */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        marginBottom: '16px',
+        marginBottom: '24px',
         flexWrap: 'wrap',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        borderRadius: '12px',
-        padding: '12px 16px',
-        border: '1px solid rgba(203, 213, 225, 0.6)',
-        backdropFilter: 'blur(8px)'
+        background: 'rgba(255, 255, 255, 0.85)',
+        borderRadius: '8px',
+        padding: '16px 20px',
+        border: '1px solid rgba(139, 115, 85, 0.15)',
+        boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
       }}>
-        {/* 左侧：搜索框 */}
         <Input
           placeholder="搜索任务或图名称"
-          prefix={<SearchOutlined />}
+          prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           allowClear
-          style={{ width: '280px', minWidth: '200px' }}
+          style={{
+            width: '280px',
+            height: '40px',
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            background: 'rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
+          }}
         />
 
-        {/* 中间：筛选器 */}
         <Select
           placeholder="状态"
           value={statusFilter}
           onChange={setStatusFilter}
           allowClear
-          style={{ width: '100px' }}
-          size="middle"
+          style={{ width: '120px' }}
         >
           <Option value={TaskStatus.ACTIVE}>运行中</Option>
           <Option value={TaskStatus.PAUSED}>已暂停</Option>
@@ -523,129 +193,407 @@ const TaskList: React.FC<TaskListProps> = ({
           value={typeFilter}
           onChange={setTypeFilter}
           allowClear
-          style={{ width: '90px' }}
-          size="middle"
+          style={{ width: '100px' }}
         >
           <Option value={ScheduleType.SINGLE}>单次</Option>
           <Option value={ScheduleType.RECURRING}>周期</Option>
         </Select>
 
-        {/* 右侧：操作按钮组 */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Button
             type="primary"
-            icon={<PlusOutlined />}
+            icon={<Plus size={16} strokeWidth={1.5} />}
             onClick={onCreateTask}
-            size="middle"
+            style={{
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              height: '40px',
+              padding: '0 20px',
+              fontWeight: 500,
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+            }}
           >
-            创建
+            创建任务
           </Button>
           
-          <Button
-            icon={<SyncOutlined />}
-            onClick={() => {
-              loadTasks();
-              loadScheduledJobs();
-            }}
-            loading={loading}
-            size="middle"
-            title="刷新数据"
-          />
+          <Tooltip title="刷新数据">
+            <div
+              style={{
+                padding: '8px',
+                borderRadius: '6px',
+                color: '#8b7355',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={() => {
+                loadTasks();
+                loadScheduledJobs();
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <RefreshCw size={18} strokeWidth={1.5} />
+            </div>
+          </Tooltip>
 
-          <Button
-            icon={<SyncOutlined />}
-            onClick={onReloadScheduler}
-            loading={loading}
-            size="middle"
-            title="重载调度器"
-            style={{ color: '#8b5cf6' }}
-          />
+          <Tooltip title="重载调度器">
+            <div
+              style={{
+                padding: '8px',
+                borderRadius: '6px',
+                color: '#8b7355',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onClick={onReloadScheduler}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <RefreshCw size={18} strokeWidth={1.5} />
+            </div>
+          </Tooltip>
 
           {(searchText || statusFilter || typeFilter) && (
             <Button 
               onClick={handleClearFilter}
-              size="middle"
               type="text"
-              style={{ color: '#6b7280' }}
+              style={{
+                color: '#8b7355',
+                height: '40px'
+              }}
             >
-              清除
+              清除筛选
             </Button>
           )}
 
-          {/* 调度器状态指示 */}
           {scheduledJobsCount > 0 && (
-            <div style={{ 
-              fontSize: '12px', 
+            <Tag style={{
+              background: 'rgba(139, 92, 246, 0.08)',
               color: '#8b5cf6',
-              backgroundColor: 'rgba(139, 92, 246, 0.1)',
-              padding: '4px 8px',
-              borderRadius: '8px',
-              whiteSpace: 'nowrap',
-              fontWeight: '500'
+              border: '1px solid rgba(139, 92, 246, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '6px 12px',
+              fontSize: '12px',
+              margin: 0
             }}>
               {scheduledJobsCount} 个活跃
-            </div>
-          )}
-
-          {/* 统计按钮 */}
-          {stats && (
-            <Popover
-              content={renderStatsContent()}
-              title={null}
-              trigger="hover"
-              placement="bottomRight"
-              overlayStyle={{
-                borderRadius: '12px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <Button
-                icon={<BarChartOutlined />}
-                size="middle"
-                type="text"
-                style={{ 
-                  color: '#6b7280',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <span style={{ fontSize: '12px' }}>统计</span>
-              </Button>
-            </Popover>
+            </Tag>
           )}
         </div>
       </div>
 
-      {/* 任务表格 */}
-      <Table
-        columns={columns}
-        dataSource={filteredTasks}
-        loading={loading}
-        rowKey="id"
-        pagination={{
-          pageSize: 6,
-          showSizeChanger: false,
-          showQuickJumper: false,
-          showTotal: (total, range) => `第 ${range[0]}-${range[1]} 项，共 ${total} 项`,
-          style: { textAlign: 'center', marginTop: '16px' },
-          position: ["bottomCenter"]
-        }}
-        locale={{
-          emptyText: (
-            <Empty
-              description="暂无任务"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
+      {/* 任务卡片列表 */}
+      {loading ? (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px'
+        }}>
+          <Spin size="large" tip="加载任务中..." />
+        </div>
+      ) : filteredTasks.length === 0 ? (
+        <Empty
+          description={searchText ? `未找到匹配 "${searchText}" 的任务` : '暂无任务'}
+          style={{ marginTop: '80px', color: 'rgba(45, 45, 45, 0.5)' }}
+        >
+          {onCreateTask && !searchText && (
+            <Button
+              type="primary"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={onCreateTask}
+              style={{
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                height: '40px',
+                padding: '0 20px',
+                fontWeight: 500,
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+                marginTop: '16px'
+              }}
             >
-              {onCreateTask && (
-                <Button type="primary" onClick={onCreateTask}>
-                  创建第一个任务
-                </Button>
-              )}
-            </Empty>
-          )
-        }}
-      />
+              创建第一个任务
+            </Button>
+          )}
+        </Empty>
+      ) : (
+        <>
+          <Row gutter={[16, 16]}>
+            {paginatedTasks.map((task) => {
+              const statusConfig = getStatusConfig(task.status);
+              const nextRunTime = getTaskNextRunTime(task.id);
+              const nextRun = nextRunTime ? dayjs(nextRunTime) : null;
+              const isOverdue = nextRun ? nextRun.isBefore(dayjs()) : false;
+
+              return (
+                <Col key={task.id} xs={24} sm={24} md={12} lg={12} xl={8}>
+                  <Card
+                    hoverable
+                    style={{
+                      borderRadius: '8px',
+                      border: '1px solid rgba(139, 115, 85, 0.15)',
+                      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                      transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                      background: 'rgba(255, 255, 255, 0.85)',
+                      cursor: 'pointer',
+                      height: '100%'
+                    }}
+                    styles={{
+                      body: { padding: '20px' }
+                    }}
+                    onClick={() => handleCardClick(task.id)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12)';
+                      e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                      e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                    }}
+                  >
+                    {/* 卡片头部 */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <Text strong style={{
+                          fontSize: '16px',
+                          color: '#2d2d2d',
+                          fontWeight: 600,
+                          letterSpacing: '0.3px',
+                          flex: 1,
+                          marginRight: '12px',
+                          lineHeight: '1.4'
+                        }}>
+                          {task.task_name}
+                        </Text>
+                        <Tag style={{
+                          background: statusConfig.bgColor,
+                          color: statusConfig.color,
+                          border: `1px solid ${statusConfig.color}40`,
+                          borderRadius: '6px',
+                          fontWeight: 500,
+                          fontSize: '12px',
+                          padding: '2px 8px',
+                          margin: 0
+                        }}>
+                          {statusConfig.text}
+                        </Tag>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                        <Text style={{
+                          fontSize: '13px',
+                          color: 'rgba(45, 45, 45, 0.65)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          图: {task.graph_name}
+                        </Text>
+                        <span style={{ color: 'rgba(139, 115, 85, 0.3)' }}>•</span>
+                        <Text style={{
+                          fontSize: '13px',
+                          color: 'rgba(45, 45, 45, 0.65)'
+                        }}>
+                          并发: {task.execution_count}
+                        </Text>
+                      </div>
+                    </div>
+
+                    {/* 调度信息 */}
+                    <div style={{
+                      padding: '12px',
+                      background: 'rgba(250, 248, 245, 0.6)',
+                      borderRadius: '6px',
+                      marginBottom: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {task.schedule_type === ScheduleType.SINGLE ? (
+                          <CalendarIcon size={14} color="#8b7355" strokeWidth={1.5} />
+                        ) : (
+                          <Repeat size={14} color="#8b7355" strokeWidth={1.5} />
+                        )}
+                        <Text style={{
+                          fontSize: '12px',
+                          color: '#8b7355',
+                          fontWeight: 500
+                        }}>
+                          {task.schedule_type === ScheduleType.SINGLE ? '单次任务' : '周期任务'}
+                        </Text>
+                      </div>
+
+                      {nextRun && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Clock size={12} color={isOverdue ? '#ef4444' : '#10b981'} strokeWidth={1.5} />
+                          <Text style={{
+                            fontSize: '12px',
+                            color: isOverdue ? '#ef4444' : '#10b981',
+                            fontWeight: 500
+                          }}>
+                            {isOverdue ? '已过期' : nextRun.format('MM-DD HH:mm')}
+                          </Text>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 执行统计 */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingTop: '12px',
+                      borderTop: '1px solid rgba(139, 115, 85, 0.1)'
+                    }}>
+                      <div>
+                        <Text style={{
+                          fontSize: '12px',
+                          color: 'rgba(45, 45, 45, 0.65)'
+                        }}>
+                          执行 <Text strong style={{ color: '#2d2d2d' }}>{task.execution_stats.total_triggers}</Text> 次
+                        </Text>
+                      </div>
+                      
+                      {/* 操作按钮 */}
+                      <Space size={4}>
+                        <Tooltip title="查看详情">
+                          <div
+                            style={{
+                              padding: '6px',
+                              borderRadius: '4px',
+                              color: '#8b7355',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCardClick(task.id);
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#b85845';
+                              e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#8b7355';
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <Eye size={16} strokeWidth={1.5} />
+                          </div>
+                        </Tooltip>
+
+                        {task.status !== TaskStatus.COMPLETED && (
+                          <Tooltip title={task.status === TaskStatus.ACTIVE ? '暂停' : '启动'}>
+                            <div
+                              style={{
+                                padding: '6px',
+                                borderRadius: '4px',
+                                color: '#8b7355',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              onClick={(e) => handleStatusToggle(task, e)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              {task.status === TaskStatus.ACTIVE ? (
+                                <Pause size={16} strokeWidth={1.5} />
+                              ) : (
+                                <Play size={16} strokeWidth={1.5} />
+                              )}
+                            </div>
+                          </Tooltip>
+                        )}
+
+                        <Tooltip title="删除">
+                          <div
+                            style={{
+                              padding: '6px',
+                              borderRadius: '4px',
+                              color: '#8b7355',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                            onClick={(e) => handleDelete(task, e)}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#ef4444';
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#8b7355';
+                              e.currentTarget.style.background = 'transparent';
+                            }}
+                          >
+                            <Trash2 size={16} strokeWidth={1.5} />
+                          </div>
+                        </Tooltip>
+                      </Space>
+                    </div>
+                  </Card>
+                </Col>
+              );
+            })}
+          </Row>
+
+          {/* 分页 */}
+          {filteredTasks.length > pageSize && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginTop: '32px'
+            }}>
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={filteredTasks.length}
+                onChange={setCurrentPage}
+                showSizeChanger={false}
+                showTotal={(total, range) => `第 ${range[0]}-${range[1]} 项，共 ${total} 项`}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

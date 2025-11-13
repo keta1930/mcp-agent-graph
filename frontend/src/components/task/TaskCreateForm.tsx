@@ -7,10 +7,8 @@ import {
   InputNumber,
   DatePicker,
   Radio,
-  Space,
   Button,
   message,
-  Divider,
   Typography
 } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
@@ -135,10 +133,10 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
     <Drawer
       title={
         <div>
-          <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
+          <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 500, color: '#2d2d2d' }}>
             创建新任务
           </Title>
-          <Text type="secondary" style={{ fontSize: '13px' }}>
+          <Text style={{ fontSize: '13px', color: 'rgba(45, 45, 45, 0.65)' }}>
             设置图的执行计划和调度配置
           </Text>
         </div>
@@ -152,12 +150,13 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
       destroyOnClose
       styles={{
         header: {
-          borderBottom: '1px solid #f1f5f9',
-          padding: '20px 24px'
+          borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+          padding: '20px 24px',
+          background: 'rgba(250, 248, 245, 0.6)'
         },
         body: {
           padding: 0,
-          backgroundColor: '#fafcff'
+          backgroundColor: '#faf8f5'
         }
       }}
       footer={
@@ -166,8 +165,8 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
           justifyContent: 'flex-end',
           gap: '12px',
           padding: '16px 24px',
-          borderTop: '1px solid #f1f5f9',
-          backgroundColor: '#ffffff'
+          borderTop: '1px solid rgba(139, 115, 85, 0.15)',
+          backgroundColor: 'rgba(255, 255, 255, 0.85)'
         }}>
           <Button
             onClick={() => {
@@ -175,22 +174,52 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
               onCancel();
             }}
             style={{
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-              color: '#6b7280'
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              color: 'rgba(45, 45, 45, 0.65)',
+              height: '40px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              background: 'transparent',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
             }}
           >
             取消
           </Button>
           <Button
-            type="primary"
             loading={loading}
             onClick={handleSubmit}
             style={{
-              borderRadius: '8px',
-              backgroundColor: '#3b82f6',
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
               border: 'none',
-              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
+              borderRadius: '6px',
+              color: '#fff',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 500,
+              height: '40px',
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+              transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+              }
             }}
           >
             创建任务
@@ -198,21 +227,16 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         </div>
       }
     >
-      <div style={{ padding: '24px', backgroundColor: '#ffffff' }}>
+      <div style={{ padding: '24px', backgroundColor: 'rgba(255, 255, 255, 0.85)' }}>
         <Form
           form={form}
           layout="vertical"
           initialValues={{
             execution_count: 1
           }}
-          style={{
-            '.ant-form-item': {
-              marginBottom: '20px'
-            }
-          }}
         >
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>任务名称</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>任务名称</span>}
           name="task_name"
           rules={[
             { required: true, message: '请输入任务名称' },
@@ -223,17 +247,20 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
           <Input
             placeholder="为您的任务起个名字"
             style={{
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
               fontSize: '14px',
-              padding: '8px 12px',
-              height: '40px'
+              padding: '10px 14px',
+              height: '40px',
+              background: 'rgba(255, 255, 255, 0.85)',
+              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+              transition: 'all 0.3s ease'
             }}
           />
         </Form.Item>
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>选择图</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>选择图</span>}
           name="graph_name"
           rules={[{ required: true, message: '请选择要执行的图' }]}
           style={{ marginBottom: '24px' }}
@@ -243,16 +270,16 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
             showSearch
             optionFilterProp="label"
             style={{
-              borderRadius: '8px',
+              borderRadius: '6px',
               height: '40px'
             }}
           >
             {graphs.map(graph => (
               <Option key={graph.name} value={graph.name} label={graph.name}>
                 <div>
-                  <div style={{ fontWeight: 500, fontSize: '14px' }}>{graph.name}</div>
+                  <div style={{ fontWeight: 500, fontSize: '14px', color: '#2d2d2d' }}>{graph.name}</div>
                   {graph.description && (
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>
                       {graph.description}
                     </div>
                   )}
@@ -263,7 +290,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>输入文本</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>输入文本</span>}
           name="input_text"
           rules={[{ max: 1000, message: '输入文本不能超过1000个字符' }]}
           style={{ marginBottom: '24px' }}
@@ -274,16 +301,19 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
             showCount
             maxLength={1000}
             style={{
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
               fontSize: '14px',
-              resize: 'none'
+              resize: 'none',
+              background: 'rgba(255, 255, 255, 0.85)',
+              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+              transition: 'all 0.3s ease'
             }}
           />
         </Form.Item>
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>并发执行数量</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>并发执行数量</span>}
           name="execution_count"
           rules={[
             { required: true, message: '请设置并发执行数量' },
@@ -296,22 +326,24 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
             placeholder="每次触发时并发执行的图实例数量"
             style={{
               width: '100%',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
               height: '40px',
-              fontSize: '14px'
+              fontSize: '14px',
+              background: 'rgba(255, 255, 255, 0.85)',
+              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
             }}
           />
         </Form.Item>
 
         <div style={{
           height: '1px',
-          backgroundColor: '#f1f5f9',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.2) 50%, transparent)',
           margin: '32px 0'
         }} />
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>调度类型</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>调度类型</span>}
           style={{ marginBottom: '24px' }}
         >
           <Radio.Group
@@ -320,16 +352,16 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
             style={{ width: '100%' }}
           >
             <div style={{ display: 'flex', gap: '16px', flexDirection: 'column' }}>
-              <Radio value={ScheduleType.SINGLE} style={{ fontSize: '14px' }}>
+              <Radio value={ScheduleType.SINGLE} style={{ fontSize: '14px', color: '#2d2d2d' }}>
                 <div>
-                  <div style={{ fontWeight: 500 }}>单次任务</div>
-                  <div style={{ fontSize: '12px', color: '#6b7280' }}>在指定时间执行一次</div>
+                  <div style={{ fontWeight: 500, color: '#2d2d2d' }}>单次任务</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>在指定时间执行一次</div>
                 </div>
               </Radio>
-              <Radio value={ScheduleType.RECURRING} style={{ fontSize: '14px' }}>
+              <Radio value={ScheduleType.RECURRING} style={{ fontSize: '14px', color: '#2d2d2d' }}>
                 <div>
-                  <div style={{ fontWeight: 500 }}>周期任务</div>
-                  <div style={{ fontSize: '12px', color: '#6b7280' }}>按照设定的时间间隔重复执行</div>
+                  <div style={{ fontWeight: 500, color: '#2d2d2d' }}>周期任务</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>按照设定的时间间隔重复执行</div>
                 </div>
               </Radio>
             </div>
@@ -338,7 +370,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
 
         {scheduleType === ScheduleType.SINGLE && (
           <Form.Item
-            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>执行时间</span>}
+            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>执行时间</span>}
             rules={[{ required: true, message: '请选择执行时间' }]}
             style={{ marginBottom: '24px' }}
           >
@@ -351,10 +383,12 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
               placeholder="选择任务执行时间"
               style={{
                 width: '100%',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
                 height: '40px',
-                fontSize: '14px'
+                fontSize: '14px',
+                background: 'rgba(255, 255, 255, 0.85)',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
               }}
             />
           </Form.Item>
@@ -362,12 +396,12 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
 
         {scheduleType === ScheduleType.RECURRING && (
           <Form.Item
-            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>周期配置</span>}
+            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>周期配置</span>}
             style={{ marginBottom: '24px' }}
           >
             <div style={{
               padding: '4px',
-              borderRadius: '12px'
+              borderRadius: '8px'
             }}>
               <CronBuilder
                 value={cronExpression}
@@ -380,21 +414,21 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         {getNextExecutionPreview() && (
           <div style={{
             padding: '16px',
-            backgroundColor: '#f0f9ff',
-            border: '1px solid #bae6fd',
-            borderRadius: '12px',
+            backgroundColor: 'rgba(160, 130, 109, 0.08)',
+            border: '1px solid rgba(160, 130, 109, 0.2)',
+            borderRadius: '8px',
             marginBottom: '24px'
           }}>
             <div style={{
               fontSize: '13px',
-              color: '#0369a1',
+              color: '#8b7355',
               fontWeight: 500
             }}>
               📅 执行预览
             </div>
             <div style={{
               fontSize: '14px',
-              color: '#0c4a6e',
+              color: '#2d2d2d',
               marginTop: '4px'
             }}>
               {getNextExecutionPreview()}
