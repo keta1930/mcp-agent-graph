@@ -255,7 +255,7 @@ const MCPManager: React.FC = () => {
   const connectedCount = serverNames.filter(name => status[name]?.connected).length;
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#faf8f5' }}>
+    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
       {/* Header 顶栏 */}
       <Header style={{
         background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
@@ -357,6 +357,7 @@ const MCPManager: React.FC = () => {
 
       {/* Content 内容区 */}
       <Content style={{
+        flex: 1,
         padding: '32px 48px',
         overflow: 'auto'
       }}>

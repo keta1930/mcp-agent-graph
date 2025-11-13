@@ -283,7 +283,7 @@ const PromptManager: React.FC = () => {
 
   return (
     <>
-    <Layout style={{ height: '100vh', background: '#faf8f5' }}>
+    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
       <Header style={{
         background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
         backdropFilter: 'blur(20px)',
@@ -408,7 +408,7 @@ const PromptManager: React.FC = () => {
         </div>
       </Header>
 
-      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+      <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
         <Spin spinning={loading}>
           {filteredGroups.length === 0 ? (
             <Empty description="暂无提示词" style={{ marginTop: '40px' }} />

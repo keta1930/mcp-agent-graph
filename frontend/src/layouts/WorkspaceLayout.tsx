@@ -1,6 +1,6 @@
 // src/layouts/WorkspaceLayout.tsx
-import React, { useState } from 'react';
-import { Button, Modal, message } from 'antd';
+import React, { useState, CSSProperties } from 'react';
+import { Modal, message } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -11,10 +11,11 @@ import {
   MessageSquareText,
   FolderOpen,
   Home,
-  Power
+  Power,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { shutdownSystem } from '../services/systemService';
-import '../styles/workspace.css';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -26,7 +27,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const [isShuttingDown, setIsShuttingDown] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const handleShutdown = async () => {
     setIsShuttingDown(true);
@@ -59,264 +60,375 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
     navigate('/');
   };
 
+  const navItems = [
+    { path: '/workspace/agent-manager', icon: Bot, label: 'Agent管理' },
+    { path: '/workspace/graph-editor', icon: Network, label: '图形编辑器' },
+    { path: '/workspace/model-manager', icon: Cpu, label: '模型管理' },
+    { path: '/workspace/system-tools', icon: Wrench, label: '系统工具' },
+    { path: '/workspace/mcp-manager', icon: Plug, label: 'MCP管理' },
+    { path: '/workspace/prompt-manager', icon: MessageSquareText, label: '提示词管理' },
+    { path: '/workspace/file-manager', icon: FolderOpen, label: '文件管理' },
+  ];
+
+  // 侧边栏容器样式
+  const sidebarStyle: CSSProperties = {
+    width: collapsed ? '72px' : '280px',
+    minHeight: '100vh',
+    background: 'linear-gradient(to bottom, #faf8f5 0%, #f5f3f0 100%)',
+    borderRight: '1px solid rgba(139, 115, 85, 0.12)',
+    boxShadow: '2px 0 8px rgba(139, 115, 85, 0.06)',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'width 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+    position: 'relative',
+    overflow: 'hidden'
+  };
+
+  // Header 样式
+  const headerStyle: CSSProperties = {
+    padding: collapsed ? '24px 0' : '24px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: collapsed ? 'center' : 'space-between',
+    borderBottom: '1px solid rgba(139, 115, 85, 0.08)',
+    background: 'rgba(255, 255, 255, 0.5)',
+    position: 'relative'
+  };
+
+  const headerDecorStyle: CSSProperties = {
+    position: 'absolute',
+    bottom: 0,
+    left: collapsed ? '15%' : '20%',
+    right: collapsed ? '15%' : '20%',
+    height: '1px',
+    background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)'
+  };
+
+  const titleStyle: CSSProperties = {
+    fontSize: '15px',
+    fontWeight: 500,
+    color: '#2d2d2d',
+    margin: 0,
+    letterSpacing: '0.5px',
+    opacity: collapsed ? 0 : 1,
+    transition: 'opacity 0.3s ease',
+    whiteSpace: 'nowrap'
+  };
+
+  const toggleButtonStyle: CSSProperties = {
+    width: '32px',
+    height: '32px',
+    borderRadius: '6px',
+    border: '1px solid rgba(139, 115, 85, 0.15)',
+    background: 'rgba(255, 255, 255, 0.8)',
+    color: '#8b7355',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
+  };
+
+  // 导航区域样式
+  const navigationStyle: CSSProperties = {
+    flex: 1,
+    padding: collapsed ? '20px 12px' : '20px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    overflowY: 'auto',
+    overflowX: 'hidden'
+  };
+
+  const getNavItemStyle = (isActive: boolean, isHovered: boolean): CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: collapsed ? '0' : '12px',
+    padding: collapsed ? '12px' : '12px 16px',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+    position: 'relative',
+    justifyContent: collapsed ? 'center' : 'flex-start',
+    background: isActive 
+      ? 'rgba(184, 88, 69, 0.08)'
+      : isHovered 
+        ? 'rgba(139, 115, 85, 0.05)'
+        : 'transparent',
+    border: `1px solid ${isActive ? 'rgba(184, 88, 69, 0.2)' : 'transparent'}`,
+    boxShadow: isActive 
+      ? '0 2px 6px rgba(184, 88, 69, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
+      : 'none',
+    color: isActive ? '#b85845' : '#2d2d2d',
+    transform: isHovered && !collapsed ? 'translateX(2px)' : 'translateX(0)'
+  });
+
+  const navLabelStyle: CSSProperties = {
+    fontSize: '14px',
+    fontWeight: 500,
+    letterSpacing: '0.3px',
+    opacity: collapsed ? 0 : 1,
+    transition: 'opacity 0.3s ease',
+    whiteSpace: 'nowrap'
+  };
+
+  // Footer 样式
+  const footerStyle: CSSProperties = {
+    padding: collapsed ? '20px 12px' : '20px 16px',
+    borderTop: '1px solid rgba(139, 115, 85, 0.08)',
+    background: 'rgba(255, 255, 255, 0.5)',
+    display: 'flex',
+    flexDirection: collapsed ? 'column' : 'row',
+    gap: '8px',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative'
+  };
+
+  const footerDecorStyle: CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: collapsed ? '15%' : '20%',
+    right: collapsed ? '15%' : '20%',
+    height: '1px',
+    background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)'
+  };
+
+  const footerButtonStyle = (isHovered: boolean, isDanger: boolean = false): CSSProperties => ({
+    width: '36px',
+    height: '36px',
+    borderRadius: '6px',
+    border: '1px solid rgba(139, 115, 85, 0.15)',
+    background: isHovered 
+      ? (isDanger ? 'rgba(184, 88, 69, 0.08)' : 'rgba(139, 115, 85, 0.08)')
+      : 'rgba(255, 255, 255, 0.8)',
+    color: isHovered ? (isDanger ? '#b85845' : '#8b7355') : '#8b7355',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+    boxShadow: isHovered 
+      ? '0 4px 12px rgba(139, 115, 85, 0.12)'
+      : '0 1px 3px rgba(139, 115, 85, 0.08)',
+    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
+  });
+
+  // Tooltip 样式
+  const tooltipStyle: CSSProperties = {
+    position: 'absolute',
+    left: '80px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'rgba(45, 45, 45, 0.95)',
+    color: '#faf8f5',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: 500,
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    zIndex: 1000,
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    letterSpacing: '0.3px'
+  };
+
+  const tooltipArrowStyle: CSSProperties = {
+    position: 'absolute',
+    left: '-4px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: 0,
+    height: 0,
+    borderTop: '4px solid transparent',
+    borderBottom: '4px solid transparent',
+    borderRight: '4px solid rgba(45, 45, 45, 0.95)'
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* 自定义侧边栏 - 完全仿照对话系统 */}
-      <div className={`workspace-sidebar ${collapsed ? 'collapsed' : ''}`}>
-        {collapsed ? (
-          <>
-            {/* 折叠状态 */}
-            {/* 顶部区域 */}
-            <div className="collapsed-header">
-              <button
-                onClick={() => setCollapsed(false)}
-                className="collapsed-nav-item collapsed-expand-button"
-                title="展开侧边栏"
-              >
-                <img src="/starstar.png" alt="展开" style={{ width: 16, height: 16 }} />
-                <div className="collapsed-tooltip">展开侧边栏</div>
-              </button>
-            </div>
+    <>
+      <style>
+        {`
+          @keyframes gentleFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}
+      </style>
 
-            {/* 主导航区域 */}
-            <div className="collapsed-navigation">
-              {/* Agent管理 */}
-              <Link
-                to="/workspace/agent-manager"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/agent-manager' ? 'active' : ''}`}
-                title="Agent管理"
-              >
-                <Bot size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">Agent管理</div>
-              </Link>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#faf8f5' }}>
+        {/* 侧边栏 */}
+        <div style={sidebarStyle}>
+          {/* Header */}
+          <div style={headerStyle}>
+            <div style={headerDecorStyle} />
+            {!collapsed && <h3 style={titleStyle}>工作台</h3>}
+            <button
+              type="button"
+              onClick={() => setCollapsed(!collapsed)}
+              style={toggleButtonStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
+                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {collapsed ? (
+                <ChevronRight size={16} strokeWidth={1.5} />
+              ) : (
+                <ChevronLeft size={16} strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
 
-              {/* 图形编辑器 */}
-              <Link
-                to="/workspace/graph-editor"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
-                title="图形编辑器"
-              >
-                <Network size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">图形编辑器</div>
-              </Link>
+          {/* 导航列表 */}
+          <div style={navigationStyle}>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              const isHovered = hoveredItem === item.path;
 
-              {/* 模型管理 */}
-              <Link
-                to="/workspace/model-manager"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/model-manager' ? 'active' : ''}`}
-                title="模型管理"
-              >
-                <Cpu size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">模型管理</div>
-              </Link>
-
-              {/* 系统工具 */}
-              <Link
-                to="/workspace/system-tools"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/system-tools' ? 'active' : ''}`}
-                title="系统工具"
-              >
-                <Wrench size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">系统工具</div>
-              </Link>
-
-              {/* MCP管理 */}
-              <Link
-                to="/workspace/mcp-manager"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/mcp-manager' ? 'active' : ''}`}
-                title="MCP管理"
-              >
-                <Plug size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">MCP管理</div>
-              </Link>
-
-              {/* 提示词管理 */}
-              <Link
-                to="/workspace/prompt-manager"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/prompt-manager' ? 'active' : ''}`}
-                title="提示词管理"
-              >
-                <MessageSquareText size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">提示词管理</div>
-              </Link>
-
-              {/* 文件管理 */}
-              <Link
-                to="/workspace/file-manager"
-                className={`collapsed-nav-item ${location.pathname === '/workspace/file-manager' ? 'active' : ''}`}
-                title="文件管理"
-              >
-                <FolderOpen size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">文件管理</div>
-              </Link>
-            </div>
-
-            {/* 底部区域 */}
-            <div className="collapsed-footer">
-              {/* 状态指示器 */}
-              <div className="collapsed-status-indicator" title="系统在线"></div>
-
-              {/* 返回首页 */}
-              <button
-                className="collapsed-nav-item"
-                onClick={handleBackHome}
-                title="返回首页"
-              >
-                <Home size={18} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">返回首页</div>
-              </button>
-
-              {/* 关闭系统 */}
-              <button
-                className="collapsed-nav-item danger"
-                onClick={showConfirmModal}
-                disabled={isShuttingDown}
-                title="关闭系统"
-              >
-                <Power size={18} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <div className="collapsed-tooltip">关闭系统</div>
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* 展开状态 */}
-            {/* 侧边栏头部 */}
-            <div className="sidebar-header">
-              <div className="header-content">
-                <h3 style={{
-                  color: '#333',
-                  margin: 0,
-                  fontSize: '1.1rem',
-                  fontWeight: '600'
-                }}>
-                  MCP Agent Graph
-                </h3>
-                <Button
-                  type="text"
-                  onClick={() => setCollapsed(true)}
-                  title="折叠侧边栏"
-                  className="sidebar-toggle"
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  style={getNavItemStyle(isActive, isHovered)}
+                  onMouseEnter={() => setHoveredItem(item.path)}
+                  onMouseLeave={() => setHoveredItem(null)}
                 >
-                  <img src="/starstar.png" alt="折叠" style={{ width: 16, height: 16 }} />
-                </Button>
-              </div>
-            </div>
+                  <Icon size={20} strokeWidth={1.5} />
+                  {!collapsed && <span style={navLabelStyle}>{item.label}</span>}
+                  
+                  {/* Tooltip for collapsed state */}
+                  {collapsed && isHovered && (
+                    <div style={tooltipStyle}>
+                      <div style={tooltipArrowStyle} />
+                      {item.label}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
 
-            {/* 导航列表 */}
-            <div className="workspace-navigation">
-              <Link
-                to="/workspace/agent-manager"
-                className={`workspace-nav-item ${location.pathname === '/workspace/agent-manager' ? 'active' : ''}`}
-              >
-                <Bot size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">Agent管理</span>
-              </Link>
+          {/* Footer */}
+          <div style={footerStyle}>
+            <div style={footerDecorStyle} />
+            
+            <button
+              type="button"
+              onClick={handleBackHome}
+              style={footerButtonStyle(hoveredItem === 'home')}
+              onMouseEnter={() => setHoveredItem('home')}
+              onMouseLeave={() => setHoveredItem(null)}
+              title={collapsed ? '返回首页' : undefined}
+            >
+              <Home size={18} strokeWidth={1.5} />
+              {collapsed && hoveredItem === 'home' && (
+                <div style={tooltipStyle}>
+                  <div style={tooltipArrowStyle} />
+                  返回首页
+                </div>
+              )}
+            </button>
 
-              <Link
-                to="/workspace/graph-editor"
-                className={`workspace-nav-item ${location.pathname === '/workspace/graph-editor' ? 'active' : ''}`}
-              >
-                <Network size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">图形编辑器</span>
-              </Link>
+            <button
+              type="button"
+              onClick={showConfirmModal}
+              disabled={isShuttingDown}
+              style={footerButtonStyle(hoveredItem === 'power', true)}
+              onMouseEnter={() => setHoveredItem('power')}
+              onMouseLeave={() => setHoveredItem(null)}
+              title={collapsed ? '关闭系统' : undefined}
+            >
+              <Power size={18} strokeWidth={1.5} />
+              {collapsed && hoveredItem === 'power' && (
+                <div style={tooltipStyle}>
+                  <div style={tooltipArrowStyle} />
+                  关闭系统
+                </div>
+              )}
+            </button>
+          </div>
+        </div>
 
-              <Link
-                to="/workspace/model-manager"
-                className={`workspace-nav-item ${location.pathname === '/workspace/model-manager' ? 'active' : ''}`}
-              >
-                <Cpu size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">模型管理</span>
-              </Link>
-
-              <Link
-                to="/workspace/system-tools"
-                className={`workspace-nav-item ${location.pathname === '/workspace/system-tools' ? 'active' : ''}`}
-              >
-                <Wrench size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">系统工具</span>
-              </Link>
-
-              <Link
-                to="/workspace/mcp-manager"
-                className={`workspace-nav-item ${location.pathname === '/workspace/mcp-manager' ? 'active' : ''}`}
-              >
-                <Plug size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">MCP管理</span>
-              </Link>
-
-              <Link
-                to="/workspace/prompt-manager"
-                className={`workspace-nav-item ${location.pathname === '/workspace/prompt-manager' ? 'active' : ''}`}
-              >
-                <MessageSquareText size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">提示词管理</span>
-              </Link>
-
-              <Link
-                to="/workspace/file-manager"
-                className={`workspace-nav-item ${location.pathname === '/workspace/file-manager' ? 'active' : ''}`}
-              >
-                <FolderOpen size={20} strokeWidth={1.5} style={{ color: 'currentColor' }} />
-                <span className="nav-label">文件管理</span>
-              </Link>
-            </div>
-
-            {/* 底部操作区 */}
-            <div className="sidebar-footer">
-              <div className="footer-actions">
-                <Button
-                  type="text"
-                  icon={<Home size={18} strokeWidth={1.5} />}
-                  onClick={handleBackHome}
-                  title="返回首页"
-                />
-                <Button
-                  type="text"
-                  danger
-                  icon={<Power size={18} strokeWidth={1.5} />}
-                  loading={isShuttingDown}
-                  onClick={showConfirmModal}
-                  title="关闭系统"
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* 主内容区域 */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden'
-      }}>
+        {/* 主内容区域 */}
         <div style={{
           flex: 1,
-          padding: '16px',
-          overflow: 'auto',
-          height: '100%'
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          overflow: 'hidden'
         }}>
-          {children}
+          <div style={{
+            flex: 1,
+            padding: '0',
+            overflow: 'auto',
+            height: '100%'
+          }}>
+            {children}
+          </div>
         </div>
-      </div>
 
-      {/* 关闭系统确认对话框 */}
-      <Modal
-        title="确认关闭系统"
-        open={confirmModalVisible}
-        onOk={handleShutdown}
-        onCancel={handleCancel}
-        okText="确认关闭"
-        cancelText="取消"
-        okButtonProps={{ danger: true, loading: isShuttingDown }}
-      >
-        <p>您确定要关闭服务吗？</p>
-        <p>这将终止所有正在运行的进程，服务器将停止响应。</p>
-      </Modal>
-    </div>
+        {/* 关闭系统确认对话框 */}
+        <Modal
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Power size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
+              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>确认关闭系统</span>
+            </div>
+          }
+          open={confirmModalVisible}
+          onOk={handleShutdown}
+          onCancel={handleCancel}
+          okText="确认关闭"
+          cancelText="取消"
+          okButtonProps={{ 
+            danger: true, 
+            loading: isShuttingDown,
+            style: {
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              border: 'none',
+              borderRadius: '6px',
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+            }
+          }}
+          cancelButtonProps={{
+            style: {
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              color: '#8b7355'
+            }
+          }}
+          styles={{
+            content: {
+              borderRadius: '8px',
+              boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)'
+            }
+          }}
+        >
+          <div style={{ 
+            padding: '16px 0',
+            color: 'rgba(45, 45, 45, 0.85)',
+            lineHeight: 1.6,
+            letterSpacing: '0.3px'
+          }}>
+            <p style={{ margin: '0 0 8px 0' }}>您确定要关闭服务吗？</p>
+            <p style={{ margin: 0, fontSize: '13px', color: 'rgba(45, 45, 45, 0.65)' }}>
+              这将终止所有正在运行的进程，服务器将停止响应。
+            </p>
+          </div>
+        </Modal>
+      </div>
+    </>
   );
 };
 

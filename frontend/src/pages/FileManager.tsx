@@ -164,7 +164,7 @@ const FileManager: React.FC = () => {
   const totalFilesCount = filteredGroups.reduce((sum, group) => sum + group.files.length, 0);
 
   return (
-    <Layout style={{ height: '100vh', background: '#faf8f5' }}>
+    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
       <Header style={{
         background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
         backdropFilter: 'blur(20px)',
@@ -245,7 +245,7 @@ const FileManager: React.FC = () => {
         </div>
       </Header>
 
-      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+      <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
         {loading ? (
           <div
             style={{

@@ -128,7 +128,7 @@ const ModelManager: React.FC = () => {
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState<string | null>(null);
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#faf8f5' }}>
+    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
       {error && <ErrorMessage className="error-message" message={error} />}
 
       {/* Header 顶栏 */}
@@ -265,7 +265,7 @@ const ModelManager: React.FC = () => {
       </Header>
 
       {/* Content 内容区 */}
-      <Content style={{ padding: '48px 64px', overflow: 'auto' }}>
+      <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
         {loading ? (
           <div style={{
             display: 'flex',
