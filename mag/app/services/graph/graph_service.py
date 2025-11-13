@@ -413,18 +413,19 @@ class GraphService:
         """生成MCP服务器脚本"""
         description = graph_config.get("description", "")
         sanitized_graph_name = graph_name.replace(" ", "_").replace("-", "_")
-
-        template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
-        sequential_template_path = os.path.join(template_dir, "mcp_sequential_template.py")
+        
+        # 获取模板文件的绝对路径
+        template_dir = os.path.dirname(os.path.abspath(__file__))
+        template_path = os.path.join(template_dir, "mcp_sequential_template.py")
 
         try:
-            with open(sequential_template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, 'r', encoding='utf-8') as f:
                 sequential_template = f.read()
         except FileNotFoundError:
-            logger.error(f"找不到MCP脚本模板文件")
+            logger.error(f"找不到MCP脚本模板文件: {template_path}")
             return {
                 "graph_name": graph_name,
-                "error": "找不到MCP脚本模板文件",
+                "error": f"找不到MCP脚本模板文件: {template_path}",
                 "script": ""
             }
 
