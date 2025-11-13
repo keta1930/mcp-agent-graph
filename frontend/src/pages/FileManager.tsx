@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Input, Card, Row, Col, Space, Typography, Spin, message, Empty, Tag, Collapse } from 'antd';
 import {
   Search as SearchIcon,
-  File,
   Download,
   Edit,
   FolderOpen,
@@ -17,10 +16,10 @@ import FileViewModal from '../components/conversation-file/FileViewModal';
 import { ConversationSummary } from '../types/conversation';
 import { downloadBlob } from '../utils/fileUtils';
 import FileIcon from '../components/conversation-file/FileIcon';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
-const { Search } = Input;
 
 interface FileItem {
   filename: string;
@@ -35,6 +34,7 @@ interface ConversationGroup {
 }
 
 const FileManager: React.FC = () => {
+  const t = useT();
   const [allFiles, setAllFiles] = useState<FileItem[]>([]);
   const [groupedConversations, setGroupedConversations] = useState<ConversationGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<ConversationGroup[]>([]);
@@ -116,9 +116,8 @@ const FileManager: React.FC = () => {
       const allFilesFlat = filesArrays.flat();
 
       setAllFiles(allFilesFlat);
-      setFilteredFiles(allFilesFlat);
     } catch (error: any) {
-      message.error('加载文件列表失败: ' + error.message);
+      message.error(t('pages.fileManager.loadFailed', { error: error.message }));
     } finally {
       setLoading(false);
     }
@@ -141,9 +140,9 @@ const FileManager: React.FC = () => {
       const blob = await conversationFileService.downloadFile(file.conversationId, file.filename);
       const filename = file.filename.split('/').pop() || file.filename;
       downloadBlob(blob, filename);
-      message.success('文件下载成功');
+      message.success(t('pages.fileManager.downloadSuccess'));
     } catch (error: any) {
-      message.error('下载文件失败: ' + error.message);
+      message.error(t('pages.fileManager.downloadFailed', { error: error.message }));
     }
   };
 
@@ -191,7 +190,7 @@ const FileManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              文件管理
+              {t('pages.fileManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -202,7 +201,7 @@ const FileManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {totalFilesCount} 个文件
+              {t('pages.fileManager.filesCount', { count: totalFilesCount })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -213,11 +212,11 @@ const FileManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {filteredGroups.length} 个对话
+              {t('pages.fileManager.conversationsCount', { count: filteredGroups.length })}
             </Tag>
           </Space>
           <Input
-            placeholder="搜索文件或对话..."
+            placeholder={t('pages.fileManager.searchPlaceholder')}
             allowClear
             prefix={<SearchIcon size={16} strokeWidth={1.5} style={{ color: '#8b7355', marginRight: '4px' }} />}
             value={searchText}
@@ -255,12 +254,12 @@ const FileManager: React.FC = () => {
               height: '100%',
             }}
           >
-            <Spin size="large" tip="加载文件中..." />
+            <Spin size="large" tip={t('pages.fileManager.loadingFiles')} />
           </div>
         ) : filteredGroups.length === 0 ? (
           <Empty
             description={
-              searchText ? `未找到匹配 "${searchText}" 的文件` : '暂无文件'
+              searchText ? t('pages.fileManager.noMatchingFiles', { search: searchText }) : t('pages.fileManager.noFiles')
             }
             style={{ marginTop: '120px', color: 'rgba(45, 45, 45, 0.5)' }}
           />
