@@ -187,7 +187,7 @@ html, body {
 }
 
 .ant-table-tbody > tr:hover > td {
-  background-color: #f5f7fa;
+  background-color: rgba(139, 115, 85, 0.05);
 }
 
 /* 表单样式美化 */
@@ -326,7 +326,7 @@ pre, code, .tool-description, .tool-schema {
 
 .parameter-list {
   margin-top: 12px;
-  background: #f5f7fa;
+  background: rgba(245, 243, 240, 0.6);
   border-radius: 4px;
   padding: 12px;
 }
@@ -425,7 +425,7 @@ h1.text-2xl.font-bold {
 }
 
 .ant-layout-content {
-  background-color: #f5f7fa;
+  background-color: transparent;
   padding: 24px;
 }
 
@@ -518,7 +518,7 @@ h1.text-2xl.font-bold {
 }
 
 .ant-table-tbody > tr:hover > td {
-  background-color: #f0f7ff !important;
+  background-color: rgba(139, 115, 85, 0.05) !important;
 }
 
 /* Add model button with enhanced styling */
