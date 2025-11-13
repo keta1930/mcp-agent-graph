@@ -16,6 +16,7 @@ import { TaskCreate, ScheduleType } from '../../types/task';
 import { useTaskStore } from '../../store/taskStore';
 import CronBuilder from './CronBuilder';
 import * as graphService from '../../services/graphService';
+import { useT } from '../../i18n/hooks';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -45,6 +46,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
   const [executeAt, setExecuteAt] = useState<Dayjs | null>(null);
 
   const { createTask } = useTaskStore();
+  const t = useT();
 
   // 加载图列表
   useEffect(() => {
@@ -100,12 +102,12 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
       const result = await createTask(taskData);
 
       if (result.success) {
-        message.success(result.message || '任务创建成功');
+        message.success(result.message || t('pages.taskManager.taskCreateForm.createSuccess'));
         resetForm();
         onSuccess?.(result.taskId);
         onCancel();
       } else {
-        message.error(result.message || '创建任务失败');
+        message.error(result.message || t('pages.taskManager.taskCreateForm.createFailed'));
       }
     } catch (error) {
       console.error('Form validation failed:', error);
@@ -122,9 +124,13 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
   // 获取下次执行时间预览
   const getNextExecutionPreview = () => {
     if (scheduleType === ScheduleType.SINGLE && executeAt) {
-      return `将在 ${executeAt.format('YYYY-MM-DD HH:mm:ss')} 执行一次`;
+      return t('pages.taskManager.taskCreateForm.singleExecutionPreview', { 
+        time: executeAt.format('YYYY-MM-DD HH:mm:ss') 
+      });
     } else if (scheduleType === ScheduleType.RECURRING && cronExpression) {
-      return `按照 cron 表达式 "${cronExpression}" 周期执行`;
+      return t('pages.taskManager.taskCreateForm.recurringExecutionPreview', { 
+        cron: cronExpression 
+      });
     }
     return null;
   };
@@ -134,10 +140,10 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
       title={
         <div>
           <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 500, color: '#2d2d2d' }}>
-            创建新任务
+            {t('pages.taskManager.taskCreateForm.title')}
           </Title>
           <Text style={{ fontSize: '13px', color: 'rgba(45, 45, 45, 0.65)' }}>
-            设置图的执行计划和调度配置
+            {t('pages.taskManager.taskCreateForm.subtitle')}
           </Text>
         </div>
       }
@@ -192,7 +198,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
               e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
             }}
           >
-            取消
+            {t('pages.taskManager.taskCreateForm.cancel')}
           </Button>
           <Button
             loading={loading}
@@ -222,7 +228,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
               }
             }}
           >
-            创建任务
+            {t('pages.taskManager.taskCreateForm.createTask')}
           </Button>
         </div>
       }
@@ -236,16 +242,16 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
           }}
         >
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>任务名称</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.taskName')}</span>}
           name="task_name"
           rules={[
-            { required: true, message: '请输入任务名称' },
-            { max: 100, message: '任务名称不能超过100个字符' }
+            { required: true, message: t('pages.taskManager.taskCreateForm.taskNameRequired') },
+            { max: 100, message: t('pages.taskManager.taskCreateForm.taskNameMaxLength') }
           ]}
           style={{ marginBottom: '24px' }}
         >
           <Input
-            placeholder="为您的任务起个名字"
+            placeholder={t('pages.taskManager.taskCreateForm.taskNamePlaceholder')}
             style={{
               borderRadius: '6px',
               border: '1px solid rgba(139, 115, 85, 0.2)',
@@ -260,13 +266,13 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>选择图</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.selectGraph')}</span>}
           name="graph_name"
-          rules={[{ required: true, message: '请选择要执行的图' }]}
+          rules={[{ required: true, message: t('pages.taskManager.taskCreateForm.selectGraphRequired') }]}
           style={{ marginBottom: '24px' }}
         >
           <Select
-            placeholder="选择要执行的图"
+            placeholder={t('pages.taskManager.taskCreateForm.selectGraphPlaceholder')}
             showSearch
             optionFilterProp="label"
             style={{
@@ -290,13 +296,13 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>输入文本</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.inputText')}</span>}
           name="input_text"
-          rules={[{ max: 1000, message: '输入文本不能超过1000个字符' }]}
+          rules={[{ max: 1000, message: t('pages.taskManager.taskCreateForm.inputTextMaxLength') }]}
           style={{ marginBottom: '24px' }}
         >
           <TextArea
-            placeholder="输入图执行时的文本内容（可选）"
+            placeholder={t('pages.taskManager.taskCreateForm.inputTextPlaceholder')}
             rows={4}
             showCount
             maxLength={1000}
@@ -313,17 +319,17 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>并发执行数量</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.concurrency')}</span>}
           name="execution_count"
           rules={[
-            { required: true, message: '请设置并发执行数量' },
-            { type: 'number', min: 1, message: '执行数量至少为1' }
+            { required: true, message: t('pages.taskManager.taskCreateForm.concurrencyRequired') },
+            { type: 'number', min: 1, message: t('pages.taskManager.taskCreateForm.concurrencyMin') }
           ]}
           style={{ marginBottom: '32px' }}
         >
           <InputNumber
             min={1}
-            placeholder="每次触发时并发执行的图实例数量"
+            placeholder={t('pages.taskManager.taskCreateForm.concurrencyPlaceholder')}
             style={{
               width: '100%',
               borderRadius: '6px',
@@ -343,7 +349,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
         }} />
 
         <Form.Item
-          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>调度类型</span>}
+          label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.scheduleType')}</span>}
           style={{ marginBottom: '24px' }}
         >
           <Radio.Group
@@ -354,14 +360,14 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
             <div style={{ display: 'flex', gap: '16px', flexDirection: 'column' }}>
               <Radio value={ScheduleType.SINGLE} style={{ fontSize: '14px', color: '#2d2d2d' }}>
                 <div>
-                  <div style={{ fontWeight: 500, color: '#2d2d2d' }}>单次任务</div>
-                  <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>在指定时间执行一次</div>
+                  <div style={{ fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.singleTask')}</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>{t('pages.taskManager.taskCreateForm.singleTaskDescription')}</div>
                 </div>
               </Radio>
               <Radio value={ScheduleType.RECURRING} style={{ fontSize: '14px', color: '#2d2d2d' }}>
                 <div>
-                  <div style={{ fontWeight: 500, color: '#2d2d2d' }}>周期任务</div>
-                  <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>按照设定的时间间隔重复执行</div>
+                  <div style={{ fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.recurringTask')}</div>
+                  <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>{t('pages.taskManager.taskCreateForm.recurringTaskDescription')}</div>
                 </div>
               </Radio>
             </div>
@@ -370,8 +376,8 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
 
         {scheduleType === ScheduleType.SINGLE && (
           <Form.Item
-            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>执行时间</span>}
-            rules={[{ required: true, message: '请选择执行时间' }]}
+            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.executeTime')}</span>}
+            rules={[{ required: true, message: t('pages.taskManager.taskCreateForm.executeTimeRequired') }]}
             style={{ marginBottom: '24px' }}
           >
             <DatePicker
@@ -380,7 +386,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
               onChange={setExecuteAt}
               disabledDate={disabledDate}
               format="YYYY-MM-DD HH:mm:ss"
-              placeholder="选择任务执行时间"
+              placeholder={t('pages.taskManager.taskCreateForm.executeTimePlaceholder')}
               style={{
                 width: '100%',
                 borderRadius: '6px',
@@ -396,7 +402,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
 
         {scheduleType === ScheduleType.RECURRING && (
           <Form.Item
-            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>周期配置</span>}
+            label={<span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.taskManager.taskCreateForm.recurringConfig')}</span>}
             style={{ marginBottom: '24px' }}
           >
             <div style={{
@@ -424,7 +430,7 @@ const TaskCreateForm: React.FC<TaskCreateFormProps> = ({
               color: '#8b7355',
               fontWeight: 500
             }}>
-              📅 执行预览
+              📅 {t('pages.taskManager.taskCreateForm.executionPreview')}
             </div>
             <div style={{
               fontSize: '14px',

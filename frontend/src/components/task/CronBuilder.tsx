@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Select, Input } from 'antd';
 import { CronTemplate } from '../../types/task';
+import { useT } from '../../i18n/hooks';
 
 const { Option } = Select;
 
@@ -10,27 +11,28 @@ interface CronBuilderProps {
   disabled?: boolean;
 }
 
-// 预设的cron模板
-const CRON_TEMPLATES: CronTemplate[] = [
-  { name: '每小时', description: '', expression: '0 * * * *' },
-  { name: '每天上午9点', description: '', expression: '0 9 * * *' },
-  { name: '每周一上午9点', description: '', expression: '0 9 * * 1' },
-  { name: '每月1号上午9点', description: '', expression: '0 9 1 * *' },
-  { name: '工作日上午9点', description: '', expression: '0 9 * * 1-5' },
-  { name: '每天每小时的15分和45分', description: '', expression: '15,45 * * * *' }
-];
-
 const CronBuilder: React.FC<CronBuilderProps> = ({
   value = '0 9 * * *',
   onChange,
   disabled = false
 }) => {
+  const t = useT();
   const [minute, setMinute] = useState<string>('0');
   const [hour, setHour] = useState<string>('9');
   const [day, setDay] = useState<string>('*');
   const [month, setMonth] = useState<string>('*');
   const [dayOfWeek, setDayOfWeek] = useState<string>('*');
   const [customMode, setCustomMode] = useState<boolean>(false);
+
+  // 预设的cron模板
+  const CRON_TEMPLATES: CronTemplate[] = [
+    { name: t('pages.taskManager.cronBuilder.templates.hourly'), description: '', expression: '0 * * * *' },
+    { name: t('pages.taskManager.cronBuilder.templates.daily9am'), description: '', expression: '0 9 * * *' },
+    { name: t('pages.taskManager.cronBuilder.templates.weekly'), description: '', expression: '0 9 * * 1' },
+    { name: t('pages.taskManager.cronBuilder.templates.monthly'), description: '', expression: '0 9 1 * *' },
+    { name: t('pages.taskManager.cronBuilder.templates.weekdays'), description: '', expression: '0 9 * * 1-5' },
+    { name: t('pages.taskManager.cronBuilder.templates.twiceHourly'), description: '', expression: '15,45 * * * *' }
+  ];
 
   // 解析cron表达式
   useEffect(() => {
@@ -113,87 +115,101 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
 
   // 星期选项
   const dayOfWeekOptions = [
-    { value: '*', label: '每天' },
-    { value: '0', label: '周日' },
-    { value: '1', label: '周一' },
-    { value: '2', label: '周二' },
-    { value: '3', label: '周三' },
-    { value: '4', label: '周四' },
-    { value: '5', label: '周五' },
-    { value: '6', label: '周六' },
-    { value: '1-5', label: '工作日' },
-    { value: '0,6', label: '周末' }
+    { value: '*', label: t('pages.taskManager.cronBuilder.everyDay') },
+    { value: '0', label: t('pages.taskManager.cronBuilder.weekdays.sunday') },
+    { value: '1', label: t('pages.taskManager.cronBuilder.weekdays.monday') },
+    { value: '2', label: t('pages.taskManager.cronBuilder.weekdays.tuesday') },
+    { value: '3', label: t('pages.taskManager.cronBuilder.weekdays.wednesday') },
+    { value: '4', label: t('pages.taskManager.cronBuilder.weekdays.thursday') },
+    { value: '5', label: t('pages.taskManager.cronBuilder.weekdays.friday') },
+    { value: '6', label: t('pages.taskManager.cronBuilder.weekdays.saturday') },
+    { value: '1-5', label: t('pages.taskManager.cronBuilder.weekdays.weekdays') },
+    { value: '0,6', label: t('pages.taskManager.cronBuilder.weekdays.weekend') }
   ];
 
   // 月份选项
   const monthOptions = [
-    { value: '*', label: '每月' },
-    { value: '1', label: '1月' },
-    { value: '2', label: '2月' },
-    { value: '3', label: '3月' },
-    { value: '4', label: '4月' },
-    { value: '5', label: '5月' },
-    { value: '6', label: '6月' },
-    { value: '7', label: '7月' },
-    { value: '8', label: '8月' },
-    { value: '9', label: '9月' },
-    { value: '10', label: '10月' },
-    { value: '11', label: '11月' },
-    { value: '12', label: '12月' }
+    { value: '*', label: t('pages.taskManager.cronBuilder.everyMonth') },
+    { value: '1', label: t('pages.taskManager.cronBuilder.months.january') },
+    { value: '2', label: t('pages.taskManager.cronBuilder.months.february') },
+    { value: '3', label: t('pages.taskManager.cronBuilder.months.march') },
+    { value: '4', label: t('pages.taskManager.cronBuilder.months.april') },
+    { value: '5', label: t('pages.taskManager.cronBuilder.months.may') },
+    { value: '6', label: t('pages.taskManager.cronBuilder.months.june') },
+    { value: '7', label: t('pages.taskManager.cronBuilder.months.july') },
+    { value: '8', label: t('pages.taskManager.cronBuilder.months.august') },
+    { value: '9', label: t('pages.taskManager.cronBuilder.months.september') },
+    { value: '10', label: t('pages.taskManager.cronBuilder.months.october') },
+    { value: '11', label: t('pages.taskManager.cronBuilder.months.november') },
+    { value: '12', label: t('pages.taskManager.cronBuilder.months.december') }
   ];
 
   // 解析并描述cron表达式
   const describeCron = (cronExp: string): string => {
-    const template = CRON_TEMPLATES.find(t => t.expression === cronExp);
+    const template = CRON_TEMPLATES.find(tmpl => tmpl.expression === cronExp);
     if (template) {
-      return template.description;
+      return template.name;
     }
 
     const parts = cronExp.split(' ');
     if (parts.length !== 5) {
-      return '无效的cron表达式';
+      return t('pages.taskManager.cronBuilder.invalidExpression');
     }
 
     const [m, h, d, mn, dow] = parts;
-    let description = '在';
+    const descParts: string[] = [];
+    
+    // 开始词
+    descParts.push(t('pages.taskManager.cronBuilder.description.at'));
 
     // 月份
     if (mn !== '*') {
       if (mn.includes(',')) {
-        description += `${mn.split(',').join('、')}月的`;
+        const months = mn.split(',').join(', ');
+        descParts.push(t('pages.taskManager.cronBuilder.description.monthOf', { months }));
       } else if (mn.includes('-')) {
         const [start, end] = mn.split('-');
-        description += `${start}-${end}月的`;
+        descParts.push(t('pages.taskManager.cronBuilder.description.monthRange', { start, end }));
       } else {
-        description += `${mn}月的`;
+        descParts.push(t('pages.taskManager.cronBuilder.description.monthOf', { months: mn }));
       }
     }
 
     // 日期和星期
     if (d !== '*' && dow !== '*') {
-      description += `第${d}天且是`;
-      if (dow === '1-5') description += '工作日';
-      else if (dow === '0,6') description += '周末';
-      else description += `周${dow}`;
+      let weekday = '';
+      if (dow === '1-5') weekday = t('pages.taskManager.cronBuilder.weekdays.weekdays');
+      else if (dow === '0,6') weekday = t('pages.taskManager.cronBuilder.weekdays.weekend');
+      else weekday = `${t('pages.taskManager.cronBuilder.dayOfWeek')} ${dow}`;
+      descParts.push(t('pages.taskManager.cronBuilder.description.dayAndWeek', { day: d, weekday }));
     } else if (d !== '*') {
-      description += `第${d}天`;
+      descParts.push(t('pages.taskManager.cronBuilder.description.dayOf', { day: d }));
     } else if (dow !== '*') {
-      if (dow === '1-5') description += '工作日';
-      else if (dow === '0,6') description += '周末';
-      else description += `周${dow}`;
+      if (dow === '1-5') {
+        descParts.push(t('pages.taskManager.cronBuilder.weekdays.weekdays'));
+      } else if (dow === '0,6') {
+        descParts.push(t('pages.taskManager.cronBuilder.weekdays.weekend'));
+      } else {
+        descParts.push(`${t('pages.taskManager.cronBuilder.dayOfWeek')} ${dow}`);
+      }
     }
 
     // 时间
     if (h !== '*' && m !== '*') {
-      description += `的${h}:${m.padStart(2, '0')}`;
+      descParts.push(t('pages.taskManager.cronBuilder.description.atTime', { 
+        hour: h, 
+        minute: m.padStart(2, '0') 
+      }));
     } else if (h !== '*') {
-      description += `的${h}点整`;
+      descParts.push(t('pages.taskManager.cronBuilder.description.atHour', { hour: h }));
     } else if (m !== '*') {
-      description += `的第${m}分钟`;
+      descParts.push(t('pages.taskManager.cronBuilder.description.atMinute', { minute: m }));
     }
 
-    description += '执行';
-    return description;
+    // 结束词
+    descParts.push(t('pages.taskManager.cronBuilder.description.execute'));
+    
+    return descParts.join(' ');
   };
 
   return (
@@ -212,7 +228,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
           fontWeight: 500,
           marginBottom: '8px'
         }}>
-          当前计划
+          {t('pages.taskManager.cronBuilder.currentSchedule')}
         </div>
         <div style={{
           fontSize: '16px',
@@ -243,7 +259,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
           color: '#374151',
           marginBottom: '12px'
         }}>
-          快速选择
+          {t('pages.taskManager.cronBuilder.quickSelect')}
         </div>
         <div style={{
           display: 'grid',
@@ -320,14 +336,14 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
             }}
           >
             <div style={{ fontWeight: 500, marginBottom: '2px' }}>
-              自定义
+              {t('pages.taskManager.cronBuilder.custom')}
             </div>
             <div style={{
               fontSize: '11px',
               color: customMode ? '#a855f7' : '#6b7280',
               lineHeight: '1.3'
             }}>
-              自定义时间表达式
+              {t('pages.taskManager.cronBuilder.customDescription')}
             </div>
           </button>
         </div>
@@ -347,7 +363,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
             color: '#374151',
             marginBottom: '16px'
           }}>
-            自定义设置
+            {t('pages.taskManager.cronBuilder.customSettings')}
           </div>
 
           <div style={{
@@ -363,7 +379,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 fontWeight: 500,
                 marginBottom: '6px'
               }}>
-                分钟
+                {t('pages.taskManager.cronBuilder.minute')}
               </div>
               <Select
                 value={minute}
@@ -374,7 +390,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 }}
                 disabled={disabled}
               >
-                <Option value="*">每分钟</Option>
+                <Option value="*">{t('pages.taskManager.cronBuilder.everyMinute')}</Option>
                 {generateOptions(0, 59)}
               </Select>
             </div>
@@ -386,7 +402,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 fontWeight: 500,
                 marginBottom: '6px'
               }}>
-                小时
+                {t('pages.taskManager.cronBuilder.hour')}
               </div>
               <Select
                 value={hour}
@@ -397,7 +413,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 }}
                 disabled={disabled}
               >
-                <Option value="*">每小时</Option>
+                <Option value="*">{t('pages.taskManager.cronBuilder.everyHour')}</Option>
                 {generateOptions(0, 23)}
               </Select>
             </div>
@@ -416,7 +432,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 fontWeight: 500,
                 marginBottom: '6px'
               }}>
-                日期
+                {t('pages.taskManager.cronBuilder.day')}
               </div>
               <Select
                 value={day}
@@ -427,7 +443,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 }}
                 disabled={disabled}
               >
-                <Option value="*">每天</Option>
+                <Option value="*">{t('pages.taskManager.cronBuilder.everyDay')}</Option>
                 {generateOptions(1, 31)}
               </Select>
             </div>
@@ -439,7 +455,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 fontWeight: 500,
                 marginBottom: '6px'
               }}>
-                月份
+                {t('pages.taskManager.cronBuilder.month')}
               </div>
               <Select
                 value={month}
@@ -465,7 +481,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
                 fontWeight: 500,
                 marginBottom: '6px'
               }}>
-                星期
+                {t('pages.taskManager.cronBuilder.dayOfWeek')}
               </div>
               <Select
                 value={dayOfWeek}
@@ -493,7 +509,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
             fontSize: '13px',
             color: '#374151'
           }}>
-            <span style={{ fontWeight: 500, color: '#6b7280' }}>预览：</span>
+            <span style={{ fontWeight: 500, color: '#6b7280' }}>{t('pages.taskManager.cronBuilder.preview')}: </span>
             {describeCron(buildCronExpression())}
           </div>
         </div>
@@ -512,13 +528,13 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
           color: '#374151',
           marginBottom: '8px'
         }}>
-          直接输入 Cron 表达式
+          {t('pages.taskManager.cronBuilder.directInput')}
         </div>
         <Input
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           disabled={disabled}
-          placeholder="分 时 日 月 周 (例: 0 9 * * *)"
+          placeholder={t('pages.taskManager.cronBuilder.directInputPlaceholder')}
           style={{
             fontFamily: 'monospace',
             fontSize: '14px',
@@ -533,7 +549,7 @@ const CronBuilder: React.FC<CronBuilderProps> = ({
           marginTop: '6px',
           lineHeight: '1.4'
         }}>
-          格式：分钟(0-59) 小时(0-23) 日期(1-31) 月份(1-12) 星期(0-7)
+          {t('pages.taskManager.cronBuilder.formatHelp')}
         </div>
       </div>
     </div>
