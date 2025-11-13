@@ -14,7 +14,8 @@ SYSTEM_TOOLS_REGISTRY: Dict[str, Dict[str, Any]] = {}
 def register_system_tool(
     name: str,
     schema: Dict[str, Any],
-    handler: Callable
+    handler: Callable,
+    category: str = "uncategorized"
 ):
     """
     注册系统工具
@@ -23,19 +24,22 @@ def register_system_tool(
         name: 工具名称
         schema: 工具 schema（OpenAI tool format）
         handler: 工具处理函数
+        category: 工具类别（可选，默认为 "uncategorized"）
 
     Example:
         register_system_tool(
             name="tool_name",
             schema={...},
-            handler=my_handler_function
+            handler=my_handler_function,
+            category="agent_tools"
         )
     """
     SYSTEM_TOOLS_REGISTRY[name] = {
         "schema": schema,
-        "handler": handler
+        "handler": handler,
+        "category": category
     }
-    logger.debug(f"注册系统工具: {name}")
+    logger.debug(f"注册系统工具: {name} (类别: {category})")
 
 
 def get_tool_schema(tool_name: str) -> Optional[Dict[str, Any]]:
@@ -121,3 +125,33 @@ def get_system_tools_by_names(tool_names: List[str]) -> List[Dict[str, Any]]:
         else:
             logger.warning(f"系统工具未找到: {tool_name}")
     return schemas
+
+
+def get_tools_by_category() -> Dict[str, List[Dict[str, Any]]]:
+    """
+    按类别获取工具
+    
+    Returns:
+        {
+            "agent_tools": [
+                {"name": "tool1", "schema": {...}},
+                {"name": "tool2", "schema": {...}}
+            ],
+            "conversation_document_tools": [...]
+        }
+    """
+    categorized_tools: Dict[str, List[Dict[str, Any]]] = {}
+    
+    for tool_name, tool_info in SYSTEM_TOOLS_REGISTRY.items():
+        category = tool_info.get("category", "uncategorized")
+        schema = tool_info.get("schema")
+        
+        if category not in categorized_tools:
+            categorized_tools[category] = []
+        
+        categorized_tools[category].append({
+            "name": tool_name,
+            "schema": schema
+        })
+    
+    return categorized_tools

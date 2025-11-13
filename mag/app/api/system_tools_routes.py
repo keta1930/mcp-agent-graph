@@ -3,12 +3,14 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from app.services.system_tools import (
     get_tool_schema,
     get_tool_names,
-    is_system_tool
+    is_system_tool,
+    get_tools_by_category
 )
 from app.models.system_tools_schema import (
     SystemToolSchema,
     SystemToolListResponse,
-    SystemToolDetailResponse
+    SystemToolDetailResponse,
+    ToolCategory
 )
 from app.auth.dependencies import get_current_user
 from app.models.auth_schema import CurrentUser
@@ -20,23 +22,34 @@ router = APIRouter(prefix="/system-tools", tags=["system_tools"])
 
 @router.get("/list", response_model=SystemToolListResponse)
 async def list_system_tools(current_user: CurrentUser = Depends(get_current_user)):
-    """列出所有系统工具"""
+    """列出所有系统工具（按类别分组）"""
     try:
-        tool_names = get_tool_names()
-        tools = []
-
-        for tool_name in tool_names:
-            tool_schema = get_tool_schema(tool_name)
-            if tool_schema:
-                tools.append(SystemToolSchema(
-                    name=tool_name,
-                    schema=tool_schema
+        # 按类别获取工具
+        tools_by_category = get_tools_by_category()
+        
+        categories = []
+        total_count = 0
+        
+        # 构建分类响应
+        for category_name, tools_list in sorted(tools_by_category.items()):
+            tool_schemas = []
+            for tool_info in tools_list:
+                tool_schemas.append(SystemToolSchema(
+                    name=tool_info["name"],
+                    schema=tool_info["schema"]
                 ))
-
+            
+            categories.append(ToolCategory(
+                category=category_name,
+                tools=tool_schemas,
+                tool_count=len(tool_schemas)
+            ))
+            total_count += len(tool_schemas)
+        
         return SystemToolListResponse(
             success=True,
-            tools=tools,
-            total_count=len(tools)
+            categories=categories,
+            total_count=total_count
         )
     except Exception as e:
         logger.error(f"列出系统工具失败: {str(e)}")

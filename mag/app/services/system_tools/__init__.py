@@ -10,6 +10,7 @@ from .registry import (
     get_tool_names,
     is_system_tool,
     get_system_tools_by_names,
+    get_tools_by_category,
     SYSTEM_TOOLS_REGISTRY
 )
 
@@ -25,6 +26,7 @@ __all__ = [
     "get_tool_names",
     "is_system_tool",
     "get_system_tools_by_names",
+    "get_tools_by_category",
     "SYSTEM_TOOLS_REGISTRY",
     "agent_tools",
     "conversation_document_tools"
