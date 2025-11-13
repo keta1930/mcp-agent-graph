@@ -308,8 +308,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       return {
         ...base,
         padding: '10px 12px', // 保持一致的 padding
-        background: '#ffffff',
-        border: '1px solid rgba(139, 115, 85, 0.12)',
+        background: 'rgba(250, 248, 245, 0.8)',
+        border: '1px solid rgba(139, 115, 85, 0.15)',
         transform: 'translateY(-1px)',
         boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
       };
@@ -319,7 +319,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     return {
       ...base,
       padding: '10px 12px', // 保持一致的 padding
-      background: '#ffffff',
+      background: 'rgba(255, 255, 255, 0.6)',
       border: '1px solid rgba(139, 115, 85, 0.12)',
     };
   };
