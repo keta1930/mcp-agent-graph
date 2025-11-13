@@ -119,7 +119,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
         background: '#faf8f5'
       }}
       okText={t('components.graphEditor.addNodeModal.addNode')}
-      cancelText={t('components.graphEditor.addNodeModal.cancel')}
+      cancelText={t('common.cancel')}
       okButtonProps={{
         style: {
           background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
@@ -147,7 +147,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <Network size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
-                  节点信息
+                  {t('components.graphEditor.addNodeModal.nodeInfo')}
                 </div>
               }
               size="small"
@@ -158,35 +158,35 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <Form.Item
                   name="name"
-                  label="节点名称"
+                  label={t('components.graphEditor.addNodeModal.nodeName')}
                   rules={[
-                    { required: true, message: '请输入节点名称' },
+                    { required: true, message: t('components.graphEditor.addNodeModal.nodeNameRequired') },
                     {
                       validator: (_, value) => {
                         if (value && (/[/\\.]/.test(value))) {
-                          return Promise.reject('名称不能包含特殊字符 (/, \\, .)');
+                          return Promise.reject(t('components.graphEditor.addNodeModal.nodeNameInvalid'));
                         }
                         return Promise.resolve();
                       }
                     }
                   ]}
                 >
-                  <Input placeholder="输入节点名称" />
+                  <Input placeholder={t('components.graphEditor.addNodeModal.nodeNamePlaceholder')} />
                 </Form.Item>
 
                 <Form.Item
                   name="description"
                   label={
                     <span>
-                      节点描述{' '}
-                      <Tooltip title="用于帮助AI选择合适的工具和执行策略">
+                      {t('components.graphEditor.addNodeModal.nodeDescription')}{' '}
+                      <Tooltip title={t('components.graphEditor.addNodeModal.nodeDescriptionTooltip')}>
                         <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
                 >
                   <TextArea
-                    placeholder="描述节点的功能和用途"
+                    placeholder={t('components.graphEditor.addNodeModal.nodeDescriptionPlaceholder')}
                     rows={3}
                     showCount
                     maxLength={200}
@@ -201,14 +201,14 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                 }}>
                   <Form.Item
                     name="is_subgraph"
-                    label="节点类型"
+                    label={t('components.graphEditor.addNodeModal.nodeType')}
                     valuePropName="checked"
                     initialValue={false}
                     style={{ marginBottom: '16px' }}
                   >
                     <Switch
-                      checkedChildren="子图"
-                      unCheckedChildren="智能体"
+                      checkedChildren={t('components.graphEditor.addNodeModal.subgraph')}
+                      unCheckedChildren={t('components.graphEditor.addNodeModal.agent')}
                       onChange={handleTypeChange}
                     />
                   </Form.Item>
@@ -221,12 +221,12 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                       getFieldValue('is_subgraph') ? (
                         <Form.Item
                           name="subgraph_name"
-                          label="选择子图"
-                          rules={[{ required: true, message: '请选择一个子图' }]}
+                          label={t('components.graphEditor.addNodeModal.selectSubgraph')}
+                          rules={[{ required: true, message: t('components.graphEditor.addNodeModal.selectSubgraphRequired') }]}
                           style={{ marginBottom: '0' }}
                         >
                           <Select
-                            placeholder="选择一个子图"
+                            placeholder={t('components.graphEditor.addNodeModal.selectSubgraphPlaceholder')}
                             suffixIcon={<Code size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />}
                           >
                             {availableSubgraphs.map(graph => (
@@ -242,12 +242,12 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                       ) : (
                         <Form.Item
                           name="model_name"
-                          label="选择模型"
-                          rules={[{ required: true, message: '请选择一个模型' }]}
+                          label={t('components.graphEditor.addNodeModal.selectModel')}
+                          rules={[{ required: true, message: t('components.graphEditor.addNodeModal.selectModelRequired') }]}
                           style={{ marginBottom: '0' }}
                         >
                           <Select
-                            placeholder="选择AI模型"
+                            placeholder={t('components.graphEditor.addNodeModal.selectModelPlaceholder')}
                             suffixIcon={<Cpu size={16} strokeWidth={1.5} style={{ color: '#a0826d' }} />}
                           >
                             {models.map(model => (
@@ -274,7 +274,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <Cloud size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#b85845' }} />
-                  工具与输出
+                  {t('components.graphEditor.addNodeModal.toolsAndOutput')}
                 </div>
               }
               size="small"
@@ -285,12 +285,12 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <Form.Item
                   name="mcp_servers"
-                  label="MCP服务器"
+                  label={t('components.graphEditor.addNodeModal.mcpServers')}
                   initialValue={[]}
                 >
                   <Select
                     mode="multiple"
-                    placeholder="选择服务器工具"
+                    placeholder={t('components.graphEditor.addNodeModal.mcpServersPlaceholder')}
                   >
                     {mcpServers.map(server => (
                       <Option key={server} value={server}>
@@ -307,8 +307,8 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   name="output_enabled"
                   label={
                     <span>
-                      启用输出{' '}
-                      <Tooltip title="是否输出节点回复内容">
+                      {t('components.graphEditor.addNodeModal.enableOutput')}{' '}
+                      <Tooltip title={t('components.graphEditor.addNodeModal.enableOutputTooltip')}>
                         <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
@@ -323,15 +323,15 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   name="save"
                   label={
                     <span>
-                      保存格式{' '}
-                      <Tooltip title="输出内容保存到文件的格式">
+                      {t('components.graphEditor.addNodeModal.saveFormat')}{' '}
+                      <Tooltip title={t('components.graphEditor.addNodeModal.saveFormatTooltip')}>
                         <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
                   }
                 >
                   <Select
-                    placeholder="选择文件格式（可选）"
+                    placeholder={t('components.graphEditor.addNodeModal.saveFormatPlaceholder')}
                     allowClear
                     suffixIcon={<Database size={16} strokeWidth={1.5} style={{ color: '#a0826d' }} />}
                   >
@@ -358,7 +358,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <Link size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#d4a574' }} />
-                  节点连接
+                  {t('components.graphEditor.addNodeModal.nodeConnections')}
                 </div>
               }
               size="small"
@@ -371,8 +371,8 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   name="input_nodes"
                   label={
                     <span>
-                      输入节点{' '}
-                      <Tooltip title="选择为此节点提供输入的节点，包括'start'表示接收用户输入">
+                      {t('components.graphEditor.addNodeModal.inputNodes')}{' '}
+                      <Tooltip title={t('components.graphEditor.addNodeModal.inputNodesTooltip')}>
                         <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
@@ -381,7 +381,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                 >
                   <Select
                     mode="multiple"
-                    placeholder="选择输入来源"
+                    placeholder={t('components.graphEditor.addNodeModal.inputNodesPlaceholder')}
                     showSearch
                     filterOption={(input, option) =>
                       option?.children?.toString().toLowerCase().includes(input.toLowerCase()) ?? false
@@ -389,7 +389,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   >
                     <Option key="start" value="start">
                       <span style={{ color: '#059669', fontWeight: 'bold' }}>
-                        start <Text type="secondary">(用户输入)</Text>
+                        start <Text type="secondary">({t('components.graphEditor.addNodeModal.userInput')})</Text>
                       </span>
                     </Option>
                     {getAvailableNodes().map(nodeName => (
@@ -407,8 +407,8 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   name="output_nodes"
                   label={
                     <span>
-                      输出节点{' '}
-                      <Tooltip title="选择接收此节点输出的节点，包括'end'表示输出到最终结果">
+                      {t('components.graphEditor.addNodeModal.outputNodes')}{' '}
+                      <Tooltip title={t('components.graphEditor.addNodeModal.outputNodesTooltip')}>
                         <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                       </Tooltip>
                     </span>
@@ -417,7 +417,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                 >
                   <Select
                     mode="multiple"
-                    placeholder="选择输出目标"
+                    placeholder={t('components.graphEditor.addNodeModal.outputNodesPlaceholder')}
                     showSearch
                     filterOption={(input, option) =>
                       option?.children?.toString().toLowerCase().includes(input.toLowerCase()) ?? false
@@ -425,7 +425,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                   >
                     <Option key="end" value="end">
                       <span style={{ color: '#dc2626', fontWeight: 'bold' }}>
-                        end <Text type="secondary">(最终结果)</Text>
+                        end <Text type="secondary">({t('components.graphEditor.addNodeModal.finalResult')})</Text>
                       </span>
                     </Option>
                     {getAvailableNodes().map(nodeName => (
@@ -448,7 +448,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
               title={
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <Settings size={16} strokeWidth={1.5} style={{ marginRight: '8px', color: '#8b7355' }} />
-                  执行控制
+                  {t('components.graphEditor.addNodeModal.executionControl')}
                 </div>
               }
               size="small"
@@ -460,15 +460,15 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
                 name="handoffs"
                 label={
                   <span>
-                    循环次数{' '}
-                    <Tooltip title="节点可以重复执行的次数，用于循环流程">
+                    {t('components.graphEditor.addNodeModal.loopCount')}{' '}
+                    <Tooltip title={t('components.graphEditor.addNodeModal.loopCountTooltip')}>
                       <HelpCircle size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                     </Tooltip>
                   </span>
                 }
               >
                 <InputNumber
-                  placeholder="循环执行次数（可选）"
+                  placeholder={t('components.graphEditor.addNodeModal.loopCountPlaceholder')}
                   style={{ width: '100%' }}
                   min={1}
                 />
