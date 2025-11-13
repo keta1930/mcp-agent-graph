@@ -1,7 +1,7 @@
 // src/pages/AdminPanel.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layout, Typography, Space, Tag, Button, Table, Modal, Input, message } from 'antd';
+import { Layout, Typography, Space, Tag, Button, Table, Modal, Input, message, App } from 'antd';
 import { Shield, Users, Key, Plus, Copy, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { isAdmin } from '../utils/auth';
 import {
@@ -14,12 +14,15 @@ import {
   User,
   InviteCode
 } from '../services/adminService';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
 const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
+  const t = useT();
+  const { modal } = App.useApp();
   const [activeTab, setActiveTab] = useState<'users' | 'invites'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
@@ -46,44 +49,44 @@ const AdminPanel: React.FC = () => {
         setInviteCodes(codeList);
       }
     } catch (err: any) {
-      message.error(err.response?.data?.detail || '加载数据失败');
+      message.error(err.response?.data?.detail || t('pages.adminPanel.loadDataFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   const handlePromoteUser = async (userId: string) => {
-    Modal.confirm({
-      title: '提升为管理员',
-      content: `确定要提升用户 ${userId} 为管理员吗？`,
-      okText: '确认',
-      cancelText: '取消',
+    modal.confirm({
+      title: t('pages.adminPanel.users.promoteConfirmTitle'),
+      content: t('pages.adminPanel.users.promoteConfirmMessage', { userId }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: async () => {
         try {
           await promoteUser(userId);
-          message.success('操作成功');
+          message.success(t('pages.adminPanel.operationSuccess'));
           loadData();
         } catch (err: any) {
-          message.error(err.response?.data?.detail || '操作失败');
+          message.error(err.response?.data?.detail || t('pages.adminPanel.operationFailed'));
         }
       }
     });
   };
 
   const handleDeactivateUser = async (userId: string) => {
-    Modal.confirm({
-      title: '停用用户',
-      content: `确定要停用用户 ${userId} 吗？`,
-      okText: '确认',
-      cancelText: '取消',
+    modal.confirm({
+      title: t('pages.adminPanel.users.deactivateConfirmTitle'),
+      content: t('pages.adminPanel.users.deactivateConfirmMessage', { userId }),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
           await deactivateUser(userId);
-          message.success('操作成功');
+          message.success(t('pages.adminPanel.operationSuccess'));
           loadData();
         } catch (err: any) {
-          message.error(err.response?.data?.detail || '操作失败');
+          message.error(err.response?.data?.detail || t('pages.adminPanel.operationFailed'));
         }
       }
     });
@@ -97,27 +100,27 @@ const AdminPanel: React.FC = () => {
   const handleConfirmCreateCode = async () => {
     try {
       const code = await createInviteCode(newCodeDescription || undefined);
-      message.success(`邀请码创建成功：${code}`);
+      message.success(t('pages.adminPanel.inviteCodes.createSuccess', { code }));
       setDescriptionModalVisible(false);
       loadData();
     } catch (err: any) {
-      message.error(err.response?.data?.detail || '创建失败');
+      message.error(err.response?.data?.detail || t('pages.adminPanel.inviteCodes.createFailed'));
     }
   };
 
   const handleToggleInviteCode = async (code: string, isActive: boolean) => {
     try {
       await toggleInviteCode(code, !isActive);
-      message.success('操作成功');
+      message.success(t('pages.adminPanel.operationSuccess'));
       loadData();
     } catch (err: any) {
-      message.error(err.response?.data?.detail || '操作失败');
+      message.error(err.response?.data?.detail || t('pages.adminPanel.operationFailed'));
     }
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    message.success('已复制到剪贴板');
+    message.success(t('pages.adminPanel.copiedToClipboard'));
   };
 
   // 表格自定义样式组件（现在 index.css 已经使用大地色系，不再需要 !important）
@@ -144,7 +147,7 @@ const AdminPanel: React.FC = () => {
   // 用户表格列定义
   const userColumns = [
     {
-      title: '用户名',
+      title: t('pages.adminPanel.users.username'),
       dataIndex: 'user_id',
       key: 'user_id',
       render: (userId: string) => (
@@ -169,14 +172,14 @@ const AdminPanel: React.FC = () => {
       )
     },
     {
-      title: '角色',
+      title: t('pages.adminPanel.users.role'),
       dataIndex: 'role',
       key: 'role',
       render: (role: string) => {
         const roleConfig = {
-          super_admin: { text: '超级管理员', color: '#b85845' },
-          admin: { text: '管理员', color: '#a0826d' },
-          user: { text: '普通用户', color: '#8b7355' }
+          super_admin: { text: t('pages.adminPanel.users.roleSuperAdmin'), color: '#b85845' },
+          admin: { text: t('pages.adminPanel.users.roleAdmin'), color: '#a0826d' },
+          user: { text: t('pages.adminPanel.users.roleUser'), color: '#8b7355' }
         };
         const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.user;
         return (
@@ -194,7 +197,7 @@ const AdminPanel: React.FC = () => {
       }
     },
     {
-      title: '状态',
+      title: t('pages.adminPanel.users.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean) => (
@@ -206,12 +209,12 @@ const AdminPanel: React.FC = () => {
           fontWeight: 500,
           padding: '4px 12px'
         }}>
-          {isActive ? '活跃' : '停用'}
+          {isActive ? t('pages.adminPanel.users.statusActive') : t('pages.adminPanel.users.statusDeactivated')}
         </Tag>
       )
     },
     {
-      title: '注册时间',
+      title: t('pages.adminPanel.users.registrationTime'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => (
@@ -221,7 +224,7 @@ const AdminPanel: React.FC = () => {
       )
     },
     {
-      title: '最后登录',
+      title: t('pages.adminPanel.users.lastLogin'),
       dataIndex: 'last_login',
       key: 'last_login',
       render: (date: string | null) => (
@@ -231,7 +234,7 @@ const AdminPanel: React.FC = () => {
       )
     },
     {
-      title: '操作',
+      title: t('pages.adminPanel.users.actions'),
       key: 'action',
       render: (_: any, record: User) => (
         <Space size={8}>
@@ -251,7 +254,7 @@ const AdminPanel: React.FC = () => {
                 padding: '0 12px'
               }}
             >
-              提升为管理员
+              {t('pages.adminPanel.users.promoteToAdmin')}
             </Button>
           )}
           {record.is_active && record.role !== 'super_admin' && (
@@ -267,7 +270,7 @@ const AdminPanel: React.FC = () => {
                 padding: '0 12px'
               }}
             >
-              停用
+              {t('pages.adminPanel.users.deactivate')}
             </Button>
           )}
         </Space>
@@ -278,7 +281,7 @@ const AdminPanel: React.FC = () => {
   // 邀请码表格列定义
   const inviteColumns = [
     {
-      title: '邀请码',
+      title: t('pages.adminPanel.inviteCodes.inviteCode'),
       dataIndex: 'code',
       key: 'code',
       render: (code: string) => (
@@ -319,7 +322,7 @@ const AdminPanel: React.FC = () => {
       )
     },
     {
-      title: '状态',
+      title: t('pages.adminPanel.inviteCodes.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean) => (
@@ -331,21 +334,21 @@ const AdminPanel: React.FC = () => {
           fontWeight: 500,
           padding: '4px 12px'
         }}>
-          {isActive ? '激活' : '停用'}
+          {isActive ? t('pages.adminPanel.inviteCodes.statusActive') : t('pages.adminPanel.inviteCodes.statusDeactivated')}
         </Tag>
       )
     },
     {
-      title: '使用情况',
+      title: t('pages.adminPanel.inviteCodes.usage'),
       key: 'usage',
       render: (_: any, record: InviteCode) => (
         <Text style={{ color: 'rgba(45, 45, 45, 0.85)', fontSize: '13px', fontWeight: 500 }}>
-          {record.current_uses} / {record.max_uses || '∞'}
+          {record.current_uses} / {record.max_uses || t('pages.adminPanel.inviteCodes.unlimited')}
         </Text>
       )
     },
     {
-      title: '创建者',
+      title: t('pages.adminPanel.inviteCodes.creator'),
       dataIndex: 'created_by',
       key: 'created_by',
       render: (creator: string) => (
@@ -355,7 +358,7 @@ const AdminPanel: React.FC = () => {
       )
     },
     {
-      title: '创建时间',
+      title: t('pages.adminPanel.inviteCodes.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       render: (date: string) => (
@@ -365,17 +368,17 @@ const AdminPanel: React.FC = () => {
       )
     },
     {
-      title: '过期时间',
+      title: t('pages.adminPanel.inviteCodes.expiresAt'),
       dataIndex: 'expires_at',
       key: 'expires_at',
       render: (date: string | null) => (
         <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px' }}>
-          {date ? new Date(date).toLocaleDateString() : '永久'}
+          {date ? new Date(date).toLocaleDateString() : t('pages.adminPanel.inviteCodes.permanent')}
         </Text>
       )
     },
     {
-      title: '操作',
+      title: t('pages.adminPanel.inviteCodes.actions'),
       key: 'action',
       render: (_: any, record: InviteCode) => (
         <Button
@@ -394,7 +397,7 @@ const AdminPanel: React.FC = () => {
             gap: '4px'
           }}
         >
-          {record.is_active ? '停用' : '激活'}
+          {record.is_active ? t('pages.adminPanel.inviteCodes.deactivate') : t('pages.adminPanel.inviteCodes.activate')}
         </Button>
       )
     }
@@ -432,7 +435,7 @@ const AdminPanel: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              管理后台
+              {t('pages.adminPanel.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -443,7 +446,7 @@ const AdminPanel: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {users.length} 位用户
+              {t('pages.adminPanel.usersCount', { count: users.length })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -454,7 +457,7 @@ const AdminPanel: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {inviteCodes.length} 个邀请码
+              {t('pages.adminPanel.inviteCodesCount', { count: inviteCodes.length })}
             </Tag>
           </Space>
 
@@ -475,7 +478,7 @@ const AdminPanel: React.FC = () => {
               gap: '6px'
             }}
           >
-            返回主页
+            {t('pages.adminPanel.backHome')}
           </Button>
         </div>
       </Header>
@@ -511,7 +514,7 @@ const AdminPanel: React.FC = () => {
             }}
           >
             <Users size={16} strokeWidth={1.5} />
-            用户管理
+            {t('pages.adminPanel.userManagement')}
           </div>
           <div
             onClick={() => setActiveTab('invites')}
@@ -531,7 +534,7 @@ const AdminPanel: React.FC = () => {
             }}
           >
             <Key size={16} strokeWidth={1.5} />
-            邀请码管理
+            {t('pages.adminPanel.inviteCodeManagement')}
           </div>
         </div>
 
@@ -553,7 +556,7 @@ const AdminPanel: React.FC = () => {
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
-                showTotal: (total) => `共 ${total} 位用户`,
+                showTotal: (total) => t('pages.adminPanel.users.totalUsers', { total }),
                 style: {
                   padding: '16px',
                   background: 'rgba(250, 248, 245, 0.5)',
@@ -593,7 +596,7 @@ const AdminPanel: React.FC = () => {
                   gap: '6px'
                 }}
               >
-                生成新邀请码
+                {t('pages.adminPanel.inviteCodes.generateNewCode')}
               </Button>
             </div>
 
@@ -614,7 +617,7 @@ const AdminPanel: React.FC = () => {
                 pagination={{
                   pageSize: 10,
                   showSizeChanger: true,
-                  showTotal: (total) => `共 ${total} 个邀请码`,
+                  showTotal: (total) => t('pages.adminPanel.inviteCodes.totalCodes', { total }),
                   style: {
                     padding: '16px',
                     background: 'rgba(250, 248, 245, 0.5)',
@@ -632,19 +635,19 @@ const AdminPanel: React.FC = () => {
 
       {/* 创建邀请码描述弹窗 */}
       <Modal
-        title="生成新邀请码"
+        title={t('pages.adminPanel.inviteCodes.createCodeTitle')}
         open={descriptionModalVisible}
         onOk={handleConfirmCreateCode}
         onCancel={() => setDescriptionModalVisible(false)}
-        okText="生成"
-        cancelText="取消"
+        okText={t('pages.adminPanel.inviteCodes.generate')}
+        cancelText={t('common.cancel')}
       >
         <div style={{ marginTop: '16px' }}>
           <Text style={{ display: 'block', marginBottom: '8px', color: '#2d2d2d', fontWeight: 500 }}>
-            邀请码描述（可选）
+            {t('pages.adminPanel.inviteCodes.codeDescription')}
           </Text>
           <Input
-            placeholder="例如：团队成员邀请码"
+            placeholder={t('pages.adminPanel.inviteCodes.codeDescriptionPlaceholder')}
             value={newCodeDescription}
             onChange={(e) => setNewCodeDescription(e.target.value)}
             style={{

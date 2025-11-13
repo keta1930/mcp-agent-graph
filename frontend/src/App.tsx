@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntApp } from 'antd';
 import enUS from 'antd/locale/en_US';
 import zhCN from 'antd/locale/zh_CN';
 import WorkspaceLayout from './layouts/WorkspaceLayout';
@@ -70,7 +70,8 @@ const AppContent: React.FC = () => {
         },
       }}
     >
-      <Router>
+      <AntApp>
+        <Router>
       <Routes>
         {/* 公开路由 - 登录和注册 */}
         <Route
@@ -222,7 +223,8 @@ const AppContent: React.FC = () => {
         {/* 默认重定向 */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+        </Router>
+      </AntApp>
     </ConfigProvider>
   );
 };
