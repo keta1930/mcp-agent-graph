@@ -21,7 +21,38 @@
   "pages": {
     "home": {
       "title": "Home",
-      "description": "Welcome to MCP Agent Graph"
+      "description": "Welcome to MCP Agent Graph",
+      "tagline": "Agent Development Framework",
+      "subtitle": "From requirements to implementation, making AI development simple and elegant",
+      "features": {
+        "requirementDriven": {
+          "title": "Requirement Driven",
+          "description": "From idea to agent"
+        },
+        "aiGenerated": {
+          "title": "AI Generated",
+          "description": "Auto-create MCP tools"
+        },
+        "graphNesting": {
+          "title": "Graph in Graph",
+          "description": "Complex workflow orchestration"
+        },
+        "visualization": {
+          "title": "Visualization",
+          "description": "Intuitive editing experience"
+        }
+      },
+      "workspace": {
+        "title": "Enter Workspace",
+        "description": "Manage Agents, model configurations, and MCP servers",
+        "action": "Start Managing"
+      },
+      "chat": {
+        "title": "Chat System",
+        "description": "Interact with AI Agents, run agent workflows",
+        "action": "Start Chatting"
+      },
+      "copyright": "© 2025 MCP Agent Graph"
     },
     "login": {
       "title": "Login",
@@ -75,7 +106,17 @@
       "mcpManager": "MCP Manager",
       "promptManager": "Prompt Manager",
       "systemTools": "System Tools",
-      "fileManager": "File Manager"
+      "fileManager": "File Manager",
+      "backHome": "Back to Home",
+      "shutdown": "Shutdown System",
+      "shutdownConfirmTitle": "Confirm System Shutdown",
+      "shutdownConfirmMessage": "Are you sure you want to shut down the service?",
+      "shutdownConfirmDetail": "This will terminate all running processes and the server will stop responding.",
+      "shutdownConfirmButton": "Confirm Shutdown",
+      "shutdownSuccess": "Shutdown request initiated successfully",
+      "shutdownActiveSessions": "{{count}} active sessions will be terminated",
+      "shutdownPending": "System will shut down in a few seconds...",
+      "shutdownFailed": "Failed to shut down service"
     }
   },
   "components": {

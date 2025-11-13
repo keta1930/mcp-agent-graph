@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { shutdownSystem } from '../services/systemService';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { useT } from '../i18n';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ interface WorkspaceLayoutProps {
 const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const t = useT();
   const [isShuttingDown, setIsShuttingDown] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -34,17 +36,17 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
     setIsShuttingDown(true);
     try {
       const response = await shutdownSystem();
-      message.success('服务关闭请求已成功发起');
+      message.success(t('pages.workspace.shutdownSuccess'));
 
       if (response && response.active_sessions) {
-        message.info(`${response.active_sessions} 个活动会话将被终止`);
+        message.info(t('pages.workspace.shutdownActiveSessions', { count: response.active_sessions }));
       }
 
       setConfirmModalVisible(false);
-      message.loading('系统将在几秒钟内关闭...', 10);
+      message.loading(t('pages.workspace.shutdownPending'), 10);
     } catch (error) {
       console.error('关闭服务失败:', error);
-      message.error('关闭服务失败');
+      message.error(t('pages.workspace.shutdownFailed'));
       setIsShuttingDown(false);
     }
   };
@@ -62,13 +64,13 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   };
 
   const navItems = [
-    { path: '/workspace/agent-manager', icon: Bot, label: 'Agent管理' },
-    { path: '/workspace/graph-editor', icon: Network, label: '图形编辑器' },
-    { path: '/workspace/model-manager', icon: Cpu, label: '模型管理' },
-    { path: '/workspace/system-tools', icon: Wrench, label: '系统工具' },
-    { path: '/workspace/mcp-manager', icon: Plug, label: 'MCP管理' },
-    { path: '/workspace/prompt-manager', icon: MessageSquareText, label: '提示词管理' },
-    { path: '/workspace/file-manager', icon: FolderOpen, label: '文件管理' },
+    { path: '/workspace/agent-manager', icon: Bot, labelKey: 'pages.workspace.agentManager' },
+    { path: '/workspace/graph-editor', icon: Network, labelKey: 'pages.workspace.graphEditor' },
+    { path: '/workspace/model-manager', icon: Cpu, labelKey: 'pages.workspace.modelManager' },
+    { path: '/workspace/system-tools', icon: Wrench, labelKey: 'pages.workspace.systemTools' },
+    { path: '/workspace/mcp-manager', icon: Plug, labelKey: 'pages.workspace.mcpManager' },
+    { path: '/workspace/prompt-manager', icon: MessageSquareText, labelKey: 'pages.workspace.promptManager' },
+    { path: '/workspace/file-manager', icon: FolderOpen, labelKey: 'pages.workspace.fileManager' },
   ];
 
   // 侧边栏容器样式
@@ -264,7 +266,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           {/* Header */}
           <div style={headerStyle}>
             <div style={headerDecorStyle} />
-            {!collapsed && <h3 style={titleStyle}>工作台</h3>}
+            {!collapsed && <h3 style={titleStyle}>{t('pages.workspace.title')}</h3>}
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
@@ -306,13 +308,13 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                   onMouseLeave={() => setHoveredItem(null)}
                 >
                   <Icon size={20} strokeWidth={1.5} />
-                  {!collapsed && <span style={navLabelStyle}>{item.label}</span>}
+                  {!collapsed && <span style={navLabelStyle}>{t(item.labelKey)}</span>}
                   
                   {/* Tooltip for collapsed state */}
                   {collapsed && isHovered && (
                     <div style={tooltipStyle}>
                       <div style={tooltipArrowStyle} />
-                      {item.label}
+                      {t(item.labelKey)}
                     </div>
                   )}
                 </Link>
@@ -342,13 +344,13 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               style={footerButtonStyle(hoveredItem === 'home')}
               onMouseEnter={() => setHoveredItem('home')}
               onMouseLeave={() => setHoveredItem(null)}
-              title={collapsed ? '返回首页' : undefined}
+              title={collapsed ? t('pages.workspace.backHome') : undefined}
             >
               <Home size={18} strokeWidth={1.5} />
               {collapsed && hoveredItem === 'home' && (
                 <div style={tooltipStyle}>
                   <div style={tooltipArrowStyle} />
-                  返回首页
+                  {t('pages.workspace.backHome')}
                 </div>
               )}
             </button>
@@ -360,13 +362,13 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               style={footerButtonStyle(hoveredItem === 'power', true)}
               onMouseEnter={() => setHoveredItem('power')}
               onMouseLeave={() => setHoveredItem(null)}
-              title={collapsed ? '关闭系统' : undefined}
+              title={collapsed ? t('pages.workspace.shutdown') : undefined}
             >
               <Power size={18} strokeWidth={1.5} />
               {collapsed && hoveredItem === 'power' && (
                 <div style={tooltipStyle}>
                   <div style={tooltipArrowStyle} />
-                  关闭系统
+                  {t('pages.workspace.shutdown')}
                 </div>
               )}
             </button>
@@ -396,14 +398,14 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Power size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
-              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>确认关闭系统</span>
+              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.workspace.shutdownConfirmTitle')}</span>
             </div>
           }
           open={confirmModalVisible}
           onOk={handleShutdown}
           onCancel={handleCancel}
-          okText="确认关闭"
-          cancelText="取消"
+          okText={t('pages.workspace.shutdownConfirmButton')}
+          cancelText={t('common.cancel')}
           okButtonProps={{ 
             danger: true, 
             loading: isShuttingDown,
@@ -434,9 +436,9 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
             lineHeight: 1.6,
             letterSpacing: '0.3px'
           }}>
-            <p style={{ margin: '0 0 8px 0' }}>您确定要关闭服务吗？</p>
+            <p style={{ margin: '0 0 8px 0' }}>{t('pages.workspace.shutdownConfirmMessage')}</p>
             <p style={{ margin: 0, fontSize: '13px', color: 'rgba(45, 45, 45, 0.65)' }}>
-              这将终止所有正在运行的进程，服务器将停止响应。
+              {t('pages.workspace.shutdownConfirmDetail')}
             </p>
           </div>
         </Modal>

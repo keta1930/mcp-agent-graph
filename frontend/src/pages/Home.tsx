@@ -11,9 +11,11 @@ import {
   ChevronRight
 } from 'lucide-react';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { useT } from '../i18n';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const t = useT();
   const [workspaceHover, setWorkspaceHover] = useState(false);
   const [chatHover, setChatHover] = useState(false);
 
@@ -138,7 +140,7 @@ const Home: React.FC = () => {
               letterSpacing: '1px',
               lineHeight: 1.4
             }}>
-              智能体开发框架
+              {t('pages.home.tagline')}
             </h1>
             
             <p style={{
@@ -149,7 +151,7 @@ const Home: React.FC = () => {
               letterSpacing: '0.5px',
               lineHeight: 1.6
             }}>
-              从需求到实现，让 AI 开发变得简单而优雅
+              {t('pages.home.subtitle')}
             </p>
           </div>
 
@@ -162,10 +164,10 @@ const Home: React.FC = () => {
             animation: 'slowSlideUp 0.8s ease-out 0.2s both'
           }}>
             {[
-              { icon: Lightbulb, title: '需求驱动', desc: '从想法到智能体' },
-              { icon: Zap, title: 'AI 生成', desc: '自动创建 MCP 工具' },
-              { icon: Network, title: '图嵌套图', desc: '复杂流程编排' },
-              { icon: Layers, title: '可视化', desc: '直观的编辑体验' }
+              { icon: Lightbulb, titleKey: 'pages.home.features.requirementDriven.title', descKey: 'pages.home.features.requirementDriven.description' },
+              { icon: Zap, titleKey: 'pages.home.features.aiGenerated.title', descKey: 'pages.home.features.aiGenerated.description' },
+              { icon: Network, titleKey: 'pages.home.features.graphNesting.title', descKey: 'pages.home.features.graphNesting.description' },
+              { icon: Layers, titleKey: 'pages.home.features.visualization.title', descKey: 'pages.home.features.visualization.description' }
             ].map((feature, index) => {
               const Icon = feature.icon;
               return (
@@ -200,7 +202,7 @@ const Home: React.FC = () => {
                     marginBottom: '4px',
                     letterSpacing: '0.3px'
                   }}>
-                    {feature.title}
+                    {t(feature.titleKey)}
                   </div>
                   <div style={{
                     fontSize: '13px',
@@ -208,7 +210,7 @@ const Home: React.FC = () => {
                     letterSpacing: '0.2px',
                     lineHeight: 1.5
                   }}>
-                    {feature.desc}
+                    {t(feature.descKey)}
                   </div>
                 </div>
               );
@@ -277,7 +279,7 @@ const Home: React.FC = () => {
                   margin: '0 0 8px 0',
                   letterSpacing: '0.5px'
                 }}>
-                  进入工作台
+                  {t('pages.home.workspace.title')}
                 </h3>
 
                 <p style={{
@@ -287,7 +289,7 @@ const Home: React.FC = () => {
                   lineHeight: 1.6,
                   letterSpacing: '0.3px'
                 }}>
-                  管理 Agent、模型配置和 MCP 服务器
+                  {t('pages.home.workspace.description')}
                 </p>
 
                 <div style={{
@@ -299,7 +301,7 @@ const Home: React.FC = () => {
                   fontWeight: 500,
                   letterSpacing: '0.3px'
                 }}>
-                  <span>开始管理</span>
+                  <span>{t('pages.home.workspace.action')}</span>
                   <ChevronRight 
                     size={16} 
                     strokeWidth={2}
@@ -367,7 +369,7 @@ const Home: React.FC = () => {
                   margin: '0 0 8px 0',
                   letterSpacing: '0.5px'
                 }}>
-                  对话系统
+                  {t('pages.home.chat.title')}
                 </h3>
 
                 <p style={{
@@ -377,7 +379,7 @@ const Home: React.FC = () => {
                   lineHeight: 1.6,
                   letterSpacing: '0.3px'
                 }}>
-                  与 AI Agent 交互，运行智能体工作流
+                  {t('pages.home.chat.description')}
                 </p>
 
                 <div style={{
@@ -389,7 +391,7 @@ const Home: React.FC = () => {
                   fontWeight: 500,
                   letterSpacing: '0.3px'
                 }}>
-                  <span>开始对话</span>
+                  <span>{t('pages.home.chat.action')}</span>
                   <ChevronRight 
                     size={16} 
                     strokeWidth={2}
@@ -423,7 +425,7 @@ const Home: React.FC = () => {
                 letterSpacing: '0.5px',
                 fontWeight: 400
               }}>
-                © 2025 MCP Agent Graph
+                {t('pages.home.copyright')}
               </p>
             </div>
           </div>

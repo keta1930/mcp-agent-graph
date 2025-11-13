@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "MCP 智能体图",
+    "appName": "MCP Agent Graph",
     "welcome": "欢迎",
     "save": "保存",
     "cancel": "取消",
@@ -21,7 +21,38 @@
   "pages": {
     "home": {
       "title": "首页",
-      "description": "欢迎使用 MCP 智能体图"
+      "description": "欢迎使用 MCP Agent Graph",
+      "tagline": "智能体开发框架",
+      "subtitle": "从需求到实现，让 AI 开发变得简单而优雅",
+      "features": {
+        "requirementDriven": {
+          "title": "需求驱动",
+          "description": "从想法到智能体"
+        },
+        "aiGenerated": {
+          "title": "AI 生成",
+          "description": "自动创建 MCP 工具"
+        },
+        "graphNesting": {
+          "title": "图嵌套图",
+          "description": "复杂流程编排"
+        },
+        "visualization": {
+          "title": "可视化",
+          "description": "直观的编辑体验"
+        }
+      },
+      "workspace": {
+        "title": "进入工作台",
+        "description": "管理 Agent、模型配置和 MCP 服务器",
+        "action": "开始管理"
+      },
+      "chat": {
+        "title": "对话系统",
+        "description": "与 AI Agent 交互，运行智能体工作流",
+        "action": "开始对话"
+      },
+      "copyright": "© 2025 MCP Agent Graph"
     },
     "login": {
       "title": "登录",
@@ -75,7 +106,17 @@
       "mcpManager": "MCP 管理",
       "promptManager": "提示词管理",
       "systemTools": "系统工具",
-      "fileManager": "文件管理"
+      "fileManager": "文件管理",
+      "backHome": "返回首页",
+      "shutdown": "关闭系统",
+      "shutdownConfirmTitle": "确认关闭系统",
+      "shutdownConfirmMessage": "您确定要关闭服务吗？",
+      "shutdownConfirmDetail": "这将终止所有正在运行的进程，服务器将停止响应。",
+      "shutdownConfirmButton": "确认关闭",
+      "shutdownSuccess": "服务关闭请求已成功发起",
+      "shutdownActiveSessions": "{{count}} 个活动会话将被终止",
+      "shutdownPending": "系统将在几秒钟内关闭...",
+      "shutdownFailed": "关闭服务失败"
     }
   },
   "components": {
