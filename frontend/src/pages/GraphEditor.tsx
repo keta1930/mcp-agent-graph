@@ -71,7 +71,9 @@ const GraphEditor: React.FC = () => {
     generateMCPScript,
     getGraphReadme,
     updateGraphProperties,
-    autoLayout
+    autoLayout,
+    importGraphFromFile,
+    importGraphPackageFromFile
   } = useGraphEditorStore();
 
   const { fetchConfig, fetchStatus } = useMCPStore();
@@ -222,6 +224,34 @@ const GraphEditor: React.FC = () => {
     }
   };
 
+  // 导入文件
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileName = file.name.toLowerCase();
+      let result;
+
+      if (fileName.endsWith('.json')) {
+        result = await importGraphFromFile(file);
+        message.success(t('pages.graphEditor.importSuccess', { name: result.graph_name || file.name }));
+      } else if (fileName.endsWith('.zip')) {
+        result = await importGraphPackageFromFile(file);
+        message.success(t('pages.graphEditor.importPackageSuccess', { name: result.graph_name || file.name }));
+      } else {
+        message.error(t('pages.graphEditor.unsupportedFileType'));
+        return;
+      }
+
+      // 清空文件输入，允许重复导入同一文件
+      event.target.value = '';
+    } catch (error: any) {
+      message.error(t('pages.graphEditor.importFailed', { error: error.message || t('errors.serverError') }));
+      event.target.value = '';
+    }
+  };
+
   // 添加节点
   const handleAddNode = (nodeData: any) => {
     const baseX = 250;
@@ -363,6 +393,34 @@ const GraphEditor: React.FC = () => {
                 e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
               }}
             />
+            <input
+              type="file"
+              id="import-graph-file"
+              accept=".json,.zip"
+              style={{ display: 'none' }}
+              onChange={handleImportFile}
+            />
+            <Tooltip title={t('pages.graphEditor.importGraph')}>
+              <Button
+                icon={<Download size={16} strokeWidth={1.5} style={{ transform: 'rotate(180deg)' }} />}
+                onClick={() => document.getElementById('import-graph-file')?.click()}
+                style={{
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.85)',
+                  color: '#8b7355',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  letterSpacing: '0.3px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '0 16px'
+                }}
+              >
+                {t('pages.graphEditor.import')}
+              </Button>
+            </Tooltip>
             <Button
               icon={<Sparkles size={16} strokeWidth={1.5} />}
               onClick={() => setPromptTemplateModalVisible(true)}

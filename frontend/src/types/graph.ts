@@ -46,6 +46,7 @@ export interface MCPScriptResponse {
   parallel_script?: string;
   script?: string;
   default_script?: string;
+  error?: string;
 }
 
 

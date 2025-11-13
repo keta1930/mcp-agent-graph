@@ -145,6 +145,33 @@ export const generateMCPScript = async (graphName: string): Promise<MCPScriptRes
   return response.data;
 };
 
+// Download MCP script as file
+export const downloadMCPScript = async (graphName: string): Promise<void> => {
+  const response = await generateMCPScript(graphName);
+  
+  if (response.error) {
+    throw new Error(response.error);
+  }
+
+  // 使用 sequential_script 或 default_script
+  const scriptContent = response.sequential_script || response.default_script || '';
+  
+  if (!scriptContent) {
+    throw new Error('No script content available');
+  }
+
+  // 创建 Blob 并下载
+  const blob = new Blob([scriptContent], { type: 'text/plain;charset=utf-8' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${graphName}_mcp_server.py`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
 // ======= 导入导出功能 =======
 
 // Import graph from JSON file (by file path)

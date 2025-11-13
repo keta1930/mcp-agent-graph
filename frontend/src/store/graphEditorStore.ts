@@ -693,9 +693,8 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
         await get().saveGraph();
       }
 
-      const response = await graphService.generateMCPScript(graphName);
+      await graphService.downloadMCPScript(graphName);
       set({ loading: false });
-      return response;
     } catch (error) {
       set({
         loading: false,
