@@ -4,6 +4,7 @@ import { Button, Tooltip } from 'antd';
 import {
   Palette, Square, Minus, EyeOff, Grid3x3
 } from 'lucide-react';
+import { useT } from '../../../i18n/hooks';
 
 export type BackgroundType = 'none' | 'dots' | 'lines' | 'grid' | 'cross';
 
@@ -57,14 +58,14 @@ const getBackgroundIcon = (type: BackgroundType) => {
   }
 };
 
-const getBackgroundLabel = (type: BackgroundType) => {
+const getBackgroundLabel = (type: BackgroundType, t: (key: string) => string) => {
   switch (type) {
-    case 'none': return '无背景';
-    case 'dots': return '点状';
-    case 'lines': return '线性';
-    case 'grid': return '网格';
-    case 'cross': return '交叉';
-    default: return '点状';
+    case 'none': return t('components.graphEditor.backgroundControls.none');
+    case 'dots': return t('components.graphEditor.backgroundControls.dots');
+    case 'lines': return t('components.graphEditor.backgroundControls.lines');
+    case 'grid': return t('components.graphEditor.backgroundControls.grid');
+    case 'cross': return t('components.graphEditor.backgroundControls.cross');
+    default: return t('components.graphEditor.backgroundControls.dots');
   }
 };
 
@@ -78,6 +79,7 @@ const BackgroundControls: React.FC<BackgroundControlsProps> = ({
   backgroundType,
   onBackgroundTypeChange
 }) => {
+  const t = useT();
   const backgroundTypes: BackgroundType[] = ['none', 'dots', 'lines', 'grid', 'cross'];
 
   return (
@@ -102,10 +104,10 @@ const BackgroundControls: React.FC<BackgroundControlsProps> = ({
         marginRight: '8px',
         fontWeight: '500'
       }}>
-        背景:
+        {t('components.graphEditor.backgroundControls.label')}
       </span>
       {backgroundTypes.map(type => (
-        <Tooltip key={type} title={getBackgroundLabel(type)}>
+        <Tooltip key={type} title={getBackgroundLabel(type, t)}>
           <Button
             type={backgroundType === type ? 'primary' : 'text'}
             size="small"

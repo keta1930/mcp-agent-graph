@@ -816,6 +816,14 @@
         "versionListLoadFailed": "加载版本列表失败: {{error}}",
         "justNow": "刚刚",
         "description": "描述本次版本的主要变更内容，便于追踪和回退"
+      },
+      "backgroundControls": {
+        "label": "背景:",
+        "none": "无背景",
+        "dots": "点状",
+        "lines": "线性",
+        "grid": "网格",
+        "cross": "交叉"
       }
     }
   },

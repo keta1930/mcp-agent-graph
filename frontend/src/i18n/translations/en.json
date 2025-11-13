@@ -816,6 +816,14 @@
         "versionListLoadFailed": "Failed to load version list: {{error}}",
         "justNow": "Just now",
         "description": "Describe the main changes in this version, for easy tracking and rollback"
+      },
+      "backgroundControls": {
+        "label": "Background:",
+        "none": "None",
+        "dots": "Dots",
+        "lines": "Lines",
+        "grid": "Grid",
+        "cross": "Cross"
       }
     }
   },
