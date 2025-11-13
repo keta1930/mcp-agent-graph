@@ -9,6 +9,7 @@ import MessageDisplay from '../components/chat/message/MessageDisplay';
 import InputArea from '../components/chat/input/InputArea';
 import CompactConfigModal from '../components/chat/modal/CompactConfigModal';
 import GlobalNotification from '../components/common/GlobalNotification';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { useConversationStore } from '../store/conversationStore';
 import { useSSEConnection } from '../hooks/useSSEConnection';
 import { useModelStore } from '../store/modelStore';
@@ -581,6 +582,9 @@ const ChatSystem: React.FC = () => {
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {/* Language Switcher */}
+                  <LanguageSwitcher />
+                  
                   {/* Chat模式的压缩按钮 */}
                   {displayConversation?.generation_type === 'chat' && (() => {
                     const isCurrentConversationCompacting = activeConversationId ? compactingConversations.has(activeConversationId) : false;

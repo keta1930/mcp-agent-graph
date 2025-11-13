@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Input, Button, Alert, Typography, Space, Progress } from 'antd';
 import { User, Lock, Shield, UserPlus } from 'lucide-react';
 import { register } from '../services/authService';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const { Title, Text } = Typography;
 
@@ -95,6 +96,16 @@ const RegisterPage: React.FC = () => {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Language Switcher - positioned at top right */}
+      <div style={{
+        position: 'absolute',
+        top: '24px',
+        right: '24px',
+        zIndex: 10
+      }}>
+        <LanguageSwitcher />
+      </div>
+
       {/* 装饰性背景元素 */}
       <div style={{
         position: 'absolute',

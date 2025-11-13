@@ -5,6 +5,7 @@ import { Input, Button, Alert, Typography, Space } from 'antd';
 import { User, Lock, LogIn } from 'lucide-react';
 import { login } from '../services/authService';
 import { setToken, setRefreshToken, setUserInfo } from '../utils/auth';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const { Title, Text } = Typography;
 
@@ -55,6 +56,16 @@ const LoginPage: React.FC = () => {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Language Switcher - positioned at top right */}
+      <div style={{
+        position: 'absolute',
+        top: '24px',
+        right: '24px',
+        zIndex: 10
+      }}>
+        <LanguageSwitcher />
+      </div>
+
       {/* 装饰性背景元素 */}
       <div style={{
         position: 'absolute',

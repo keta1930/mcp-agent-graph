@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { shutdownSystem } from '../services/systemService';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -322,6 +323,18 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           {/* Footer */}
           <div style={footerStyle}>
             <div style={footerDecorStyle} />
+            
+            {/* Language Switcher - only show when not collapsed */}
+            {!collapsed && (
+              <div style={{ 
+                width: '100%', 
+                marginBottom: '8px',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <LanguageSwitcher />
+              </div>
+            )}
             
             <button
               type="button"

@@ -10,6 +10,7 @@ import {
   Layers,
   ChevronRight
 } from 'lucide-react';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -70,6 +71,16 @@ const Home: React.FC = () => {
         position: 'relative',
         overflow: 'hidden'
       }}>
+        {/* Language Switcher - positioned at top right */}
+        <div style={{
+          position: 'absolute',
+          top: '24px',
+          right: '24px',
+          zIndex: 10
+        }}>
+          <LanguageSwitcher />
+        </div>
+
         {/* 背景装饰 - 微妙的纹理 */}
         <div style={{
           position: 'absolute',

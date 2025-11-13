@@ -2,9 +2,12 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
+import enUS from 'antd/locale/en_US';
+import zhCN from 'antd/locale/zh_CN';
 import WorkspaceLayout from './layouts/WorkspaceLayout';
 import PrivateRoute from './components/common/PrivateRoute';
 import { isAuthenticated } from './utils/auth';
+import { I18nProvider, useI18n } from './i18n';
 
 // Import pages
 import Home from './pages/Home';
@@ -25,7 +28,11 @@ import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/AdminPanel';
 import FileManager from './pages/FileManager';
 
-const App: React.FC = () => {
+// AppContent component that uses i18n context
+const AppContent: React.FC = () => {
+  const { locale } = useI18n();
+  const antdLocale = locale === 'zh' ? zhCN : enUS;
+
   useEffect(() => {
     // 设置页面标题
     document.title = "MCP Agent Graph";
@@ -33,6 +40,7 @@ const App: React.FC = () => {
 
   return (
     <ConfigProvider
+      locale={antdLocale}
       theme={{
         token: {
           colorPrimary: '#b85845',
@@ -216,6 +224,15 @@ const App: React.FC = () => {
       </Routes>
     </Router>
     </ConfigProvider>
+  );
+};
+
+// Main App component wrapped with I18nProvider
+const App: React.FC = () => {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 };
 
