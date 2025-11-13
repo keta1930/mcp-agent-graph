@@ -15,6 +15,8 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
+    "previous": "Previous",
+    "page": "page",
     "submit": "Submit",
     "reset": "Reset"
   },
@@ -746,7 +748,7 @@
         "deactivate": "Deactivate",
         "unlimited": "Unlimited",
         "permanent": "Permanent",
-        "generateNewCode": "Generate New Invite Code",
+        "generateNewCode": "Invite Code",
         "createCodeTitle": "Generate New Invite Code",
         "codeDescription": "Invite Code Description (Optional)",
         "codeDescriptionPlaceholder": "e.g., Team member invite code",

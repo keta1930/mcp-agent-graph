@@ -1,7 +1,7 @@
 // src/pages/AdminPanel.tsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layout, Typography, Space, Tag, Button, Table, Modal, Input, message, App } from 'antd';
+import { Layout, Typography, Space, Tag, Button, Table, Modal, Input, message, App, Pagination } from 'antd';
 import { Shield, Users, Key, Plus, Copy, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { isAdmin } from '../utils/auth';
 import {
@@ -23,12 +23,16 @@ const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const t = useT();
   const { modal } = App.useApp();
-  const [activeTab, setActiveTab] = useState<'users' | 'invites'>('users');
+  const [viewMode, setViewMode] = useState<'users' | 'invites'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [loading, setLoading] = useState(false);
   const [descriptionModalVisible, setDescriptionModalVisible] = useState(false);
   const [newCodeDescription, setNewCodeDescription] = useState('');
+  const [userCurrentPage, setUserCurrentPage] = useState(1);
+  const [userPageSize] = useState(10);
+  const [inviteCurrentPage, setInviteCurrentPage] = useState(1);
+  const [invitePageSize] = useState(10);
 
   useEffect(() => {
     if (!isAdmin()) {
@@ -36,12 +40,12 @@ const AdminPanel: React.FC = () => {
       return;
     }
     loadData();
-  }, [activeTab, navigate]);
+  }, [viewMode, navigate]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'users') {
+      if (viewMode === 'users') {
         const userList = await listUsers();
         setUsers(userList);
       } else {
@@ -61,6 +65,34 @@ const AdminPanel: React.FC = () => {
       content: t('pages.adminPanel.users.promoteConfirmMessage', { userId }),
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
+      centered: true,
+      styles: {
+        mask: {
+          backdropFilter: 'blur(8px)',
+          background: 'rgba(139, 115, 85, 0.15)'
+        }
+      },
+      okButtonProps: {
+        style: {
+          background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+          border: 'none',
+          borderRadius: '6px',
+          height: '36px',
+          padding: '0 20px',
+          fontWeight: 500,
+          boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+        }
+      },
+      cancelButtonProps: {
+        style: {
+          borderRadius: '6px',
+          height: '36px',
+          padding: '0 20px',
+          border: '1px solid rgba(139, 115, 85, 0.2)',
+          color: '#8b7355',
+          fontWeight: 500
+        }
+      },
       onOk: async () => {
         try {
           await promoteUser(userId);
@@ -79,7 +111,32 @@ const AdminPanel: React.FC = () => {
       content: t('pages.adminPanel.users.deactivateConfirmMessage', { userId }),
       okText: t('common.confirm'),
       cancelText: t('common.cancel'),
-      okButtonProps: { danger: true },
+      centered: true,
+      styles: {
+        mask: {
+          backdropFilter: 'blur(8px)',
+          background: 'rgba(139, 115, 85, 0.15)'
+        }
+      },
+      okButtonProps: {
+        danger: true,
+        style: {
+          borderRadius: '6px',
+          height: '36px',
+          padding: '0 20px',
+          fontWeight: 500
+        }
+      },
+      cancelButtonProps: {
+        style: {
+          borderRadius: '6px',
+          height: '36px',
+          padding: '0 20px',
+          border: '1px solid rgba(139, 115, 85, 0.2)',
+          color: '#8b7355',
+          fontWeight: 500
+        }
+      },
       onOk: async () => {
         try {
           await deactivateUser(userId);
@@ -461,131 +518,197 @@ const AdminPanel: React.FC = () => {
             </Tag>
           </Space>
 
-          {/* 右侧：返回按钮 */}
-          <Button
-            icon={<ArrowLeft size={16} strokeWidth={1.5} />}
-            onClick={() => navigate('/')}
-            style={{
-              height: '40px',
-              borderRadius: '8px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              color: '#8b7355',
-              fontWeight: 500,
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            {t('pages.adminPanel.backHome')}
-          </Button>
+          {/* 右侧：视图切换按钮 + 返回按钮 */}
+          <Space size="middle">
+            <Button
+              onClick={() => setViewMode(viewMode === 'users' ? 'invites' : 'users')}
+              style={{
+                height: '36px',
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                color: '#8b7355',
+                fontSize: '14px',
+                fontWeight: 500,
+                letterSpacing: '0.3px',
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#b85845';
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.85)';
+              }}
+            >
+              {viewMode === 'users' ? (
+                <>
+                  <Key size={16} strokeWidth={1.5} />
+                  {t('pages.adminPanel.inviteCodeManagement')}
+                </>
+              ) : (
+                <>
+                  <Users size={16} strokeWidth={1.5} />
+                  {t('pages.adminPanel.userManagement')}
+                </>
+              )}
+            </Button>
+            <Button
+              icon={<ArrowLeft size={16} strokeWidth={1.5} />}
+              onClick={() => navigate('/')}
+              style={{
+                height: '36px',
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                background: 'rgba(255, 255, 255, 0.85)',
+                color: '#8b7355',
+                fontWeight: 500,
+                boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {t('pages.adminPanel.backHome')}
+            </Button>
+          </Space>
         </div>
       </Header>
 
       {/* Content 内容区 */}
       <Content style={{ padding: '32px 48px', overflow: 'auto' }}>
-        {/* Tab 切换 */}
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          marginBottom: '24px',
-          padding: '8px',
-          background: 'rgba(255, 255, 255, 0.6)',
-          borderRadius: '8px',
-          border: '1px solid rgba(139, 115, 85, 0.15)',
-          width: 'fit-content'
-        }}>
-          <div
-            onClick={() => setActiveTab('users')}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
-              background: activeTab === 'users' ? 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)' : 'transparent',
-              color: activeTab === 'users' ? '#fff' : '#8b7355',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: 500,
-              boxShadow: activeTab === 'users' ? '0 2px 6px rgba(184, 88, 69, 0.25)' : 'none'
-            }}
-          >
-            <Users size={16} strokeWidth={1.5} />
-            {t('pages.adminPanel.userManagement')}
-          </div>
-          <div
-            onClick={() => setActiveTab('invites')}
-            style={{
-              padding: '10px 20px',
-              borderRadius: '6px',
-              background: activeTab === 'invites' ? 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)' : 'transparent',
-              color: activeTab === 'invites' ? '#fff' : '#8b7355',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px',
-              fontWeight: 500,
-              boxShadow: activeTab === 'invites' ? '0 2px 6px rgba(184, 88, 69, 0.25)' : 'none'
-            }}
-          >
-            <Key size={16} strokeWidth={1.5} />
-            {t('pages.adminPanel.inviteCodeManagement')}
-          </div>
-        </div>
-
-        {/* 用户管理 Tab */}
-        {activeTab === 'users' && (
+        {/* 用户管理视图 */}
+        {viewMode === 'users' && (
           <div style={{
             background: 'rgba(255, 255, 255, 0.85)',
             borderRadius: '8px',
             border: '1px solid rgba(139, 115, 85, 0.15)',
             boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            height: '750px',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
-            <Table
-              columns={userColumns}
-              dataSource={users}
-              rowKey="user_id"
-              loading={loading}
-              components={tableComponents}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showTotal: (total) => t('pages.adminPanel.users.totalUsers', { total }),
-                style: {
-                  padding: '16px',
-                  background: 'rgba(250, 248, 245, 0.5)',
-                  borderTop: '1px solid rgba(139, 115, 85, 0.1)'
-                }
-              }}
-              style={{
-                background: 'transparent'
-              }}
-            />
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <Table
+                columns={userColumns}
+                dataSource={users.slice((userCurrentPage - 1) * userPageSize, userCurrentPage * userPageSize)}
+                rowKey="user_id"
+                loading={loading}
+                components={tableComponents}
+                pagination={false}
+                style={{
+                  background: 'transparent'
+                }}
+              />
+            </div>
+            {/* 自定义底部：统计 + 分页 */}
+            <div style={{
+              padding: '16px',
+              background: 'rgba(250, 248, 245, 0.5)',
+              borderTop: '1px solid rgba(139, 115, 85, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '16px'
+            }}>
+              <Pagination
+                current={userCurrentPage}
+                pageSize={userPageSize}
+                total={users.length}
+                onChange={(page) => {
+                  setUserCurrentPage(page);
+                }}
+                showTotal={(total) => t('pages.adminPanel.users.totalUsers', { total })}
+                itemRender={(page, type, originalElement) => {
+                  if (type === 'page') {
+                    return page === userCurrentPage ? originalElement : null;
+                  }
+                  return originalElement;
+                }}
+                style={{
+                  margin: 0
+                }}
+              />
+            </div>
           </div>
         )}
 
-        {/* 邀请码管理 Tab */}
-        {activeTab === 'invites' && (
-          <div>
-            {/* 操作栏 */}
+        {/* 邀请码管理视图 */}
+        {viewMode === 'invites' && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.85)',
+            borderRadius: '8px',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+            overflow: 'hidden',
+            height: '750px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <Table
+                columns={inviteColumns}
+                dataSource={inviteCodes.slice((inviteCurrentPage - 1) * invitePageSize, inviteCurrentPage * invitePageSize)}
+                rowKey="code"
+                loading={loading}
+                components={tableComponents}
+                pagination={false}
+                style={{
+                  background: 'transparent'
+                }}
+              />
+            </div>
+            {/* 自定义底部：分页 + 创建按钮 */}
             <div style={{
+              padding: '16px',
+              background: 'rgba(250, 248, 245, 0.5)',
+              borderTop: '1px solid rgba(139, 115, 85, 0.1)',
               display: 'flex',
-              justifyContent: 'flex-end',
-              marginBottom: '16px'
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              position: 'relative'
             }}>
+              <div style={{ width: '150px' }} />
+              <div style={{
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)'
+              }}>
+                <Pagination
+                  current={inviteCurrentPage}
+                  pageSize={invitePageSize}
+                  total={inviteCodes.length}
+                  onChange={(page) => {
+                    setInviteCurrentPage(page);
+                  }}
+                  showTotal={(total) => t('pages.adminPanel.inviteCodes.totalCodes', { total })}
+                  itemRender={(page, type, originalElement) => {
+                    if (type === 'page') {
+                      return page === inviteCurrentPage ? originalElement : null;
+                    }
+                    return originalElement;
+                  }}
+                  style={{
+                    margin: 0
+                  }}
+                />
+              </div>
               <Button
                 type="primary"
                 icon={<Plus size={16} strokeWidth={1.5} />}
                 onClick={handleCreateInviteCode}
                 style={{
-                  height: '40px',
-                  borderRadius: '8px',
+                  height: '32px',
+                  borderRadius: '6px',
                   background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
                   border: 'none',
                   fontSize: '14px',
@@ -593,41 +716,12 @@ const AdminPanel: React.FC = () => {
                   boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  flexShrink: 0
                 }}
               >
                 {t('pages.adminPanel.inviteCodes.generateNewCode')}
               </Button>
-            </div>
-
-            {/* 表格 */}
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.85)',
-              borderRadius: '8px',
-              border: '1px solid rgba(139, 115, 85, 0.15)',
-              boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
-              overflow: 'hidden'
-            }}>
-              <Table
-                columns={inviteColumns}
-                dataSource={inviteCodes}
-                rowKey="code"
-                loading={loading}
-                components={tableComponents}
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showTotal: (total) => t('pages.adminPanel.inviteCodes.totalCodes', { total }),
-                  style: {
-                    padding: '16px',
-                    background: 'rgba(250, 248, 245, 0.5)',
-                    borderTop: '1px solid rgba(139, 115, 85, 0.1)'
-                  }
-                }}
-                style={{
-                  background: 'transparent'
-                }}
-              />
             </div>
           </div>
         )}
@@ -635,15 +729,86 @@ const AdminPanel: React.FC = () => {
 
       {/* 创建邀请码描述弹窗 */}
       <Modal
-        title={t('pages.adminPanel.inviteCodes.createCodeTitle')}
+        title={
+          <span style={{
+            color: '#2d2d2d',
+            fontSize: '16px',
+            fontWeight: 500,
+            letterSpacing: '0.5px'
+          }}>
+            {t('pages.adminPanel.inviteCodes.createCodeTitle')}
+          </span>
+        }
         open={descriptionModalVisible}
         onOk={handleConfirmCreateCode}
         onCancel={() => setDescriptionModalVisible(false)}
         okText={t('pages.adminPanel.inviteCodes.generate')}
         cancelText={t('common.cancel')}
+        centered
+        width={480}
+        styles={{
+          mask: {
+            backdropFilter: 'blur(8px)',
+            background: 'rgba(139, 115, 85, 0.15)'
+          },
+          content: {
+            borderRadius: '8px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+            border: '1px solid rgba(139, 115, 85, 0.1)'
+          },
+          header: {
+            borderBottom: '1px solid rgba(139, 115, 85, 0.1)',
+            padding: '18px 24px',
+            marginBottom: 0
+          },
+          body: {
+            background: 'rgba(255, 255, 255, 0.98)',
+            padding: '24px'
+          },
+          footer: {
+            padding: '14px 20px',
+            marginTop: 0
+          }
+        }}
+        okButtonProps={{
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            height: '36px',
+            padding: '0 20px',
+            fontWeight: 500,
+            fontSize: '14px',
+            letterSpacing: '0.3px',
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+            transition: 'all 0.3s ease'
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            height: '36px',
+            padding: '0 20px',
+            border: '1px solid rgba(139, 115, 85, 0.25)',
+            background: 'rgba(255, 255, 255, 0.8)',
+            color: '#8b7355',
+            fontWeight: 500,
+            fontSize: '14px',
+            letterSpacing: '0.3px',
+            transition: 'all 0.3s ease'
+          }
+        }}
       >
-        <div style={{ marginTop: '16px' }}>
-          <Text style={{ display: 'block', marginBottom: '8px', color: '#2d2d2d', fontWeight: 500 }}>
+        <div>
+          <Text style={{
+            display: 'block',
+            marginBottom: '10px',
+            color: 'rgba(45, 45, 45, 0.85)',
+            fontWeight: 500,
+            fontSize: '13px',
+            letterSpacing: '0.3px'
+          }}>
             {t('pages.adminPanel.inviteCodes.codeDescription')}
           </Text>
           <Input
@@ -654,7 +819,22 @@ const AdminPanel: React.FC = () => {
               height: '40px',
               borderRadius: '6px',
               border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)'
+              background: 'rgba(255, 255, 255, 0.9)',
+              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+              fontSize: '14px',
+              color: '#2d2d2d',
+              letterSpacing: '0.3px',
+              transition: 'all 0.3s ease'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#b85845';
+              e.target.style.boxShadow = '0 0 0 3px rgba(184, 88, 69, 0.08), 0 1px 3px rgba(139, 115, 85, 0.08)';
+              e.target.style.background = 'rgba(255, 255, 255, 0.98)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+              e.target.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)';
+              e.target.style.background = 'rgba(255, 255, 255, 0.9)';
             }}
           />
         </div>
