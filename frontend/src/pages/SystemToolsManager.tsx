@@ -23,14 +23,15 @@ import {
 import {
   listSystemTools,
   getSystemToolDetail,
-  SystemToolSchema
+  SystemToolSchema,
+  ToolCategory
 } from '../services/systemToolsService';
 
 const { Search } = Input;
 
 const SystemToolsManager: React.FC = () => {
-  const [tools, setTools] = useState<SystemToolSchema[]>([]);
-  const [filteredTools, setFilteredTools] = useState<SystemToolSchema[]>([]);
+  const [categories, setCategories] = useState<ToolCategory[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<ToolCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedTool, setSelectedTool] = useState<SystemToolSchema | null>(null);
@@ -41,8 +42,8 @@ const SystemToolsManager: React.FC = () => {
     setLoading(true);
     try {
       const response = await listSystemTools();
-      setTools(response.tools || []);
-      setFilteredTools(response.tools || []);
+      setCategories(response.categories || []);
+      setFilteredCategories(response.categories || []);
     } catch (error: any) {
       message.error('加载系统工具列表失败: ' + (error.message || '未知错误'));
     } finally {
@@ -58,15 +59,23 @@ const SystemToolsManager: React.FC = () => {
   const handleSearch = (value: string) => {
     setSearchText(value);
     if (!value.trim()) {
-      setFilteredTools(tools);
+      setFilteredCategories(categories);
       return;
     }
 
-    const filtered = tools.filter((tool) =>
-      tool.name.toLowerCase().includes(value.toLowerCase()) ||
-      tool.schema.function.description.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredTools(filtered);
+    const filtered = categories.map((category) => {
+      const filteredTools = category.tools.filter((tool) =>
+        tool.name.toLowerCase().includes(value.toLowerCase()) ||
+        tool.schema.function.description.toLowerCase().includes(value.toLowerCase())
+      );
+      return {
+        ...category,
+        tools: filteredTools,
+        tool_count: filteredTools.length
+      };
+    }).filter((category) => category.tools.length > 0);
+    
+    setFilteredCategories(filtered);
   };
 
   // 显示工具详情
@@ -149,62 +158,81 @@ const SystemToolsManager: React.FC = () => {
       </div>
 
       {/* 工具列表 */}
-      {loading && tools.length === 0 ? (
+      {loading && categories.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '50px' }}>
           <Spin size="large" />
         </div>
-      ) : filteredTools.length === 0 ? (
+      ) : filteredCategories.length === 0 ? (
         <Empty
           description={searchText ? '未找到匹配的系统工具' : '暂无系统工具'}
           style={{ marginTop: '50px' }}
         />
       ) : (
         <>
-          <div style={{ marginBottom: '16px', color: '#666' }}>
-            找到 {filteredTools.length} 个系统工具
-          </div>
-          <Row gutter={[16, 16]}>
-            {filteredTools.map((tool) => (
-              <Col xs={24} sm={12} lg={8} xl={6} key={tool.name}>
-                <Card
-                  hoverable
-                  title={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <ToolOutlined />
-                      <Tooltip title={tool.name}>
-                        <span style={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {tool.name}
-                        </span>
-                      </Tooltip>
-                    </div>
-                  }
-                  actions={[
-                    <Tooltip title="查看详情">
-                      <EyeOutlined onClick={() => showToolDetail(tool.name)} />
-                    </Tooltip>
-                  ]}
-                >
-                  <div style={{
-                    fontSize: '13px',
-                    color: '#666',
-                    lineHeight: '1.6',
-                    minHeight: '60px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {tool.schema.function.description}
-                  </div>
-                </Card>
-              </Col>
-            ))}
-          </Row>
+          {filteredCategories.map((category) => (
+            <div key={category.category} style={{ marginBottom: '32px' }}>
+              {/* 类别标题 */}
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                paddingBottom: '8px',
+                borderBottom: '2px solid #1890ff',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <Tag color="blue">{category.category}</Tag>
+                <span style={{ color: '#666', fontSize: '14px', fontWeight: 'normal' }}>
+                  ({category.tool_count} 个工具)
+                </span>
+              </div>
+
+              {/* 该类别下的工具卡片 */}
+              <Row gutter={[16, 16]}>
+                {category.tools.map((tool) => (
+                  <Col xs={24} sm={12} lg={8} xl={6} key={tool.name}>
+                    <Card
+                      hoverable
+                      title={
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <ToolOutlined />
+                          <Tooltip title={tool.name}>
+                            <span style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {tool.name}
+                            </span>
+                          </Tooltip>
+                        </div>
+                      }
+                      actions={[
+                        <Tooltip title="查看详情" key="detail">
+                          <EyeOutlined onClick={() => showToolDetail(tool.name)} />
+                        </Tooltip>
+                      ]}
+                    >
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#666',
+                        lineHeight: '1.6',
+                        minHeight: '60px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical'
+                      }}>
+                        {tool.schema.function.description}
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          ))}
         </>
       )}
 

@@ -13,9 +13,16 @@ export interface SystemToolSchema {
   };
 }
 
+// 工具类别接口
+export interface ToolCategory {
+  category: string;
+  tools: SystemToolSchema[];
+  tool_count: number;
+}
+
 export interface SystemToolListResponse {
   success: boolean;
-  tools: SystemToolSchema[];
+  categories: ToolCategory[];
   total_count: number;
 }
 
