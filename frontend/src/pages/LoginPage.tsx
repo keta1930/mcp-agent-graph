@@ -6,6 +6,7 @@ import { User, Lock, LogIn } from 'lucide-react';
 import { login } from '../services/authService';
 import { setToken, setRefreshToken, setUserInfo } from '../utils/auth';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { useT } from '../i18n/hooks';
 
 const { Title, Text } = Typography;
 
@@ -16,6 +17,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const t = useT();
 
   // 获取注册成功后的提示消息
   const successMessage = (location.state as any)?.message;
@@ -39,7 +41,7 @@ const LoginPage: React.FC = () => {
       // 跳转到主页
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || '登录失败，请检查用户名和密码');
+      setError(err.response?.data?.detail || t('pages.login.loginFailedDefault'));
     } finally {
       setLoading(false);
     }
@@ -113,13 +115,13 @@ const LoginPage: React.FC = () => {
             letterSpacing: '1px',
             fontSize: '24px'
           }}>
-            MCP Agent Graph
+            {t('common.appName')}
           </Title>
           <Text style={{
             color: 'rgba(45, 45, 45, 0.65)',
             fontSize: '14px'
           }}>
-            欢迎回来，请登录您的账号
+            {t('pages.login.subtitle')}
           </Text>
         </div>
 
@@ -153,13 +155,13 @@ const LoginPage: React.FC = () => {
                 fontSize: '14px'
               }}>
                 <User size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-                用户名
+                {t('pages.login.username')}
               </Text>
               <Input
                 size="large"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
-                placeholder="请输入用户名"
+                placeholder={t('pages.login.usernamePlaceholder')}
                 required
                 autoFocus
                 style={{
@@ -184,13 +186,13 @@ const LoginPage: React.FC = () => {
                 fontSize: '14px'
               }}>
                 <Lock size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-                密码
+                {t('pages.login.password')}
               </Text>
               <Input.Password
                 size="large"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="请输入密码"
+                placeholder={t('pages.login.passwordPlaceholder')}
                 required
                 style={{
                   height: '40px',
@@ -244,7 +246,7 @@ const LoginPage: React.FC = () => {
                 e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
               }}
             >
-              {loading ? '正在登录...' : '登录'}
+              {loading ? t('pages.login.loggingIn') : t('pages.login.loginButton')}
             </Button>
           </Space>
         </form>
@@ -257,7 +259,7 @@ const LoginPage: React.FC = () => {
           borderTop: '1px solid rgba(139, 115, 85, 0.1)'
         }}>
           <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>
-            还没有账号？
+            {t('pages.login.registerLink')}
             <Link
               to="/register"
               style={{
@@ -276,7 +278,7 @@ const LoginPage: React.FC = () => {
                 e.currentTarget.style.textDecoration = 'none';
               }}
             >
-              立即注册
+              {t('pages.login.registerLinkAction')}
             </Link>
           </Text>
         </div>
@@ -292,7 +294,7 @@ const LoginPage: React.FC = () => {
             color: 'rgba(45, 45, 45, 0.45)',
             fontSize: '12px'
           }}>
-            默认管理员账号：admin / admin123
+            {t('pages.login.defaultAdminHint')}
           </Text>
         </div>
       </div>

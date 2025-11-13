@@ -5,6 +5,7 @@ import { Input, Button, Alert, Typography, Space, Progress } from 'antd';
 import { User, Lock, Shield, UserPlus } from 'lucide-react';
 import { register } from '../services/authService';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { useT } from '../i18n/hooks';
 
 const { Title, Text } = Typography;
 
@@ -16,17 +17,18 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const t = useT();
 
   const validatePassword = (pwd: string): string => {
     if (pwd.length < 8) {
-      return '密码至少需要8个字符';
+      return t('pages.register.passwordTooShort');
     }
     return '';
   };
 
   const getPasswordStrength = (pwd: string): { level: number; text: string; color: string } => {
     if (pwd.length === 0) return { level: 0, text: '', color: '' };
-    if (pwd.length < 8) return { level: 1, text: '弱', color: '#f5222d' };
+    if (pwd.length < 8) return { level: 1, text: t('pages.register.passwordStrengthWeak'), color: '#f5222d' };
 
     let strength = 0;
     if (pwd.length >= 12) strength++;
@@ -35,9 +37,9 @@ const RegisterPage: React.FC = () => {
     if (/[0-9]/.test(pwd)) strength++;
     if (/[^a-zA-Z0-9]/.test(pwd)) strength++;
 
-    if (strength <= 2) return { level: 2, text: '中', color: '#fa8c16' };
-    if (strength <= 4) return { level: 3, text: '强', color: '#52c41a' };
-    return { level: 4, text: '很强', color: '#1890ff' };
+    if (strength <= 2) return { level: 2, text: t('pages.register.passwordStrengthMedium'), color: '#fa8c16' };
+    if (strength <= 4) return { level: 3, text: t('pages.register.passwordStrengthStrong'), color: '#52c41a' };
+    return { level: 4, text: t('pages.register.passwordStrengthVeryStrong'), color: '#1890ff' };
   };
 
   const passwordStrength = getPasswordStrength(password);
@@ -54,7 +56,7 @@ const RegisterPage: React.FC = () => {
     }
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致');
+      setError(t('pages.register.passwordMismatch'));
       return;
     }
 
@@ -65,20 +67,20 @@ const RegisterPage: React.FC = () => {
 
       // 注册成功，跳转登录
       navigate('/login', {
-        state: { message: '注册成功，请登录' }
+        state: { message: t('pages.register.registerSuccess') }
       });
     } catch (err: any) {
       const detail = err.response?.data?.detail;
       if (detail === 'Invalid invite code') {
-        setError('邀请码无效或已被禁用');
+        setError(t('pages.register.invalidInviteCode'));
       } else if (detail === 'User already exists') {
-        setError('该用户名已被注册');
+        setError(t('pages.register.userExists'));
       } else if (detail === 'Invite code expired') {
-        setError('邀请码已过期');
+        setError(t('pages.register.inviteCodeExpired'));
       } else if (detail === 'Invite code has reached maximum uses') {
-        setError('邀请码使用次数已达上限');
+        setError(t('pages.register.inviteCodeMaxUses'));
       } else {
-        setError(detail || '注册失败，请稍后重试');
+        setError(detail || t('pages.register.registerFailedDefault'));
       }
     } finally {
       setLoading(false);
@@ -153,13 +155,13 @@ const RegisterPage: React.FC = () => {
             letterSpacing: '1px',
             fontSize: '24px'
           }}>
-            创建账号
+            {t('pages.register.title')}
           </Title>
           <Text style={{
             color: 'rgba(45, 45, 45, 0.65)',
             fontSize: '14px'
           }}>
-            加入 MCP Agent Graph
+            {t('pages.register.subtitle')}
           </Text>
         </div>
 
@@ -178,13 +180,13 @@ const RegisterPage: React.FC = () => {
                 fontSize: '14px'
               }}>
                 <Shield size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-                邀请码
+                {t('pages.register.inviteCode')}
               </Text>
               <Input
                 size="large"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="请输入邀请码（如：TEAM-ABC123）"
+                placeholder={t('pages.register.inviteCodePlaceholder')}
                 required
                 autoFocus
                 style={{
@@ -201,7 +203,7 @@ const RegisterPage: React.FC = () => {
                 color: 'rgba(45, 45, 45, 0.45)',
                 fontSize: '12px'
               }}>
-                请联系管理员获取邀请码
+                {t('pages.register.inviteCodeHint')}
               </Text>
             </div>
 
@@ -217,13 +219,13 @@ const RegisterPage: React.FC = () => {
                 fontSize: '14px'
               }}>
                 <User size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-                用户名
+                {t('pages.register.username')}
               </Text>
               <Input
                 size="large"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
-                placeholder="请输入用户名"
+                placeholder={t('pages.register.usernamePlaceholder')}
                 required
                 style={{
                   height: '40px',
@@ -247,13 +249,13 @@ const RegisterPage: React.FC = () => {
                 fontSize: '14px'
               }}>
                 <Lock size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-                密码
+                {t('pages.register.password')}
               </Text>
               <Input.Password
                 size="large"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="至少8个字符"
+                placeholder={t('pages.register.passwordPlaceholder')}
                 required
                 style={{
                   height: '40px',
@@ -276,7 +278,7 @@ const RegisterPage: React.FC = () => {
                     fontSize: '12px',
                     color: passwordStrength.color
                   }}>
-                    密码强度：{passwordStrength.text}
+                    {t('pages.register.passwordStrength')}{passwordStrength.text}
                   </Text>
                 </div>
               )}
@@ -294,13 +296,13 @@ const RegisterPage: React.FC = () => {
                 fontSize: '14px'
               }}>
                 <Lock size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-                确认密码
+                {t('pages.register.confirmPassword')}
               </Text>
               <Input.Password
                 size="large"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="再次输入密码"
+                placeholder={t('pages.register.confirmPasswordPlaceholder')}
                 required
                 style={{
                   height: '40px',
@@ -354,7 +356,7 @@ const RegisterPage: React.FC = () => {
                 e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
               }}
             >
-              {loading ? '正在注册...' : '注册'}
+              {loading ? t('pages.register.registering') : t('pages.register.registerButton')}
             </Button>
           </Space>
         </form>
@@ -367,7 +369,7 @@ const RegisterPage: React.FC = () => {
           borderTop: '1px solid rgba(139, 115, 85, 0.1)'
         }}>
           <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '14px' }}>
-            已有账号？
+            {t('pages.register.loginLink')}
             <Link
               to="/login"
               style={{
@@ -386,7 +388,7 @@ const RegisterPage: React.FC = () => {
                 e.currentTarget.style.textDecoration = 'none';
               }}
             >
-              立即登录
+              {t('pages.register.loginLinkAction')}
             </Link>
           </Text>
         </div>
