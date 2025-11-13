@@ -17,29 +17,29 @@ import {
   Spin,
   Typography,
   Tooltip,
-  Tag
+  Tag,
+  Layout
 } from 'antd';
 import {
-  ExportOutlined,
-  EyeOutlined,
-  DownloadOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  FileTextOutlined,
-  CheckCircleOutlined,
-  FilterOutlined,
-  DatabaseOutlined,
-  CloseOutlined
-} from '@ant-design/icons';
+  Database,
+  Search,
+  Filter,
+  RefreshCw,
+  FileText,
+  Eye,
+  Download,
+  Trash2,
+  X
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConversationService } from '../services/conversationService';
 import { ConversationSummary } from '../types/conversation';
 import exportService, { DatasetListItem, ListResponse, PreviewResponse, ExportResponse } from '../services/exportService';
 import RawPreviewModal from '../components/chat/modal/RawPreviewModal';
-import './ExportManager.css';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
+const { Header, Content } = Layout;
 
 const ExportManager: React.FC = () => {
   const navigate = useNavigate();
@@ -65,7 +65,6 @@ const ExportManager: React.FC = () => {
   // Dataset list
   const [listLoading, setListLoading] = useState(false);
   const [datasets, setDatasets] = useState<DatasetListItem[]>([]);
-  const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewModalTitle, setPreviewModalTitle] = useState<string>('');
@@ -165,7 +164,6 @@ const ExportManager: React.FC = () => {
     try {
       setPreviewLoading(true);
       const res = await exportService.previewDataset(name, format);
-      setPreview(res);
       setPreviewModalTitle(res?.dataset_name || name);
       setPreviewModalData(res?.preview_data || []);
       setPreviewModalVisible(true);
@@ -178,7 +176,6 @@ const ExportManager: React.FC = () => {
     const res = await exportService.deleteDataset(name, format);
     if (res.success) {
       await loadDatasets();
-      setPreview(null);
     }
   };
 
@@ -195,33 +192,95 @@ const ExportManager: React.FC = () => {
   }, [conversations, selectedIds, filteredConversations, datasets]);
 
   return (
-    <div className="export-manager-container">
-      {/* 页面头部 - 参考 TaskManager 设计 */}
-      <div className="export-manager-header">
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <DatabaseOutlined style={{ fontSize: '24px', color: '#1890ff', marginRight: '12px' }} />
-          <Title level={2} style={{ margin: 0 }}>
-            导出管理
-          </Title>
+    <Layout style={{ minHeight: '100vh', background: '#faf8f5' }}>
+      {/* Header 顶栏 */}
+      <Header style={{
+        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+        backdropFilter: 'blur(20px)',
+        padding: '0 48px',
+        borderBottom: 'none',
+        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        position: 'relative'
+      }}>
+        {/* 装饰性底部渐变线 */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '20%',
+          right: '20%',
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
+        }} />
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+          {/* 左侧：图标 + 标题 + 统计标签 */}
+          <Space size="large">
+            <Database size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={{
+              margin: 0,
+              color: '#2d2d2d',
+              fontWeight: 500,
+              letterSpacing: '2px',
+              fontSize: '18px'
+            }}>
+              导出管理
+            </Title>
+            <Tag style={{
+              background: 'rgba(184, 88, 69, 0.08)',
+              color: '#b85845',
+              border: '1px solid rgba(184, 88, 69, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              总对话 {stats.total}
+            </Tag>
+            <Tag style={{
+              background: 'rgba(139, 115, 85, 0.08)',
+              color: '#8b7355',
+              border: '1px solid rgba(139, 115, 85, 0.25)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              padding: '4px 12px',
+              fontSize: '12px'
+            }}>
+              数据集 {stats.datasets}
+            </Tag>
+          </Space>
+
+          {/* 右侧：关闭按钮 */}
+          <div
+            onClick={() => navigate('/chat')}
+            style={{
+              padding: '4px',
+              borderRadius: '4px',
+              color: '#8b7355',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#b85845';
+              e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#8b7355';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <X size={20} strokeWidth={1.5} />
+          </div>
         </div>
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={() => navigate('/chat')}
-          style={{
-            fontSize: '18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '32px',
-            height: '32px'
-          }}
-        />
-      </div>
+      </Header>
 
-      {/* 顶部统计卡片移除，统计信息通过导出面板右上角图标悬停显示 */}
-
-      <Card className="export-manager-card">
+      {/* Content 内容区 */}
+      <Content style={{ padding: '32px 48px', overflow: 'auto' }}>
+        <Card style={{
+          background: 'rgba(255, 255, 255, 0.85)',
+          border: '1px solid rgba(139, 115, 85, 0.15)',
+          borderRadius: '6px',
+          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
+        }}>
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -229,18 +288,39 @@ const ExportManager: React.FC = () => {
             {
               key: 'select',
               label: (
-                <span>
-                  <FilterOutlined /> 选择导出
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Filter size={16} strokeWidth={1.5} /> 选择导出
                 </span>
               ),
               children: (
-                <div className="export-tab-content">
+                <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '24px', height: '100%' }}>
                   {/* 左侧：对话筛选与选择 */}
-                  <div className="export-left-panel">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'auto' }}>
                     <Card
-                      title="对话筛选"
+                      title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>对话筛选</span>}
                       size="small"
-                      extra={<Button icon={<ReloadOutlined />} onClick={loadConversations}>刷新</Button>}
+                      extra={
+                        <Button
+                          type="text"
+                          onClick={loadConversations}
+                          style={{
+                            color: '#8b7355',
+                            padding: '4px 8px',
+                            height: 'auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <RefreshCw size={14} strokeWidth={1.5} /> 刷新
+                        </Button>
+                      }
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.85)',
+                        border: '1px solid rgba(139, 115, 85, 0.15)',
+                        borderRadius: '6px',
+                        boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+                      }}
                     >
                       <Space direction="vertical" style={{ width: '100%' }} size="middle">
                         <Input
@@ -248,9 +328,23 @@ const ExportManager: React.FC = () => {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           allowClear
+                          prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
+                          style={{
+                            height: '40px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(139, 115, 85, 0.2)',
+                            background: 'rgba(255, 255, 255, 0.85)',
+                            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
+                          }}
                         />
                         <RangePicker
-                          style={{ width: '100%' }}
+                          style={{
+                            width: '100%',
+                            height: '40px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(139, 115, 85, 0.2)',
+                            background: 'rgba(255, 255, 255, 0.85)'
+                          }}
                           onChange={(vals) => {
                             const start = vals?.[0] ? new Date((vals[0] as any).valueOf()) : null;
                             const end = vals?.[1] ? new Date((vals[1] as any).valueOf()) : null;
@@ -279,35 +373,93 @@ const ExportManager: React.FC = () => {
                             { label: 'Deleted', value: 'deleted' },
                           ]}
                         />
-                        <Divider style={{ margin: '8px 0' }} />
+                        <Divider style={{ margin: '8px 0', borderColor: 'rgba(139, 115, 85, 0.15)' }} />
                         <Space>
-                          <Button onClick={selectAll} disabled={filteredConversations.length === 0}>
+                          <Button
+                            onClick={selectAll}
+                            disabled={filteredConversations.length === 0}
+                            style={{
+                              borderRadius: '6px',
+                              border: '1px solid rgba(139, 115, 85, 0.2)',
+                              color: '#8b7355',
+                              background: 'transparent'
+                            }}
+                          >
                             全选
                           </Button>
-                          <Button onClick={deselectAll} disabled={selectedIds.size === 0}>
+                          <Button
+                            onClick={deselectAll}
+                            disabled={selectedIds.size === 0}
+                            style={{
+                              borderRadius: '6px',
+                              border: '1px solid rgba(139, 115, 85, 0.2)',
+                              color: '#8b7355',
+                              background: 'transparent'
+                            }}
+                          >
                             取消全选
                           </Button>
-                          <Tag color="blue">已选 {selectedIds.size}</Tag>
+                          <Tag style={{
+                            background: 'rgba(184, 88, 69, 0.08)',
+                            color: '#b85845',
+                            border: '1px solid rgba(184, 88, 69, 0.25)',
+                            borderRadius: '6px',
+                            fontWeight: 500,
+                            padding: '4px 12px'
+                          }}>
+                            已选 {selectedIds.size}
+                          </Tag>
                         </Space>
                       </Space>
                     </Card>
 
-                    <div className="export-conversation-list">
+                    <div style={{
+                      flex: 1,
+                      overflow: 'auto',
+                      maxHeight: '500px',
+                      paddingRight: '5px'
+                    }}>
                       {loadingConvs ? (
                         <div style={{ textAlign: 'center', padding: 40 }}>
                           <Spin tip="加载中..." />
                         </div>
                       ) : filteredConversations.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-                          <FileTextOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+                        <div style={{ textAlign: 'center', padding: 40, color: 'rgba(45, 45, 45, 0.45)' }}>
+                          <FileText size={48} strokeWidth={1.5} style={{ marginBottom: 16, color: 'rgba(139, 115, 85, 0.3)' }} />
                           <div>暂无对话</div>
                         </div>
                       ) : (
                         filteredConversations.map(conv => (
                           <div
                             key={conv._id}
-                            className={`export-conversation-item ${selectedIds.has(conv._id) ? 'selected' : ''}`}
                             onClick={() => toggleSelect(conv._id, !selectedIds.has(conv._id))}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              padding: '12px 14px',
+                              marginBottom: '10px',
+                              background: selectedIds.has(conv._id) ? 'rgba(184, 88, 69, 0.08)' : 'rgba(255, 255, 255, 0.85)',
+                              border: selectedIds.has(conv._id) ? '1px solid rgba(184, 88, 69, 0.3)' : '1px solid rgba(139, 115, 85, 0.15)',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                              gap: '12px',
+                              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!selectedIds.has(conv._id)) {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12)';
+                                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!selectedIds.has(conv._id)) {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
+                                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
+                              }
+                            }}
                           >
                             <Checkbox
                               checked={selectedIds.has(conv._id)}
@@ -316,14 +468,42 @@ const ExportManager: React.FC = () => {
                                 toggleSelect(conv._id, e.target.checked);
                               }}
                             />
-                            <div className="export-conversation-info">
-                              <div className="export-conversation-title">{conv.title}</div>
-                              <div className="export-conversation-meta">
-                                <Tag color="blue">{conv.type}</Tag>
-                                <Tag color={conv.status === 'favorite' ? 'gold' : 'default'}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontWeight: 500,
+                                fontSize: '14px',
+                                color: '#2d2d2d',
+                                marginBottom: '8px',
+                                wordBreak: 'break-word'
+                              }}>
+                                {conv.title}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <Tag style={{
+                                  background: 'rgba(139, 115, 85, 0.08)',
+                                  color: '#8b7355',
+                                  border: '1px solid rgba(139, 115, 85, 0.2)',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  padding: '2px 8px'
+                                }}>
+                                  {conv.type}
+                                </Tag>
+                                <Tag style={{
+                                  background: conv.status === 'favorite' ? 'rgba(212, 165, 116, 0.08)' : 'rgba(139, 115, 85, 0.08)',
+                                  color: conv.status === 'favorite' ? '#d4a574' : '#8b7355',
+                                  border: conv.status === 'favorite' ? '1px solid rgba(212, 165, 116, 0.2)' : '1px solid rgba(139, 115, 85, 0.2)',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  padding: '2px 8px'
+                                }}>
                                   {conv.status}
                                 </Tag>
-                                <span className="export-conversation-date">
+                                <span style={{
+                                  fontSize: '12px',
+                                  color: 'rgba(45, 45, 45, 0.65)',
+                                  letterSpacing: '0.3px'
+                                }}>
                                   {new Date(conv.created_at).toLocaleString()}
                                 </span>
                               </div>
@@ -335,15 +515,21 @@ const ExportManager: React.FC = () => {
                   </div>
 
                   {/* 右侧：导出设置与结果 */}
-                  <div className="export-right-panel">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'auto' }}>
                     <Card 
-                      title="导出设置" 
+                      title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>导出设置</span>}
                       size="small"
                       extra={
                         <Tooltip title={`总对话数：${stats.total} | 已选择：${stats.selected} | 数据集：${stats.datasets}`}>
-                          <DatabaseOutlined style={{ color: '#999' }} />
+                          <Database size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
                         </Tooltip>
                       }
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.85)',
+                        border: '1px solid rgba(139, 115, 85, 0.15)',
+                        borderRadius: '6px',
+                        boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+                      }}
                     >
                       <Form
                         form={exportForm}
@@ -352,19 +538,43 @@ const ExportManager: React.FC = () => {
                       >
                         <Form.Item
                           name="dataset_name"
-                          label="数据集名称"
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>数据集名称</span>}
                           rules={[{ required: true, message: '请输入数据集名称' }]}
                         >
-                          <Input placeholder="例如：my_conversations" maxLength={64} />
+                          <Input
+                            placeholder="例如：my_conversations"
+                            maxLength={64}
+                            style={{
+                              height: '40px',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(139, 115, 85, 0.2)',
+                              background: 'rgba(255, 255, 255, 0.85)',
+                              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
+                            }}
+                          />
                         </Form.Item>
                         <Form.Item
                           name="file_name"
-                          label="文件名称（不含扩展名）"
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>文件名称（不含扩展名）</span>}
                           rules={[{ required: true, message: '请输入文件名称' }]}
                         >
-                          <Input placeholder="例如：export_2025_10_15" maxLength={128} />
+                          <Input
+                            placeholder="例如：export_2025_10_15"
+                            maxLength={128}
+                            style={{
+                              height: '40px',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(139, 115, 85, 0.2)',
+                              background: 'rgba(255, 255, 255, 0.85)',
+                              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
+                            }}
+                          />
                         </Form.Item>
-                        <Form.Item name="file_format" label="文件格式" rules={[{ required: true }]}> 
+                        <Form.Item
+                          name="file_format"
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>文件格式</span>}
+                          rules={[{ required: true }]}
+                        > 
                           <Select
                             options={[
                               { label: 'JSONL', value: 'jsonl' },
@@ -373,7 +583,11 @@ const ExportManager: React.FC = () => {
                             ]}
                           />
                         </Form.Item>
-                        <Form.Item name="data_format" label="数据格式" rules={[{ required: true }]}> 
+                        <Form.Item
+                          name="data_format"
+                          label={<span style={{ color: '#2d2d2d', fontSize: '14px' }}>数据格式</span>}
+                          rules={[{ required: true }]}
+                        > 
                           <Select
                             options={[
                               { label: 'standard', value: 'standard' },
@@ -387,24 +601,52 @@ const ExportManager: React.FC = () => {
                             message={exportError}
                             showIcon
                             closable
-                            style={{ marginBottom: 16 }}
+                            style={{
+                              marginBottom: 16,
+                              borderRadius: '6px',
+                              border: '1px solid rgba(184, 88, 69, 0.3)',
+                              background: 'rgba(184, 88, 69, 0.08)'
+                            }}
                           />
                         )}
                         <Button
                           type="primary"
-                          icon={<ExportOutlined />}
                           loading={exporting}
                           onClick={doExport}
                           block
                           size="large"
+                          style={{
+                            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            height: '44px',
+                            fontSize: '15px',
+                            fontWeight: 500,
+                            letterSpacing: '0.5px',
+                            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}
                         >
+                          <Download size={16} strokeWidth={1.5} />
                           确认导出
                         </Button>
                       </Form>
                     </Card>
 
                     {exportResult?.success && (
-                      <Card title="导出成功" size="small" style={{ marginTop: 16 }}>
+                      <Card
+                        title={<span style={{ color: '#2d2d2d', fontSize: '14px', fontWeight: 500 }}>导出成功</span>}
+                        size="small"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.85)',
+                          border: '1px solid rgba(139, 115, 85, 0.15)',
+                          borderRadius: '6px',
+                          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
+                        }}
+                      >
                         <Alert
                           type="success"
                           message={exportResult.message}
@@ -414,32 +656,55 @@ const ExportManager: React.FC = () => {
                               : undefined
                           }
                           showIcon
-                          style={{ marginBottom: 16 }}
+                          style={{
+                            marginBottom: 16,
+                            borderRadius: '6px',
+                            border: '1px solid rgba(160, 130, 109, 0.3)',
+                            background: 'rgba(160, 130, 109, 0.08)'
+                          }}
                         />
                         <Button
-                          icon={<DownloadOutlined />}
                           onClick={() =>
                             exportResult?.dataset_name &&
                             exportService.downloadDataset(exportResult.dataset_name, 'standard')
                           }
                           block
+                          style={{
+                            height: '40px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(139, 115, 85, 0.2)',
+                            color: '#8b7355',
+                            background: 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            marginBottom: '12px'
+                          }}
                         >
+                          <Download size={16} strokeWidth={1.5} />
                           下载数据集 (Zip)
                         </Button>
-                        <Divider />
-                        <Space>
-                          <Button
-                            type="default"
-                            icon={<EyeOutlined />}
-                            onClick={() => {
-                              setPreviewModalTitle(exportResult?.dataset_name || '导出预览');
-                              setPreviewModalData(exportResult?.preview_data || []);
-                              setPreviewModalVisible(true);
-                            }}
-                          >
-                            预览原始数据
-                          </Button>
-                        </Space>
+                        <Divider style={{ margin: '12px 0', borderColor: 'rgba(139, 115, 85, 0.15)' }} />
+                        <Button
+                          type="text"
+                          onClick={() => {
+                            setPreviewModalTitle(exportResult?.dataset_name || '导出预览');
+                            setPreviewModalData(exportResult?.preview_data || []);
+                            setPreviewModalVisible(true);
+                          }}
+                          style={{
+                            color: '#8b7355',
+                            padding: '4px 8px',
+                            height: 'auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <Eye size={16} strokeWidth={1.5} />
+                          预览原始数据
+                        </Button>
                       </Card>
                     )}
                   </div>
@@ -449,14 +714,26 @@ const ExportManager: React.FC = () => {
             {
               key: 'datasets',
               label: (
-                <span>
-                  <DatabaseOutlined /> 数据集管理
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Database size={16} strokeWidth={1.5} /> 数据集管理
                 </span>
               ),
               children: (
-                <div className="datasets-tab-content">
+                <div style={{ height: '100%', overflow: 'auto' }}>
                   <Space style={{ marginBottom: 16 }}>
-                    <Button icon={<ReloadOutlined />} onClick={loadDatasets}>
+                    <Button
+                      onClick={loadDatasets}
+                      style={{
+                        borderRadius: '6px',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        color: '#8b7355',
+                        background: 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <RefreshCw size={14} strokeWidth={1.5} />
                       刷新
                     </Button>
                   </Space>
@@ -468,52 +745,116 @@ const ExportManager: React.FC = () => {
                         title: '数据集名称',
                         dataIndex: 'dataset_name',
                         key: 'dataset_name',
-                        render: (text) => <Text strong>{text}</Text>
+                        render: (text) => <Text strong style={{ color: '#2d2d2d' }}>{text}</Text>
                       },
                       {
                         title: '数据格式',
                         dataIndex: 'data_format',
                         key: 'data_format',
-                        render: (text) => <Tag color="blue">{text}</Tag>
+                        render: (text) => (
+                          <Tag style={{
+                            background: 'rgba(139, 115, 85, 0.08)',
+                            color: '#8b7355',
+                            border: '1px solid rgba(139, 115, 85, 0.2)',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            padding: '2px 8px'
+                          }}>
+                            {text}
+                          </Tag>
+                        )
                       },
                       {
                         title: '创建时间',
                         dataIndex: 'created_at',
-                        key: 'created_at'
+                        key: 'created_at',
+                        render: (text) => <span style={{ color: 'rgba(45, 45, 45, 0.85)' }}>{text}</span>
                       },
                       {
                         title: '操作',
                         key: 'actions',
                         render: (_: any, record: DatasetListItem) => (
-                          <Space>
-                            <Button
-                              type="link"
-                              icon={<EyeOutlined />}
+                          <Space size="small">
+                            <div
                               onClick={() => doPreview(record.dataset_name, record.data_format)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                color: '#8b7355',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
                             >
+                              <Eye size={14} strokeWidth={1.5} />
                               预览
-                            </Button>
-                            <Button
-                              type="link"
-                              icon={<DownloadOutlined />}
+                            </div>
+                            <div
                               onClick={() =>
                                 exportService.downloadDataset(
                                   record.dataset_name,
                                   record.data_format
                                 )
                               }
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                color: '#8b7355',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = '#b85845';
+                                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = '#8b7355';
+                                e.currentTarget.style.background = 'transparent';
+                              }}
                             >
+                              <Download size={14} strokeWidth={1.5} />
                               下载
-                            </Button>
+                            </div>
                             <Popconfirm
                               title="确认删除该数据集？"
                               onConfirm={() =>
                                 doDeleteDataset(record.dataset_name, record.data_format)
                               }
                             >
-                              <Button type="link" danger icon={<DeleteOutlined />}>
+                              <div
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  color: '#b85845',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                <Trash2 size={14} strokeWidth={1.5} />
                                 删除
-                              </Button>
+                              </div>
                             </Popconfirm>
                           </Space>
                         )
@@ -523,13 +864,14 @@ const ExportManager: React.FC = () => {
                     loading={listLoading}
                     pagination={{ pageSize: 10, showSizeChanger: true }}
                   />
-                  {/* 预览改为使用弹窗 RawPreviewModal 展示原始数据 */}
                 </div>
               )
             }
           ]}
         />
-      </Card>
+        </Card>
+      </Content>
+
       <RawPreviewModal
         visible={previewModalVisible}
         title={previewModalTitle}
@@ -537,7 +879,7 @@ const ExportManager: React.FC = () => {
         loading={previewLoading}
         onClose={() => setPreviewModalVisible(false)}
       />
-    </div>
+    </Layout>
   );
 };
 
