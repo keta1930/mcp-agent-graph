@@ -22,6 +22,7 @@ import { Plus, Search, Upload as UploadIcon, Download, Trash2, Edit, FileText, C
 import { promptService } from '../services/promptService';
 import { PromptInfo, PromptDetail, PromptCreate, PromptUpdate } from '../types/prompt';
 import PromptEditor from '../components/prompt/PromptEditor';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -36,6 +37,7 @@ interface PromptGroup {
 }
 
 const PromptManager: React.FC = () => {
+  const t = useT();
   const [prompts, setPrompts] = useState<PromptInfo[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<PromptGroup[]>([]);
   const [editingPrompt, setEditingPrompt] = useState<PromptDetail | null>(null);
@@ -77,10 +79,10 @@ const PromptManager: React.FC = () => {
         const grouped = groupPromptsByCategory(response.data.prompts);
         setFilteredGroups(grouped);
       } else {
-        message.error(response.message || '获取提示词列表失败');
+        message.error(response.message || t('pages.promptManager.loadFailed'));
       }
     } catch (error) {
-      message.error('获取提示词列表失败');
+      message.error(t('pages.promptManager.loadFailed'));
       console.error('Error loading prompts:', error);
     } finally {
       setLoading(false);
@@ -90,7 +92,7 @@ const PromptManager: React.FC = () => {
   const calculateCategories = (promptList: PromptInfo[]) => {
     const stats: CategoryStats = {};
     promptList.forEach(prompt => {
-      const category = prompt.category || '未分类';
+      const category = prompt.category || t('pages.promptManager.uncategorized');
       stats[category] = (stats[category] || 0) + 1;
     });
     setCategories(stats);
@@ -100,7 +102,7 @@ const PromptManager: React.FC = () => {
     const groupMap = new Map<string, PromptGroup>();
 
     promptList.forEach(prompt => {
-      const category = prompt.category || '未分类';
+      const category = prompt.category || t('pages.promptManager.uncategorized');
       if (!groupMap.has(category)) {
         groupMap.set(category, {
           category,
@@ -134,11 +136,11 @@ const PromptManager: React.FC = () => {
         setEditingPrompt(response.data);
         return response.data;
       } else {
-        message.error(response.message || '获取提示词内容失败');
+        message.error(response.message || t('pages.promptManager.loadDetailFailed'));
         return null;
       }
     } catch (error) {
-      message.error('获取提示词内容失败');
+      message.error(t('pages.promptManager.loadDetailFailed'));
       console.error('Error loading prompt detail:', error);
       return null;
     }
@@ -149,16 +151,16 @@ const PromptManager: React.FC = () => {
     try {
       const response = await promptService.createPrompt(values);
       if (response.success) {
-        message.success('创建提示词成功');
+        message.success(t('pages.promptManager.createModal.createSuccess'));
         setShowCreateModal(false);
         createForm.resetFields();
         setCreateContent('');
         loadPrompts();
       } else {
-        message.error(response.message || '创建提示词失败');
+        message.error(response.message || t('pages.promptManager.createModal.createFailed'));
       }
     } catch (error) {
-      message.error('创建提示词失败');
+      message.error(t('pages.promptManager.createModal.createFailed'));
       console.error('Error creating prompt:', error);
     } finally {
       setIsCreating(false);
@@ -172,17 +174,17 @@ const PromptManager: React.FC = () => {
     try {
       const response = await promptService.updatePrompt(editingPrompt.name, values);
       if (response.success) {
-        message.success('更新提示词成功');
+        message.success(t('pages.promptManager.editModal.updateSuccess'));
         setShowEditModal(false);
         editForm.resetFields();
         setEditContent('');
         setEditingPrompt(null);
         loadPrompts();
       } else {
-        message.error(response.message || '更新提示词失败');
+        message.error(response.message || t('pages.promptManager.editModal.updateFailed'));
       }
     } catch (error) {
-      message.error('更新提示词失败');
+      message.error(t('pages.promptManager.editModal.updateFailed'));
       console.error('Error updating prompt:', error);
     } finally {
       setIsUpdating(false);
@@ -193,45 +195,45 @@ const PromptManager: React.FC = () => {
     try {
       const response = await promptService.deletePrompt(name);
       if (response.success) {
-        message.success('删除提示词成功');
+        message.success(t('pages.promptManager.deleteSuccess'));
         loadPrompts();
         if (editingPrompt?.name === name) {
           setEditingPrompt(null);
         }
       } else {
-        message.error(response.message || '删除提示词失败');
+        message.error(response.message || t('pages.promptManager.deleteFailed'));
       }
     } catch (error) {
-      message.error('删除提示词失败');
+      message.error(t('pages.promptManager.deleteFailed'));
       console.error('Error deleting prompt:', error);
     }
   };
 
   const handleBatchDelete = async () => {
     if (selectedPrompts.length === 0) {
-      message.warning('请选择要删除的提示词');
+      message.warning(t('pages.promptManager.selectDeleteWarning'));
       return;
     }
 
     try {
       const response = await promptService.batchDeletePrompts({ names: selectedPrompts });
       if (response.success) {
-        message.success(`成功删除 ${selectedPrompts.length} 个提示词`);
+        message.success(t('pages.promptManager.batchDeleteSuccess', { count: selectedPrompts.length }));
         setSelectedPrompts([]);
         loadPrompts();
         setEditingPrompt(null);
       } else {
-        message.error(response.message || '批量删除失败');
+        message.error(response.message || t('pages.promptManager.batchDeleteFailed'));
       }
     } catch (error) {
-      message.error('批量删除失败');
+      message.error(t('pages.promptManager.batchDeleteFailed'));
       console.error('Error batch deleting prompts:', error);
     }
   };
 
   const handleExportPrompts = async () => {
     if (selectedPrompts.length === 0) {
-      message.warning('请选择要导出的提示词');
+      message.warning(t('pages.promptManager.selectPromptWarning'));
       return;
     }
 
@@ -245,9 +247,9 @@ const PromptManager: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      message.success('导出成功');
+      message.success(t('pages.promptManager.exportSuccess'));
     } catch (error) {
-      message.error('导出失败');
+      message.error(t('pages.promptManager.exportFailed'));
       console.error('Error exporting prompts:', error);
     }
   };
@@ -255,7 +257,7 @@ const PromptManager: React.FC = () => {
   const handleImportPrompt = async (values: any) => {
     const { file, name, category } = values;
     if (!file || file.length === 0) {
-      message.error('请选择文件');
+      message.error(t('pages.promptManager.importModal.selectFileError'));
       return;
     }
 
@@ -266,15 +268,15 @@ const PromptManager: React.FC = () => {
         category
       });
       if (response.success) {
-        message.success('导入提示词成功');
+        message.success(t('pages.promptManager.importModal.importSuccess'));
         setShowImportModal(false);
         importForm.resetFields();
         loadPrompts();
       } else {
-        message.error(response.message || '导入提示词失败');
+        message.error(response.message || t('pages.promptManager.importModal.importFailed'));
       }
     } catch (error) {
-      message.error('导入提示词失败');
+      message.error(t('pages.promptManager.importModal.importFailed'));
       console.error('Error importing prompt:', error);
     } finally {
       setIsImporting(false);
@@ -313,7 +315,7 @@ const PromptManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              提示词管理
+              {t('pages.promptManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -324,7 +326,7 @@ const PromptManager: React.FC = () => {
               fontSize: '13px',
               padding: '4px 12px'
             }}>
-              总数: {prompts.length}
+              {t('pages.promptManager.totalCount', { count: prompts.length })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -335,14 +337,14 @@ const PromptManager: React.FC = () => {
               fontSize: '13px',
               padding: '4px 12px'
             }}>
-              分类: {Object.keys(categories).length}
+              {t('pages.promptManager.categoriesCount', { count: Object.keys(categories).length })}
             </Tag>
           </Space>
           
           {/* 右侧：搜索框和操作按钮 */}
           <Space>
             <Input
-              placeholder="搜索提示词..."
+              placeholder={t('pages.promptManager.searchPlaceholder')}
               prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -378,10 +380,10 @@ const PromptManager: React.FC = () => {
                 transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
               }}
             >
-              创建
+              {t('pages.promptManager.create')}
             </Button>
             <Button icon={<UploadIcon size={16} strokeWidth={1.5} />} onClick={() => setShowImportModal(true)} style={{ color: '#8b7355', background: 'transparent', borderRadius: '6px', transition: 'all 0.2s ease' }}>
-              导入
+              {t('pages.promptManager.import')}
             </Button>
             {selectedPrompts.length > 0 && (
               <>
@@ -390,16 +392,16 @@ const PromptManager: React.FC = () => {
                   onClick={handleExportPrompts}
                   style={{ color: '#8b7355', background: 'transparent', borderRadius: '6px' }}
                 >
-                  导出
+                  {t('pages.promptManager.export')}
                 </Button>
                 <Popconfirm
-                  title={`确定要删除选中的 ${selectedPrompts.length} 个提示词吗？`}
+                  title={t('pages.promptManager.batchDeleteConfirm', { count: selectedPrompts.length })}
                   onConfirm={handleBatchDelete}
-                  okText="确定"
-                  cancelText="取消"
+                  okText={t('pages.promptManager.deleteConfirmOk')}
+                  cancelText={t('pages.promptManager.deleteConfirmCancel')}
                 >
                   <Button danger icon={<Trash2 size={16} strokeWidth={1.5} />} style={{ background: 'transparent', borderRadius: '6px' }}>
-                    删除
+                    {t('pages.promptManager.delete')}
                   </Button>
                 </Popconfirm>
               </>
@@ -411,7 +413,7 @@ const PromptManager: React.FC = () => {
       <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
         <Spin spinning={loading}>
           {filteredGroups.length === 0 ? (
-            <Empty description="暂无提示词" style={{ marginTop: '40px' }} />
+            <Empty description={t('pages.promptManager.noPrompts')} style={{ marginTop: '40px' }} />
           ) : (
             <Collapse
               defaultActiveKey={filteredGroups.map(group => group.category)}
@@ -558,13 +560,13 @@ const PromptManager: React.FC = () => {
                             <Edit size={15} strokeWidth={1.5} />
                           </div>
                           <Popconfirm
-                            title="确定要删除这个提示词吗？"
+                            title={t('pages.promptManager.deleteConfirmTitle')}
                             onConfirm={(e) => {
                               e?.stopPropagation();
                               handleDeletePrompt(prompt.name);
                             }}
-                            okText="确定"
-                            cancelText="取消"
+                            okText={t('pages.promptManager.deleteConfirmOk')}
+                            cancelText={t('pages.promptManager.deleteConfirmCancel')}
                           >
                             <div
                               style={{
@@ -609,7 +611,7 @@ const PromptManager: React.FC = () => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileText size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-            创建提示词
+            {t('pages.promptManager.createModal.title')}
           </div>
         }
         open={showCreateModal}
@@ -650,25 +652,25 @@ const PromptManager: React.FC = () => {
             flexShrink: 0
           }}>
             <Form.Item
-              label="提示词名称"
+              label={t('pages.promptManager.createModal.name')}
               name="name"
               rules={[
-                { required: true, message: '请输入提示词名称' },
-                { max: 100, message: '名称长度不能超过100个字符' }
+                { required: true, message: t('pages.promptManager.createModal.nameRequired') },
+                { max: 100, message: t('pages.promptManager.createModal.nameMaxLength') }
               ]}
             >
-              <Input placeholder="输入提示词名称" disabled={isCreating} />
+              <Input placeholder={t('pages.promptManager.createModal.namePlaceholder')} disabled={isCreating} />
             </Form.Item>
 
             <Form.Item
-              label="分类"
+              label={t('pages.promptManager.createModal.category')}
               name="category"
               rules={[
-                { required: true, message: '请输入分类' },
-                { pattern: /^[a-zA-Z0-9_-]+$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
+                { required: true, message: t('pages.promptManager.createModal.categoryRequired') },
+                { pattern: /^[a-zA-Z0-9_-]+$/, message: t('pages.promptManager.createModal.categoryPattern') }
               ]}
             >
-              <Input placeholder="输入分类名称（如：system, chat, analysis）" disabled={isCreating} />
+              <Input placeholder={t('pages.promptManager.createModal.categoryPlaceholder')} disabled={isCreating} />
             </Form.Item>
           </div>
 
@@ -681,7 +683,7 @@ const PromptManager: React.FC = () => {
             minHeight: 0
           }}>
             <div style={{ marginBottom: '8px', color: 'rgba(0, 0, 0, 0.85)', fontSize: '14px' }}>
-              内容
+              {t('pages.promptManager.createModal.content')}
             </div>
             <div style={{ flex: 1, minHeight: 0 }}>
               <PromptEditor
@@ -691,12 +693,12 @@ const PromptManager: React.FC = () => {
                   createForm.setFieldsValue({ content: value });
                 }}
                 readOnly={isCreating}
-                placeholder="输入提示词内容..."
+                placeholder={t('pages.promptManager.createModal.contentPlaceholder')}
               />
             </div>
             <Form.Item
               name="content"
-              rules={[{ required: true, message: '请输入提示词内容' }]}
+              rules={[{ required: true, message: t('pages.promptManager.createModal.contentRequired') }]}
               style={{ display: 'none' }}
             >
               <Input />
@@ -720,7 +722,7 @@ const PromptManager: React.FC = () => {
               }}
               disabled={isCreating}
             >
-              取消
+              {t('pages.promptManager.createModal.cancel')}
             </Button>
             <Button
               type="primary"
@@ -739,7 +741,7 @@ const PromptManager: React.FC = () => {
                 transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
               }}
             >
-              创建
+              {t('pages.promptManager.createModal.create')}
             </Button>
           </div>
         </Form>
@@ -750,7 +752,7 @@ const PromptManager: React.FC = () => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Edit size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-            编辑提示词
+            {t('pages.promptManager.editModal.title')}
           </div>
         }
         open={showEditModal}
@@ -791,20 +793,20 @@ const PromptManager: React.FC = () => {
             flexShrink: 0
           }}>
             <Form.Item
-              label="提示词名称"
+              label={t('pages.promptManager.editModal.name')}
               style={{ marginBottom: '16px' }}
             >
               <Input value={editingPrompt?.name} disabled style={{ color: 'rgba(0, 0, 0, 0.65)' }} />
             </Form.Item>
             
             <Form.Item
-              label="分类"
+              label={t('pages.promptManager.editModal.category')}
               name="category"
               rules={[
-                { pattern: /^[a-zA-Z0-9_-]*$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
+                { pattern: /^[a-zA-Z0-9_-]*$/, message: t('pages.promptManager.editModal.categoryPattern') }
               ]}
             >
-              <Input placeholder="输入分类名称（如：system, chat, analysis）" disabled={isUpdating} />
+              <Input placeholder={t('pages.promptManager.editModal.categoryPlaceholder')} disabled={isUpdating} />
             </Form.Item>
           </div>
 
@@ -817,7 +819,7 @@ const PromptManager: React.FC = () => {
             minHeight: 0
           }}>
             <div style={{ marginBottom: '8px', color: 'rgba(0, 0, 0, 0.85)', fontSize: '14px' }}>
-              内容
+              {t('pages.promptManager.editModal.content')}
             </div>
             <div style={{ flex: 1, minHeight: 0 }}>
               <PromptEditor
@@ -827,12 +829,12 @@ const PromptManager: React.FC = () => {
                   editForm.setFieldsValue({ content: value });
                 }}
                 readOnly={isUpdating}
-                placeholder="输入提示词内容..."
+                placeholder={t('pages.promptManager.editModal.contentPlaceholder')}
               />
             </div>
             <Form.Item
               name="content"
-              rules={[{ required: true, message: '请输入提示词内容' }]}
+              rules={[{ required: true, message: t('pages.promptManager.editModal.contentRequired') }]}
               style={{ display: 'none' }}
             >
               <Input />
@@ -856,7 +858,7 @@ const PromptManager: React.FC = () => {
               }}
               disabled={isUpdating}
             >
-              取消
+              {t('pages.promptManager.editModal.cancel')}
             </Button>
             <Button
               type="primary"
@@ -875,7 +877,7 @@ const PromptManager: React.FC = () => {
                 transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
               }}
             >
-              保存
+              {t('pages.promptManager.editModal.save')}
             </Button>
           </div>
         </Form>
@@ -886,7 +888,7 @@ const PromptManager: React.FC = () => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <UploadIcon size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-            导入提示词
+            {t('pages.promptManager.importModal.title')}
           </div>
         }
         open={showImportModal}
@@ -916,11 +918,11 @@ const PromptManager: React.FC = () => {
           style={{ padding: '8px 0' }}
         >
           <Form.Item
-            label="选择文件"
+            label={t('pages.promptManager.importModal.selectFile')}
             name="file"
             valuePropName="fileList"
             getValueFromEvent={(e) => e?.fileList}
-            rules={[{ required: true, message: '请选择要导入的Markdown文件' }]}
+            rules={[{ required: true, message: t('pages.promptManager.importModal.selectFileRequired') }]}
           >
             <Upload
               beforeUpload={() => false}
@@ -929,31 +931,31 @@ const PromptManager: React.FC = () => {
               disabled={isImporting}
             >
               <Button icon={<UploadIcon size={16} strokeWidth={1.5} />} disabled={isImporting}>
-                选择Markdown文件
+                {t('pages.promptManager.importModal.selectButton')}
               </Button>
             </Upload>
           </Form.Item>
 
           <Form.Item
-            label="提示词名称"
+            label={t('pages.promptManager.importModal.name')}
             name="name"
             rules={[
-              { required: true, message: '请输入提示词名称' },
-              { max: 100, message: '名称长度不能超过100个字符' }
+              { required: true, message: t('pages.promptManager.importModal.nameRequired') },
+              { max: 100, message: t('pages.promptManager.importModal.nameMaxLength') }
             ]}
           >
-            <Input placeholder="输入提示词名称" disabled={isImporting} />
+            <Input placeholder={t('pages.promptManager.importModal.namePlaceholder')} disabled={isImporting} />
           </Form.Item>
 
           <Form.Item
-            label="分类"
+            label={t('pages.promptManager.importModal.category')}
             name="category"
             rules={[
-              { required: true, message: '请输入分类' },
-              { pattern: /^[a-zA-Z0-9_-]+$/, message: '分类只能包含英文字母、数字、连字符和下划线' }
+              { required: true, message: t('pages.promptManager.importModal.categoryRequired') },
+              { pattern: /^[a-zA-Z0-9_-]+$/, message: t('pages.promptManager.importModal.categoryPattern') }
             ]}
           >
-            <Input placeholder="输入分类名称（如：system, chat, analysis）" disabled={isImporting} />
+            <Input placeholder={t('pages.promptManager.importModal.categoryPlaceholder')} disabled={isImporting} />
           </Form.Item>
 
           <Form.Item style={{ textAlign: 'right', marginBottom: 0, marginTop: '24px' }}>
@@ -965,7 +967,7 @@ const PromptManager: React.FC = () => {
                 }}
                 disabled={isImporting}
               >
-                取消
+                {t('pages.promptManager.importModal.cancel')}
               </Button>
               <Button
                 type="primary"
@@ -984,7 +986,7 @@ const PromptManager: React.FC = () => {
                   transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
                 }}
               >
-                导入
+                {t('pages.promptManager.importModal.import')}
               </Button>
             </Space>
           </Form.Item>
