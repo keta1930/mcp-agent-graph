@@ -17,11 +17,13 @@ import MCPToolsViewer from '../components/mcp-manager/MCPToolsViewer';
 import MCPJsonEditor from '../components/mcp-manager/MCPJsonEditor';
 import { MCPServerConfig } from '../types/mcp';
 import { getUserInfo } from '../utils/auth';
+import { useT } from '../i18n/hooks';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
 
 const MCPManager: React.FC = () => {
+  const t = useT();
   const {
     config,
     status,
@@ -47,7 +49,7 @@ const MCPManager: React.FC = () => {
   const [toolsModalVisible, setToolsModalVisible] = useState(false);
   const [selectedServer, setSelectedServer] = useState('');
   const [initialValues, setInitialValues] = useState<MCPServerConfig | undefined>();
-  const [modalTitle, setModalTitle] = useState('添加MCP服务器');
+  const [modalTitle, setModalTitle] = useState('');
   const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual');
 
   // 工具注册相关状态
@@ -72,14 +74,14 @@ const MCPManager: React.FC = () => {
   const showAddModal = () => {
     setSelectedServer('');
     setInitialValues(undefined);
-    setModalTitle('添加MCP服务器');
+    setModalTitle(t('pages.mcpManager.addServerTitle'));
     setModalVisible(true);
   };
 
   const showEditModal = (serverName: string) => {
     setSelectedServer(serverName);
     setInitialValues(config.mcpServers[serverName]);
-    setModalTitle(`编辑MCP服务器: ${serverName}`);
+    setModalTitle(t('pages.mcpManager.editServerTitle', { name: serverName }));
     setModalVisible(true);
   };
 
@@ -108,25 +110,25 @@ const MCPManager: React.FC = () => {
       if (selectedServer) {
         // Edit existing server
         await updateServer(selectedServer, serverConfig);
-        message.success(`服务器 "${selectedServer}" 更新成功`);
+        message.success(t('pages.mcpManager.serverUpdateSuccess', { name: selectedServer }));
       } else {
         // Add new server
         if (config.mcpServers[serverName]) {
-          message.error(`服务器 "${serverName}" 已存在`);
+          message.error(t('pages.mcpManager.serverExists', { name: serverName }));
           return;
         }
         await addServer(serverName, serverConfig);
-        message.success(`服务器 "${serverName}" 添加成功`);
+        message.success(t('pages.mcpManager.serverAddSuccess', { name: serverName }));
       }
       setModalVisible(false);
     } catch (err: any) {
       if (err.isVersionConflict) {
         message.error({
-          content: `版本冲突：${err.message}。配置已自动刷新，请重新检查后再保存。`,
+          content: t('pages.mcpManager.versionConflict', { message: err.message }),
           duration: 5
         });
       } else {
-        message.error('操作失败: ' + (err instanceof Error ? err.message : String(err)));
+        message.error(t('pages.mcpManager.operationFailed', { error: err instanceof Error ? err.message : String(err) }));
       }
     }
   };
@@ -134,15 +136,15 @@ const MCPManager: React.FC = () => {
   const handleDeleteServer = async (serverName: string) => {
     try {
       await deleteServer(serverName);
-      message.success(`服务器 "${serverName}" 删除成功`);
+      message.success(t('pages.mcpManager.serverDeleteSuccess', { name: serverName }));
     } catch (err: any) {
       if (err.isVersionConflict) {
         message.error({
-          content: `版本冲突：${err.message}。配置已自动刷新，请重新检查后再操作。`,
+          content: t('pages.mcpManager.versionConflict', { message: err.message }),
           duration: 5
         });
       } else {
-        message.error('删除失败: ' + (err instanceof Error ? err.message : String(err)));
+        message.error(t('pages.mcpManager.deleteFailed', { error: err instanceof Error ? err.message : String(err) }));
       }
     }
   };
@@ -150,56 +152,56 @@ const MCPManager: React.FC = () => {
   const handleConnect = async (serverName: string) => {
     try {
       await connectServer(serverName);
-      message.success(`已连接到服务器 "${serverName}"`);
+      message.success(t('pages.mcpManager.connectSuccess', { name: serverName }));
     } catch (err) {
-      message.error('连接失败: ' + (err instanceof Error ? err.message : String(err)));
+      message.error(t('pages.mcpManager.connectFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 
   const handleDisconnect = async (serverName: string) => {
     try {
       await disconnectServer(serverName);
-      message.success(`已从服务器 "${serverName}" 断开连接`);
+      message.success(t('pages.mcpManager.disconnectSuccess', { name: serverName }));
     } catch (err) {
-      message.error('断开连接失败: ' + (err instanceof Error ? err.message : String(err)));
+      message.error(t('pages.mcpManager.disconnectFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 
   // Handle batch connect operation for all servers
   const handleConnectAll = async () => {
     try {
-      message.loading('正在连接所有服务器...', 0);
+      message.loading(t('pages.mcpManager.connectAllLoading'), 0);
       const results = await connectAllServers();
       message.destroy();
 
       if (results.success.length > 0 && results.failed.length === 0) {
-        message.success(`成功连接所有 ${results.success.length} 个服务器`);
+        message.success(t('pages.mcpManager.connectAllSuccess', { count: results.success.length }));
       } else if (results.success.length > 0 && results.failed.length > 0) {
-        message.warning(`连接了 ${results.success.length} 个服务器，${results.failed.length} 个服务器连接失败`);
+        message.warning(t('pages.mcpManager.connectAllPartial', { success: results.success.length, failed: results.failed.length }));
       } else if (results.success.length === 0 && results.failed.length > 0) {
-        message.error(`所有 ${results.failed.length} 个服务器连接失败`);
+        message.error(t('pages.mcpManager.connectAllFailed', { count: results.failed.length }));
       } else {
-        message.info('没有服务器需要连接');
+        message.info(t('pages.mcpManager.connectAllNone'));
       }
     } catch (err) {
       message.destroy();
-      message.error('批量连接失败: ' + (err instanceof Error ? err.message : String(err)));
+      message.error(t('pages.mcpManager.connectAllError', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 
   const handleRefresh = () => {
     fetchConfig();
     fetchStatus();
-    message.info('正在刷新MCP状态...');
+    message.info(t('pages.mcpManager.refreshing'));
   };
 
   const handleSaveJson = async (newConfig: any) => {
     try {
       await updateConfig(newConfig);
-      message.success('配置保存成功');
+      message.success(t('pages.mcpManager.configSaveSuccess'));
       fetchStatus();
     } catch (err) {
-      message.error('保存配置失败: ' + (err instanceof Error ? err.message : String(err)));
+      message.error(t('pages.mcpManager.configSaveFailed', { error: err instanceof Error ? err.message : String(err) }));
       throw err;
     }
   };
@@ -207,17 +209,17 @@ const MCPManager: React.FC = () => {
   // 工具注册处理
   const handleToolRegister = async () => {
     if (!toolFormData.folderName.trim()) {
-      message.error('请输入工具文件夹名称');
+      message.error(t('pages.mcpManager.toolRegistration.folderNameRequired'));
       return;
     }
     if (!toolFormData.mainScript.trim()) {
-      message.error('请输入主脚本内容');
+      message.error(t('pages.mcpManager.toolRegistration.mainScriptRequired'));
       return;
     }
 
     const usedPorts = getUsedPorts();
     if (usedPorts.includes(toolFormData.port)) {
-      message.error(`端口 ${toolFormData.port} 已被占用，请选择其他端口`);
+      message.error(t('pages.mcpManager.toolRegistration.portOccupied', { port: toolFormData.port }));
       return;
     }
 
@@ -233,7 +235,7 @@ const MCPManager: React.FC = () => {
         port: toolFormData.port
       });
 
-      message.success(`工具 "${toolFormData.folderName}" 注册成功！`);
+      message.success(t('pages.mcpManager.toolRegistration.registerSuccess', { name: toolFormData.folderName }));
       setToolRegistrationVisible(false);
       setToolFormData({
         folderName: '',
@@ -244,7 +246,7 @@ const MCPManager: React.FC = () => {
         readme: ''
       });
     } catch (error) {
-      message.error('注册工具时出错: ' + (error instanceof Error ? error.message : String(error)));
+      message.error(t('pages.mcpManager.toolRegistration.registerFailed', { error: error instanceof Error ? error.message : String(error) }));
     }
   };
 
@@ -285,7 +287,7 @@ const MCPManager: React.FC = () => {
               letterSpacing: '2px',
               fontSize: '18px'
             }}>
-              MCP 服务器管理
+              {t('pages.mcpManager.title')}
             </Title>
             <Tag style={{
               background: 'rgba(184, 88, 69, 0.08)',
@@ -296,7 +298,7 @@ const MCPManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {serverNames.length} 个服务器
+              {t('pages.mcpManager.serversCount', { count: serverNames.length })}
             </Tag>
             <Tag style={{
               background: 'rgba(139, 115, 85, 0.08)',
@@ -307,7 +309,7 @@ const MCPManager: React.FC = () => {
               padding: '4px 12px',
               fontSize: '12px'
             }}>
-              {connectedCount} 已连接
+              {t('pages.mcpManager.connectedCount', { count: connectedCount })}
             </Tag>
           </Space>
 
@@ -343,12 +345,12 @@ const MCPManager: React.FC = () => {
             {viewMode === 'visual' ? (
               <>
                 <Code size={16} strokeWidth={1.5} />
-                JSON视图
+                {t('pages.mcpManager.jsonView')}
               </>
             ) : (
               <>
                 <Grid3x3 size={16} strokeWidth={1.5} />
-                列表视图
+                {t('pages.mcpManager.listView')}
               </>
             )}
           </Button>
@@ -363,7 +365,7 @@ const MCPManager: React.FC = () => {
       }}>
         {error && (
           <Alert
-            message="错误"
+            message={t('common.error')}
             description={error}
             type="error"
             showIcon
@@ -414,7 +416,7 @@ const MCPManager: React.FC = () => {
                 }}
               >
                 <Plus size={16} strokeWidth={1.5} />
-                添加服务器
+                {t('pages.mcpManager.addServer')}
               </Button>
               <Button
                 onClick={showToolRegistration}
@@ -447,7 +449,7 @@ const MCPManager: React.FC = () => {
                 }}
               >
                 <Wrench size={16} strokeWidth={1.5} />
-                注册工具
+                {t('pages.mcpManager.registerTool')}
               </Button>
               <Button
                 onClick={handleRefresh}
@@ -481,7 +483,7 @@ const MCPManager: React.FC = () => {
                 }}
               >
                 <RefreshCw size={16} strokeWidth={1.5} />
-                刷新
+                {t('pages.mcpManager.refresh')}
               </Button>
               <Button
                 onClick={handleConnectAll}
@@ -516,7 +518,7 @@ const MCPManager: React.FC = () => {
                 }}
               >
                 <Play size={16} strokeWidth={1.5} />
-                全部连接
+                {t('pages.mcpManager.connectAll')}
               </Button>
             </div>
 
@@ -537,13 +539,13 @@ const MCPManager: React.FC = () => {
                   color: 'rgba(45, 45, 45, 0.65)',
                   marginBottom: '8px'
                 }}>
-                  未配置MCP服务器
+                  {t('pages.mcpManager.noServers')}
                 </div>
                 <div style={{
                   fontSize: '13px',
                   color: 'rgba(45, 45, 45, 0.45)'
                 }}>
-                  点击"添加服务器"按钮开始配置
+                  {t('pages.mcpManager.noServersHint')}
                 </div>
               </div>
             ) : (
@@ -618,7 +620,7 @@ const MCPManager: React.FC = () => {
           title={
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Wrench size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
-              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>注册MCP工具</span>
+              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.mcpManager.toolRegistration.title')}</span>
             </div>
           }
           open={toolRegistrationVisible}
@@ -637,7 +639,7 @@ const MCPManager: React.FC = () => {
               fontWeight: 500
             }}
           >
-            取消
+            {t('common.cancel')}
           </Button>,
           <Button
             key="submit"
@@ -654,7 +656,7 @@ const MCPManager: React.FC = () => {
               boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
             }}
           >
-            注册工具
+            {t('pages.mcpManager.toolRegistration.registerButton')}
           </Button>,
         ]}
         width={800}
@@ -667,8 +669,8 @@ const MCPManager: React.FC = () => {
       >
         {usedPorts.length > 0 && (
           <Alert
-            message="端口占用提醒"
-            description={`以下端口已被占用: ${usedPorts.join(', ')}。请选择其他端口。`}
+            message={t('pages.mcpManager.toolRegistration.portOccupiedWarning')}
+            description={t('pages.mcpManager.toolRegistration.portOccupiedMessage', { ports: usedPorts.join(', ') })}
             type="warning"
             style={{
               marginBottom: '16px',
@@ -688,12 +690,12 @@ const MCPManager: React.FC = () => {
             color: '#2d2d2d',
             letterSpacing: '0.3px'
           }}>
-            工具文件夹名称
+            {t('pages.mcpManager.toolRegistration.folderName')}
           </label>
           <Input
             value={toolFormData.folderName}
             onChange={(e) => setToolFormData(prev => ({ ...prev, folderName: e.target.value }))}
-            placeholder="tool_name_server"
+            placeholder={t('pages.mcpManager.toolRegistration.folderNamePlaceholder')}
             style={{
               height: '40px',
               borderRadius: '6px',
@@ -716,13 +718,13 @@ const MCPManager: React.FC = () => {
             color: '#2d2d2d',
             letterSpacing: '0.3px'
           }}>
-            端口号
+            {t('pages.mcpManager.toolRegistration.port')}
           </label>
           <Input
             type="number"
             value={toolFormData.port}
             onChange={(e) => setToolFormData(prev => ({ ...prev, port: parseInt(e.target.value) || 8001 }))}
-            placeholder="8001-9099"
+            placeholder={t('pages.mcpManager.toolRegistration.portPlaceholder')}
             min={8001}
             max={9099}
             style={{
@@ -747,12 +749,12 @@ const MCPManager: React.FC = () => {
             color: '#2d2d2d',
             letterSpacing: '0.3px'
           }}>
-            主脚本文件名
+            {t('pages.mcpManager.toolRegistration.mainScriptName')}
           </label>
           <Input
             value={toolFormData.mainScriptName}
             onChange={(e) => setToolFormData(prev => ({ ...prev, mainScriptName: e.target.value }))}
-            placeholder="main_server.py"
+            placeholder={t('pages.mcpManager.toolRegistration.mainScriptNamePlaceholder')}
             style={{
               height: '40px',
               borderRadius: '6px',
@@ -775,13 +777,13 @@ const MCPManager: React.FC = () => {
             color: '#2d2d2d',
             letterSpacing: '0.3px'
           }}>
-            主脚本内容
+            {t('pages.mcpManager.toolRegistration.mainScript')}
           </label>
           <Input.TextArea
             value={toolFormData.mainScript}
             onChange={(e) => setToolFormData(prev => ({ ...prev, mainScript: e.target.value }))}
             rows={12}
-            placeholder="输入完整的FastMCP服务器代码..."
+            placeholder={t('pages.mcpManager.toolRegistration.mainScriptPlaceholder')}
             style={{
               borderRadius: '6px',
               border: '1px solid rgba(139, 115, 85, 0.2)',
@@ -805,12 +807,12 @@ const MCPManager: React.FC = () => {
             color: '#2d2d2d',
             letterSpacing: '0.3px'
           }}>
-            依赖包
+            {t('pages.mcpManager.toolRegistration.dependencies')}
           </label>
           <Input
             value={toolFormData.dependencies}
             onChange={(e) => setToolFormData(prev => ({ ...prev, dependencies: e.target.value }))}
-            placeholder="fastmcp requests pandas"
+            placeholder={t('pages.mcpManager.toolRegistration.dependenciesPlaceholder')}
             style={{
               height: '40px',
               borderRadius: '6px',
@@ -833,13 +835,13 @@ const MCPManager: React.FC = () => {
             color: '#2d2d2d',
             letterSpacing: '0.3px'
           }}>
-            README内容
+            {t('pages.mcpManager.toolRegistration.readme')}
           </label>
           <Input.TextArea
             value={toolFormData.readme}
             onChange={(e) => setToolFormData(prev => ({ ...prev, readme: e.target.value }))}
             rows={4}
-            placeholder="工具说明文档（可选）"
+            placeholder={t('pages.mcpManager.toolRegistration.readmePlaceholder')}
             style={{
               borderRadius: '6px',
               border: '1px solid rgba(139, 115, 85, 0.2)',
@@ -864,12 +866,12 @@ const MCPManager: React.FC = () => {
             color: 'rgba(45, 45, 45, 0.85)',
             lineHeight: '1.6'
           }}>
-            <p style={{ margin: '0 0 8px 0', fontWeight: 500, color: '#2d2d2d' }}>注意事项</p>
+            <p style={{ margin: '0 0 8px 0', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.mcpManager.toolRegistration.notes')}</p>
             <ul style={{ margin: 0, paddingLeft: '20px', color: 'rgba(45, 45, 45, 0.75)' }}>
-              <li style={{ marginBottom: '4px' }}>工具将在指定端口上运行</li>
-              <li style={{ marginBottom: '4px' }}>确保脚本内容完整且可执行</li>
-              <li style={{ marginBottom: '4px' }}>系统将自动创建虚拟环境并安装依赖</li>
-              <li>注册后工具将自动连接并可立即使用</li>
+              <li style={{ marginBottom: '4px' }}>{t('pages.mcpManager.toolRegistration.note1')}</li>
+              <li style={{ marginBottom: '4px' }}>{t('pages.mcpManager.toolRegistration.note2')}</li>
+              <li style={{ marginBottom: '4px' }}>{t('pages.mcpManager.toolRegistration.note3')}</li>
+              <li>{t('pages.mcpManager.toolRegistration.note4')}</li>
             </ul>
           </div>
         </div>

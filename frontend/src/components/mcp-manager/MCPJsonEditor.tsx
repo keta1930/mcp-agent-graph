@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { MCPConfig } from '../../types/mcp';
 import Editor from "@monaco-editor/react";
+import { useT } from '../../i18n/hooks';
 
 interface MCPJsonEditorProps {
   config: MCPConfig;
@@ -81,6 +82,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   onSave,
   loading
 }) => {
+  const t = useT();
   const [jsonText, setJsonText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -93,9 +95,9 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       setJsonText(formatted);
       setError(null);
     } catch {
-      setError('无效的JSON配置');
+      setError(t('pages.mcpManager.jsonEditor.invalidConfig'));
     }
-  }, [config]);
+  }, [config, t]);
 
   const handleJsonTextChange = (value: string | undefined) => {
     const newValue = value || '';
@@ -110,9 +112,9 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       const formatted = JSON.stringify(cleaned, null, 2);
       setJsonText(formatted);
       setError(null);
-      message.success('JSON格式化并清理完成');
+      message.success(t('pages.mcpManager.jsonEditor.formatSuccess'));
     } catch {
-      setError('无法格式化JSON: 格式无效');
+      setError(t('pages.mcpManager.jsonEditor.formatFailed'));
     }
   };
 
@@ -125,14 +127,14 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
 
       // Basic validation for MCP config structure
       if (!configToSave || typeof configToSave !== 'object' || Array.isArray(configToSave)) {
-        setError('无效的MCP配置: 配置必须是一个对象');
+        setError(t('pages.mcpManager.jsonEditor.configMustBeObject'));
         return;
       }
       
       const typedConfig = configToSave as Record<string, unknown>;
       
       if (!typedConfig.mcpServers || typeof typedConfig.mcpServers !== 'object' || Array.isArray(typedConfig.mcpServers)) {
-        setError('无效的MCP配置: 缺少mcpServers属性或它不是一个对象');
+        setError(t('pages.mcpManager.jsonEditor.missingMcpServers'));
         return;
       }
 
@@ -140,7 +142,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
       const mcpServers = typedConfig.mcpServers as Record<string, Record<string, unknown>>;
       for (const [serverName, server] of Object.entries(mcpServers)) {
         if (!server.transportType) {
-          setError(`服务器 "${serverName}" 缺少必需属性: transportType`);
+          setError(t('pages.mcpManager.jsonEditor.missingTransportType', { name: serverName }));
           return;
         }
       }
@@ -153,13 +155,13 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
 
     } catch (err: any) {
       if (err.isVersionConflict) {
-        const errorMsg = `版本冲突：配置已被其他用户修改。页面已自动刷新最新配置，请重新检查后再保存。`;
+        const errorMsg = t('pages.mcpManager.versionConflict', { message: err.message });
         message.error({
           content: errorMsg,
           duration: 5
         });
       } else {
-        const errorMsg = `保存配置失败: ${err instanceof Error ? err.message : String(err)}`;
+        const errorMsg = t('pages.mcpManager.configSaveFailed', { error: err instanceof Error ? err.message : String(err) });
         setError(errorMsg);
       }
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -171,7 +173,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
   const handleCopy = () => {
     navigator.clipboard.writeText(jsonText).then(() => {
       setCopied(true);
-      message.success('JSON已复制到剪贴板');
+      message.success(t('pages.mcpManager.jsonEditor.copySuccess'));
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -190,16 +192,16 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           color: '#2d2d2d',
           letterSpacing: '0.5px'
         }}>
-          编辑MCP配置JSON
+          {t('pages.mcpManager.jsonEditor.title')}
         </span>
-        <Tooltip title="直接编辑JSON配置。配置将在保存前进行验证和清理。">
+        <Tooltip title={t('pages.mcpManager.jsonEditor.tooltip')}>
           <Info size={16} strokeWidth={1.5} style={{ color: '#8b7355', cursor: 'pointer' }} />
         </Tooltip>
       </div>
 
       {error && (
         <Alert
-          message="错误"
+          message={t('pages.mcpManager.jsonEditor.error')}
           description={error}
           type="error"
           showIcon
@@ -314,7 +316,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           }}
         >
           <Paintbrush size={16} strokeWidth={1.5} />
-          格式化并清理JSON
+          {t('pages.mcpManager.jsonEditor.formatAndClean')}
         </Button>
 
         <Button
@@ -346,7 +348,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           }}
         >
           {copied ? <Check size={16} strokeWidth={1.5} /> : <Copy size={16} strokeWidth={1.5} />}
-          {copied ? '已复制' : '复制'}
+          {copied ? t('pages.mcpManager.jsonEditor.copied') : t('pages.mcpManager.jsonEditor.copy')}
         </Button>
 
         <Button
@@ -381,7 +383,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           }}
         >
           <Save size={16} strokeWidth={1.5} />
-          保存配置
+          {t('pages.mcpManager.jsonEditor.saveConfig')}
         </Button>
       </div>
 
@@ -398,7 +400,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           color: 'rgba(45, 45, 45, 0.75)',
           lineHeight: '1.6'
         }}>
-          配置将在保存前自动清理，移除不必要的字段。
+          {t('pages.mcpManager.jsonEditor.configNote')}
         </p>
       </div>
     </div>

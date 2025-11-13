@@ -1,6 +1,6 @@
 // src/components/mcp-manager/MCPServerCard.tsx
 import React from 'react';
-import { Card, Button, Tag, Space, Typography, Tooltip, Popconfirm, Collapse } from 'antd';
+import { Card, Tag, Space, Typography, Tooltip, Popconfirm, Collapse } from 'antd';
 import {
   CheckCircle,
   XCircle,
@@ -17,8 +17,9 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { MCPServerConfig } from '../../types/mcp';
+import { useT } from '../../i18n/hooks';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { Panel } = Collapse;
 
 interface MCPServerCardProps {
@@ -54,6 +55,8 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
   currentUserId,
   currentUserRole,
 }) => {
+  const t = useT();
+  
   // Determine status information
   const connected = status?.connected || false;
   const initAttempted = status?.init_attempted || false;
@@ -81,19 +84,19 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
     if (config.transportType === 'sse') {
       return (
         <div>
-          <Text strong>SSE地址:</Text> {config.url}
+          <Text strong>{t('pages.mcpManager.card.sseUrl')}:</Text> {config.url}
         </div>
       );
     } else if (config.transportType === 'streamable_http') {
       return (
         <div>
-          <Text strong>HTTP地址:</Text> {config.url}
+          <Text strong>{t('pages.mcpManager.card.httpUrl')}:</Text> {config.url}
         </div>
       );
     } else {
       return (
         <div>
-          <Text strong>命令:</Text> {config.command} {formattedArgs}
+          <Text strong>{t('pages.mcpManager.card.command')}:</Text> {config.command} {formattedArgs}
         </div>
       );
     }
@@ -108,7 +111,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
       <div>
         <Text strong style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
           <Cloud size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-          环境变量
+          {t('pages.mcpManager.card.envVars')}
         </Text>
         <div style={{ marginTop: '8px' }}>
           <Collapse
@@ -134,7 +137,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
             <Panel
               header={
                 <span style={{ fontSize: '13px', color: 'rgba(45, 45, 45, 0.75)' }}>
-                  已配置 {Object.keys(config.env).length} 个变量
+                  {t('pages.mcpManager.card.envVarsConfigured', { count: Object.keys(config.env).length })}
                 </span>
               }
               key="env"
@@ -186,7 +189,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '15px', fontWeight: 500, color: '#2d2d2d' }}>{serverName}</span>
             {isAIGenerated && (
-              <Tooltip title="AI生成的MCP工具">
+              <Tooltip title={t('pages.mcpManager.card.aiGeneratedTooltip')}>
                 <Bot
                   size={16}
                   strokeWidth={1.5}
@@ -208,7 +211,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
                 padding: '2px 10px'
               }}
             >
-              已禁用
+              {t('pages.mcpManager.card.disabled')}
             </Tag>
           ) : connected ? (
             <Tag
@@ -225,7 +228,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               }}
             >
               <CheckCircle size={12} strokeWidth={2} />
-              已连接
+              {t('pages.mcpManager.card.connected')}
             </Tag>
           ) : initAttempted ? (
             <Tag
@@ -242,7 +245,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               }}
             >
               <XCircle size={12} strokeWidth={2} />
-              连接失败
+              {t('pages.mcpManager.card.connectionFailed')}
             </Tag>
           ) : (
             <Tag
@@ -259,7 +262,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               }}
             >
               <AlertCircle size={12} strokeWidth={2} />
-              未连接
+              {t('pages.mcpManager.card.notConnected')}
             </Tag>
           )}
         </div>
@@ -292,7 +295,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               }}
             >
               <Square size={14} strokeWidth={1.5} />
-              断开
+              {t('pages.mcpManager.card.disconnect')}
             </div>
           ) : (
             <div
@@ -323,7 +326,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               }}
             >
               <Play size={14} strokeWidth={1.5} />
-              连接
+              {t('pages.mcpManager.card.connect')}
             </div>
           )}
           <div
@@ -368,12 +371,12 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
           >
             <Edit2 size={15} strokeWidth={1.5} />
           </div>
-          <Tooltip title={!canDelete ? '只有提供者或管理员可以删除此服务器' : ''}>
+          <Tooltip title={!canDelete ? t('pages.mcpManager.card.deletePermissionDenied') : ''}>
             <Popconfirm
-              title="您确定要删除这个服务器吗？"
+              title={t('pages.mcpManager.card.deleteConfirm')}
               onConfirm={() => onDelete(serverName)}
-              okText="确定"
-              cancelText="取消"
+              okText={t('common.confirm')}
+              cancelText={t('common.cancel')}
               disabled={!canDelete}
             >
               <div
@@ -432,7 +435,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               gap: '6px'
             }}>
               <User size={14} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-              提供者
+              {t('pages.mcpManager.card.provider')}
             </span>
             <Tag
               style={{
@@ -445,7 +448,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               }}
             >
               {config.provider_user_id}
-              {isOwnServer && ' (我)'}
+              {isOwnServer && ` (${t('pages.mcpManager.card.me')})`}
             </Tag>
             {config.created_at && (
               <span style={{
@@ -463,7 +466,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>
-            传输类型
+            {t('pages.mcpManager.card.transportType')}
           </span>
           <span style={{ fontSize: '14px', color: 'rgba(45, 45, 45, 0.75)' }}>
             {config.transportType}
@@ -479,7 +482,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
                 padding: '1px 8px'
               }}
             >
-              AI生成
+              {t('pages.mcpManager.card.aiGenerated')}
             </Tag>
           )}
         </div>
@@ -488,10 +491,10 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '14px', fontWeight: 500, color: '#2d2d2d' }}>
-            超时时间
+            {t('pages.mcpManager.card.timeout')}
           </span>
           <span style={{ fontSize: '14px', color: 'rgba(45, 45, 45, 0.75)' }}>
-            {config.timeout} 秒
+            {config.timeout} {t('pages.mcpManager.card.seconds')}
           </span>
         </div>
         {renderEnvironmentVariables()}
@@ -503,7 +506,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               color: '#2d2d2d',
               marginBottom: '6px'
             }}>
-              自动批准
+              {t('pages.mcpManager.card.autoApprove')}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {config.autoApprove.map(tool => (
@@ -532,7 +535,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               color: '#2d2d2d',
               marginBottom: '6px'
             }}>
-              可用工具
+              {t('pages.mcpManager.card.availableTools')}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {tools.map(tool => (
@@ -566,7 +569,7 @@ const MCPServerCard: React.FC<MCPServerCardProps> = ({
               color: '#b85845',
               marginBottom: '4px'
             }}>
-              错误
+              {t('pages.mcpManager.card.error')}
             </div>
             <div style={{
               fontSize: '13px',

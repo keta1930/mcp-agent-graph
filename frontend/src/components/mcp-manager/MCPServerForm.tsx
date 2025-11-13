@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { Form, Input, InputNumber, Switch, Select, Modal, Button, Typography, ConfigProvider } from 'antd';
 import { MCPServerConfig } from '../../types/mcp';
+import { useT } from '../../i18n/hooks';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -23,6 +24,7 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
   initialValues,
   title,
 }) => {
+  const t = useT();
   const [form] = Form.useForm();
   const transportType = Form.useWatch('transportType', form);
 
@@ -158,7 +160,7 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
             transition: 'all 0.3s ease'
           }}
         >
-          取消
+          {t('common.cancel')}
         </Button>,
         <Button
           key="submit"
@@ -176,7 +178,7 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
             transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
           }}
         >
-          提交
+          {t('common.submit')}
         </Button>,
       ]}
       width={800}
@@ -188,16 +190,16 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
       >
         <Form.Item
           name="serverName"
-          label="服务器名称"
+          label={t('pages.mcpManager.form.serverName')}
           initialValue={initialName}
-          rules={[{ required: true, message: '请输入服务器名称!' }]}
+          rules={[{ required: true, message: t('pages.mcpManager.form.serverNameRequired') }]}
         >
           <Input disabled={!!initialName} />
         </Form.Item>
 
         <Form.Item
           name="disabled"
-          label="禁用状态"
+          label={t('pages.mcpManager.form.disabled')}
           valuePropName="checked"
         >
           <Switch />
@@ -205,21 +207,21 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
 
         <Form.Item
           name="timeout"
-          label="超时时间（秒）"
-          rules={[{ required: true, message: '请输入超时时间!' }]}
+          label={t('pages.mcpManager.form.timeout')}
+          rules={[{ required: true, message: t('pages.mcpManager.form.timeoutRequired') }]}
         >
           <InputNumber min={1} max={300} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
           name="transportType"
-          label="传输类型"
-          rules={[{ required: true, message: '请选择传输类型!' }]}
+          label={t('pages.mcpManager.form.transportType')}
+          rules={[{ required: true, message: t('pages.mcpManager.form.transportTypeRequired') }]}
         >
           <Select>
-            <Select.Option value="stdio">STDIO</Select.Option>
-            <Select.Option value="sse">SSE</Select.Option>
-            <Select.Option value="streamable_http">流式HTTP</Select.Option>
+            <Select.Option value="stdio">{t('pages.mcpManager.form.transportStdio')}</Select.Option>
+            <Select.Option value="sse">{t('pages.mcpManager.form.transportSse')}</Select.Option>
+            <Select.Option value="streamable_http">{t('pages.mcpManager.form.transportHttp')}</Select.Option>
           </Select>
         </Form.Item>
 
@@ -228,17 +230,17 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
           <>
             <Form.Item
               name="command"
-              label="命令"
-              rules={[{ required: true, message: '请输入命令!' }]}
+              label={t('pages.mcpManager.form.command')}
+              rules={[{ required: true, message: t('pages.mcpManager.form.commandRequired') }]}
             >
-              <Input placeholder="python -m mcp_server" />
+              <Input placeholder={t('pages.mcpManager.form.commandPlaceholder')} />
             </Form.Item>
 
             <Form.Item
               name="args"
-              label="参数（逗号分隔）"
+              label={t('pages.mcpManager.form.args')}
             >
-              <Input placeholder="--arg1, --arg2" />
+              <Input placeholder={t('pages.mcpManager.form.argsPlaceholder')} />
             </Form.Item>
           </>
         )}
@@ -247,41 +249,39 @@ const MCPServerForm: React.FC<MCPServerFormProps> = ({
         {(transportType === 'sse' || transportType === 'streamable_http') && (
           <Form.Item
             name="url"
-            label={transportType === 'sse' ? 'SSE地址' : 'HTTP地址'}
-            rules={[{ required: true, message: '请输入URL!' }]}
+            label={transportType === 'sse' ? t('pages.mcpManager.form.sseUrl') : t('pages.mcpManager.form.httpUrl')}
+            rules={[{ required: true, message: t('pages.mcpManager.form.urlRequired') }]}
           >
             <Input placeholder={
               transportType === 'sse' 
-                ? "https://mcp.api-inference.modelscope.cn/bd902138dc1a4d/sse" 
-                : "https://fastmcp.cloud/mcp"
+                ? t('pages.mcpManager.form.sseUrlPlaceholder')
+                : t('pages.mcpManager.form.httpUrlPlaceholder')
             } />
           </Form.Item>
         )}
 
         <Form.Item
           name="autoApprove"
-          label="自动批准的工具（逗号分隔）"
+          label={t('pages.mcpManager.form.autoApprove')}
         >
-          <Input placeholder="tool1, tool2" />
+          <Input placeholder={t('pages.mcpManager.form.autoApprovePlaceholder')} />
         </Form.Item>
 
         <Form.Item
           name="envText"
           label={
             <div>
-              <Text>环境变量</Text>
+              <Text>{t('pages.mcpManager.form.envVars')}</Text>
               <br />
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                每行一个，格式为 KEY=VALUE （例如：API_KEY=your-key-here）
+                {t('pages.mcpManager.form.envVarsHelp')}
               </Text>
             </div>
           }
         >
           <TextArea
             rows={4}
-            placeholder={`TAVILY_API_KEY=your-api-key-here
-OPENAI_API_KEY=your-openai-key
-DATABASE_URL=your-database-url`}
+            placeholder={t('pages.mcpManager.form.envVarsPlaceholder')}
           />
         </Form.Item>
       </Form>

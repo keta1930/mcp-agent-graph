@@ -13,13 +13,13 @@ import {
   Button,
   message,
   Alert,
-  Spin,
-  Space
+  Spin
 } from 'antd';
 import { Play, Bug } from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
+import { useT } from '../../i18n/hooks';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 
 interface MCPToolsViewerProps {
@@ -29,7 +29,7 @@ interface MCPToolsViewerProps {
 }
 
 // 根据JSON Schema生成表单项
-const generateFormItem = (name: string, schema: any) => {
+const generateFormItem = (name: string, schema: any, t: (key: string, params?: any) => string) => {
   const { type, description, format, minimum, maximum, items } = schema;
 
   switch (type) {
@@ -40,9 +40,9 @@ const generateFormItem = (name: string, schema: any) => {
             name={name} 
             label={name}
             tooltip={description}
-            rules={[{ type: 'url', message: '请输入有效的URL' }]}
+            rules={[{ type: 'url', message: t('pages.mcpManager.toolsViewer.invalidUrl') }]}
           >
-            <Input placeholder={description || '输入URL'} />
+            <Input placeholder={description || t('pages.mcpManager.toolsViewer.inputUrl')} />
           </Form.Item>
         );
       }
@@ -52,7 +52,7 @@ const generateFormItem = (name: string, schema: any) => {
           label={name}
           tooltip={description}
         >
-          <Input placeholder={description || `输入 ${name}`} />
+          <Input placeholder={description || t('pages.mcpManager.toolsViewer.inputPlaceholder', { name })} />
         </Form.Item>
       );
     
@@ -68,7 +68,7 @@ const generateFormItem = (name: string, schema: any) => {
             style={{ width: '100%' }}
             min={minimum}
             max={maximum}
-            placeholder={description || `输入 ${name}`}
+            placeholder={description || t('pages.mcpManager.toolsViewer.inputPlaceholder', { name })}
           />
         </Form.Item>
       );
@@ -94,7 +94,7 @@ const generateFormItem = (name: string, schema: any) => {
         >
           <TextArea 
             rows={3}
-            placeholder={`${description || `输入 ${name}`} (每行一项)`}
+            placeholder={t('pages.mcpManager.toolsViewer.arrayPlaceholder', { description: description || t('pages.mcpManager.toolsViewer.inputPlaceholder', { name }) })}
           />
         </Form.Item>
       );
@@ -108,7 +108,7 @@ const generateFormItem = (name: string, schema: any) => {
         >
           <TextArea 
             rows={4}
-            placeholder={`${description || `输入 ${name}`} (JSON格式)`}
+            placeholder={t('pages.mcpManager.toolsViewer.objectPlaceholder', { description: description || t('pages.mcpManager.toolsViewer.inputPlaceholder', { name }) })}
           />
         </Form.Item>
       );
@@ -120,7 +120,7 @@ const generateFormItem = (name: string, schema: any) => {
           label={name}
           tooltip={description}
         >
-          <Input placeholder={description || `输入 ${name}`} />
+          <Input placeholder={description || t('pages.mcpManager.toolsViewer.inputPlaceholder', { name })} />
         </Form.Item>
       );
   }
@@ -131,6 +131,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
   onClose,
   serverName,
 }) => {
+  const t = useT();
   const { tools, fetchTools, testTool } = useMCPStore();
   const [loading, setLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
@@ -185,12 +186,12 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
       }));
 
       if (result.status === 'success') {
-        message.success(`工具 "${toolName}" 测试成功`);
+        message.success(t('pages.mcpManager.toolsViewer.testToolSuccess', { name: toolName }));
       } else {
-        message.error(`工具 "${toolName}" 测试失败: ${result.error}`);
+        message.error(t('pages.mcpManager.toolsViewer.testToolFailed', { name: toolName, error: result.error }));
       }
     } catch (error) {
-      message.error('测试工具时出错: ' + (error instanceof Error ? error.message : String(error)));
+      message.error(t('pages.mcpManager.toolsViewer.testError', { error: error instanceof Error ? error.message : String(error) }));
     } finally {
       setTestLoading(false);
     }
@@ -210,11 +211,11 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
   const generateTestForm = (tool: any) => {
     const schema = tool.input_schema;
     if (!schema || !schema.properties) {
-      return <Text type="secondary">该工具无需参数</Text>;
+      return <Text type="secondary">{t('pages.mcpManager.toolsViewer.noParameters')}</Text>;
     }
 
     const formItems = Object.entries(schema.properties).map(([name, propSchema]: [string, any]) => 
-      generateFormItem(name, propSchema)
+      generateFormItem(name, propSchema, t)
     );
 
     return (
@@ -257,7 +258,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
             }}
           >
             <Play size={16} strokeWidth={1.5} />
-            测试工具
+            {t('pages.mcpManager.toolsViewer.testTool')}
           </Button>
         </Form.Item>
       </Form>
@@ -275,7 +276,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Bug size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />
-            <span style={{ fontSize: '14px', fontWeight: 500 }}>测试结果</span>
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>{t('pages.mcpManager.toolsViewer.testResult')}</span>
           </div>
         }
         style={{
@@ -288,14 +289,14 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
         {result.status === 'success' ? (
           <Alert
             type="success"
-            message="测试成功"
+            message={t('pages.mcpManager.toolsViewer.testSuccess')}
             description={
               <div>
                 <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
-                  <strong>执行时间:</strong> {result.execution_time?.toFixed(3)}秒
+                  <strong>{t('pages.mcpManager.toolsViewer.executionTime')}:</strong> {result.execution_time?.toFixed(3)}秒
                 </p>
                 <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
-                  <strong>返回结果:</strong>
+                  <strong>{t('pages.mcpManager.toolsViewer.returnResult')}:</strong>
                 </p>
                 <div style={{
                   background: 'rgba(139, 195, 74, 0.05)',
@@ -328,15 +329,15 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
         ) : (
           <Alert
             type="error"
-            message="测试失败"
+            message={t('pages.mcpManager.toolsViewer.testFailed')}
             description={
               <div>
                 <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
-                  <strong>错误信息:</strong> {result.error}
+                  <strong>{t('pages.mcpManager.toolsViewer.errorMessage')}:</strong> {result.error}
                 </p>
                 {result.execution_time && (
                   <p style={{ margin: 0, fontSize: '13px' }}>
-                    <strong>执行时间:</strong> {result.execution_time.toFixed(3)}秒
+                    <strong>{t('pages.mcpManager.toolsViewer.executionTime')}:</strong> {result.execution_time.toFixed(3)}秒
                   </p>
                 )}
               </div>
@@ -361,7 +362,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
           color: '#2d2d2d',
           letterSpacing: '0.5px'
         }}>
-          工具测试器 - {serverName}
+          {t('pages.mcpManager.toolsViewer.title', { serverName })}
         </span>
       }
       open={visible}
@@ -386,7 +387,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
             fontSize: '14px',
             color: 'rgba(45, 45, 45, 0.65)'
           }}>
-            加载工具中...
+            {t('pages.mcpManager.toolsViewer.loading')}
           </p>
         </div>
       ) : serverTools.length === 0 ? (
@@ -396,7 +397,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
           fontSize: '14px',
           color: 'rgba(45, 45, 45, 0.65)'
         }}>
-          无可用工具
+          {t('pages.mcpManager.toolsViewer.noTools')}
         </div>
       ) : (
         <Tabs
@@ -434,13 +435,13 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
                     color: '#2d2d2d'
                   }}
                 >
-                  <Descriptions.Item label="工具名称">
+                  <Descriptions.Item label={t('pages.mcpManager.toolsViewer.toolName')}>
                     <Text strong style={{ color: '#2d2d2d' }}>{tool.name}</Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="功能描述">
+                  <Descriptions.Item label={t('pages.mcpManager.toolsViewer.description')}>
                     <span style={{ color: 'rgba(45, 45, 45, 0.85)' }}>{tool.description}</span>
                   </Descriptions.Item>
-                  <Descriptions.Item label="参数结构">
+                  <Descriptions.Item label={t('pages.mcpManager.toolsViewer.parameterStructure')}>
                     {renderJsonObject(tool.input_schema)}
                   </Descriptions.Item>
                 </Descriptions>
@@ -452,7 +453,7 @@ const MCPToolsViewer: React.FC<MCPToolsViewerProps> = ({
                       fontWeight: 500,
                       color: '#2d2d2d'
                     }}>
-                      参数测试
+                      {t('pages.mcpManager.toolsViewer.parameterTest')}
                     </span>
                   }
                   size="small"
