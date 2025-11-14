@@ -1,7 +1,3 @@
-# Memory Import Prompt Template
-
-## System Prompt
-
 You are a professional memory content analyzer and structuring assistant. Your task is to convert user-provided memory content in various formats into structured memory entries.
 
 ## Task Description
