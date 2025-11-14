@@ -1,7 +1,7 @@
 services:
   # MongoDB service configuration
   mongodb:
-    image: mongodb/mongodb-community-server:latest
+    image: mongodb/mongodb-community-server:8.2.1-ubuntu2204-20251113T064937Z
     container_name: mongodb
     restart: always
     environment:
@@ -30,11 +30,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.5'        # 允许使用 1.5 核（数据库需要更多 CPU）
-          memory: 4G         # 最多 4GB（MongoDB 需要足够内存做缓存）
+          cpus: '2'          # 2 CPU core, adjust as needed
+          memory: 4G         # 4G memory, adjust as needed
         reservations:
-          cpus: '0.5'        # 预留 0.5 核
-          memory: 1G         # 预留 2GB
+          cpus: '0.5'        # 0.5 CPU core, adjust as needed
+          memory: 1G         # 1G memory, adjust as needed
 
   # MongoDB Express Web interface
   mongo-express:
@@ -64,10 +64,10 @@ services:
       resources:
         limits:
           cpus: '0.5'         # 0.5 CPU core, adjust as needed
-          memory: 256M      # 256M memory, adjust as needed
+          memory: 256M        # 256M memory, adjust as needed
         reservations:
-          cpus: '0.25'       # 0.25 CPU core, adjust as needed
-          memory: 128M      # 128M memory, adjust as needed
+          cpus: '0.25'        # 0.25 CPU core, adjust as needed
+          memory: 128M        # 128M memory, adjust as needed
 
   # MinIO object storage service
   minio:
@@ -99,11 +99,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'          # 最多 1 核
-          memory: 2G         # 最多 2GB（对象存储需要一定内存）
+          cpus: '1'          # 1 CPU core, adjust as needed
+          memory: 2G         # 2 G memory, adjust as needed
         reservations:
-          cpus: '0.5'        # 预留 0.5 核
-          memory: 1G         # 预留 1GB
+          cpus: '0.5'        # 0.5 CPU core, adjust as needed
+          memory: 1G         # 1 G memory, adjust as needed
 
 networks:
   mag_network:
