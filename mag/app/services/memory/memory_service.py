@@ -4,6 +4,7 @@ Memory 服务主文件
 """
 import logging
 import json
+import os
 import yaml
 import re
 from typing import Dict, Any, List, Optional, Tuple
@@ -15,6 +16,7 @@ from app.models.memory_schema import (
     UpdateMemoryRequest,
     ImportMemoryRequest
 )
+from app.services.model.model_service import model_service
 
 logger = logging.getLogger(__name__)
 
@@ -555,8 +557,6 @@ class MemoryService:
                 }
 
             # 读取提示词模板
-            import os
-            # 使用相对于当前文件的路径
             current_dir = os.path.dirname(os.path.abspath(__file__))
             prompt_template_path = os.path.join(current_dir, "import_prompt_template.md")
             
@@ -574,7 +574,6 @@ class MemoryService:
             prompt = prompt_template.replace("{{USER_INPUT}}", request.content)
 
             # 调用 LLM
-            from app.services.model.model_service import model_service
             response = await model_service.call_model(
                 model_name=request.model_name,
                 messages=[{"role": "user", "content": prompt}],
