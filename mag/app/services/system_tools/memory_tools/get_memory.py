@@ -1,0 +1,86 @@
+"""
+系统工具：get_memory
+获取指定分类的记忆内容
+"""
+import logging
+from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
+
+# 工具 Schema（OpenAI format）
+TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "get_memory",
+        "description": "Get memory items from specified categories. Supports querying multiple categories across different owners (user and/or agent). Results are sorted by updated_at in descending order (most recent first).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "queries": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "owner": {
+                                "type": "string",
+                                "enum": ["user", "self"],
+                                "description": "Memory owner: 'user' or 'self' (agent)"
+                            },
+                            "categories": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Category names to retrieve"
+                            }
+                        },
+                        "required": ["owner", "categories"]
+                    },
+                    "description": "List of queries, each specifying owner and categories. Example: [{'owner': 'user', 'categories': ['code_preference']}, {'owner': 'self', 'categories': ['learned_patterns']}]"
+                }
+            },
+            "required": ["queries"]
+        }
+    }
+}
+
+
+async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
+    """
+    获取记忆内容
+
+    Args:
+        user_id: 用户ID
+        **kwargs: 其他参数（queries）
+
+    Returns:
+        {
+            "success": True,
+            "data": {
+                "user": {
+                    "code_preference": {
+                        "items": [...],
+                        "total": 2
+                    }
+                }
+            }
+        }
+    """
+    try:
+        from app.infrastructure.database.mongodb.client import mongodb_client
+
+        queries = kwargs.get("queries", [])
+
+        if not queries:
+            return {
+                "success": False,
+                "error": "queries parameter is required"
+            }
+
+        result = await mongodb_client.get_memory(user_id, queries)
+        return result
+
+    except Exception as e:
+        logger.error(f"get_memory 执行失败: {str(e)}")
+        return {
+            "success": False,
+            "error": f"获取记忆失败: {str(e)}"
+        }

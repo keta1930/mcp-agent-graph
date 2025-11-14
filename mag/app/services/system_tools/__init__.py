@@ -17,6 +17,7 @@ from .registry import (
 # 导入所有工具模块（触发注册）
 from . import agent_tools
 from . import conversation_document_tools
+from . import memory_tools
 
 __all__ = [
     "register_system_tool",
@@ -29,5 +30,6 @@ __all__ = [
     "get_tools_by_category",
     "SYSTEM_TOOLS_REGISTRY",
     "agent_tools",
-    "conversation_document_tools"
+    "conversation_document_tools",
+    "memory_tools"
 ]

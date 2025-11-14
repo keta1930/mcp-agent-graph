@@ -5,7 +5,7 @@ from app.infrastructure.database.mongodb.repositories import (ConversationReposi
                                 GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
                                 GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
                                 PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository,
-                                RefreshTokenRepository, AgentRepository, AgentInvokeRepository)
+                                RefreshTokenRepository, AgentRepository, AgentInvokeRepository, MemoryRepository)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class MongoDBClient:
         self.refresh_tokens_collection = None
         self.agents_collection = None
         self.agent_invoke_collection = None
+        self.memories_collection = None
 
         self.is_connected = False
 
@@ -54,6 +55,7 @@ class MongoDBClient:
         self.refresh_token_repository = None
         self.agent_repository = None
         self.agent_invoke_repository = None
+        self.memory_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -84,6 +86,7 @@ class MongoDBClient:
             self.refresh_tokens_collection = self.db.refresh_tokens
             self.agents_collection = self.db.agents
             self.agent_invoke_collection = self.db.agent_invoke
+            self.memories_collection = self.db.memories
 
             await self.client.admin.command('ping')
 
@@ -186,6 +189,11 @@ class MongoDBClient:
             self.agent_invoke_collection
         )
 
+        self.memory_repository = MemoryRepository(
+            self.db,
+            self.memories_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -267,6 +275,11 @@ class MongoDBClient:
             await self.agent_invoke_collection.create_index([("conversation_id", 1)])
             await self.agent_invoke_collection.create_index([("rounds.agent_name", 1)])
             await self.agent_invoke_collection.create_index([("tasks.task_id", 1)])
+
+            # memories集合索引
+            await self.memories_collection.create_index([("user_id", 1), ("owner_type", 1), ("owner_id", 1)], unique=True)
+            await self.memories_collection.create_index([("user_id", 1)])
+            await self.memories_collection.create_index([("updated_at", -1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -743,6 +756,28 @@ class MongoDBClient:
     async def user_exists(self, user_id: str) -> bool:
         """检查用户是否存在"""
         return await self.user_repository.user_exists(user_id)
+
+    # === Memory管理方法 ===
+
+    async def list_memory_categories(self, user_id: str, owners: List[str]) -> Dict[str, Any]:
+        """列出记忆分类"""
+        return await self.memory_repository.list_categories(user_id, owners)
+
+    async def get_memory(self, user_id: str, queries: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """获取记忆内容"""
+        return await self.memory_repository.get_memory(user_id, queries)
+
+    async def add_memory(self, user_id: str, additions: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """添加记忆条目"""
+        return await self.memory_repository.add_memory(user_id, additions)
+
+    async def update_memory(self, user_id: str, updates: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """更新记忆条目"""
+        return await self.memory_repository.update_memory(user_id, updates)
+
+    async def delete_memory(self, user_id: str, deletions: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """删除记忆条目"""
+        return await self.memory_repository.delete_memory(user_id, deletions)
 
 
 mongodb_client = MongoDBClient()
