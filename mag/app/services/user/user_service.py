@@ -4,6 +4,7 @@
 负责用户注册、登录、权限管理等业务逻辑
 """
 import logging
+from datetime import datetime
 from typing import Dict, List, Optional
 from app.auth.password import hash_password, verify_password, validate_password_strength
 
@@ -13,16 +14,18 @@ logger = logging.getLogger(__name__)
 class UserService:
     """用户服务类"""
 
-    def __init__(self, user_repository, invite_code_repository):
+    def __init__(self, user_repository, invite_code_repository, mongodb_client=None):
         """
         初始化用户服务
 
         Args:
             user_repository: 用户Repository实例
             invite_code_repository: 邀请码Repository实例
+            mongodb_client: MongoDB客户端实例（用于创建memory文档）
         """
         self.user_repository = user_repository
         self.invite_code_repository = invite_code_repository
+        self.mongodb_client = mongodb_client
 
     async def register_user(
         self,
@@ -82,7 +85,22 @@ class UserService:
                 invited_by_code=invite_code
             )
 
-            # 6. 原子递增邀请码使用次数
+            # 6. 创建用户的 memory 文档
+            if self.mongodb_client:
+                try:
+                    await self.mongodb_client.memories_collection.insert_one({
+                        "user_id": user_id,
+                        "owner_type": "user",
+                        "owner_id": user_id,
+                        "memories": {},
+                        "created_at": datetime.now(),
+                        "updated_at": datetime.now()
+                    })
+                    logger.info(f"为用户创建 memory 文档成功: {user_id}")
+                except Exception as mem_error:
+                    logger.warning(f"为用户创建 memory 文档失败: {user_id}, 错误: {str(mem_error)}")
+
+            # 7. 原子递增邀请码使用次数
             await self.invite_code_repository.increment_invite_code_usage(invite_code)
 
             logger.info(f"用户注册成功: {user_id}")

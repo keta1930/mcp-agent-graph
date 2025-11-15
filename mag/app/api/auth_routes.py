@@ -35,7 +35,8 @@ def get_user_service() -> UserService:
 
     return UserService(
         user_repository=mongodb_client.user_repository,
-        invite_code_repository=mongodb_client.invite_code_repository
+        invite_code_repository=mongodb_client.invite_code_repository,
+        mongodb_client=mongodb_client
     )
 
 

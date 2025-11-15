@@ -3,6 +3,7 @@ Agent 服务
 整合 Agent 管理功能，提供统一的业务逻辑层
 """
 import logging
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 from app.infrastructure.database.mongodb import mongodb_client
 from app.services.agent.agent_executor import AgentExecutor
@@ -46,11 +47,26 @@ class AgentService:
             agent_id = await mongodb_client.agent_repository.create_agent(agent_config, user_id)
 
             if agent_id:
-                logger.info(f"创建 Agent 成功: {agent_config.get('name')} (user_id: {user_id})")
+                # 创建对应的 memory 文档
+                agent_name = agent_config.get('name')
+                try:
+                    await mongodb_client.memories_collection.insert_one({
+                        "user_id": user_id,
+                        "owner_type": "agent",
+                        "owner_id": agent_name,
+                        "memories": {},
+                        "created_at": datetime.now(),
+                        "updated_at": datetime.now()
+                    })
+                    logger.info(f"为 Agent 创建 memory 文档成功: {agent_name}")
+                except Exception as mem_error:
+                    logger.warning(f"为 Agent 创建 memory 文档失败: {agent_name}, 错误: {str(mem_error)}")
+
+                logger.info(f"创建 Agent 成功: {agent_name} (user_id: {user_id})")
                 return {
                     "success": True,
                     "agent_id": agent_id,
-                    "agent_name": agent_config.get("name")
+                    "agent_name": agent_name
                 }
             else:
                 return {
@@ -149,6 +165,20 @@ class AgentService:
             success = await mongodb_client.agent_repository.delete_agent(agent_name, user_id)
 
             if success:
+                # 删除对应的 memory 文档
+                try:
+                    delete_result = await mongodb_client.memories_collection.delete_one({
+                        "user_id": user_id,
+                        "owner_type": "agent",
+                        "owner_id": agent_name
+                    })
+                    if delete_result.deleted_count > 0:
+                        logger.info(f"删除 Agent 的 memory 文档成功: {agent_name}")
+                    else:
+                        logger.warning(f"未找到 Agent 的 memory 文档: {agent_name}")
+                except Exception as mem_error:
+                    logger.warning(f"删除 Agent 的 memory 文档失败: {agent_name}, 错误: {str(mem_error)}")
+
                 logger.info(f"删除 Agent 成功: {agent_name} (user_id: {user_id})")
             else:
                 logger.warning(f"删除 Agent 失败: {agent_name} (user_id: {user_id})")
