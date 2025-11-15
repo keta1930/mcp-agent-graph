@@ -10,6 +10,7 @@ import {
   Plug,
   MessageSquareText,
   FolderOpen,
+  Database,
   Home,
   Power,
   ChevronLeft,
@@ -71,6 +72,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
     { path: '/workspace/mcp-manager', icon: Plug, labelKey: 'pages.workspace.mcpManager' },
     { path: '/workspace/prompt-manager', icon: MessageSquareText, labelKey: 'pages.workspace.promptManager' },
     { path: '/workspace/file-manager', icon: FolderOpen, labelKey: 'pages.workspace.fileManager' },
+    { path: '/workspace/memory-manager', icon: Database, labelKey: 'pages.workspace.memoryManager' },
   ];
 
   // 侧边栏容器样式

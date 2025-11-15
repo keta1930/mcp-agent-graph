@@ -37,7 +37,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     Args:
         user_id: 用户ID
-        **kwargs: 其他参数（owners）
+        **kwargs: 其他参数（owners, agent_id）
 
     Returns:
         {
@@ -57,6 +57,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.infrastructure.database.mongodb.client import mongodb_client
 
         owners = kwargs.get("owners", [])
+        agent_id = kwargs.get("agent_id")
 
         if not owners:
             return {
@@ -64,7 +65,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 "error": "owners parameter is required"
             }
 
-        result = await mongodb_client.list_memory_categories(user_id, owners)
+        result = await mongodb_client.list_memory_categories(user_id, owners, agent_id)
         return result
 
     except Exception as e:

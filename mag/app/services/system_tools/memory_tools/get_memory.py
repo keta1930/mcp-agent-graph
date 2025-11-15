@@ -49,7 +49,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     Args:
         user_id: 用户ID
-        **kwargs: 其他参数（queries）
+        **kwargs: 其他参数（queries, agent_id）
 
     Returns:
         {
@@ -68,6 +68,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.infrastructure.database.mongodb.client import mongodb_client
 
         queries = kwargs.get("queries", [])
+        agent_id = kwargs.get("agent_id")
 
         if not queries:
             return {
@@ -75,7 +76,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 "error": "queries parameter is required"
             }
 
-        result = await mongodb_client.get_memory(user_id, queries)
+        result = await mongodb_client.get_memory(user_id, queries, agent_id)
         return result
 
     except Exception as e:

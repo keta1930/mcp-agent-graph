@@ -10,7 +10,7 @@ import {
   AgentInvokeRequest
 } from '../types/conversation';
 
-const CONVERSATION_API_BASE = '/chat/conversations';
+const CONVERSATION_API_BASE = '/conversations';
 
 export class ConversationService {
   // 获取对话列表

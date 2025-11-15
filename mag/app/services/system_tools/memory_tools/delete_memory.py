@@ -53,7 +53,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     Args:
         user_id: 用户ID
-        **kwargs: 其他参数（deletions）
+        **kwargs: 其他参数（deletions, agent_id）
 
     Returns:
         {
@@ -65,6 +65,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.infrastructure.database.mongodb.client import mongodb_client
 
         deletions = kwargs.get("deletions", [])
+        agent_id = kwargs.get("agent_id")
 
         if not deletions:
             return {
@@ -72,7 +73,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 "error": "deletions parameter is required"
             }
 
-        result = await mongodb_client.delete_memory(user_id, deletions)
+        result = await mongodb_client.delete_memory(user_id, deletions, agent_id)
         return result
 
     except Exception as e:

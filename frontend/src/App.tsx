@@ -27,6 +27,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/AdminPanel';
 import FileManager from './pages/FileManager';
+import MemoryManager from './pages/MemoryManager';
 
 // AppContent component that uses i18n context
 const AppContent: React.FC = () => {
@@ -202,6 +203,16 @@ const AppContent: React.FC = () => {
             <PrivateRoute>
               <WorkspaceLayout>
                 <FileManager />
+              </WorkspaceLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workspace/memory-manager"
+          element={
+            <PrivateRoute>
+              <WorkspaceLayout>
+                <MemoryManager />
               </WorkspaceLayout>
             </PrivateRoute>
           }

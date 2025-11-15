@@ -20,20 +20,57 @@ class CategoryMemories(BaseModel):
     total: int = Field(..., description="条目总数")
 
 
-# ============ API 请求模型 ============
+# ============ 统一的API请求模型 ============
+
+class GetMemoryDetailRequest(BaseModel):
+    """获取记忆详情请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
+
 
 class AddMemoryRequest(BaseModel):
     """添加记忆请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
+    category: str = Field(..., description="分类名称")
     content: str = Field(..., description="记忆内容")
 
 
 class UpdateMemoryRequest(BaseModel):
     """更新记忆请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
+    category: str = Field(..., description="分类名称")
+    item_id: str = Field(..., description="条目ID")
     content: str = Field(..., description="新的记忆内容")
+
+
+class DeleteItemsRequest(BaseModel):
+    """删除记忆条目请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
+    category: str = Field(..., description="分类名称")
+    item_ids: List[str] = Field(..., description="要删除的条目ID列表")
+
+
+class DeleteCategoriesRequest(BaseModel):
+    """删除分类请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
+    categories: List[str] = Field(..., description="要删除的分类列表")
+
+
+class ExportMemoryRequest(BaseModel):
+    """导出记忆请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
+    format: str = Field(..., description="导出格式：json, txt, markdown, yaml")
 
 
 class ImportMemoryRequest(BaseModel):
     """导入记忆请求"""
+    owner_type: str = Field(..., description="owner类型：user 或 agent")
+    owner_id: str = Field(..., description="owner ID")
     content: str = Field(..., description="要导入的原始文本内容")
     model_name: str = Field(..., description="用于解析的模型名称")
 
@@ -48,10 +85,26 @@ class MemoryResponse(BaseModel):
     error_code: Optional[str] = Field(None, description="错误码")
 
 
-class GetMemoriesResponse(BaseModel):
-    """获取完整记忆响应"""
+class MemoryMetadata(BaseModel):
+    """记忆元数据（用于列表展示）"""
+    owner_type: str = Field(..., description="所有者类型：user 或 agent")
+    owner_id: str = Field(..., description="所有者ID")
+    categories_count: int = Field(..., description="分类数量")
+    total_items: int = Field(..., description="总条目数")
+    created_at: Optional[str] = Field(None, description="创建时间")
+    updated_at: Optional[str] = Field(None, description="最后更新时间")
+
+
+class GetMemoriesMetadataResponse(BaseModel):
+    """获取记忆元数据响应（列表）"""
     status: str = Field(..., description="状态：success 或 error")
-    data: List[Dict[str, Any]] = Field(default_factory=list, description="记忆文档列表")
+    data: List[MemoryMetadata] = Field(default_factory=list, description="记忆元数据列表")
+
+
+class GetMemoriesResponse(BaseModel):
+    """获取完整记忆响应（详情）"""
+    status: str = Field(..., description="状态：success 或 error")
+    data: Dict[str, Any] = Field(..., description="完整记忆数据")
 
 
 class BatchDeleteResponse(BaseModel):

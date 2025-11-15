@@ -49,13 +49,14 @@ class MemoryRepository:
         ))
         return f"{date_part}_{random_suffix}"
 
-    async def list_categories(self, user_id: str, owners: List[str]) -> Dict[str, Any]:
+    async def list_categories(self, user_id: str, owners: List[str], agent_id: str = None) -> Dict[str, Any]:
         """
         列出记忆分类
 
         Args:
             user_id: 用户ID
             owners: owner列表，例如 ["user", "self"]
+            agent_id: Agent ID（当 owner 为 "self" 时使用）
 
         Returns:
             Dict[str, Any]: 分类列表
@@ -68,9 +69,9 @@ class MemoryRepository:
                     owner_type = "user"
                     owner_id = user_id
                 elif owner == "self":
-                    # self 表示 agent，这里暂时使用固定值，后续可以从上下文获取
+                    # self 表示 agent
                     owner_type = "agent"
-                    owner_id = "default_agent"
+                    owner_id = agent_id if agent_id else "default_agent"
                 else:
                     continue
 
@@ -109,13 +110,14 @@ class MemoryRepository:
                 "error": f"列出记忆分类失败: {str(e)}"
             }
 
-    async def get_memory(self, user_id: str, queries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def get_memory(self, user_id: str, queries: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """
         获取记忆内容
 
         Args:
             user_id: 用户ID
             queries: 查询列表，例如 [{"owner": "user", "categories": ["code_preference"]}]
+            agent_id: Agent ID（当 owner 为 "self" 时使用）
 
         Returns:
             Dict[str, Any]: 记忆内容
@@ -133,7 +135,7 @@ class MemoryRepository:
                     owner_id = user_id
                 elif owner == "self":
                     owner_type = "agent"
-                    owner_id = "default_agent"
+                    owner_id = agent_id if agent_id else "default_agent"
                 else:
                     continue
 
@@ -176,13 +178,14 @@ class MemoryRepository:
                 "error": f"获取记忆失败: {str(e)}"
             }
 
-    async def add_memory(self, user_id: str, additions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def add_memory(self, user_id: str, additions: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """
         添加记忆条目
 
         Args:
             user_id: 用户ID
             additions: 添加列表，例如 [{"owner": "user", "category": "code_preference", "items": ["content1"]}]
+            agent_id: Agent ID（当 owner 为 "self" 时使用）
 
         Returns:
             Dict[str, Any]: 操作结果
@@ -200,7 +203,7 @@ class MemoryRepository:
                     owner_id = user_id
                 elif owner == "self":
                     owner_type = "agent"
-                    owner_id = "default_agent"
+                    owner_id = agent_id if agent_id else "default_agent"
                 else:
                     continue
 
@@ -275,13 +278,14 @@ class MemoryRepository:
                 "error": f"添加记忆失败: {str(e)}"
             }
 
-    async def update_memory(self, user_id: str, updates: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def update_memory(self, user_id: str, updates: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """
         更新记忆条目
 
         Args:
             user_id: 用户ID
             updates: 更新列表，例如 [{"owner": "user", "category": "code_preference", "item_id": "20240115_a3f2", "content": "new content"}]
+            agent_id: Agent ID（当 owner 为 "self" 时使用）
 
         Returns:
             Dict[str, Any]: 操作结果
@@ -301,7 +305,7 @@ class MemoryRepository:
                     owner_id = user_id
                 elif owner == "self":
                     owner_type = "agent"
-                    owner_id = "default_agent"
+                    owner_id = agent_id if agent_id else "default_agent"
                 else:
                     continue
 
@@ -363,13 +367,14 @@ class MemoryRepository:
                 "error": f"更新记忆失败: {str(e)}"
             }
 
-    async def delete_memory(self, user_id: str, deletions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def delete_memory(self, user_id: str, deletions: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """
         删除记忆条目
 
         Args:
             user_id: 用户ID
             deletions: 删除列表，例如 [{"owner": "user", "category": "code_preference", "item_ids": ["20240115_a3f2"]}]
+            agent_id: Agent ID（当 owner 为 "self" 时使用）
 
         Returns:
             Dict[str, Any]: 操作结果
@@ -388,7 +393,7 @@ class MemoryRepository:
                     owner_id = user_id
                 elif owner == "self":
                     owner_type = "agent"
-                    owner_id = "default_agent"
+                    owner_id = agent_id if agent_id else "default_agent"
                 else:
                     continue
 

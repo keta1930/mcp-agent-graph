@@ -56,7 +56,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     Args:
         user_id: 用户ID
-        **kwargs: 其他参数（updates）
+        **kwargs: 其他参数（updates, agent_id）
 
     Returns:
         {
@@ -68,6 +68,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.infrastructure.database.mongodb.client import mongodb_client
 
         updates = kwargs.get("updates", [])
+        agent_id = kwargs.get("agent_id")
 
         if not updates:
             return {
@@ -75,7 +76,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 "error": "updates parameter is required"
             }
 
-        result = await mongodb_client.update_memory(user_id, updates)
+        result = await mongodb_client.update_memory(user_id, updates, agent_id)
         return result
 
     except Exception as e:

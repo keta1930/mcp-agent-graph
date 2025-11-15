@@ -53,7 +53,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     Args:
         user_id: 用户ID
-        **kwargs: 其他参数（additions）
+        **kwargs: 其他参数（additions, agent_id）
 
     Returns:
         {
@@ -65,6 +65,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.infrastructure.database.mongodb.client import mongodb_client
 
         additions = kwargs.get("additions", [])
+        agent_id = kwargs.get("agent_id")
 
         if not additions:
             return {
@@ -72,7 +73,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 "error": "additions parameter is required"
             }
 
-        result = await mongodb_client.add_memory(user_id, additions)
+        result = await mongodb_client.add_memory(user_id, additions, agent_id)
         return result
 
     except Exception as e:
