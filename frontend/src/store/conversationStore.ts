@@ -5,7 +5,6 @@ import {
   ConversationSummary,
   ConversationDetail,
   ConversationMode,
-  AgentType,
   SSEMessage
 } from '../types/conversation';
 import { ConversationService, ConversationStorage } from '../services/conversationService';
@@ -23,7 +22,6 @@ interface ConversationState {
   
   // 对话模式
   currentMode: ConversationMode;
-  agentType: AgentType;
   
   // 搜索和筛选
   searchQuery: string;
@@ -49,7 +47,6 @@ interface ConversationState {
   
   // 对话操作
   setCurrentMode: (mode: ConversationMode) => void;
-  setAgentType: (type: AgentType) => void;
   clearCurrentConversation: () => void;
   updateCurrentConversationTemporarily: (conversation: ConversationDetail) => void;
   
@@ -78,8 +75,7 @@ export const useConversationStore = create<ConversationState>()(
     loading: false,
     currentConversation: null,
     currentConversationLoading: false,
-    currentMode: 'chat',
-    agentType: 'mcp',
+    currentMode: 'agent',
     searchQuery: '',
     statusFilter: 'active',
     typeFilter: 'chat',
@@ -158,8 +154,18 @@ export const useConversationStore = create<ConversationState>()(
       try {
         const detail = await ConversationService.getConversationDetail(conversationId);
         ConversationStorage.setCurrentConversation(detail);
+        
+        // 根据 generation_type 设置正确的 currentMode
+        let mode: ConversationMode = 'agent'; // 默认为 agent
+        if (detail.generation_type === 'graph_run') {
+          mode = 'graph';
+        } else if (detail.generation_type === 'agent') {
+          mode = 'agent';
+        }
+        
         set({ 
           currentConversation: detail,
+          currentMode: mode,
           currentConversationLoading: false 
         });
       } catch (error) {
@@ -315,11 +321,6 @@ export const useConversationStore = create<ConversationState>()(
     // 设置当前模式
     setCurrentMode: (mode: ConversationMode) => {
       set({ currentMode: mode });
-    },
-
-    // 设置Agent类型
-    setAgentType: (type: AgentType) => {
-      set({ agentType: type });
     },
 
     // 清除当前对话

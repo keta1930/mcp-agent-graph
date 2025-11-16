@@ -3,9 +3,6 @@ import api from './api';
 import {
   ConversationListResponse,
   ConversationDetail,
-  ChatRequest,
-  AgentRequest,
-  GraphGenerationRequest,
   GraphExecuteRequest,
   AgentInvokeRequest
 } from '../types/conversation';
@@ -55,6 +52,24 @@ export class ConversationService {
     });
   }
 
+  // 更新输入配置
+  static async updateInputConfig(
+    conversationId: string,
+    inputConfig: {
+      selected_model?: string;
+      selected_graph?: string;
+      system_prompt?: string;
+      selected_mcp_servers?: string[];
+      selected_agent?: string | null;
+      selected_system_tools?: string[];
+      max_iterations?: number | null;
+    }
+  ): Promise<void> {
+    await api.put(`${CONVERSATION_API_BASE}/${conversationId}/input-config`, {
+      input_config: inputConfig
+    });
+  }
+
   // 永久删除对话
   static async deleteConversationPermanent(
     conversationId: string
@@ -78,65 +93,7 @@ export class ConversationService {
     return response.data;
   }
 
-  // Chat模式 - 创建SSE连接
-  static async createChatSSE(request: ChatRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
-    const token = localStorage.getItem('auth_token');
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    };
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${api.defaults.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(request)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    return response.body.getReader();
-  }
-
-  // Agent模式 - 创建SSE连接
-  static async createAgentSSE(request: AgentRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
-    const token = localStorage.getItem('auth_token');
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(`${api.defaults.baseURL}/mcp/generate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(request)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    return response.body.getReader();
-  }
 
   // Graph模式 - 创建SSE连接
   static async createGraphSSE(request: GraphExecuteRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
@@ -168,36 +125,9 @@ export class ConversationService {
     return response.body.getReader();
   }
 
-  // Graph生成模式 - 创建SSE连接
-  static async createGraphGenerateSSE(request: GraphGenerationRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
-    const token = localStorage.getItem('auth_token');
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    };
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
 
-    const response = await fetch(`${api.defaults.baseURL}/graphs/generate`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(request)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    return response.body.getReader();
-  }
-
+  // Agent Invoke - 创建SSE连接
   static async createAgentInvokeSSE(request: AgentInvokeRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     const token = localStorage.getItem('auth_token');
     const headers: Record<string, string> = {
@@ -210,21 +140,36 @@ export class ConversationService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${api.defaults.baseURL}/agent/invoke`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ ...request, stream: true })
-    });
+    try {
+      const response = await fetch(`${api.defaults.baseURL}/agent/invoke`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ...request, stream: true })
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        // 尝试解析错误响应
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // 如果无法解析JSON，使用默认错误消息
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      return response.body.getReader();
+    } catch (error) {
+      console.error('创建 Agent SSE 连接失败:', error);
+      throw error;
     }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    return response.body.getReader();
   }
 }
 
