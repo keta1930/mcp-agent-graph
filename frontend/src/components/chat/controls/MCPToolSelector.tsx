@@ -1,7 +1,7 @@
 // src/components/chat/controls/MCPToolSelector.tsx
 import React, { useRef, useEffect } from 'react';
 import { Button, Switch, Tooltip, Typography } from 'antd';
-import { ToolOutlined } from '@ant-design/icons';
+import { Wrench } from 'lucide-react';
 
 const { Text } = Typography;
 
@@ -58,17 +58,19 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
     }
   }, [showPanel]);
 
-  // 如果没有可用的 MCP 服务器,不渲染组件
-  if (availableMCPServers.length === 0) {
-    return null;
-  }
+  const getTooltipTitle = () => {
+    if (availableMCPServers.length === 0) {
+      return '还未注册MCP';
+    }
+    return `MCP工具 (${enabledMcpCount}个已启用)`;
+  };
 
   return (
     <div style={{ position: 'relative' }} ref={dropdownRef}>
-      <Tooltip title={`MCP工具 (${enabledMcpCount}个已启用)`}>
+      <Tooltip title={getTooltipTitle()}>
         <Button
           type="text"
-          icon={<ToolOutlined />}
+          icon={<Wrench size={14} strokeWidth={1.5} />}
           onClick={() => setShowPanel(!showPanel)}
           size={size}
           style={{
@@ -122,7 +124,28 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
             maxHeight: '300px',
             overflowY: 'auto'
           }}>
-            {availableMCPServers.map(serverName => {
+            {availableMCPServers.length === 0 ? (
+              <div style={{
+                padding: '20px',
+                textAlign: 'center'
+              }}>
+                <Text style={{
+                  fontSize: '13px',
+                  color: 'rgba(45, 45, 45, 0.65)',
+                  display: 'block',
+                  marginBottom: '8px'
+                }}>
+                  还未注册MCP服务器
+                </Text>
+                <Text style={{
+                  fontSize: '12px',
+                  color: 'rgba(45, 45, 45, 0.45)'
+                }}>
+                  请前往 MCP Manager 注册
+                </Text>
+              </div>
+            ) : (
+              availableMCPServers.map(serverName => {
               const isConnected = getServerConnectionStatus(serverName);
               return (
                 <div key={serverName} style={{
@@ -174,7 +197,8 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
                   />
                 </div>
               );
-            })}
+            })
+            )}
           </div>
         </div>
       )}

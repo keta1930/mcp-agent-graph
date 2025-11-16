@@ -1,87 +1,63 @@
 // src/components/chat/input/ModeSelector.tsx
-import React, { useRef, useEffect } from 'react';
-import { Button, Typography, Tooltip } from 'antd';
-import {
-  ArrowUpOutlined
-} from '@ant-design/icons';
-import { MessageSquare, Bot, GitBranch, Layers } from 'lucide-react';
+import React from 'react';
+import { Button } from 'antd';
+import { ArrowUp, Bot, GitBranch } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
 import { useModelStore } from '../../../store/modelStore';
 import { useGraphEditorStore } from '../../../store/graphEditorStore';
 import { useMCPStore } from '../../../store/mcpStore';
 import { ConversationMode } from '../../../types/conversation';
+import SystemPromptToggle from '../controls/SystemPromptToggle';
+import AgentPicker from '../controls/AgentPicker';
 import MCPToolSelector from '../controls/MCPToolSelector';
+import SystemToolSelector from '../controls/SystemToolSelector';
 import PromptSelector from '../controls/PromptSelector';
+import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
-import AgentTypeToggle from '../controls/AgentTypeToggle';
-import SystemPromptToggle from '../controls/SystemPromptToggle';
-
-const { Text } = Typography;
 
 interface ModeSelectorProps {
   onModeSelect: (mode: ConversationMode) => void;
   onStartConversation: (inputText: string, options?: any) => void;
 }
 
+/**
+ * 模式选择器组件
+ *
+ * 用于新建对话时选择模式并配置初始参数。
+ * 支持 Agent 和 Graph 两种模式。
+ */
 const ModeSelector: React.FC<ModeSelectorProps> = ({
   onModeSelect,
   onStartConversation
 }) => {
-  const {
-    currentMode,
-    agentType,
-    setCurrentMode,
-    setAgentType
-  } = useConversationStore();
-
+  const { currentMode, setCurrentMode } = useConversationStore();
   const { models: availableModels, fetchModels } = useModelStore();
   const { graphs: availableGraphs, fetchGraphs } = useGraphEditorStore();
   const { config: mcpConfig, status: mcpStatus, fetchConfig: fetchMCPConfig, fetchStatus: fetchMCPStatus } = useMCPStore();
 
-  // 获取所有MCP服务器（不论连接状态）
+  const [inputValue, setInputValue] = React.useState('');
+  const [systemPrompt, setSystemPrompt] = React.useState('');
+  const [isSystemPromptMode, setIsSystemPromptMode] = React.useState(false);
+  const [selectedModel, setSelectedModel] = React.useState<string>('');
+  const [selectedGraph, setSelectedGraph] = React.useState<string>('');
+  const [selectedAgent, setSelectedAgent] = React.useState<string | null>(null);
+  const [selectedMCPServers, setSelectedMCPServers] = React.useState<Record<string, boolean>>({});
+  const [selectedSystemTools, setSelectedSystemTools] = React.useState<string[]>([]);
+  const [maxIterations, setMaxIterations] = React.useState<number | null>(null);
+
   const availableMCPServers = React.useMemo(() => {
     return Object.keys(mcpConfig.mcpServers || {}).filter(serverName => {
       const server = mcpConfig.mcpServers[serverName];
-      return !server.disabled; // 只过滤掉被禁用的服务器
+      return !server.disabled;
     });
   }, [mcpConfig]);
 
-  // 获取服务器连接状态
   const getServerConnectionStatus = React.useCallback((serverName: string) => {
     const status = mcpStatus[serverName];
     return status?.connected || false;
   }, [mcpStatus]);
 
-  const [selectedModel, setSelectedModel] = React.useState<string>('');
-  const [selectedGraph, setSelectedGraph] = React.useState<string>('');
-  const [selectedMCPServers, setSelectedMCPServers] = React.useState<Record<string, boolean>>({});
-  const [systemPrompt, setSystemPrompt] = React.useState('');
-  const [userPrompt, setUserPrompt] = React.useState('');
-  const [inputText, setInputText] = React.useState('');
-  const [promptMode, setPromptMode] = React.useState<'user' | 'system'>('user'); // Chat模式的提示词类型
-  const [showGraphSelector, setShowGraphSelector] = React.useState(false);
-  const graphDropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleModeChange = (mode: ConversationMode) => {
-    setCurrentMode(mode);
-    onModeSelect(mode);
-    // 重置选择状态
-    setSelectedModel('');
-    setSelectedGraph('');
-    setSelectedMCPServers({});
-    setSystemPrompt('');
-    setUserPrompt('');
-    setInputText('');
-    setPromptMode('user'); // 重置为用户提示词模式
-    setShowGraphSelector(false);
-    // 设置Agent模式的默认类型
-    if (mode === 'agent') {
-      setAgentType('mcp');
-    }
-  };
-
-  // 组件挂载时加载数据
   React.useEffect(() => {
     fetchModels();
     fetchGraphs();
@@ -89,7 +65,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     fetchMCPStatus();
   }, [fetchModels, fetchGraphs, fetchMCPConfig, fetchMCPStatus]);
 
-  // 初始化MCP服务器状态
   React.useEffect(() => {
     const initialStates: Record<string, boolean> = {};
     availableMCPServers.forEach(serverName => {
@@ -98,47 +73,84 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setSelectedMCPServers(initialStates);
   }, [availableMCPServers]);
 
-  // 点击外部关闭面板
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (graphDropdownRef.current && !graphDropdownRef.current.contains(event.target as Node)) {
-        setShowGraphSelector(false);
-      }
-    };
+  const handleModeChange = (mode: ConversationMode) => {
+    setCurrentMode(mode);
+    onModeSelect(mode);
+    setSelectedModel('');
+    setSelectedGraph('');
+    setSelectedAgent(null);
+    setSelectedMCPServers({});
+    setSelectedSystemTools([]);
+    setMaxIterations(null);
+    setSystemPrompt('');
+    setInputValue('');
+    setIsSystemPromptMode(false);
+  };
 
-    if (showGraphSelector) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showGraphSelector]);
+  const toggleMcpServer = (serverName: string, enabled: boolean) => {
+    setSelectedMCPServers(prev => ({
+      ...prev,
+      [serverName]: enabled
+    }));
+  };
 
-  const handleStart = () => {
-    const content = currentMode === 'chat' && userPrompt.trim() ? userPrompt.trim() : inputText.trim();
-    if (content) {
-      // 将选择的配置传递给父组件
-      onStartConversation(content, {
-        mode: currentMode,
-        agentType: currentMode === 'agent' ? agentType : undefined,
-        selectedModel,
-        selectedGraph,
-        selectedMCPServers: Object.entries(selectedMCPServers)
-          .filter(([_, enabled]) => enabled)
-          .map(([serverName]) => serverName),
-        systemPrompt: systemPrompt.trim() || undefined,
-        userPrompt: userPrompt.trim() || undefined
-      });
+  const handlePromptSelect = (content: string) => {
+    if (isSystemPromptMode) {
+      setSystemPrompt(content);
+    } else {
+      setInputValue(content);
     }
   };
 
+  const handleStart = () => {
+    const content = inputValue.trim();
+    if (!content) return;
+
+    const options: any = {
+      mode: currentMode
+    };
+
+    if (currentMode === 'agent') {
+      if (selectedAgent) {
+        options.agent_name = selectedAgent;
+      }
+
+      if (selectedModel) {
+        options.model_name = selectedModel;
+      }
+
+      if (systemPrompt.trim()) {
+        options.system_prompt = systemPrompt.trim();
+      }
+
+      const enabledMCPServers = Object.entries(selectedMCPServers)
+        .filter(([_, enabled]) => enabled)
+        .map(([serverName]) => serverName);
+      if (enabledMCPServers.length > 0) {
+        options.mcp_servers = enabledMCPServers;
+      }
+
+      if (selectedSystemTools.length > 0) {
+        options.system_tools = selectedSystemTools;
+      }
+
+      if (maxIterations !== null) {
+        options.max_iterations = maxIterations;
+      }
+    } else if (currentMode === 'graph') {
+      options.graph_name = selectedGraph;
+    }
+
+    onStartConversation(content, options);
+  };
+
   const canStart = () => {
-    const content = currentMode === 'chat' ? userPrompt.trim() : inputText.trim();
+    const content = inputValue.trim();
     if (!content) return false;
 
     switch (currentMode) {
-      case 'chat':
-        return !!selectedModel;
       case 'agent':
-        return !!selectedModel && !!agentType;
+        return !!selectedAgent || !!selectedModel;
       case 'graph':
         return !!selectedGraph;
       default:
@@ -153,38 +165,11 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
   };
 
-  // 切换MCP服务器状态
-  const toggleMcpServer = (serverName: string, enabled: boolean) => {
-    setSelectedMCPServers(prev => ({
-      ...prev,
-      [serverName]: enabled
-    }));
-  };
-
-  // 处理提示词选择
-  const handlePromptSelect = (content: string) => {
-    if (currentMode === 'chat') {
-      if (promptMode === 'user') {
-        setUserPrompt(content);
-      } else {
-        setSystemPrompt(content);
-      }
-    } else {
-      setInputText(content);
-    }
-  };
-
   const modes = [
-    {
-      key: 'chat' as ConversationMode,
-      title: 'Chat',
-      description: '自然对话',
-      icon: MessageSquare
-    },
     {
       key: 'agent' as ConversationMode,
       title: 'Agent',
-      description: '生成工具',
+      description: 'AI 助手对话',
       icon: Bot
     },
     {
@@ -196,31 +181,24 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   ];
 
   const getCurrentInputValue = () => {
-    if (currentMode === 'chat') {
-      return promptMode === 'user' ? userPrompt : systemPrompt;
-    }
-    return inputText;
+    return isSystemPromptMode ? systemPrompt : inputValue;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (currentMode === 'chat') {
-      if (promptMode === 'user') {
-        setUserPrompt(e.target.value);
-      } else {
-        setSystemPrompt(e.target.value);
-      }
+    if (isSystemPromptMode) {
+      setSystemPrompt(e.target.value);
     } else {
-      setInputText(e.target.value);
+      setInputValue(e.target.value);
     }
   };
 
   const getInputPlaceholder = () => {
-    if (currentMode === 'chat') {
-      return promptMode === 'user' ? '输入您想说的话... (Ctrl+Enter发送)' : '输入系统提示词（可选）... (Ctrl+Enter发送)'
-    } else if (currentMode === 'agent') {
-      return agentType === 'mcp' ?
-        '描述您希望AI生成的MCP工具功能... (Ctrl+Enter发送)' :
-        '描述您希望AI生成的Graph工作流... (Ctrl+Enter发送)';
+    if (isSystemPromptMode) {
+      return '输入系统提示词（可选）... (Ctrl+Enter发送)';
+    }
+
+    if (currentMode === 'agent') {
+      return '输入您的问题或请求... (Ctrl+Enter发送)';
     }
     return '输入要传递给Graph的内容... (Ctrl+Enter发送)';
   };
@@ -238,11 +216,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
         maxWidth: '900px',
         width: '100%'
       }}>
-
-        {/* 紧凑的模式选择卡片 */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '12px',
           marginBottom: '28px'
         }}>
@@ -256,14 +232,14 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                 style={{
                   padding: '16px 14px',
                   borderRadius: '6px',
-                  background: isActive 
-                    ? 'rgba(255, 255, 255, 0.85)' 
+                  background: isActive
+                    ? 'rgba(255, 255, 255, 0.85)'
                     : 'rgba(255, 255, 255, 0.5)',
-                  border: isActive 
-                    ? '1px solid rgba(139, 115, 85, 0.25)' 
+                  border: isActive
+                    ? '1px solid rgba(139, 115, 85, 0.25)'
                     : '1px solid rgba(139, 115, 85, 0.1)',
-                  boxShadow: isActive 
-                    ? '0 2px 6px rgba(139, 115, 85, 0.08)' 
+                  boxShadow: isActive
+                    ? '0 2px 6px rgba(139, 115, 85, 0.08)'
                     : '0 1px 2px rgba(139, 115, 85, 0.04)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
@@ -290,13 +266,13 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <Icon 
-                    size={20} 
-                    strokeWidth={1.5} 
-                    style={{ 
+                  <Icon
+                    size={20}
+                    strokeWidth={1.5}
+                    style={{
                       color: isActive ? '#8b7355' : 'rgba(139, 115, 85, 0.5)',
                       transition: 'color 0.2s ease'
-                    }} 
+                    }}
                   />
                   <div>
                     <div style={{
@@ -323,7 +299,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
           })}
         </div>
 
-        {/* 宽敞的输入区域 */}
         {currentMode && (
           <div style={{
             background: 'rgba(255, 255, 255, 0.7)',
@@ -360,7 +335,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                   }}
                 />
 
-                {/* 左下角控件 */}
                 <div style={{
                   position: 'absolute',
                   bottom: '0',
@@ -369,200 +343,38 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                   alignItems: 'center',
                   gap: '6px'
                 }}>
-                  {/* Chat模式的系统提示词切换按钮 */}
-                  {currentMode === 'chat' && (
-                    <SystemPromptToggle
-                      isSystemPromptMode={promptMode === 'system'}
-                      onToggle={() => setPromptMode(promptMode === 'user' ? 'system' : 'user')}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Chat模式的MCP工具选择器 */}
-                  {currentMode === 'chat' && (
-                    <MCPToolSelector
-                      availableMCPServers={availableMCPServers}
-                      selectedMCPServers={selectedMCPServers}
-                      onToggleMCPServer={toggleMcpServer}
-                      getServerConnectionStatus={getServerConnectionStatus}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Chat模式的提示词选择器 */}
-                  {currentMode === 'chat' && (
-                    <PromptSelector
-                      onSelectPrompt={handlePromptSelect}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Agent模式的类型切换按钮 */}
                   {currentMode === 'agent' && (
-                    <AgentTypeToggle
-                      agentType={agentType}
-                      onToggle={setAgentType}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Agent Graph模式的MCP工具选择 */}
-                  {currentMode === 'agent' && agentType === 'graph' && (
-                    <MCPToolSelector
-                      availableMCPServers={availableMCPServers}
-                      selectedMCPServers={selectedMCPServers}
-                      onToggleMCPServer={toggleMcpServer}
-                      getServerConnectionStatus={getServerConnectionStatus}
-                      size="small"
-                    />
-                  )}
-
-                  {/* Agent Graph模式的图配置选择 */}
-                  {currentMode === 'agent' && agentType === 'graph' && (
-                    <div style={{ position: 'relative' }} ref={graphDropdownRef}>
-                      <Tooltip title={selectedGraph ? `已选择图: ${selectedGraph}` : "选择基础图配置（可选）"}>
-                        <div
-                          onClick={() => setShowGraphSelector(!showGraphSelector)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '4px',
-                            color: selectedGraph ? '#8b7355' : 'rgba(139, 115, 85, 0.65)',
-                            border: `1px solid ${selectedGraph ? 'rgba(139, 115, 85, 0.25)' : 'rgba(139, 115, 85, 0.15)'}`,
-                            background: selectedGraph ? 'rgba(139, 115, 85, 0.06)' : 'transparent',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '12px',
-                            fontWeight: 400,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = selectedGraph ? 'rgba(139, 115, 85, 0.06)' : 'transparent';
-                          }}
-                        >
-                          <Layers size={12} strokeWidth={1.5} />
-                          {selectedGraph || '基础图'}
-                        </div>
-                      </Tooltip>
-
-                      {/* 图选择面板 */}
-                      {showGraphSelector && (
-                        <div style={{
-                          position: 'absolute',
-                          bottom: '100%',
-                          left: 0,
-                          marginBottom: '8px',
-                          minWidth: '280px',
-                          maxHeight: '320px',
-                          overflowY: 'auto',
-                          background: 'rgba(255, 255, 255, 0.95)',
-                          backdropFilter: 'blur(20px)',
-                          border: '1px solid rgba(139, 115, 85, 0.2)',
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 16px rgba(139, 115, 85, 0.15)',
-                          zIndex: 1000
-                        }}>
-                          <div style={{
-                            padding: '12px 14px',
-                            borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}>
-                            <Text strong style={{ fontSize: '13px', color: '#2d2d2d' }}>基础图配置</Text>
-                            <Text style={{ fontSize: '11px', color: 'rgba(45, 45, 45, 0.65)' }}>（可选）</Text>
-                          </div>
-                          <div style={{ padding: '8px' }}>
-                            <div style={{
-                              padding: '10px 12px',
-                              marginBottom: '6px',
-                              borderRadius: '6px',
-                              background: !selectedGraph ? 'rgba(184, 88, 69, 0.08)' : 'transparent',
-                              border: `1px solid ${!selectedGraph ? 'rgba(184, 88, 69, 0.25)' : 'rgba(139, 115, 85, 0.12)'}`,
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between'
-                            }}
-                            onClick={() => setSelectedGraph('')}
-                            onMouseEnter={(e) => {
-                              if (selectedGraph) {
-                                e.currentTarget.style.background = 'rgba(245, 243, 240, 0.6)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (selectedGraph) {
-                                e.currentTarget.style.background = 'transparent';
-                              }
-                            }}>
-                              <span style={{ fontSize: '13px', color: '#2d2d2d' }}>不使用基础配置</span>
-                              {!selectedGraph && (
-                                <span style={{
-                                  fontSize: '12px',
-                                  color: '#b85845',
-                                  fontWeight: 500
-                                }}>已选择</span>
-                              )}
-                            </div>
-                            {availableGraphs && availableGraphs.length > 0 && availableGraphs.map(graphName => (
-                              <div
-                                key={graphName}
-                                style={{
-                                  padding: '10px 12px',
-                                  marginBottom: '6px',
-                                  borderRadius: '6px',
-                                  background: selectedGraph === graphName ? 'rgba(184, 88, 69, 0.08)' : 'transparent',
-                                  border: `1px solid ${selectedGraph === graphName ? 'rgba(184, 88, 69, 0.25)' : 'rgba(139, 115, 85, 0.12)'}`,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between'
-                                }}
-                                onClick={() => setSelectedGraph(graphName)}
-                                onMouseEnter={(e) => {
-                                  if (selectedGraph !== graphName) {
-                                    e.currentTarget.style.background = 'rgba(245, 243, 240, 0.6)';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (selectedGraph !== graphName) {
-                                    e.currentTarget.style.background = 'transparent';
-                                  }
-                                }}
-                              >
-                                <Tooltip title={graphName} placement="left">
-                                  <span style={{
-                                    fontSize: '13px',
-                                    color: '#2d2d2d',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    maxWidth: '180px'
-                                  }}>{graphName}</span>
-                                </Tooltip>
-                                {selectedGraph === graphName && (
-                                  <span style={{
-                                    fontSize: '12px',
-                                    color: '#b85845',
-                                    fontWeight: 500
-                                  }}>已选择</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <>
+                      <SystemPromptToggle
+                        isSystemPromptMode={isSystemPromptMode}
+                        onToggle={() => setIsSystemPromptMode(!isSystemPromptMode)}
+                        size="small"
+                      />
+                      <AgentPicker
+                        selectedAgent={selectedAgent}
+                        onAgentChange={setSelectedAgent}
+                        size="small"
+                      />
+                      <MCPToolSelector
+                        availableMCPServers={availableMCPServers}
+                        selectedMCPServers={selectedMCPServers}
+                        onToggleMCPServer={toggleMcpServer}
+                        getServerConnectionStatus={getServerConnectionStatus}
+                        size="small"
+                      />
+                      <SystemToolSelector
+                        selectedTools={selectedSystemTools}
+                        onToolsChange={setSelectedSystemTools}
+                        size="small"
+                      />
+                      <PromptSelector
+                        onSelectPrompt={handlePromptSelect}
+                        size="small"
+                      />
+                    </>
                   )}
                 </div>
 
-                {/* 右下角控件 */}
                 <div style={{
                   position: 'absolute',
                   bottom: '0',
@@ -571,16 +383,21 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  {/* 模型选择器 (Chat和Agent模式) */}
-                  {(currentMode === 'chat' || currentMode === 'agent') && (
-                    <ModelSelector
-                      value={selectedModel}
-                      onChange={setSelectedModel}
-                      availableModels={availableModels}
-                    />
+                  {currentMode === 'agent' && (
+                    <>
+                      <MaxIterationsConfig
+                        value={maxIterations}
+                        onChange={setMaxIterations}
+                        size="small"
+                      />
+                      <ModelSelector
+                        value={selectedModel}
+                        onChange={setSelectedModel}
+                        availableModels={availableModels}
+                      />
+                    </>
                   )}
 
-                  {/* Graph选择器 (Graph模式) */}
                   {currentMode === 'graph' && (
                     <GraphSelector
                       value={selectedGraph}
@@ -589,11 +406,10 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                     />
                   )}
 
-                  {/* 开始按钮 - 平衡设计 */}
                   <Button
                     type="primary"
                     shape="circle"
-                    icon={<ArrowUpOutlined />}
+                    icon={<ArrowUp size={14} strokeWidth={2} />}
                     onClick={handleStart}
                     disabled={!canStart()}
                     size="small"

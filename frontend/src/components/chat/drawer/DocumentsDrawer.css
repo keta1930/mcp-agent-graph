@@ -1,0 +1,144 @@
+/* src/components/chat/drawer/DocumentsDrawer.css */
+
+.documents-drawer .ant-drawer-header {
+  background: linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(245, 243, 240, 0.9));
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
+  padding: 20px 24px;
+}
+
+.documents-drawer .ant-drawer-body {
+  background: rgba(250, 248, 245, 0.5);
+  padding: 16px;
+}
+
+.documents-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #2d2d2d;
+}
+
+.documents-drawer-title .anticon {
+  font-size: 18px;
+  color: #8b7355;
+}
+
+.document-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(139, 115, 85, 0.15);
+  color: #8b7355;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.empty-description {
+  color: rgba(45, 45, 45, 0.45);
+  font-size: 14px;
+}
+
+.document-list-item {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(139, 115, 85, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px !important;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.document-list-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(139, 115, 85, 0.25);
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.1);
+  transform: translateY(-1px);
+}
+
+.document-list-item:active {
+  transform: translateY(0);
+}
+
+.document-list-item .ant-list-item-meta {
+  align-items: center;
+}
+
+.document-list-item .ant-list-item-meta-avatar {
+  margin-right: 12px;
+}
+
+.document-title {
+  color: #2d2d2d;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 280px;
+}
+
+.document-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.document-type {
+  font-size: 12px;
+  color: rgba(45, 45, 45, 0.65);
+}
+
+.document-date {
+  font-size: 12px;
+  color: rgba(45, 45, 45, 0.45);
+}
+
+.document-type::after {
+  content: '·';
+  margin-left: 8px;
+  color: rgba(45, 45, 45, 0.25);
+}
+
+/* Empty state styling */
+.documents-drawer .ant-empty {
+  margin-top: 60px;
+}
+
+.documents-drawer .ant-empty-image {
+  height: 80px;
+  margin-bottom: 16px;
+}
+
+/* List styling */
+.documents-drawer .ant-list {
+  background: transparent;
+}
+
+.documents-drawer .ant-list-item {
+  border: none;
+  padding: 0;
+}
+
+/* Scrollbar styling */
+.documents-drawer .ant-drawer-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.documents-drawer .ant-drawer-body::-webkit-scrollbar-track {
+  background: rgba(139, 115, 85, 0.05);
+  border-radius: 3px;
+}
+
+.documents-drawer .ant-drawer-body::-webkit-scrollbar-thumb {
+  background: rgba(139, 115, 85, 0.2);
+  border-radius: 3px;
+}
+
+.documents-drawer .ant-drawer-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 115, 85, 0.3);
+}

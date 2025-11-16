@@ -15,10 +15,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock } from '../../../types/conversation';
+import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock, TaskBlock as TaskBlockType } from '../../../types/conversation';
 import { getCurrentUserDisplayName } from '../../../config/user';
 import AgentXMLRenderer from './AgentXMLRenderer';
 import CodeBlockPreview from '../../common/CodeBlockPreview';
+import TaskBlock from './TaskBlock';
+import StaticTaskBlock from './StaticTaskBlock';
 
 const { Text, Paragraph } = Typography;
 
@@ -299,9 +301,10 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
 interface ToolCallDisplayProps {
   toolCall: any;
   result?: string;
+  conversationId?: string;
 }
 
-const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result }) => {
+const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, conversationId }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -579,6 +582,7 @@ interface MessageItemProps {
   message: ConversationMessage;
   showTyping?: boolean;
   toolResults?: Record<string, string>;
+  taskRoundDataMap?: Record<string, import('../../../types/conversation').TaskRoundData>; // 新增：task round 数据映射
   nodeInfo?: {
     nodeName: string;
     level: number;
@@ -597,6 +601,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   message,
   showTyping = false,
   toolResults = {},
+  taskRoundDataMap = {},
   nodeInfo,
   reasoningContent,
   isGraphMode = false,
@@ -763,11 +768,26 @@ const MessageItem: React.FC<MessageItemProps> = ({
             {message.tool_calls && message.tool_calls.length > 0 && (
               <div style={{ marginTop: '12px' }}>
                 {message.tool_calls.map((toolCall, index) => (
-                  <ToolCallDisplay
-                    key={toolCall.id || index}
-                    toolCall={toolCall}
-                    result={toolCall.id ? toolResults[toolCall.id] : undefined}
-                  />
+                  <React.Fragment key={toolCall.id || index}>
+                    <ToolCallDisplay
+                      toolCall={toolCall}
+                      result={toolCall.id ? toolResults[toolCall.id] : undefined}
+                      conversationId={conversationId}
+                    />
+                    {/* 在工具调用下方显示对应的 Task */}
+                    {toolCall.id && taskRoundDataMap[toolCall.id] && (
+                      <StaticTaskBlock
+                        taskData={{
+                          task_id: taskRoundDataMap[toolCall.id].task_id,
+                          agent_name: taskRoundDataMap[toolCall.id].agent_name,
+                          rounds: [taskRoundDataMap[toolCall.id].round]
+                        }}
+                        toolCallId={toolCall.id}
+                        toolResults={toolResults}
+                        conversationId={conversationId}
+                      />
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
             )}
@@ -846,6 +866,7 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
               key={toolCall.id || index}
               toolCall={toolCall}
               result={toolCall.id ? combinedToolResults[toolCall.id] : undefined}
+              conversationId={conversationId}
             />
           ))}
         </div>
@@ -862,6 +883,10 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
           />
         );
       }
+      return null;
+
+    case 'task':
+      // Task blocks are handled separately in the main render logic
       return null;
 
     default:
@@ -896,16 +921,14 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
     }
 
     // 备用：根据后端数据推断（向后兼容）
-    if (conversation.generation_type === 'chat') {
-      return 'chat';
-    } else if (conversation.generation_type === 'mcp' || conversation.generation_type === 'graph') {
+    if (conversation.generation_type === 'agent') {
       return 'agent';
     } else if (conversation.generation_type === 'graph_run') {
       return 'graph_run';
     }
 
-    // 最终默认值
-    return 'chat';
+    // 最终默认值：如果没有明确的模式，默认为 agent
+    return 'agent';
   };
 
   const renderingMode = getRenderingMode();
@@ -952,7 +975,36 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
     return toolResults;
   };
 
+  // 构建 task round 数据映射（通过 tool_call_id 关联）
+  const buildTaskRoundDataMap = (tasks: import('../../../types/conversation').TaskData[] | undefined) => {
+    const taskRoundDataMap: Record<string, import('../../../types/conversation').TaskRoundData> = {};
+
+    if (Array.isArray(tasks)) {
+      tasks.forEach(task => {
+        // 遍历每个 round，将包含 tool_call_id 的 round 映射到对应的 tool_call_id
+        task.rounds.forEach(round => {
+          if (round.tool_call_id) {
+            taskRoundDataMap[round.tool_call_id] = {
+              task_id: task.task_id,
+              agent_name: task.agent_name,
+              round: round
+            };
+          }
+        });
+      });
+    }
+
+    return taskRoundDataMap;
+  };
+
   const toolResults = buildToolResultsMap(conversation.rounds || []);
+  const taskRoundDataMap = buildTaskRoundDataMap(conversation.tasks);
+
+  // 调试日志
+  if (conversation.tasks && conversation.tasks.length > 0) {
+    console.log('📋 Tasks 数据:', conversation.tasks);
+    console.log('🔗 Task Round 数据映射:', taskRoundDataMap);
+  }
 
   return (
     <div className="message-display" style={{
@@ -987,6 +1039,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                       key={`${roundIndex}-user-${msgIndex}`}
                       message={message}
                       toolResults={toolResults}
+                      taskRoundDataMap={taskRoundDataMap}
                       nodeInfo={nodeInfo}  // start节点的用户消息显示节点信息
                       isGraphMode={true}
                       renderingMode={renderingMode}
@@ -1004,6 +1057,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                     key={`${roundIndex}-${msgIndex}`}
                     message={message}
                     toolResults={toolResults}
+                    taskRoundDataMap={taskRoundDataMap}
                     nodeInfo={undefined}  // 节点信息已处理，不再在这里显示
                     isGraphMode={true}
                     renderingMode={renderingMode}
@@ -1014,25 +1068,85 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             );
           } else {
             // Chat模式和Agent模式：正常的消息显示
-            return round.messages?.map((message, msgIndex) => {
-              // 判断是否是该角色在这个round中的第一条消息
-              const isFirstMessageOfRole = round.messages
-                ? round.messages.findIndex((msg: ConversationMessage) =>
-                    msg.role === message.role && msg.role !== 'system' && msg.role !== 'tool'
-                  ) === msgIndex
-                : false;
+            return (
+              <div key={roundIndex} className="conversation-round">
+                {/* 消息列表 */}
+                {round.messages?.map((message, msgIndex) => {
+                  // 判断是否是该角色在这个round中的第一条消息
+                  const isFirstMessageOfRole = round.messages
+                    ? round.messages.findIndex((msg: ConversationMessage) =>
+                        msg.role === message.role && msg.role !== 'system' && msg.role !== 'tool'
+                      ) === msgIndex
+                    : false;
 
-              return (
-                <MessageItem
-                  key={`${roundIndex}-${msgIndex}`}
-                  message={message}
-                  toolResults={toolResults}
-                  isFirstMessageInRound={isFirstMessageOfRole}
-                  renderingMode={renderingMode}
-                  conversationId={conversation?.conversation_id}
-                />
-              );
-            });
+                  return (
+                    <MessageItem
+                      key={`${roundIndex}-${msgIndex}`}
+                      message={message}
+                      toolResults={toolResults}
+                      taskRoundDataMap={taskRoundDataMap}
+                      isFirstMessageInRound={isFirstMessageOfRole}
+                      renderingMode={renderingMode}
+                      conversationId={conversation?.conversation_id}
+                    />
+                  );
+                })}
+                
+                {/* Agent 元信息展示 - 仅在 Agent 模式下显示，移到消息下方 */}
+                {renderingMode === 'agent' && (round.agent_name || round.model || round.prompt_tokens !== undefined) && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginTop: '12px',
+                    flexWrap: 'wrap'
+                  }}>
+                    {round.agent_name && (
+                      <Tag style={{
+                        background: 'rgba(184, 88, 69, 0.08)',
+                        color: '#b85845',
+                        border: '1px solid rgba(184, 88, 69, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        padding: '4px 12px',
+                        fontSize: '12px',
+                        margin: 0
+                      }}>
+                        Agent: {round.agent_name}
+                      </Tag>
+                    )}
+                    {round.model && (
+                      <Tag style={{
+                        background: 'rgba(160, 130, 109, 0.08)',
+                        color: '#a0826d',
+                        border: '1px solid rgba(160, 130, 109, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        padding: '4px 12px',
+                        fontSize: '12px',
+                        margin: 0
+                      }}>
+                        Model: {round.model}
+                      </Tag>
+                    )}
+                    {round.prompt_tokens !== undefined && round.completion_tokens !== undefined && (
+                      <Tag style={{
+                        background: 'rgba(139, 115, 85, 0.08)',
+                        color: '#8b7355',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        padding: '4px 12px',
+                        fontSize: '12px',
+                        margin: 0
+                      }}>
+                        Tokens: {round.prompt_tokens} / {round.completion_tokens}
+                      </Tag>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
           }
         })}
 
@@ -1045,6 +1159,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                 role: 'user',
                 content: pendingUserMessage
               }}
+              taskRoundDataMap={taskRoundDataMap}
               isFirstMessageInRound={true}
               renderingMode={renderingMode}
               conversationId={conversation?.conversation_id}
@@ -1091,16 +1206,45 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
             )}
 
             {/* 分块内容 */}
-            {enhancedStreamingState.blocks.map((block: StreamingBlock) => (
-              <div key={block.id} className={`streaming-block ${block.type}-block`}>
-                <StreamingBlockDisplay
-                  block={block}
-                  renderingMode={renderingMode}
-                  toolResults={toolResults}
-                  conversationId={conversation?.conversation_id}
-                />
-              </div>
-            ))}
+            {enhancedStreamingState.blocks.map((block: StreamingBlock) => {
+              // Handle Task blocks separately
+              if (block.type === 'task') {
+                const taskBlock = block as TaskBlockType;
+                // Find all blocks that belong to this task
+                const taskBlocks = enhancedStreamingState.blocks.filter(
+                  (b: StreamingBlock) => b.taskId === taskBlock.taskId && b.type !== 'task'
+                );
+                
+                return (
+                  <div key={block.id} className="streaming-block task-block">
+                    <TaskBlock
+                      taskBlock={taskBlock}
+                      blocks={taskBlocks}
+                      renderingMode={renderingMode}
+                      toolResults={toolResults}
+                      conversationId={conversation?.conversation_id}
+                    />
+                  </div>
+                );
+              }
+              
+              // Skip blocks that belong to a task (they're rendered inside TaskBlock)
+              if (block.taskId) {
+                return null;
+              }
+              
+              // Render regular blocks
+              return (
+                <div key={block.id} className={`streaming-block ${block.type}-block`}>
+                  <StreamingBlockDisplay
+                    block={block}
+                    renderingMode={renderingMode}
+                    toolResults={toolResults}
+                    conversationId={conversation?.conversation_id}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
 

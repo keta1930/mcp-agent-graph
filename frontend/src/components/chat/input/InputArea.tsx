@@ -1,22 +1,20 @@
 // src/components/chat/input/InputArea.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Tooltip } from 'antd';
+import { Button } from 'antd';
 import './InputArea.css';
-import {
-  ArrowUpOutlined,
-  CheckOutlined
-} from '@ant-design/icons';
-import { useConversationStore } from '../../../store/conversationStore';
-import { useModelStore } from '../../../store/modelStore';
+import { ArrowUp } from 'lucide-react';
 import { useGraphEditorStore } from '../../../store/graphEditorStore';
+import { useModelStore } from '../../../store/modelStore';
 import { useMCPStore } from '../../../store/mcpStore';
 import { ConversationMode } from '../../../types/conversation';
+import SystemPromptToggle from '../controls/SystemPromptToggle';
+import AgentPicker from '../controls/AgentPicker';
 import MCPToolSelector from '../controls/MCPToolSelector';
+import SystemToolSelector from '../controls/SystemToolSelector';
 import PromptSelector from '../controls/PromptSelector';
+import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
-import AgentTypeToggle from '../controls/AgentTypeToggle';
-import SystemPromptToggle from '../controls/SystemPromptToggle';
 
 interface InputAreaProps {
   onSendMessage: (message: string, options?: any) => void;
@@ -27,9 +25,18 @@ interface InputAreaProps {
     selectedGraph?: string;
     systemPrompt?: string;
     selectedMCPServers?: string[];
+    selectedAgent?: string | null;
+    selectedSystemTools?: string[];
+    maxIterations?: number | null;
   };
 }
 
+/**
+ * 输入区域组件
+ *
+ * 支持 Agent 和 Graph 两种模式的消息输入。
+ * 提供多种配置选项，包括模型选择、Agent 选择、工具选择等。
+ */
 const InputArea: React.FC<InputAreaProps> = ({
   onSendMessage,
   disabled = false,
@@ -37,153 +44,162 @@ const InputArea: React.FC<InputAreaProps> = ({
   inheritedConfig = {}
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const [systemPrompt, setSystemPrompt] = useState(inheritedConfig.systemPrompt || '');
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [isSystemPromptMode, setIsSystemPromptMode] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>(inheritedConfig.selectedModel || '');
-  const [selectedGraph, setSelectedGraph] = useState<string>(inheritedConfig.selectedGraph || '');
-  const [mcpServerStates, setMcpServerStates] = useState<Record<string, boolean>>({});
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedGraph, setSelectedGraph] = useState<string>('');
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  const [selectedMCPServers, setSelectedMCPServers] = useState<Record<string, boolean>>({});
+  const [selectedSystemTools, setSelectedSystemTools] = useState<string[]>([]);
+  const [maxIterations, setMaxIterations] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // 标记是否已经初始化过配置
+  const [isConfigInitialized, setIsConfigInitialized] = useState(false);
 
-  const { agentType, setAgentType } = useConversationStore();
   const { models: availableModels } = useModelStore();
   const { graphs: availableGraphs } = useGraphEditorStore();
   const { config: mcpConfig, status: mcpStatus } = useMCPStore();
 
-  // 获取所有MCP服务器（不论连接状态）
-  const availableMcpServers = React.useMemo(() => {
+  const availableMCPServers = React.useMemo(() => {
     return Object.keys(mcpConfig.mcpServers || {}).filter(serverName => {
       const server = mcpConfig.mcpServers[serverName];
-      return !server.disabled; // 只过滤掉被禁用的服务器
+      return !server.disabled;
     });
   }, [mcpConfig]);
 
-  // 获取服务器连接状态
   const getServerConnectionStatus = React.useCallback((serverName: string) => {
     const status = mcpStatus[serverName];
     return status?.connected || false;
   }, [mcpStatus]);
 
-  // 初始化MCP服务器状态
+  // 初始化继承的配置（只在第一次或配置变化时执行）
   useEffect(() => {
-    const initialStates: Record<string, boolean> = {};
-    availableMcpServers.forEach(serverName => {
-      // 如果有继承的配置，则使用继承的配置
-      if (inheritedConfig.selectedMCPServers?.includes(serverName)) {
-        initialStates[serverName] = true;
-      } else {
-        initialStates[serverName] = false;
+    if (!isConfigInitialized || Object.keys(inheritedConfig).length > 0) {
+      // 设置模型
+      if (inheritedConfig.selectedModel) {
+        setSelectedModel(inheritedConfig.selectedModel);
       }
-    });
-    setMcpServerStates(initialStates);
-  }, [availableMcpServers, inheritedConfig.selectedMCPServers]);
+      
+      // 设置图
+      if (inheritedConfig.selectedGraph) {
+        setSelectedGraph(inheritedConfig.selectedGraph);
+      }
+      
+      // 设置系统提示词
+      if (inheritedConfig.systemPrompt !== undefined) {
+        setSystemPrompt(inheritedConfig.systemPrompt);
+      }
+      
+      // 设置 Agent
+      if (inheritedConfig.selectedAgent !== undefined) {
+        setSelectedAgent(inheritedConfig.selectedAgent);
+      }
+      
+      // 设置系统工具
+      if (inheritedConfig.selectedSystemTools && inheritedConfig.selectedSystemTools.length > 0) {
+        setSelectedSystemTools(inheritedConfig.selectedSystemTools);
+      }
+      
+      // 设置最大迭代次数
+      if (inheritedConfig.maxIterations !== undefined) {
+        setMaxIterations(inheritedConfig.maxIterations);
+      }
+      
+      // 设置 MCP 服务器
+      if (inheritedConfig.selectedMCPServers && inheritedConfig.selectedMCPServers.length > 0) {
+        const initialStates: Record<string, boolean> = {};
+        availableMCPServers.forEach(serverName => {
+          initialStates[serverName] = inheritedConfig.selectedMCPServers?.includes(serverName) || false;
+        });
+        setSelectedMCPServers(initialStates);
+      } else if (!isConfigInitialized) {
+        // 只在第一次初始化时设置默认值
+        const initialStates: Record<string, boolean> = {};
+        availableMCPServers.forEach(serverName => {
+          initialStates[serverName] = false;
+        });
+        setSelectedMCPServers(initialStates);
+      }
+      
+      setIsConfigInitialized(true);
+    }
+  }, [inheritedConfig, availableMCPServers, isConfigInitialized]);
 
-  // 监听配置变化，更新本地状态（仅在初始化时应用一次）
   useEffect(() => {
-    if (inheritedConfig.selectedModel && !selectedModel) {
-      setSelectedModel(inheritedConfig.selectedModel);
+    if (mode === 'agent' && !selectedModel && availableModels.length > 0) {
+      setSelectedModel(availableModels[0].name);
+    } else if (mode === 'graph' && !selectedGraph && availableGraphs.length > 0) {
+      setSelectedGraph(availableGraphs[0]);
     }
-    if (inheritedConfig.selectedGraph && !selectedGraph) {
-      setSelectedGraph(inheritedConfig.selectedGraph);
-    }
-    if (inheritedConfig.systemPrompt !== undefined && systemPrompt === '') {
-      setSystemPrompt(inheritedConfig.systemPrompt);
-    }
-  }, [inheritedConfig, selectedModel, selectedGraph, systemPrompt]);
+  }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph]);
 
-  useEffect(() => {
-    // 自动选择第一个可用的模型或图（如果没有继承的配置）
-    if (mode === 'chat' || mode === 'agent') {
-      if (!selectedModel && !inheritedConfig.selectedModel && availableModels.length > 0) {
-        setSelectedModel(availableModels[0].name);
-      }
-    } else if (mode === 'graph') {
-      if (!selectedGraph && !inheritedConfig.selectedGraph && availableGraphs.length > 0) {
-        setSelectedGraph(availableGraphs[0]);
-      }
-    }
-  }, [mode, availableModels, availableGraphs, selectedModel, selectedGraph, inheritedConfig]);
-
-  /**
-   * 处理提示词选择
-   * 根据当前模式和系统提示词模式状态，将提示词内容设置到正确的状态中
-   */
   const handlePromptSelect = (content: string) => {
-    // Chat 模式下需要根据系统提示词模式决定设置到哪个状态
-    if (mode === 'chat') {
-      if (isSystemPromptMode) {
-        setSystemPrompt(content);
-      } else {
-        setInputValue(content);
-      }
+    if (isSystemPromptMode) {
+      setSystemPrompt(content);
     } else {
-      // 其他模式直接设置到输入值
       setInputValue(content);
     }
+  };
+
+  const toggleMcpServer = (serverName: string, enabled: boolean) => {
+    setSelectedMCPServers(prev => ({
+      ...prev,
+      [serverName]: enabled
+    }));
   };
 
   const handleSend = () => {
     const currentInput = isSystemPromptMode ? systemPrompt : inputValue;
     if (!currentInput.trim()) return;
 
+    if (isSystemPromptMode) {
+      setIsSystemPromptMode(false);
+      return;
+    }
+
     const options: any = {};
 
     switch (mode) {
-      case 'chat':
-        options.model_name = selectedModel;
-        // 获取开启的MCP服务器
-        options.mcp_servers = Object.entries(mcpServerStates)
-          .filter(([_, enabled]) => enabled)
-          .map(([serverName]) => serverName);
-        // 添加系统提示词（如果设置了）
+      case 'agent':
+        options.mode = 'agent';
+        options.user_prompt = inputValue.trim();
+
+        if (selectedAgent) {
+          options.agent_name = selectedAgent;
+        }
+
+        if (selectedModel) {
+          options.model_name = selectedModel;
+        }
+
         if (systemPrompt.trim()) {
           options.system_prompt = systemPrompt.trim();
         }
-        // 用户消息
-        options.user_prompt = isSystemPromptMode ? undefined : inputValue.trim();
-        break;
-      case 'agent':
-        options.model_name = selectedModel;
-        options.agent_type = agentType;
+
+        const enabledMCPServers = Object.entries(selectedMCPServers)
+          .filter(([_, enabled]) => enabled)
+          .map(([serverName]) => serverName);
+        if (enabledMCPServers.length > 0) {
+          options.mcp_servers = enabledMCPServers;
+        }
+
+        if (selectedSystemTools.length > 0) {
+          options.system_tools = selectedSystemTools;
+        }
+
+        if (maxIterations !== null) {
+          options.max_iterations = maxIterations;
+        }
+
         break;
       case 'graph':
         options.graph_name = selectedGraph;
         break;
     }
 
-    // 发送消息
-    if (isSystemPromptMode) {
-      // 系统提示词模式：只更新系统提示词，不发送消息
-      setIsSystemPromptMode(false);
-      return;
-    }
-
     onSendMessage(currentInput.trim(), options);
     setInputValue('');
-  };
-
-  // 发送Agent模式完成标记
-  const handleCompleteCreation = () => {
-    setInputValue('<end>END</end>');
-    // 聚焦到输入框
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 100);
-  };
-
-  // 切换系统提示词模式
-  const handleToggleSystemPrompt = () => {
-    setIsSystemPromptMode(!isSystemPromptMode);
-    setTimeout(() => {
-      textareaRef.current?.focus();
-    }, 100);
-  };
-
-  // 切换MCP服务器状态
-  const toggleMcpServer = (serverName: string, enabled: boolean) => {
-    setMcpServerStates(prev => ({
-      ...prev,
-      [serverName]: enabled
-    }));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -197,13 +213,11 @@ const InputArea: React.FC<InputAreaProps> = ({
     const currentInput = isSystemPromptMode ? systemPrompt : inputValue;
     if (!currentInput.trim() || disabled) return false;
 
-    // 系统提示词模式下总是可以"发送"（实际是保存）
     if (isSystemPromptMode) return true;
 
     switch (mode) {
-      case 'chat':
       case 'agent':
-        return !!selectedModel;
+        return !!selectedAgent || !!selectedModel;
       case 'graph':
         return !!selectedGraph;
       default:
@@ -217,12 +231,11 @@ const InputArea: React.FC<InputAreaProps> = ({
     }
 
     switch (mode) {
-      case 'chat':
-        return '输入您想说的话... (Ctrl+Enter发送)';
       case 'agent':
-        return agentType === 'mcp'
-          ? '描述您希望AI生成的MCP工具功能... (Ctrl+Enter发送)'
-          : '描述您希望AI生成的Graph工作流... (Ctrl+Enter发送)';
+        if (selectedAgent) {
+          return `使用 ${selectedAgent} 进行对话... (Ctrl+Enter发送)`;
+        }
+        return '输入您的问题或任务... (Ctrl+Enter发送)';
       case 'graph':
         return '输入要传递给Graph的内容... (Ctrl+Enter发送)';
       default:
@@ -251,7 +264,6 @@ const InputArea: React.FC<InputAreaProps> = ({
       justifyContent: 'center',
       position: 'relative'
     }}>
-      {/* 装饰性顶部细线 - 更微妙 */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -266,7 +278,6 @@ const InputArea: React.FC<InputAreaProps> = ({
         margin: '0 auto',
         width: '100%'
       }}>
-        {/* 主输入框 - 凹陷式设计 */}
         <div style={{
           position: 'relative',
           background: 'linear-gradient(to bottom, rgba(245, 243, 240, 0.6), rgba(250, 248, 245, 0.4))',
@@ -311,56 +322,35 @@ const InputArea: React.FC<InputAreaProps> = ({
             alignItems: 'center',
             gap: '8px'
           }}>
-            {/* Chat模式的系统提示词切换按钮 */}
-            {mode === 'chat' && (
-              <SystemPromptToggle
-                isSystemPromptMode={isSystemPromptMode}
-                onToggle={handleToggleSystemPrompt}
-                size="small"
-              />
-            )}
-
-            {/* Chat模式的MCP工具选择器 */}
-            {mode === 'chat' && (
-              <MCPToolSelector
-                availableMCPServers={availableMcpServers}
-                selectedMCPServers={mcpServerStates}
-                onToggleMCPServer={toggleMcpServer}
-                getServerConnectionStatus={getServerConnectionStatus}
-                size="small"
-              />
-            )}
-
-            {/* Chat模式的提示词选择器 */}
-            {mode === 'chat' && (
-              <PromptSelector
-                onSelectPrompt={handlePromptSelect}
-                size="small"
-              />
-            )}
-
-            {/* Agent模式的类型切换按钮 */}
             {mode === 'agent' && (
-              <AgentTypeToggle
-                agentType={agentType}
-                onToggle={setAgentType}
-                size="small"
-              />
-            )}
-
-            {/* Agent模式完成创建按钮 */}
-            {mode === 'agent' && (
-              <Tooltip title="完成创建">
-                <Button
-                  type="text"
-                  icon={<CheckOutlined />}
-                  className="complete-creation-button"
-                  onClick={handleCompleteCreation}
+              <>
+                <SystemPromptToggle
+                  isSystemPromptMode={isSystemPromptMode}
+                  onToggle={() => setIsSystemPromptMode(!isSystemPromptMode)}
                   size="small"
-                >
-                  完成创建
-                </Button>
-              </Tooltip>
+                />
+                <AgentPicker
+                  selectedAgent={selectedAgent}
+                  onAgentChange={setSelectedAgent}
+                  size="small"
+                />
+                <MCPToolSelector
+                  availableMCPServers={availableMCPServers}
+                  selectedMCPServers={selectedMCPServers}
+                  onToggleMCPServer={toggleMcpServer}
+                  getServerConnectionStatus={getServerConnectionStatus}
+                  size="small"
+                />
+                <SystemToolSelector
+                  selectedTools={selectedSystemTools}
+                  onToolsChange={setSelectedSystemTools}
+                  size="small"
+                />
+                <PromptSelector
+                  onSelectPrompt={handlePromptSelect}
+                  size="small"
+                />
+              </>
             )}
           </div>
 
@@ -373,16 +363,21 @@ const InputArea: React.FC<InputAreaProps> = ({
             alignItems: 'center',
             gap: '10px'
           }}>
-            {/* 模型选择器 (Chat和Agent模式) */}
-            {(mode === 'chat' || mode === 'agent') && (
-              <ModelSelector
-                value={selectedModel}
-                onChange={setSelectedModel}
-                availableModels={availableModels}
-              />
+            {mode === 'agent' && (
+              <>
+                <MaxIterationsConfig
+                  value={maxIterations}
+                  onChange={setMaxIterations}
+                  size="small"
+                />
+                <ModelSelector
+                  value={selectedModel}
+                  onChange={setSelectedModel}
+                  availableModels={availableModels}
+                />
+              </>
             )}
 
-            {/* Graph选择器 (Graph模式) */}
             {mode === 'graph' && (
               <GraphSelector
                 value={selectedGraph}
@@ -395,7 +390,7 @@ const InputArea: React.FC<InputAreaProps> = ({
             <Button
               type="primary"
               shape="circle"
-              icon={<ArrowUpOutlined />}
+              icon={<ArrowUp size={16} strokeWidth={2} />}
               onClick={handleSend}
               disabled={!canSend()}
               size="small"
@@ -404,8 +399,8 @@ const InputArea: React.FC<InputAreaProps> = ({
                 height: '32px',
                 minWidth: '32px',
                 borderRadius: '50%',
-                background: canSend() 
-                  ? 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)' 
+                background: canSend()
+                  ? 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)'
                   : 'rgba(212, 196, 176, 0.4)',
                 border: 'none',
                 color: 'white',
@@ -413,8 +408,8 @@ const InputArea: React.FC<InputAreaProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: canSend() ? 'pointer' : 'not-allowed',
-                boxShadow: canSend() 
-                  ? '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)' 
+                boxShadow: canSend()
+                  ? '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
                   : 'inset 0 1px 2px rgba(139, 115, 85, 0.1)',
                 padding: 0,
                 transition: 'all 0.2s ease'

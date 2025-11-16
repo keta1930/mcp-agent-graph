@@ -1,7 +1,7 @@
 // src/components/chat/controls/SystemPromptToggle.tsx
 import React from 'react';
 import { Button, Tooltip } from 'antd';
-import { SwapOutlined } from '@ant-design/icons';
+import { ArrowLeftRight } from 'lucide-react';
 
 /**
  * 系统提示词切换按钮组件属性
@@ -21,7 +21,7 @@ interface SystemPromptToggleProps {
  * 系统提示词切换按钮组件
  *
  * 用于在用户消息和系统提示词之间切换输入模式。
- * 在 Chat 模式下使用,允许用户配置系统级别的提示词。
+ * 允许用户配置系统级别的提示词。
  */
 const SystemPromptToggle: React.FC<SystemPromptToggleProps> = ({
   isSystemPromptMode,
@@ -29,16 +29,10 @@ const SystemPromptToggle: React.FC<SystemPromptToggleProps> = ({
   size = 'small',
   className = ''
 }) => {
-  /**
-   * 获取提示文本
-   */
   const getTooltipTitle = () => {
     return isSystemPromptMode ? '切换到用户消息' : '切换到系统提示词';
   };
 
-  /**
-   * 获取按钮文字
-   */
   const getButtonText = () => {
     return isSystemPromptMode ? '系统' : '用户';
   };
@@ -47,7 +41,7 @@ const SystemPromptToggle: React.FC<SystemPromptToggleProps> = ({
     <Tooltip title={getTooltipTitle()}>
       <Button
         type="text"
-        icon={<SwapOutlined />}
+        icon={<ArrowLeftRight size={14} strokeWidth={1.5} />}
         onClick={onToggle}
         size={size}
         style={{
@@ -59,7 +53,10 @@ const SystemPromptToggle: React.FC<SystemPromptToggleProps> = ({
           padding: '0 10px',
           fontSize: '12px',
           borderRadius: '6px',
-          fontWeight: 500
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = '#b85845';

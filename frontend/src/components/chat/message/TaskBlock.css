@@ -1,0 +1,272 @@
+/* TaskBlock 组件样式 - 大地色系设计 */
+
+.task-block-container {
+  margin: 12px 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(139, 115, 85, 0.15);
+  box-shadow: 0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow: hidden;
+}
+
+.task-block-container:hover {
+  box-shadow: 0 2px 6px rgba(139, 115, 85, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Task 完成反馈动画 */
+.task-block-container.task-completed-feedback {
+  animation: taskCompletionPulse 0.6s ease-out;
+}
+
+@keyframes taskCompletionPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(160, 130, 109, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Task 状态特定样式 */
+.task-block-container[data-task-status="completed"] {
+  border-color: rgba(160, 130, 109, 0.25);
+}
+
+.task-block-container[data-task-status="failed"] {
+  border-color: rgba(212, 87, 77, 0.25);
+}
+
+.task-block-container[data-task-status="running"] {
+  border-color: rgba(184, 88, 69, 0.25);
+}
+
+/* Task 头部 */
+.task-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(245, 243, 240, 0.6);
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
+  transition: all 0.2s ease;
+}
+
+.task-block-header:hover {
+  background: rgba(245, 243, 240, 0.8);
+}
+
+.task-block-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-block-header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Task 状态指示器 */
+.task-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.task-status-indicator.running {
+  animation: taskPulse 2s ease-in-out infinite;
+}
+
+@keyframes taskPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+/* Task 状态图标 */
+.task-status-icon {
+  transition: all 0.3s ease;
+}
+
+.task-status-icon.running {
+  animation: taskIconSpin 2s linear infinite;
+}
+
+@keyframes taskIconSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.task-status-icon.completed {
+  color: #a0826d;
+}
+
+.task-status-icon.failed {
+  color: #d4574d;
+}
+
+/* Task ID */
+.task-id {
+  font-weight: 600;
+  font-size: 14px;
+  color: #2d2d2d;
+  letter-spacing: 0.3px;
+}
+
+/* Task 状态标签 */
+.task-status-tag {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 2px 10px;
+  fontSize: 12px;
+  margin: 0;
+}
+
+/* Task 内容区域 */
+.task-block-content {
+  padding: 14px 16px;
+  max-height: 500px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6);
+}
+
+.task-block-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.task-block-content::-webkit-scrollbar-track {
+  background: rgba(245, 243, 240, 0.6);
+  border-radius: 3px;
+  margin: 4px;
+}
+
+.task-block-content::-webkit-scrollbar-thumb {
+  background: rgba(139, 115, 85, 0.25);
+  border-radius: 3px;
+  transition: background 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.task-block-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(184, 88, 69, 0.4);
+}
+
+/* Task 消息块 */
+.task-message-block {
+  margin-bottom: 12px;
+}
+
+.task-message-block:last-child {
+  margin-bottom: 0;
+}
+
+/* Task 思考过程 */
+.task-reasoning {
+  padding: 10px 12px;
+  background: rgba(184, 88, 69, 0.05);
+  border-left: 3px solid #b85845;
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 8px;
+}
+
+.task-reasoning-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #b85845;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.task-reasoning-content {
+  font-size: 13px;
+  color: rgba(45, 45, 45, 0.85);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Task 内容 */
+.task-content {
+  font-size: 14px;
+  color: #2d2d2d;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Task 工具调用 */
+.task-tool-calls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-tool-call {
+  padding: 10px 12px;
+  background: rgba(160, 130, 109, 0.08);
+  border: 1px solid rgba(160, 130, 109, 0.2);
+  border-radius: 4px;
+}
+
+.task-tool-call-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #a0826d;
+  margin-bottom: 6px;
+}
+
+.task-tool-call-result {
+  font-size: 12px;
+  color: rgba(45, 45, 45, 0.75);
+  padding: 6px 8px;
+  background: rgba(245, 243, 240, 0.6);
+  border-radius: 3px;
+  margin-top: 6px;
+  font-family: 'SF Mono', monospace;
+}
+
+/* Task 空状态 */
+.task-empty-state {
+  padding: 20px;
+  text-align: center;
+  color: rgba(45, 45, 45, 0.45);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .task-block-header {
+    padding: 10px 12px;
+  }
+
+  .task-block-content {
+    padding: 12px 14px;
+  }
+
+  .task-id {
+    font-size: 13px;
+  }
+}

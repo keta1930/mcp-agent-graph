@@ -1,7 +1,7 @@
 // src/components/chat/controls/PromptSelector.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { Button, Tooltip, Typography } from 'antd';
-import { FileTextOutlined } from '@ant-design/icons';
+import { FileText } from 'lucide-react';
 import { promptService } from '../../../services/promptService';
 import { PromptInfo } from '../../../types/prompt';
 
@@ -91,7 +91,7 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
       <Tooltip title="选择提示词">
         <Button
           type="text"
-          icon={<FileTextOutlined />}
+          icon={<FileText size={14} strokeWidth={1.5} />}
           onClick={handlePromptButtonClick}
           size={size}
           loading={loadingPrompts}

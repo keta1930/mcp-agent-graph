@@ -33,6 +33,10 @@
   margin: 0 auto;
 }
 
+.conversation-round {
+  margin-bottom: 16px;
+}
+
 /* 墨点脉冲动画 - 模拟墨水在纸上的晕染效果 */
 @keyframes inkDotPulse {
   0%, 100% {

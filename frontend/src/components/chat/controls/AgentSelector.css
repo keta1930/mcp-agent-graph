@@ -1,0 +1,28 @@
+/* src/components/chat/controls/AgentSelector.css */
+
+.agent-selector {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-selector-tabs {
+  height: 100%;
+}
+
+.agent-selector-tabs .ant-tabs-content {
+  height: calc(100% - 46px);
+}
+
+.agent-selector-tabs .ant-tabs-tabpane {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.agent-selector-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+}

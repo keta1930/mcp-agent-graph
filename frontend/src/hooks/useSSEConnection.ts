@@ -5,13 +5,10 @@ import {
   generateMongoId
 } from '../services/conversationService';
 import {
-  ChatRequest,
-  AgentRequest,
-  GraphGenerationRequest,
   GraphExecuteRequest,
+  AgentInvokeRequest,
   SSEMessage,
   ConversationMode,
-  AgentType,
   StreamingBlock,
   StreamingBlockType,
   EnhancedStreamingState
@@ -20,14 +17,12 @@ import { useConversationStore } from '../store/conversationStore';
 
 interface SSEConnectionOptions {
   mode: ConversationMode;
-  agentType?: AgentType;
   conversationId?: string;
   onMessage?: (message: SSEMessage) => void;
   onComplete?: () => void;
   onError?: (error: string) => void;
   onConversationCreated?: (conversationId: string) => void;
-  onAgentCompletion?: (completionData: any) => void;
-  onAgentIncomplete?: (incompleteData: any) => void;
+  onTitleUpdate?: (data: { title?: string; tags?: string[]; conversation_id?: string }) => void;
 }
 
 
@@ -133,14 +128,6 @@ export function useSSEConnection() {
         if (message.error) {
           showNotification(message.error.message, 'error');
         }
-        if (message.completion) {
-          // 处理Agent模式的完成事件
-          options.onAgentCompletion?.(message.completion);
-        }
-        if (message.incomplete) {
-          // 处理Agent模式的未完成事件
-          options.onAgentIncomplete?.(message.incomplete);
-        }
         if (message.type === 'graph_complete') {
           showNotification('Graph执行完成', 'success');
         }
@@ -156,11 +143,78 @@ export function useSSEConnection() {
             return newState;
           }
 
+          // 处理标题更新事件
+          if (message.type === 'title_update') {
+            console.log('Title updated:', message.title, message.tags);
+            // 通过回调通知外部更新标题和标签
+            options.onTitleUpdate?.({
+              title: message.title,
+              tags: message.tags,
+              conversation_id: message.conversation_id
+            });
+            return { ...newState, blocks };
+          }
+
           // 处理graph对话创建事件
           if (message.type === 'conversation_created') {
             console.log('Graph conversation created:', message.conversation_id);
             // 通过options回调通知外部更新conversationId
-            options.onConversationCreated?.(message.conversation_id);
+            if (message.conversation_id) {
+              options.onConversationCreated?.(message.conversation_id);
+            }
+            return { ...newState, blocks };
+          }
+
+          // 处理 Task 开始事件
+          if (message.type === 'task_start') {
+            console.log('Task started:', message.task_id, message.agent_name);
+            // 创建新的 Task 块
+            const taskBlock: StreamingBlock = {
+              id: generateBlockId(),
+              type: 'task',
+              content: message.task_description || '',
+              isComplete: false,
+              timestamp: Date.now(),
+              taskId: message.task_id!,
+              taskStatus: 'running'
+            };
+            blocks = [...blocks, taskBlock];
+            return { ...newState, blocks };
+          }
+
+          // 处理 Task 完成事件
+          if (message.type === 'task_complete') {
+            console.log('Task completed:', message.task_id, message.success);
+            // 更新 Task 状态为 completed
+            blocks = blocks.map(block => {
+              if (block.type === 'task' && block.taskId === message.task_id) {
+                return {
+                  ...block,
+                  taskStatus: 'completed',
+                  isComplete: true,
+                  content: message.result || block.content
+                };
+              }
+              return block;
+            });
+            return { ...newState, blocks };
+          }
+
+          // 处理 Task 错误事件
+          if (message.type === 'task_error') {
+            console.log('Task failed:', message.task_id, message.error);
+            // 更新 Task 状态为 failed
+            blocks = blocks.map(block => {
+              if (block.type === 'task' && block.taskId === message.task_id) {
+                return {
+                  ...block,
+                  taskStatus: 'failed',
+                  isComplete: true,
+                  content: message.error?.message || 'Task failed'
+                };
+              }
+              return block;
+            });
             return { ...newState, blocks };
           }
 
@@ -221,7 +275,119 @@ export function useSSEConnection() {
             return { ...newState, blocks };
           }
 
-          // 处理OpenAI格式的流式消息 - 分块处理
+          // 处理带 task_id 的普通消息（Sub Agent 的思考和工具调用）
+          if (message.task_id && message.choices && message.choices[0]) {
+            const delta = message.choices[0].delta;
+            
+            // 处理 Sub Agent 的 reasoning_content
+            if (delta?.reasoning_content) {
+              const currentReasoningBlockIndex = blocks.findIndex(block =>
+                block.type === 'reasoning' && !block.isComplete && block.taskId === message.task_id
+              );
+
+              if (currentReasoningBlockIndex === -1) {
+                // 创建新的推理块（属于 Task）
+                const newReasoningBlock = createStreamingBlock('reasoning', delta.reasoning_content);
+                newReasoningBlock.taskId = message.task_id;
+                blocks = [...blocks, newReasoningBlock];
+              } else {
+                // 更新现有推理块
+                blocks = blocks.map((block, index) =>
+                  index === currentReasoningBlockIndex
+                    ? { ...block, content: block.content + delta.reasoning_content }
+                    : block
+                );
+              }
+            }
+
+            // 处理 Sub Agent 的 content
+            if (delta?.content) {
+              const currentContentBlockIndex = blocks.findIndex(block =>
+                block.type === 'content' && !block.isComplete && block.taskId === message.task_id
+              );
+
+              if (currentContentBlockIndex === -1) {
+                // 创建新的内容块（属于 Task）
+                const newContentBlock = createStreamingBlock('content', delta.content);
+                newContentBlock.taskId = message.task_id;
+                blocks = [...blocks, newContentBlock];
+              } else {
+                // 更新现有内容块
+                blocks = blocks.map((block, index) =>
+                  index === currentContentBlockIndex
+                    ? { ...block, content: block.content + delta.content }
+                    : block
+                );
+              }
+            }
+
+            // 处理 Sub Agent 的 tool_calls
+            if (delta?.tool_calls) {
+              // 如果有其他类型的块正在进行，先完成它们
+              blocks = blocks.map(block =>
+                !block.isComplete && (block.type === 'reasoning' || block.type === 'content') && block.taskId === message.task_id
+                  ? { ...block, isComplete: true }
+                  : block
+              );
+
+              // 处理工具调用增量
+              delta.tool_calls.forEach(toolCall => {
+                const currentToolCallBlockIndex = blocks.findIndex(block =>
+                  block.type === 'tool_calls' && !block.isComplete && block.taskId === message.task_id
+                );
+
+                if (currentToolCallBlockIndex === -1) {
+                  // 创建新的工具调用块（属于 Task）
+                  const newToolCallBlock = createStreamingBlock('tool_calls', '', [toolCall]);
+                  newToolCallBlock.taskId = message.task_id;
+                  blocks = [...blocks, newToolCallBlock];
+                } else {
+                  // 更新现有工具调用块
+                  blocks = blocks.map((block, index) => {
+                    if (index !== currentToolCallBlockIndex) return block;
+
+                    const toolCalls = block.toolCalls || [];
+                    const existingIndex = toolCalls.findIndex(
+                      tc => tc.index === toolCall.index
+                    );
+
+                    let updatedToolCalls;
+                    if (existingIndex >= 0) {
+                      // 更新现有工具调用
+                      updatedToolCalls = toolCalls.map((tc, tcIndex) => {
+                        if (tcIndex !== existingIndex) return tc;
+                        return {
+                          ...tc,
+                          function: {
+                            name: (tc.function.name || '') + (toolCall.function?.name || ''),
+                            arguments: (tc.function.arguments || '') + (toolCall.function?.arguments || '')
+                          }
+                        };
+                      });
+                    } else {
+                      // 添加新的工具调用
+                      updatedToolCalls = [...toolCalls, {
+                        index: toolCall.index,
+                        id: toolCall.id,
+                        type: 'function' as const,
+                        function: {
+                          name: toolCall.function?.name || '',
+                          arguments: toolCall.function?.arguments || ''
+                        }
+                      }];
+                    }
+
+                    return { ...block, toolCalls: updatedToolCalls };
+                  });
+                }
+              });
+            }
+
+            const finalState = { ...newState, blocks };
+            return finalState;
+          }
+
+          // 处理OpenAI格式的流式消息 - 分块处理（主线程消息，不带 task_id）
           if (message.choices && message.choices[0]) {
             const delta = message.choices[0].delta;
 
@@ -332,10 +498,12 @@ export function useSSEConnection() {
 
           // 处理工具执行结果 - 不创建独立的块，而是更新工具调用块的结果
           if (message.role === 'tool' && message.tool_call_id) {
-            // 找到对应的工具调用块并添加结果
+            // 找到对应的工具调用块并添加结果（可能属于主线程或 Task）
             const toolCallBlockIndex = blocks.findIndex(block =>
               block.type === 'tool_calls' &&
-              block.toolCalls?.some((tc: any) => tc.id === message.tool_call_id)
+              block.toolCalls?.some((tc: any) => tc.id === message.tool_call_id) &&
+              // 如果消息带有 task_id，则只匹配相同 task_id 的块
+              (message.task_id ? block.taskId === message.task_id : !block.taskId)
             );
 
             if (toolCallBlockIndex !== -1) {
@@ -343,7 +511,7 @@ export function useSSEConnection() {
                 if (index !== toolCallBlockIndex) return block;
 
                 // 将工具结果存储到块的数据中，供 ToolCallDisplay 使用
-                let results = {};
+                let results: Record<string, string> = {};
                 try {
                   results = block.content ? JSON.parse(block.content) : {};
                 } catch {
@@ -394,42 +562,22 @@ export function useSSEConnection() {
       let reader: ReadableStreamDefaultReader<Uint8Array>;
 
       // 根据模式创建不同的SSE连接
-      console.log('SSE Connection - Mode:', options.mode, 'AgentType:', options.agentType, 'ConversationId:', conversationId);
+      console.log('SSE Connection - Mode:', options.mode, 'ConversationId:', conversationId);
 
       switch (options.mode) {
-        case 'chat': {
-          console.log('Creating Chat SSE connection');
-          const request: ChatRequest = {
-            user_prompt: options.user_prompt || inputText,
-            system_prompt: options.system_prompt,
-            model_name: options.model_name,
-            mcp_servers: options.mcp_servers || [],
-            conversation_id: conversationId
-          };
-          reader = await ConversationService.createChatSSE(request);
-          break;
-        }
-
         case 'agent': {
-          if (options.agentType === 'graph') {
-            console.log('Creating Graph Generate SSE connection');
-            const graphRequest: GraphGenerationRequest = {
-              requirement: inputText,
-              model_name: options.model_name,
-              mcp_servers: options.mcp_servers || [],
-              graph_name: options.graph_name,
-              conversation_id: conversationId
-            };
-            reader = await ConversationService.createGraphGenerateSSE(graphRequest);
-          } else {
-            console.log('Creating MCP Generate SSE connection');
-            const mcpRequest: AgentRequest = {
-              requirement: inputText,
-              model_name: options.model_name,
-              conversation_id: conversationId
-            };
-            reader = await ConversationService.createAgentSSE(mcpRequest);
-          }
+          console.log('Creating Agent Invoke SSE connection');
+          const request: AgentInvokeRequest = {
+            agent_name: options.agent_name,
+            user_prompt: options.user_prompt || inputText,
+            conversation_id: conversationId,
+            model_name: options.model_name,
+            system_prompt: options.system_prompt,
+            mcp_servers: options.mcp_servers || [],
+            system_tools: options.system_tools || [],
+            max_iterations: options.max_iterations
+          };
+          reader = await ConversationService.createAgentInvokeSSE(request);
           break;
         }
 

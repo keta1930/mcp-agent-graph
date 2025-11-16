@@ -1,7 +1,7 @@
 // src/components/chat/controls/ModelSelector.tsx
 import React from 'react';
 import { Select } from 'antd';
-import { DownOutlined } from '@ant-design/icons';
+import { ChevronDown } from 'lucide-react';
 
 const { Option } = Select;
 
@@ -46,7 +46,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         size={size}
         bordered={false}
         className={className}
-        suffixIcon={<DownOutlined />}
+        suffixIcon={<ChevronDown size={14} strokeWidth={1.5} />}
         showSearch
         placement="topRight"
         dropdownStyle={{ minWidth: '220px' }}
