@@ -11,11 +11,6 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 
 from app.infrastructure.database.mongodb import mongodb_client
-from app.models.memory_schema import (
-    AddMemoryRequest,
-    UpdateMemoryRequest,
-    ImportMemoryRequest
-)
 from app.services.model.model_service import model_service
 
 logger = logging.getLogger(__name__)
@@ -29,57 +24,114 @@ class MemoryService:
 
     async def get_all_memories(
         self,
-        user_id: str,
-        owner_type: Optional[str] = None
+        user_id: str
     ) -> Dict[str, Any]:
         """
-        获取用户的所有记忆（完整文档结构）
+        获取用户的所有记忆元数据
 
         Args:
             user_id: 用户ID
-            owner_type: 筛选特定 owner 类型（user 或 agent）
 
         Returns:
-            Dict[str, Any]: 记忆列表结果
+            Dict[str, Any]: 记忆元数据列表
         """
         try:
-            # 构建查询条件
-            query = {"user_id": user_id}
-            if owner_type:
-                if owner_type not in ["user", "agent"]:
-                    return {
-                        "success": False,
-                        "message": "owner_type 必须是 'user' 或 'agent'"
-                    }
-                query["owner_type"] = owner_type
-
             # 查询所有记忆文档
-            cursor = self.mongodb_client.memories_collection.find(query)
+            cursor = self.mongodb_client.memories_collection.find({"user_id": user_id})
             docs = await cursor.to_list(length=None)
 
-            # 格式化返回数据
+            # 格式化返回元数据
             result = []
             for doc in docs:
-                formatted_doc = {
+                memories = doc.get("memories", {})
+
+                # 计算统计信息
+                categories_count = len(memories)
+                total_items = sum(len(category_data.get("items", [])) for category_data in memories.values())
+
+                metadata = {
                     "owner_type": doc.get("owner_type"),
                     "owner_id": doc.get("owner_id"),
-                    "memories": doc.get("memories", {}),
+                    "categories_count": categories_count,
+                    "total_items": total_items,
                     "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
                     "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None
                 }
-                result.append(formatted_doc)
+                result.append(metadata)
 
             return {
                 "success": True,
-                "message": "获取记忆成功",
+                "message": "获取记忆元数据成功",
                 "data": result
             }
 
         except Exception as e:
-            logger.error(f"记忆服务：获取记忆失败 (user: {user_id}): {e}")
+            logger.error(f"记忆服务：获取记忆元数据失败 (user: {user_id}): {e}")
             return {
                 "success": False,
-                "message": f"获取记忆失败: {str(e)}"
+                "message": f"获取记忆元数据失败: {str(e)}"
+            }
+
+    async def get_owner_memories(
+        self,
+        user_id: str,
+        owner_type: str,
+        owner_id: str
+    ) -> Dict[str, Any]:
+        """
+        获取特定 owner 的完整记忆内容（用于编辑）
+
+        Args:
+            user_id: 用户ID
+            owner_type: 所有者类型（user 或 agent）
+            owner_id: 所有者ID
+
+        Returns:
+            Dict[str, Any]: 完整记忆数据
+        """
+        try:
+            # 验证 owner_type
+            if owner_type not in ["user", "agent"]:
+                return {
+                    "success": False,
+                    "message": "owner_type 必须是 'user' 或 'agent'",
+                    "error_code": "INVALID_OWNER_TYPE"
+                }
+
+            # 查询文档
+            doc = await self.mongodb_client.memories_collection.find_one({
+                "user_id": user_id,
+                "owner_type": owner_type,
+                "owner_id": owner_id
+            })
+
+            if not doc:
+                return {
+                    "success": False,
+                    "message": f"未找到记忆文档 (owner_type: {owner_type}, owner_id: {owner_id})",
+                    "error_code": "MEMORY_NOT_FOUND"
+                }
+
+            # 返回完整记忆数据
+            result = {
+                "owner_type": doc.get("owner_type"),
+                "owner_id": doc.get("owner_id"),
+                "memories": doc.get("memories", {}),
+                "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
+                "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None
+            }
+
+            return {
+                "success": True,
+                "message": "获取完整记忆成功",
+                "data": result
+            }
+
+        except Exception as e:
+            logger.error(f"记忆服务：获取完整记忆失败 (user: {user_id}, owner: {owner_type}/{owner_id}): {e}")
+            return {
+                "success": False,
+                "message": f"获取完整记忆失败: {str(e)}"
             }
 
     async def add_memory_item(
@@ -88,7 +140,7 @@ class MemoryService:
         owner_type: str,
         owner_id: str,
         category: str,
-        request: AddMemoryRequest
+        content: str
     ) -> Dict[str, Any]:
         """
         添加单条记忆条目
@@ -98,7 +150,7 @@ class MemoryService:
             owner_type: owner 类型（user 或 agent）
             owner_id: owner ID
             category: 分类名称
-            request: 添加记忆请求
+            content: 记忆内容
 
         Returns:
             Dict[str, Any]: 添加结果
@@ -125,11 +177,12 @@ class MemoryService:
             additions = [{
                 "owner": owner,
                 "category": category,
-                "items": [request.content]
+                "items": [content]
             }]
 
             # 调用添加方法
-            result = await self.mongodb_client.add_memory(user_id, additions)
+            agent_id = owner_id if owner_type == "agent" else None
+            result = await self.mongodb_client.add_memory(user_id, additions, agent_id)
 
             if result.get("success"):
                 return {
@@ -156,7 +209,7 @@ class MemoryService:
         owner_id: str,
         category: str,
         item_id: str,
-        request: UpdateMemoryRequest
+        content: str
     ) -> Dict[str, Any]:
         """
         更新单条记忆条目
@@ -167,7 +220,7 @@ class MemoryService:
             owner_id: owner ID
             category: 分类名称
             item_id: 条目ID
-            request: 更新记忆请求
+            content: 新的记忆内容
 
         Returns:
             Dict[str, Any]: 更新结果
@@ -195,11 +248,12 @@ class MemoryService:
                 "owner": owner,
                 "category": category,
                 "item_id": item_id,
-                "content": request.content
+                "content": content
             }]
 
-            # 调用更新方法
-            result = await self.mongodb_client.update_memory(user_id, updates)
+            # 调用更新方法（传递 agent_id，即 owner_id）
+            agent_id = owner_id if owner_type == "agent" else None
+            result = await self.mongodb_client.update_memory(user_id, updates, agent_id)
 
             if result.get("success"):
                 return {
@@ -271,7 +325,8 @@ class MemoryService:
             }]
 
             # 调用删除方法
-            result = await self.mongodb_client.delete_memory(user_id, deletions)
+            agent_id = owner_id if owner_type == "agent" else None
+            result = await self.mongodb_client.delete_memory(user_id, deletions, agent_id)
 
             if result.get("success"):
                 return {
@@ -525,7 +580,8 @@ class MemoryService:
         user_id: str,
         owner_type: str,
         owner_id: str,
-        request: ImportMemoryRequest
+        content: str,
+        model_name: str
     ) -> Dict[str, Any]:
         """
         使用 LLM 导入记忆
@@ -534,7 +590,8 @@ class MemoryService:
             user_id: 用户ID
             owner_type: owner 类型
             owner_id: owner ID
-            request: 导入记忆请求
+            content: 要导入的原始文本内容
+            model_name: 用于解析的模型名称
 
         Returns:
             Dict[str, Any]: 导入结果
@@ -549,16 +606,19 @@ class MemoryService:
                 }
 
             # 验证参数
-            if not request.content.strip():
+            if not content.strip():
                 return {
                     "success": False,
                     "message": "content 不能为空",
                     "error_code": "CONTENT_EMPTY"
                 }
 
-            # 读取提示词模板
+            # 根据 owner_type 选择正确的提示词模板
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            prompt_template_path = os.path.join(current_dir, "import_prompt_template.md")
+            if owner_type == "agent":
+                prompt_template_path = os.path.join(current_dir, "import_prompt_template_agent.md")
+            else:
+                prompt_template_path = os.path.join(current_dir, "import_prompt_template.md")
             
             if not os.path.exists(prompt_template_path):
                 return {
@@ -571,12 +631,17 @@ class MemoryService:
                 prompt_template = f.read()
 
             # 替换变量
-            prompt = prompt_template.replace("{{USER_INPUT}}", request.content)
+            prompt = prompt_template.replace("{{USER_INPUT}}", content)
+            
+            # 如果是 agent，owner_id 就是 agent 的名称，直接替换模板中的 {{AGENT_NAME}}
+            if owner_type == "agent":
+                prompt = prompt.replace("{{AGENT_NAME}}", owner_id)
 
             # 调用 LLM
             response = await model_service.call_model(
-                model_name=request.model_name,
+                model_name=model_name,
                 messages=[{"role": "user", "content": prompt}],
+                tools= None,
                 user_id=user_id
             )
 
@@ -589,7 +654,7 @@ class MemoryService:
 
             # 添加 LLM 使用统计
             result["llm_usage"] = {
-                "model": request.model_name,
+                "model": model_name,
                 "prompt_tokens": response.get("usage", {}).get("prompt_tokens", 0),
                 "completion_tokens": response.get("usage", {}).get("completion_tokens", 0),
                 "total_tokens": response.get("usage", {}).get("total_tokens", 0)
@@ -670,7 +735,8 @@ class MemoryService:
 
             # 批量添加
             if additions:
-                result = await self.mongodb_client.add_memory(user_id, additions)
+                agent_id = owner_id if owner_type == "agent" else None
+                result = await self.mongodb_client.add_memory(user_id, additions, agent_id)
                 if result.get("success"):
                     # 从消息中提取添加的数量
                     match = re.search(r'(\d+)', result.get("message", ""))

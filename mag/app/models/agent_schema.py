@@ -1,7 +1,5 @@
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field, validator
-from datetime import datetime
-
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 class AgentConfig(BaseModel):
     """Agent配置数据模型（嵌套对象）"""
@@ -15,36 +13,26 @@ class AgentConfig(BaseModel):
     category: str = Field(..., description="Agent分类，如coding, analysis, writing等")
     tags: List[str] = Field(default_factory=list, description="Agent标签列表")
 
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def validate_name(cls, v):
         if not v or '/' in v or '\\' in v or '.' in v:
             raise ValueError('名称不能包含特殊字符 (/, \\, .)')
         return v
 
-    @validator('max_actions')
+    @field_validator('max_actions')
+    @classmethod
     def validate_max_actions(cls, v):
         if v < 1 or v > 200:
             raise ValueError('max_actions 必须在 1-200 范围内')
         return v
 
-    @validator('tags')
+    @field_validator('tags')
+    @classmethod
     def validate_tags(cls, v):
         if len(v) > 20:
             raise ValueError('标签数量不能超过20个')
         return [tag.strip() for tag in v if tag.strip()]
-
-
-class AgentDocument(BaseModel):
-    """MongoDB Agent文档模型"""
-    id: Optional[str] = Field(None, description="MongoDB _id", alias="_id")
-    name: str = Field(..., description="Agent唯一名称")
-    agent_config: AgentConfig = Field(..., description="Agent完整配置")
-    user_id: str = Field(..., description="所有者用户ID")
-    created_at: datetime = Field(..., description="创建时间")
-    updated_at: datetime = Field(..., description="更新时间")
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 class CreateAgentRequest(BaseModel):
@@ -102,100 +90,38 @@ class AgentInCategoryResponse(BaseModel):
     total_count: int = Field(..., description="总数量")
 
 
-
-
-class TaskItem(BaseModel):
-    """单个任务项"""
-    agent_name: str = Field(..., description="要调用的Agent名称")
-    task_id: str = Field(..., description="任务ID")
-    task_description: str = Field(..., description="任务描述")
-    context: Optional[str] = Field(None, description="传递给Agent的上下文信息")
-
-
-class TaskExecutorRequest(BaseModel):
-    """Task Executor工具请求"""
-    tasks: List[TaskItem] = Field(..., description="要执行的任务列表", min_items=1)
-
-    @validator('tasks')
-    def validate_tasks(cls, v):
-        if len(v) > 10:
-            raise ValueError('单次最多执行10个任务')
-        return v
-
-
-class TaskResult(BaseModel):
-    """单个任务执行结果"""
-    task_id: str = Field(..., description="任务ID")
-    agent_name: str = Field(..., description="执行的Agent名称")
-    success: bool = Field(..., description="是否成功")
-    result: Optional[str] = Field(None, description="任务结果")
-    error: Optional[str] = Field(None, description="错误信息")
-    error_type: Optional[str] = Field(None, description="错误类型")
-
-
-class TaskExecutorResponse(BaseModel):
-    """Task Executor工具响应"""
-    success: bool = Field(..., description="整体是否成功")
-    results: List[TaskResult] = Field(..., description="任务结果列表")
-    error: Optional[str] = Field(None, description="整体错误信息")
-
-
-class AgentInvokeMessage(BaseModel):
-    """Agent调用消息"""
-    role: str = Field(..., description="消息角色: system, user, assistant, tool")
-    content: Optional[str] = Field(None, description="消息内容")
-    tool_calls: Optional[List[Dict[str, Any]]] = Field(None, description="工具调用列表")
-    tool_call_id: Optional[str] = Field(None, description="工具调用ID")
-
-
 class AgentInvokeRequest(BaseModel):
-    """Agent调用请求"""
-    agent_name: Optional[str] = Field(None, description="Agent名称，不提供则使用系统默认")
+    """Agent调用请求（支持配置覆盖）"""
+    # Agent 选择（可选）
+    agent_name: Optional[str] = Field(None, description="Agent名称，不提供则为手动配置模式")
+
+    # 用户输入
     user_prompt: str = Field(..., description="用户输入消息")
+
+    # 对话管理
     conversation_id: Optional[str] = Field(None, description="对话ID，None表示新对话")
-    user_id: str = Field(default="default_user", description="用户ID")
     stream: bool = Field(default=True, description="是否流式响应")
 
+    # 可选配置参数（覆盖/扩展 Agent 配置）
+    model_name: Optional[str] = Field(None, description="模型名称（覆盖Agent配置）")
+    system_prompt: Optional[str] = Field(None, description="系统提示词（覆盖Agent配置）")
+    mcp_servers: Optional[List[str]] = Field(None, description="MCP服务器列表（添加到Agent配置）")
+    system_tools: Optional[List[str]] = Field(None, description="系统工具列表（添加到Agent配置）")
+    max_iterations: Optional[int] = Field(None, description="最大迭代次数（覆盖Agent配置）")
 
-class AgentRound(BaseModel):
-    """Agent执行轮次"""
-    round: int = Field(..., description="轮次编号")
-    agent_name: str = Field(..., description="执行的Agent名称")
-    messages: List[AgentInvokeMessage] = Field(..., description="轮次消息")
-    tools: Optional[List[Dict[str, Any]]] = Field(None, description="使用的工具schema")
-    model: Optional[str] = Field(None, description="使用的模型")
+    @field_validator('user_prompt')
+    @classmethod
+    def validate_user_prompt(cls, v):
+        if not v or not v.strip():
+            raise ValueError('用户消息不能为空')
+        return v
 
-
-class TaskRound(BaseModel):
-    """任务执行轮次"""
-    round: int = Field(..., description="轮次编号")
-    messages: List[AgentInvokeMessage] = Field(..., description="轮次消息")
-    tools: Optional[List[Dict[str, Any]]] = Field(None, description="使用的工具schema")
-    model: Optional[str] = Field(None, description="使用的模型")
-
-
-class TaskExecution(BaseModel):
-    """任务执行记录"""
-    task_id: str = Field(..., description="任务ID")
-    agent_name: str = Field(..., description="执行的Agent名称")
-    rounds: List[TaskRound] = Field(..., description="任务执行历史")
-
-
-class AgentInvokeDocument(BaseModel):
-    """agent_invoke集合文档"""
-    id: Optional[str] = Field(None, description="对话ID", alias="_id")
-    conversation_id: str = Field(..., description="对话ID")
-    rounds: List[AgentRound] = Field(default_factory=list, description="主线程轮次")
-    tasks: List[TaskExecution] = Field(default_factory=list, description="任务执行记录")
-
-    class Config:
-        allow_population_by_field_name = True
-
-
-class AgentInvokeResponse(BaseModel):
-    """Agent调用响应（非流式）"""
-    success: bool = Field(..., description="是否成功")
-    conversation_id: str = Field(..., description="对话ID")
-    final_response: str = Field(..., description="最终响应内容")
-    rounds: List[AgentRound] = Field(..., description="执行轮次")
-    error: Optional[str] = Field(None, description="错误信息")
+    @field_validator('model_name')
+    @classmethod
+    def check_config_source(cls, v, info: ValidationInfo):
+        """验证至少提供一种配置方式"""
+        # 在请求级别验证，确保 agent_name 或 model_name 至少提供一个
+        agent_name = info.data.get('agent_name')
+        if not agent_name and not v:
+            raise ValueError('必须提供 agent_name 或 model_name')
+        return v

@@ -1,11 +1,13 @@
 import logging
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
-from app.infrastructure.database.mongodb.repositories import (ConversationRepository, ChatRepository,
-                                GraphRepository, MCPRepository, GraphRunRepository, TaskRepository,
-                                GraphConfigRepository, PromptRepository, ModelConfigRepository,MCPConfigRepository,
-                                PreviewRepository, UserRepository, InviteCodeRepository, TeamSettingsRepository,
-                                RefreshTokenRepository, AgentRepository, AgentInvokeRepository, MemoryRepository)
+from app.infrastructure.database.mongodb.repositories import (
+    ConversationRepository, GraphRepository, MCPRepository, GraphRunRepository,
+    TaskRepository, GraphConfigRepository, PromptRepository, ModelConfigRepository,
+    MCPConfigRepository, PreviewRepository, UserRepository, InviteCodeRepository,
+    TeamSettingsRepository, RefreshTokenRepository, AgentRepository,
+    AgentInvokeRepository, MemoryRepository
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,6 @@ class MongoDBClient:
         self.db = None
 
         self.conversations_collection = None
-        self.chat_messages_collection = None
         self.graph_messages_collection = None
         self.mcp_messages_collection = None
         self.graph_run_messages_collection = None
@@ -39,7 +40,6 @@ class MongoDBClient:
         self.is_connected = False
 
         self.conversation_repository = None
-        self.chat_repository = None
         self.graph_repository = None
         self.mcp_repository = None
         self.graph_run_repository = None
@@ -70,7 +70,6 @@ class MongoDBClient:
             self.db = self.client[database_name]
 
             self.conversations_collection = self.db.conversations
-            self.chat_messages_collection = self.db.chat
             self.graph_messages_collection = self.db.graph_gen
             self.mcp_messages_collection = self.db.mcp_gen
             self.graph_run_messages_collection = self.db.graph_run
@@ -107,11 +106,6 @@ class MongoDBClient:
         self.conversation_repository = ConversationRepository(
             self.db,
             self.conversations_collection
-        )
-
-        self.chat_repository = ChatRepository(
-            self.db,
-            self.chat_messages_collection
         )
 
         self.graph_repository = GraphRepository(
@@ -201,8 +195,6 @@ class MongoDBClient:
             await self.conversations_collection.create_index([("status", 1)])
             await self.conversations_collection.create_index([("updated_at", -1)])
 
-            await self.chat_messages_collection.create_index([("conversation_id", 1)])
-
             await self.graph_messages_collection.create_index([("conversation_id", 1)])
 
             await self.mcp_messages_collection.create_index([("conversation_id", 1)])
@@ -216,8 +208,8 @@ class MongoDBClient:
             await self.tasks_collection.create_index([("graph_name", 1)])
             await self.tasks_collection.create_index([("schedule_type", 1)])
             await self.tasks_collection.create_index([("status", 1)])
-            # 确保同一用户不能创建同名同类型的任务
-            await self.tasks_collection.create_index([("user_id", 1), ("task_name", 1), ("schedule_type", 1)], unique=True)
+            await self.tasks_collection.create_index([("user_id", 1), ("task_name", 1), ("schedule_type", 1)],
+                                                     unique=True)
             await self.tasks_collection.create_index([("execution_stats.last_executed_at.executed_at", -1)])
             await self.tasks_collection.create_index([("execution_stats.total_triggers", -1)])
 
@@ -226,58 +218,49 @@ class MongoDBClient:
             await self.agent_graphs_collection.create_index([("name", 1)])
             await self.agent_graphs_collection.create_index([("shared_with", 1)])
 
-            # prompts集合索引
             await self.prompts_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.prompts_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.prompts_collection.create_index([("category", 1)])
             await self.prompts_collection.create_index([("shared_with", 1)])
 
-            # model_configs集合索引
             await self.model_configs_collection.create_index([("user_id", 1)])
             await self.model_configs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.model_configs_collection.create_index([("updated_at", -1)])
 
-            # mcp_configs集合索引
             await self.mcp_configs_collection.create_index([("user_id", 1)], unique=True)
             await self.mcp_configs_collection.create_index([("shared_with", 1)])
             await self.mcp_configs_collection.create_index([("updated_at", -1)])
 
-            # preview_shares集合索引
             await self.preview_shares_collection.create_index([("key", 1)], unique=True)
             await self.preview_shares_collection.create_index([("user_id", 1)])
             await self.preview_shares_collection.create_index([("created_at", -1)])
             await self.preview_shares_collection.create_index([("content_hash", 1)], unique=True)
             await self.preview_shares_collection.create_index([("expires_at", 1)], expireAfterSeconds=0)
 
-            # 用户集合索引
             await self.users_collection.create_index([("user_id", 1)], unique=True)
             await self.users_collection.create_index([("role", 1)])
             await self.users_collection.create_index([("is_active", 1)])
 
-            # 邀请码集合索引
             await self.invite_codes_collection.create_index([("code", 1)], unique=True)
             await self.invite_codes_collection.create_index([("is_active", 1)])
             await self.invite_codes_collection.create_index([("created_by", 1)])
 
-            # refresh_tokens集合索引
             await self.refresh_tokens_collection.create_index([("token_id", 1)], unique=True)
             await self.refresh_tokens_collection.create_index([("user_id", 1)])
             await self.refresh_tokens_collection.create_index([("is_revoked", 1)])
             await self.refresh_tokens_collection.create_index([("expires_at", 1)], expireAfterSeconds=86400)
 
-            # agents集合索引
             await self.agents_collection.create_index([("name", 1), ("user_id", 1)], unique=True)
             await self.agents_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.agents_collection.create_index([("agent_config.category", 1)])
             await self.agents_collection.create_index([("created_at", -1)])
 
-            # agent_invoke集合索引
             await self.agent_invoke_collection.create_index([("conversation_id", 1)])
             await self.agent_invoke_collection.create_index([("rounds.agent_name", 1)])
             await self.agent_invoke_collection.create_index([("tasks.task_id", 1)])
 
-            # memories集合索引
-            await self.memories_collection.create_index([("user_id", 1), ("owner_type", 1), ("owner_id", 1)], unique=True)
+            await self.memories_collection.create_index([("user_id", 1), ("owner_type", 1), ("owner_id", 1)],
+                                                        unique=True)
             await self.memories_collection.create_index([("user_id", 1)])
             await self.memories_collection.create_index([("updated_at", -1)])
 
@@ -293,7 +276,119 @@ class MongoDBClient:
             self.is_connected = False
             logger.info("MongoDB连接已断开")
 
-    # === graph config管理方法 ===
+    # === 对话管理方法 ===
+
+    async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取对话基本信息"""
+        return await self.conversation_repository.get_conversation(conversation_id)
+
+    async def get_conversation_with_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取包含消息的完整对话数据（支持 agent 和 graph 类型）"""
+        try:
+            conversation = await self.conversation_repository.get_conversation(conversation_id)
+            if not conversation:
+                return None
+
+            conversation_type = conversation.get("type")
+
+            if conversation_type == "graph":
+                # 图运行类型
+                run_doc = await self.graph_run_repository.get_graph_run_messages_only(conversation_id)
+                if run_doc and run_doc.get("rounds"):
+                    conversation["rounds"] = run_doc.get("rounds", [])
+                    conversation["generation_type"] = "graph_run"
+                    conversation["graph_name"] = run_doc.get("graph_name")
+                    conversation["graph_config"] = run_doc.get("graph_config")
+                    conversation["global_outputs"] = run_doc.get("global_outputs", {})
+                    conversation["final_result"] = run_doc.get("final_result", "")
+                    conversation["execution_chain"] = run_doc.get("execution_chain", [])
+                    conversation["handoffs_status"] = run_doc.get("handoffs_status", {})
+                    conversation["completed"] = run_doc.get("completed", False)
+                else:
+                    conversation["rounds"] = []
+                    conversation["generation_type"] = "graph_run"
+
+            elif conversation_type == "agent":
+                # Agent 对话类型
+                agent_invoke_doc = await self.agent_invoke_repository.get_agent_invoke(conversation_id)
+
+                if agent_invoke_doc and agent_invoke_doc.get("rounds"):
+                    conversation["rounds"] = agent_invoke_doc.get("rounds", [])
+                    conversation["tasks"] = agent_invoke_doc.get("tasks", [])
+                    conversation["generation_type"] = "agent"
+                else:
+                    conversation["rounds"] = []
+                    conversation["generation_type"] = "agent"
+
+            else:
+                logger.warning(f"未知的对话类型: {conversation_type}")
+                conversation["rounds"] = []
+                conversation["generation_type"] = "unknown"
+
+            return conversation
+
+        except Exception as e:
+            logger.error(f"获取完整对话数据失败: {str(e)}")
+            return None
+
+    async def list_conversations(self, user_id: str = "default_user", conversation_type: str = None,
+                                 limit: int = 200, skip: int = 0) -> List[Dict[str, Any]]:
+        """获取用户的对话列表（支持 agent 和 graph 类型）"""
+        return await self.conversation_repository.list_conversations(user_id, conversation_type, limit, skip)
+
+    async def update_conversation_status(self, conversation_id: str, status: str,
+                                         user_id: str = "default_user") -> bool:
+        """更新对话状态"""
+        return await self.conversation_repository.update_conversation_status(
+            conversation_id, status, user_id
+        )
+
+    async def update_conversation_title(self, conversation_id: str, title: str, user_id: str = "default_user") -> bool:
+        """更新对话标题"""
+        return await self.conversation_repository.update_conversation_title(conversation_id, title, user_id)
+
+    async def update_conversation_tags(self, conversation_id: str, tags: List[str],
+                                       user_id: str = "default_user") -> bool:
+        """更新对话标签"""
+        return await self.conversation_repository.update_conversation_tags(conversation_id, tags, user_id)
+
+    async def update_input_config(self, conversation_id: str, input_config: Dict[str, Any],
+                                  user_id: str = "default_user") -> bool:
+        """更新对话的输入配置"""
+        return await self.conversation_repository.update_input_config(conversation_id, input_config, user_id)
+
+    async def update_conversation_title_and_tags(self, conversation_id: str,
+                                                 title: str = None, tags: List[str] = None) -> bool:
+        """更新对话标题和标签（首次生成时调用）"""
+        return await self.conversation_repository.update_conversation_title_and_tags(conversation_id, title, tags)
+
+    async def permanently_delete_conversation(self, conversation_id: str) -> bool:
+        """永久删除对话和相关消息"""
+        try:
+            conversation = await self.conversation_repository.get_conversation(conversation_id)
+            if not conversation:
+                return False
+
+            conversation_type = conversation.get("type")
+
+            if conversation_type == "graph":
+                # 图运行类型，删除graph_run消息
+                await self.graph_run_repository.delete_graph_run_messages(conversation_id)
+            elif conversation_type == "agent":
+                # Agent对话类型，删除agent_invoke消息
+                await self.agent_invoke_repository.delete_agent_invoke(conversation_id)
+                # 同时删除可能存在的AI生成消息
+                await self.graph_repository.delete_graph_generation_messages(conversation_id)
+                await self.mcp_repository.delete_mcp_generation_messages(conversation_id)
+
+            # 删除conversation元数据
+            return await self.conversation_repository.permanently_delete_conversation(conversation_id)
+
+        except Exception as e:
+            logger.error(f"永久删除对话失败: {str(e)}")
+            return False
+
+    # === Graph 配置管理方法 ===
 
     async def create_graph_config(self, graph_name: str, graph_config: Dict[str, Any],
                                   user_id: str = "default_user") -> bool:
@@ -305,7 +400,7 @@ class MongoDBClient:
         return await self.graph_config_repository.get_graph(graph_name, user_id)
 
     async def update_graph_config(self, graph_name: str, graph_config: Dict[str, Any],
-                                 user_id: Optional[str] = None) -> bool:
+                                  user_id: Optional[str] = None) -> bool:
         """更新图配置"""
         return await self.graph_config_repository.update_graph(graph_name, graph_config, user_id)
 
@@ -318,7 +413,7 @@ class MongoDBClient:
         return await self.graph_config_repository.list_graphs(user_id)
 
     async def rename_graph_config(self, old_name: str, new_name: str,
-                                 user_id: Optional[str] = None) -> bool:
+                                  user_id: Optional[str] = None) -> bool:
         """重命名图"""
         return await self.graph_config_repository.rename_graph(old_name, new_name, user_id)
 
@@ -336,14 +431,14 @@ class MongoDBClient:
         return await self.graph_config_repository.get_version_info(graph_name, user_id)
 
     async def remove_graph_version_record(self, graph_name: str, version_id: str,
-                                         user_id: str = "default_user") -> bool:
+                                          user_id: str = "default_user") -> bool:
         """移除图配置版本记录"""
         return await self.graph_config_repository.remove_version_record(graph_name, version_id, user_id)
 
-        # === 预览短链管理 ===
+    # === 预览短链管理 ===
 
     async def create_preview_share(self, lang: str, title: Optional[str], content: str,
-                                       expire_hours: Optional[int] = 144, user_id: str = "default_user") -> Dict[str, Any]:
+                                   expire_hours: Optional[int] = 144, user_id: str = "default_user") -> Dict[str, Any]:
         """创建预览短链"""
         return await self.preview_repository.create_preview_share(lang, title, content, expire_hours, user_id)
 
@@ -354,7 +449,7 @@ class MongoDBClient:
     # === 图运行管理方法 ===
 
     async def create_graph_run_conversation(self, conversation_id: str, graph_name: str,
-                                          graph_config: Dict[str, Any], user_id: str = "default_user") -> bool:
+                                            graph_config: Dict[str, Any], user_id: str = "default_user") -> bool:
         """创建新的图运行对话"""
         return await self.graph_run_repository.create_graph_run_conversation(
             conversation_id, graph_name, graph_config, user_id
@@ -369,7 +464,7 @@ class MongoDBClient:
         return await self.graph_run_repository.update_graph_run_data(conversation_id, update_data)
 
     async def add_round_to_graph_run(self, conversation_id: str, round_data: Dict[str, Any],
-                                  tools_schema: Optional[List[Dict[str, Any]]] = None) -> bool:
+                                     tools_schema: Optional[List[Dict[str, Any]]] = None) -> bool:
         """向图运行对话添加新的轮次"""
         return await self.graph_run_repository.add_round_to_graph_run(
             conversation_id, round_data, tools_schema
@@ -380,7 +475,7 @@ class MongoDBClient:
         return await self.graph_run_repository.update_global_outputs(conversation_id, node_name, output)
 
     async def update_graph_run_handoffs_status(self, conversation_id: str, node_name: str,
-                                             handoffs_data: Dict[str, Any]) -> bool:
+                                               handoffs_data: Dict[str, Any]) -> bool:
         """更新图运行handoffs状态"""
         return await self.graph_run_repository.update_handoffs_status(conversation_id, node_name, handoffs_data)
 
@@ -392,7 +487,7 @@ class MongoDBClient:
         """更新图运行最终结果"""
         return await self.graph_run_repository.update_final_result(conversation_id, final_result)
 
-    # === 图生成管理方法===
+    # === 图生成管理方法 ===
 
     async def create_graph_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """创建新的图生成对话"""
@@ -412,21 +507,21 @@ class MongoDBClient:
 
     async def update_graph_generation_parsed_results(self, conversation_id: str,
                                                      parsed_results: Dict[str, Any]) -> bool:
-        """更新图生成对话的解析结果 - 支持替换和删除逻辑"""
+        """更新图生成对话的解析结果"""
         return await self.graph_repository.update_graph_generation_parsed_results(conversation_id, parsed_results)
 
     async def update_graph_generation_token_usage(self, conversation_id: str,
                                                   prompt_tokens: int, completion_tokens: int) -> bool:
         """更新图生成对话的token使用量"""
         return await self.graph_repository.update_graph_generation_token_usage(conversation_id, prompt_tokens,
-                                                                            completion_tokens)
+                                                                               completion_tokens)
 
     async def update_graph_generation_final_config(self, conversation_id: str,
                                                    final_graph_config: Dict[str, Any]) -> bool:
         """更新图生成对话的最终图配置"""
         return await self.graph_repository.update_graph_generation_final_config(conversation_id, final_graph_config)
 
-    # === MCP生成管理方法===
+    # === MCP生成管理方法 ===
 
     async def create_mcp_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
         """创建新的MCP生成对话"""
@@ -446,212 +541,14 @@ class MongoDBClient:
 
     async def update_mcp_generation_parsed_results(self, conversation_id: str,
                                                    parsed_results: Dict[str, Any]) -> bool:
-        """更新MCP生成对话的解析结果 - 支持脚本文件的增删改"""
+        """更新MCP生成对话的解析结果"""
         return await self.mcp_repository.update_mcp_generation_parsed_results(conversation_id, parsed_results)
 
     async def update_mcp_generation_token_usage(self, conversation_id: str,
                                                 prompt_tokens: int, completion_tokens: int) -> bool:
         """更新MCP生成对话的token使用量"""
         return await self.mcp_repository.update_mcp_generation_token_usage(conversation_id, prompt_tokens,
-                                                                        completion_tokens)
-
-    # === 对话管理方法===
-
-    async def create_conversation(self, conversation_id: str, user_id: str = "default_user",
-                                  title: str = "", tags: List[str] = None) -> bool:
-        """创建新聊天对话"""
-        conversation_success = await self.conversation_repository.create_conversation(
-            conversation_id=conversation_id,
-            conversation_type="chat",
-            user_id=user_id,
-            title=title,
-            tags=tags
-        )
-
-        if not conversation_success:
-            return False
-
-        return await self.chat_repository.create_chat_messages_document(conversation_id)
-
-    async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取对话基本信息"""
-        return await self.conversation_repository.get_conversation(conversation_id)
-
-    async def get_conversation_with_messages(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取包含消息的完整对话数据（支持所有类型）"""
-        try:
-            conversation = await self.conversation_repository.get_conversation(conversation_id)
-            if not conversation:
-                return None
-
-            conversation_type = conversation.get("type", "chat")
-
-            if conversation_type == "chat":
-                messages_doc = await self.chat_repository.get_chat_messages(conversation_id)
-                if messages_doc:
-                    conversation["rounds"] = messages_doc.get("rounds", [])
-                    conversation["generation_type"] = "chat"
-                else:
-                    conversation["rounds"] = []
-
-            elif conversation_type == "graph":
-                # 图运行类型
-                run_doc = await self.graph_run_repository.get_graph_run_messages_only(conversation_id)
-                if run_doc and run_doc.get("rounds"):
-                    conversation["rounds"] = run_doc.get("rounds", [])
-                    conversation["generation_type"] = "graph_run"
-                    conversation["graph_name"] = run_doc.get("graph_name")
-                    conversation["graph_config"] = run_doc.get("graph_config")
-                    conversation["global_outputs"] = run_doc.get("global_outputs", {})
-                    conversation["final_result"] = run_doc.get("final_result", "")
-                    conversation["execution_chain"] = run_doc.get("execution_chain", [])
-                    conversation["handoffs_status"] = run_doc.get("handoffs_status", {})
-                    conversation["completed"] = run_doc.get("completed", False)
-                else:
-                    conversation["rounds"] = []
-                    conversation["generation_type"] = "graph_run"
-
-            elif conversation_type == "agent":
-                graph_messages_doc = await self.graph_repository.get_graph_generation_messages_only(conversation_id)
-
-                if graph_messages_doc and graph_messages_doc.get("rounds"):
-                    conversation["rounds"] = graph_messages_doc.get("rounds", [])
-                    conversation["parsed_results"] = graph_messages_doc.get("parsed_results", {})
-                    conversation["final_graph_config"] = graph_messages_doc.get("final_graph_config")
-                    conversation["generation_type"] = "graph"
-                else:
-                    mcp_messages_doc = await self.mcp_repository.get_mcp_generation_messages_only(conversation_id)
-
-                    if mcp_messages_doc and mcp_messages_doc.get("rounds"):
-                        conversation["rounds"] = mcp_messages_doc.get("rounds", [])
-                        conversation["parsed_results"] = mcp_messages_doc.get("parsed_results", {})
-                        conversation["generation_type"] = "mcp"
-                    else:
-                        conversation["rounds"] = []
-                        conversation["generation_type"] = "unknown"
-            else:
-                conversation["rounds"] = []
-
-            return conversation
-
-        except Exception as e:
-            logger.error(f"获取完整对话数据失败: {str(e)}")
-            return None
-
-    async def ensure_conversation_exists(self, conversation_id: str, user_id: str = "default_user") -> bool:
-        """确保聊天对话存在，不存在则创建"""
-        conversation = await self.conversation_repository.get_conversation(conversation_id)
-        if conversation:
-            await self.chat_repository.create_chat_messages_document(conversation_id)
-            return True
-
-        return await self.create_conversation(
-            conversation_id=conversation_id,
-            user_id=user_id,
-            title="新对话",
-            tags=[]
-        )
-
-    async def add_round_to_conversation(self, conversation_id: str, round_number: int,
-                                        messages: List[Dict[str, Any]],
-                                        tools_schema: Optional[List[Dict[str, Any]]] = None,
-                                        model: Optional[str] = None) -> bool:
-        """向聊天对话添加新的轮次"""
-        success = await self.chat_repository.add_round_to_chat(
-            conversation_id, round_number, messages, tools_schema, model
-        )
-
-        if success:
-            await self.conversation_repository.update_conversation_round_count(conversation_id, 1)
-
-        return success
-
-    async def update_conversation_title_and_tags(self, conversation_id: str,
-                                                 title: str = None, tags: List[str] = None) -> bool:
-        """更新对话标题和标签（首次生成时调用）"""
-        return await self.conversation_repository.update_conversation_title_and_tags(conversation_id, title, tags)
-
-    async def update_conversation_title(self, conversation_id: str, title: str, user_id: str = "default_user") -> bool:
-        """更新对话标题"""
-        return await self.conversation_repository.update_conversation_title(conversation_id, title, user_id)
-
-    async def update_conversation_tags(self, conversation_id: str, tags: List[str],
-                                       user_id: str = "default_user") -> bool:
-        """更新对话标签"""
-        return await self.conversation_repository.update_conversation_tags(conversation_id, tags, user_id)
-
-    async def update_conversation_token_usage(self, conversation_id: str,
-                                              prompt_tokens: int, completion_tokens: int) -> bool:
-        """更新对话的token使用量"""
-        return await self.conversation_repository.update_conversation_token_usage(conversation_id, prompt_tokens,
-                                                                               completion_tokens)
-
-    async def list_conversations(self, user_id: str = "default_user",conversation_type: str = "chat",
-                                 limit: int = 50, skip: int = 0) -> List[Dict[str, Any]]:
-        """获取用户的聊天对话列表"""
-        return await self.conversation_repository.list_conversations(user_id, conversation_type, limit, skip)
-
-    async def update_conversation_status(self, conversation_id: str, status: str,
-                                         user_id: str = "default_user") -> bool:
-        """更新对话状态"""
-        return await self.conversation_repository.update_conversation_status(
-            conversation_id, status, user_id
-        )
-
-    async def permanently_delete_conversation(self, conversation_id: str) -> bool:
-        """永久删除对话和相关消息"""
-        try:
-            conversation = await self.conversation_repository.get_conversation(conversation_id)
-            if not conversation:
-                return False
-
-            conversation_type = conversation.get("type", "chat")
-
-            if conversation_type == "chat":
-                await self.chat_repository.delete_chat_messages(conversation_id)
-            elif conversation_type == "graph":
-                # 图运行类型
-                await self.graph_run_repository.delete_graph_run_messages(conversation_id)
-                # TODO：删除MINIO当中的附件
-            elif conversation_type == "agent":
-                await self.graph_repository.delete_graph_generation_messages(conversation_id)
-                await self.mcp_repository.delete_mcp_generation_messages(conversation_id)
-
-            return await self.conversation_repository.permanently_delete_conversation(conversation_id)
-
-        except Exception as e:
-            logger.error(f"永久删除对话失败: {str(e)}")
-            return False
-
-    async def compact_conversation(self,
-                                   conversation_id: str,
-                                   compact_type: str = "brutal",
-                                   compact_threshold: int = 2000,
-                                   summarize_callback: Optional[Callable] = None,
-                                   user_id: str = "default_user") -> Dict[str, Any]:
-        """压缩对话内容（只支持聊天对话）"""
-        try:
-            conversation = await self.conversation_repository.get_conversation(conversation_id)
-            if not conversation:
-                return {"status": "error", "error": "对话不存在"}
-
-            if conversation.get("type") != "chat":
-                return {"status": "error", "error": "暂时只支持聊天对话的压缩"}
-
-            if conversation.get("user_id") != user_id:
-                return {"status": "error", "error": "无权限访问此对话"}
-
-            return await self.chat_repository.compact_chat_messages(
-                conversation_id, compact_type, compact_threshold, summarize_callback
-            )
-
-        except Exception as e:
-            logger.error(f"压缩对话失败: {str(e)}")
-            return {"status": "error", "error": str(e)}
-
-    async def get_conversation_stats(self, user_id: str = "default_user") -> Dict[str, Any]:
-        """获取用户的对话统计信息"""
-        return await self.conversation_repository.get_conversation_stats(user_id)
+                                                                           completion_tokens)
 
     # === Prompt管理方法 ===
 
@@ -759,25 +656,25 @@ class MongoDBClient:
 
     # === Memory管理方法 ===
 
-    async def list_memory_categories(self, user_id: str, owners: List[str]) -> Dict[str, Any]:
+    async def list_memory_categories(self, user_id: str, owners: List[str], agent_id: str = None) -> Dict[str, Any]:
         """列出记忆分类"""
-        return await self.memory_repository.list_categories(user_id, owners)
+        return await self.memory_repository.list_categories(user_id, owners, agent_id)
 
-    async def get_memory(self, user_id: str, queries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def get_memory(self, user_id: str, queries: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """获取记忆内容"""
-        return await self.memory_repository.get_memory(user_id, queries)
+        return await self.memory_repository.get_memory(user_id, queries, agent_id)
 
-    async def add_memory(self, user_id: str, additions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def add_memory(self, user_id: str, additions: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """添加记忆条目"""
-        return await self.memory_repository.add_memory(user_id, additions)
+        return await self.memory_repository.add_memory(user_id, additions, agent_id)
 
-    async def update_memory(self, user_id: str, updates: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def update_memory(self, user_id: str, updates: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """更新记忆条目"""
-        return await self.memory_repository.update_memory(user_id, updates)
+        return await self.memory_repository.update_memory(user_id, updates, agent_id)
 
-    async def delete_memory(self, user_id: str, deletions: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def delete_memory(self, user_id: str, deletions: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """删除记忆条目"""
-        return await self.memory_repository.delete_memory(user_id, deletions)
+        return await self.memory_repository.delete_memory(user_id, deletions, agent_id)
 
 
 mongodb_client = MongoDBClient()

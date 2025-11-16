@@ -20,13 +20,13 @@ class AgentExecutor:
         self.tool_executor = ToolExecutor()
 
     async def agent_loop(
-        self,
-        agent_name: str,
-        messages: List[Dict[str, Any]],
-        user_id: str,
-        conversation_id: str,
-        max_iterations: Optional[int] = None,
-        is_sub_agent: bool = False
+            self,
+            agent_name: str,
+            messages: List[Dict[str, Any]],
+            user_id: str,
+            conversation_id: str,
+            max_iterations: Optional[int] = None,
+            is_sub_agent: bool = False
     ) -> Dict[str, Any]:
         """
         Agent 执行引擎核心函数
@@ -145,7 +145,8 @@ class AgentExecutor:
                     tool_calls=tool_calls,
                     mcp_servers=mcp_servers,
                     user_id=user_id,
-                    conversation_id=conversation_id
+                    conversation_id=conversation_id,
+                    agent_id=agent_name
                 )
 
                 # 添加工具结果到消息列表
@@ -259,11 +260,24 @@ class AgentExecutor:
             current_round = await mongodb_client.agent_invoke_repository.get_task(conversation_id, task_id)
             round_number = len(current_round.get("rounds", [])) + 1 if current_round else 1
 
+            # 计算需要保存的新消息（避免重复保存历史）
+            # task_history 中不包含 system（在 build_task_messages 中已过滤）
+            # task_messages 结构：[system, ...history_without_system, new_user, ...new_results]
+            # 我们要保存：[system, new_user, ...new_results]
+            if task_history:
+                # 计算历史消息数量（不包括system）
+                history_message_count = len([msg for msg in task_history if msg.get("role") != "system"])
+                # 跳过 [system] + [history_without_system]，从 new_user 开始
+                start_index = 1 + history_message_count  # 1 for system, + history length
+                new_messages = [task_messages[0]] + task_messages[start_index:]  # [system] + [new messages]
+            else:
+                new_messages = task_messages  # 第一轮，全部都是新消息
+
             await mongodb_client.agent_invoke_repository.add_round_to_task(
                 conversation_id=conversation_id,
                 task_id=task_id,
                 round_number=round_number,
-                messages=task_messages,
+                messages=new_messages,
                 model=None  # 可以从 agent_config 获取
             )
 
@@ -328,7 +342,10 @@ class AgentExecutor:
             messages = [
                 {"role": "system", "content": instruction}
             ]
-            messages.extend(task_history)
+            # 过滤掉历史中的 system 消息（避免重复）
+            for msg in task_history:
+                if msg.get("role") != "system":
+                    messages.append(msg)
             messages.append({"role": "user", "content": user_content})
         else:
             # 新任务

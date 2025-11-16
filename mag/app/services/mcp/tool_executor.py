@@ -16,8 +16,8 @@ class ToolExecutor:
         self.mcp_service = mcp_service
 
     async def execute_tools_batch(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str],
-                                 user_id: str = None, conversation_id: str = None) -> List[Dict[str, Any]]:
-        """批量执行工具调用"""
+                                 user_id: str = None, conversation_id: str = None, agent_id: str = None) -> List[Dict[str, Any]]:
+        """批量执行工具调用（非流式）"""
         tool_results = []
 
         # 创建异步任务
@@ -42,7 +42,7 @@ class ToolExecutor:
                 logger.info(f"执行系统工具: {tool_name}")
                 # 创建系统工具执行任务
                 task = asyncio.create_task(
-                    self._call_system_tool(tool_name, arguments, tool_id, user_id, conversation_id)
+                    self._call_system_tool(tool_name, arguments, tool_id, user_id, conversation_id, agent_id)
                 )
                 tasks.append(task)
                 continue
@@ -76,6 +76,115 @@ class ToolExecutor:
                     tool_results.append(result)
 
         return tool_results
+
+    async def execute_tools_batch_stream(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str],
+                                        user_id: str = None, conversation_id: str = None, agent_id: str = None):
+        """
+        批量执行工具调用（流式版本）
+        
+        对于 agent_task_executor，会 yield SSE 事件
+        对于其他工具，直接执行并返回结果
+        
+        Yields:
+            - str: SSE 事件字符串（来自 Sub Agent）
+            - Dict: 工具执行结果
+        """
+        from typing import AsyncGenerator
+        
+        for tool_call in tool_calls:
+            tool_name = tool_call["function"]["name"]
+            tool_id = tool_call["id"]
+
+            try:
+                arguments_str = tool_call["function"]["arguments"]
+                arguments = json.loads(arguments_str) if arguments_str else {}
+            except json.JSONDecodeError as e:
+                logger.error(f"工具参数JSON解析失败: {arguments_str}, 错误: {e}")
+                yield {
+                    "tool_call_id": tool_id,
+                    "content": f"工具调用解析失败：{str(e)}"
+                }
+                continue
+
+            # 检查是否为 agent_task_executor（需要流式执行）
+            if tool_name == "agent_task_executor":
+                logger.info(f"执行系统工具（流式）: {tool_name}")
+                # 传递 tool_call_id 到 agent_task_executor
+                arguments["tool_call_id"] = tool_id
+                async for item in self._call_agent_task_executor_stream(
+                    arguments, tool_id, user_id, conversation_id, agent_id
+                ):
+                    yield item
+                continue
+
+            # 其他工具：普通执行
+            if is_system_tool(tool_name):
+                logger.info(f"执行系统工具: {tool_name}")
+                result = await self._call_system_tool(
+                    tool_name, arguments, tool_id, user_id, conversation_id, agent_id
+                )
+                yield result
+                continue
+
+            # MCP 工具
+            server_name = await self._find_tool_server(tool_name, mcp_servers)
+            if not server_name:
+                yield {
+                    "tool_call_id": tool_id,
+                    "content": f"找不到工具 '{tool_name}' 所属的服务器"
+                }
+                continue
+
+            result = await self._call_single_tool_internal(server_name, tool_name, arguments, tool_id)
+            yield result
+
+    async def _call_agent_task_executor_stream(
+        self,
+        arguments: Dict[str, Any],
+        tool_call_id: str,
+        user_id: str,
+        conversation_id: str,
+        agent_id: str
+    ):
+        """
+        调用 agent_task_executor（流式版本）
+        
+        Yields:
+            - str: SSE 事件字符串
+            - Dict: 最终工具结果
+        """
+        try:
+            from app.services.system_tools.agent_tools import agent_task_executor
+            
+            # 添加上下文参数
+            arguments["user_id"] = user_id
+            arguments["conversation_id"] = conversation_id
+            if agent_id:
+                arguments["agent_id"] = agent_id
+            
+            # 调用流式执行版本
+            async for item in agent_task_executor.handler_stream(**arguments):
+                if isinstance(item, str):
+                    # SSE 事件
+                    yield item
+                else:
+                    # 最终结果，格式化为工具结果
+                    if isinstance(item, dict):
+                        content = json.dumps(item, ensure_ascii=False)
+                    else:
+                        content = str(item)
+                    
+                    yield {
+                        "tool_call_id": tool_call_id,
+                        "content": content
+                    }
+                    
+        except Exception as e:
+            logger.error(f"agent_task_executor 流式执行失败: {str(e)}", exc_info=True)
+            yield {
+                "tool_call_id": tool_call_id,
+                "content": f"agent_task_executor 执行失败：{str(e)}"
+            }
 
     async def execute_single_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """执行单个工具"""
@@ -222,7 +331,7 @@ class ToolExecutor:
 
     async def _call_system_tool(self, tool_name: str, arguments: Dict[str, Any],
                                tool_call_id: str, user_id: str = None,
-                               conversation_id: str = None) -> Dict[str, Any]:
+                               conversation_id: str = None, agent_id: str = None) -> Dict[str, Any]:
         """调用系统工具"""
         try:
             # 获取工具处理函数
@@ -239,6 +348,8 @@ class ToolExecutor:
                 arguments["user_id"] = user_id
             if conversation_id:
                 arguments["conversation_id"] = conversation_id
+            if agent_id:
+                arguments["agent_id"] = agent_id
 
             # 执行工具
             logger.debug(f"调用系统工具 {tool_name}，参数: {arguments}")

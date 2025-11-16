@@ -66,7 +66,9 @@ class AgentInvokeRepository:
         agent_name: str,
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        prompt_tokens: Optional[int] = None,
+        completion_tokens: Optional[int] = None
     ) -> bool:
         """
         添加主线程 round
@@ -78,6 +80,8 @@ class AgentInvokeRepository:
             messages: 消息列表
             tools: 工具 schema 列表（可选）
             model: 模型名称（可选）
+            prompt_tokens: 提示词 token 数量（可选）
+            completion_tokens: 完成 token 数量（可选）
 
         Returns:
             添加成功返回 True，失败返回 False
@@ -93,6 +97,10 @@ class AgentInvokeRepository:
                 round_doc["tools"] = tools
             if model is not None:
                 round_doc["model"] = model
+            if prompt_tokens is not None:
+                round_doc["prompt_tokens"] = prompt_tokens
+            if completion_tokens is not None:
+                round_doc["completion_tokens"] = completion_tokens
 
             result = await self.agent_invoke_collection.update_one(
                 {"_id": conversation_id},
@@ -189,7 +197,8 @@ class AgentInvokeRepository:
         round_number: int,
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        tool_call_id: Optional[str] = None
     ) -> bool:
         """
         添加任务 round
@@ -201,6 +210,7 @@ class AgentInvokeRepository:
             messages: 消息列表
             tools: 工具 schema 列表（可选）
             model: 模型名称（可选）
+            tool_call_id: 工具调用 ID（用于关联主对话，可选）
 
         Returns:
             添加成功返回 True，失败返回 False
@@ -215,6 +225,8 @@ class AgentInvokeRepository:
                 round_doc["tools"] = tools
             if model is not None:
                 round_doc["model"] = model
+            if tool_call_id is not None:
+                round_doc["tool_call_id"] = tool_call_id
 
             result = await self.agent_invoke_collection.update_one(
                 {
@@ -225,7 +237,7 @@ class AgentInvokeRepository:
             )
 
             if result.modified_count > 0:
-                logger.debug(f"添加任务 round 成功: task_id {task_id}, round {round_number}")
+                logger.debug(f"添加任务 round 成功: task_id {task_id}, round {round_number}, tool_call_id {tool_call_id}")
                 return True
             else:
                 logger.warning(f"添加任务 round 失败: task 未找到或未修改")

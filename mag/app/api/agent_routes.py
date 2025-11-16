@@ -17,10 +17,7 @@ from app.models.agent_schema import (
     AgentCategoryResponse,
     AgentInCategoryItem,
     AgentInCategoryResponse,
-    AgentInvokeRequest,
-    AgentInvokeResponse,
-    AgentRound,
-    AgentInvokeMessage
+    AgentInvokeRequest
 )
 from app.auth.dependencies import get_current_user
 from app.models.auth_schema import CurrentUser
@@ -188,23 +185,24 @@ async def create_agent(
                 detail=f"Agent 已存在: {request.agent_config.name}"
             )
 
-        # 创建 Agent
-        agent_id = await mongodb_client.agent_repository.create_agent(
+        # 使用 agent_service 创建 Agent（包含记忆文档创建）
+        from app.services.agent.agent_service import agent_service
+        result = await agent_service.create_agent(
             agent_config=request.agent_config.dict(),
             user_id=user_id
         )
 
-        if not agent_id:
+        if not result.get("success"):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="创建 Agent 失败"
+                detail=result.get("error", "创建 Agent 失败")
             )
 
         return {
             "status": "success",
             "message": f"Agent '{request.agent_config.name}' 创建成功",
-            "agent_name": request.agent_config.name,
-            "agent_id": agent_id
+            "agent_name": result.get("agent_name"),
+            "agent_id": result.get("agent_id")
         }
 
     except HTTPException:
@@ -289,17 +287,18 @@ async def update_agent(
                 detail="Agent 名称不能修改"
             )
 
-        # 更新 Agent
-        success = await mongodb_client.agent_repository.update_agent(
+        # 使用 agent_service 更新 Agent
+        from app.services.agent.agent_service import agent_service
+        result = await agent_service.update_agent(
             agent_name=agent_name,
             agent_config=request.agent_config.dict(),
             user_id=user_id
         )
 
-        if not success:
+        if not result.get("success"):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="更新 Agent 失败"
+                detail=result.get("error", "更新 Agent 失败")
             )
 
         return {
@@ -343,8 +342,9 @@ async def delete_agent(
                 detail="无权限操作此 Agent"
             )
 
-        # 删除 Agent
-        success = await mongodb_client.agent_repository.delete_agent(agent_name, user_id)
+        # 使用 agent_service 删除 Agent（会同时删除记忆文档）
+        from app.services.agent.agent_service import agent_service
+        success = await agent_service.delete_agent(agent_name, user_id)
 
         if not success:
             raise HTTPException(
@@ -374,7 +374,7 @@ async def agent_invoke(
     request: AgentInvokeRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
-    """Agent 调用（流式响应，SSE）"""
+    """Agent 调用（流式响应，SSE）- 支持配置覆盖"""
     try:
         # 从token获取user_id，覆盖请求体中的user_id
         user_id = current_user.user_id
@@ -386,14 +386,14 @@ async def agent_invoke(
                 detail="用户消息不能为空"
             )
 
-        # 必须指定 agent_name
-        if not request.agent_name:
+        # 验证配置：必须提供 agent_name 或 model_name
+        if not request.agent_name and not request.model_name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须指定 agent_name"
+                detail="必须提供 agent_name 或 model_name"
             )
 
-        # 验证 Agent 是否存在
+        # 如果提供了 agent_name，验证 Agent 是否存在
         if request.agent_name:
             agent = await mongodb_client.agent_repository.get_agent(
                 request.agent_name,
@@ -416,17 +416,12 @@ async def agent_invoke(
         is_new_conversation = (existing_conversation is None)
 
         if is_new_conversation:
-            # 创建 conversation 记录
+            # 创建 conversation 记录（类型为 agent）
             await mongodb_client.conversation_repository.create_conversation(
                 conversation_id=conversation_id,
-                user_id=user_id,
                 conversation_type="agent",
-                title=f"Agent 对话 - {request.agent_name or 'Default'}"
-            )
-
-            # 初始化documents字段
-            await mongodb_client.conversation_repository.initialize_documents_field(
-                conversation_id=conversation_id
+                user_id=user_id,
+                title=f"{request.agent_name or 'Manual'} 对话"
             )
 
             # 创建 agent_invoke 记录
@@ -437,9 +432,9 @@ async def agent_invoke(
         # 创建队列用于标题更新通知
         title_queue = asyncio.Queue()
 
-        # 后台标题生成任务（提取为公共服务调用）
+        # 后台标题生成任务
         async def generate_title_background():
-            from app.services.chat.title_service import generate_title_and_tags
+            from app.services.conversation.title_service import generate_title_and_tags
             try:
                 title, tags = await generate_title_and_tags(user_id=user_id, user_prompt=request.user_prompt)
 
@@ -478,7 +473,13 @@ async def agent_invoke(
                         agent_name=request.agent_name,
                         user_prompt=request.user_prompt,
                         user_id=user_id,
-                        conversation_id=conversation_id
+                        conversation_id=conversation_id,
+                        # 传递可选配置参数
+                        model_name=request.model_name,
+                        system_prompt=request.system_prompt,
+                        mcp_servers=request.mcp_servers,
+                        system_tools=request.system_tools,
+                        max_iterations=request.max_iterations
                     ):
                         yield chunk
                     stream_done = True
@@ -531,7 +532,7 @@ async def agent_invoke(
             # 非流式响应：收集所有数据后返回完整结果
             collector = TrajectoryCollector(
                 user_prompt=request.user_prompt,
-                system_prompt=""
+                system_prompt=request.system_prompt or ""
             )
             complete_response = await collector.collect_stream_data(generate_stream())
 
@@ -547,143 +548,4 @@ async def agent_invoke(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"处理 Agent 调用时出错: {str(e)}"
-        )
-
-
-@router.post("/invoke/sync", response_model=AgentInvokeResponse)
-async def agent_invoke_sync(
-    request: AgentInvokeRequest,
-    current_user: CurrentUser = Depends(get_current_user)
-):
-    """Agent 调用（非流式响应）"""
-    try:
-        # 从token获取user_id，覆盖请求体中的user_id
-        user_id = current_user.user_id
-
-        # 基本参数验证
-        if not request.user_prompt.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户消息不能为空"
-            )
-
-        # 必须指定 agent_name
-        if not request.agent_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须指定 agent_name"
-            )
-
-        # 验证 Agent 是否存在
-        if request.agent_name:
-            agent = await mongodb_client.agent_repository.get_agent(
-                request.agent_name,
-                user_id
-            )
-
-            if not agent:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"找不到 Agent: {request.agent_name}"
-                )
-
-        # 生成或使用现有 conversation_id
-        conversation_id = request.conversation_id or str(ObjectId())
-
-        # 查询数据库判断是否为新对话
-        existing_conversation = await mongodb_client.conversation_repository.get_conversation(
-            conversation_id
-        )
-        is_new_conversation = (existing_conversation is None)
-
-        if is_new_conversation:
-            # 创建 conversation 记录
-            await mongodb_client.conversation_repository.create_conversation(
-                conversation_id=conversation_id,
-                user_id=user_id,
-                conversation_type="agent",
-                title=f"Agent 对话 - {request.agent_name or 'Default'}"
-            )
-
-            # 初始化documents字段
-            await mongodb_client.conversation_repository.initialize_documents_field(
-                conversation_id=conversation_id
-            )
-
-            # 创建 agent_invoke 记录
-            await mongodb_client.agent_invoke_repository.create_agent_invoke(
-                conversation_id=conversation_id
-            )
-
-        # 生成流式响应的生成器
-        async def generate_stream():
-            try:
-                async for chunk in agent_stream_executor.execute_agent_invoke_stream(
-                    agent_name=request.agent_name,
-                    user_prompt=request.user_prompt,
-                    user_id=user_id,
-                    conversation_id=conversation_id
-                ):
-                    yield chunk
-            except Exception as e:
-                logger.error(f"Agent 流式响应生成出错: {str(e)}")
-                error_chunk = {
-                    "error": {
-                        "message": str(e),
-                        "type": "api_error"
-                    }
-                }
-                yield f"data: {json.dumps(error_chunk)}\n\n"
-                yield "data: [DONE]\n\n"
-
-        # 收集所有数据后返回完整结果
-        collector = TrajectoryCollector(
-            user_prompt=request.user_prompt,
-            system_prompt=""
-        )
-        complete_response = await collector.collect_stream_data(generate_stream())
-
-        # 获取执行轮次
-        agent_invoke_doc = await mongodb_client.agent_invoke_repository.get_agent_invoke(
-            conversation_id
-        )
-
-        rounds = []
-        if agent_invoke_doc:
-            for round_data in agent_invoke_doc.get("rounds", []):
-                messages = []
-                for msg in round_data.get("messages", []):
-                    messages.append(AgentInvokeMessage(
-                        role=msg.get("role", ""),
-                        content=msg.get("content"),
-                        tool_calls=msg.get("tool_calls"),
-                        tool_call_id=msg.get("tool_call_id")
-                    ))
-
-                rounds.append(AgentRound(
-                    round=round_data.get("round", 0),
-                    agent_name=round_data.get("agent_name", ""),
-                    messages=messages,
-                    tools=round_data.get("tools"),
-                    model=round_data.get("model")
-                ))
-
-        return AgentInvokeResponse(
-            success=True,
-            conversation_id=conversation_id,
-            final_response=complete_response.get("final_response", ""),
-            rounds=rounds,
-            error=None
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Agent 同步调用处理出错: {str(e)}")
-        return AgentInvokeResponse(
-            success=False,
-            conversation_id=request.conversation_id or "",
-            final_response="",
-            rounds=[],
-            error=str(e)
         )
