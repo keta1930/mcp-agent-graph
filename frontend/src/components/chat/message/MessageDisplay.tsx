@@ -17,7 +17,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ConversationMessage, ConversationDetail, EnhancedStreamingState, StreamingBlock, TaskBlock as TaskBlockType } from '../../../types/conversation';
 import { getCurrentUserDisplayName } from '../../../config/user';
-import AgentXMLRenderer from './AgentXMLRenderer';
 import CodeBlockPreview from '../../common/CodeBlockPreview';
 import TaskBlock from './TaskBlock';
 import StaticTaskBlock from './StaticTaskBlock';
@@ -102,8 +101,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
           padding: '10px 14px',
           cursor: 'pointer',
           background: 'rgba(245, 243, 240, 0.6)',
-          borderBottom: expanded ? '1px solid rgba(139, 115, 85, 0.15)' : 'none',
-          transition: 'all 0.2s ease'
+          borderBottom: expanded ? '1px solid rgba(139, 115, 85, 0.15)' : 'none'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -702,30 +700,16 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 <div>
                   {showTyping ? (
                     <div>
-                      {/* 流式消息根据渲染模式选择渲染器 */}
-                      {!isUser && renderingMode === 'agent' ? (
-                        <AgentXMLRenderer
-                          content={message.content}
-                          generationType="mcp" // Agent模式统一使用mcp类型，具体类型由内容决定
-                          isStreaming={true}
-                        />
-                      ) : (
-                        <SmartMarkdown
-                          content={message.content}
-                          isStreaming={true}
-                          conversationId={conversationId}
-                        />
-                      )}
+                      {/* 流式消息使用 SmartMarkdown 渲染，支持代码块 */}
+                      <SmartMarkdown
+                        content={message.content}
+                        isStreaming={true}
+                        conversationId={conversationId}
+                      />
                     </div>
                   ) : (
-                    // 根据渲染模式选择渲染器
-                    !isUser && renderingMode === 'agent' ? (
-                      <AgentXMLRenderer
-                        content={message.content}
-                        generationType="mcp" // Agent模式统一使用mcp类型，具体类型由内容决定
-                      />
-                    ) : (
-                      <ReactMarkdown
+                    // 使用 ReactMarkdown 渲染，支持代码块
+                    <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
                           code({ node, ...codeProps }) {
@@ -758,7 +742,6 @@ const MessageItem: React.FC<MessageItemProps> = ({
                       >
                         {message.content}
                       </ReactMarkdown>
-                    )
                   )}
                 </div>
               </div>
@@ -820,19 +803,12 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
       return (
         <div>
           <div style={{ position: 'relative' }}>
-            {renderingMode === 'agent' ? (
-              <AgentXMLRenderer
-                content={block.content}
-                generationType="mcp" // Agent模式统一使用mcp类型
-                isStreaming={!block.isComplete}
-              />
-            ) : (
-              <SmartMarkdown
-                content={block.content}
-                isStreaming={!block.isComplete}
-                conversationId={conversationId}
-              />
-            )}
+            {/* 使用 SmartMarkdown 渲染，支持代码块 */}
+            <SmartMarkdown
+              content={block.content}
+              isStreaming={!block.isComplete}
+              conversationId={conversationId}
+            />
             {!block.isComplete && (
               <span style={{
                 marginLeft: '2px',
