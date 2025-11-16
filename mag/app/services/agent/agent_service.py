@@ -6,7 +6,6 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 from app.infrastructure.database.mongodb import mongodb_client
-from app.services.agent.agent_executor import AgentExecutor
 from app.services.agent.agent_stream_executor import AgentStreamExecutor
 from app.services.model.model_service import model_service
 from app.services.mcp.mcp_service import mcp_service
@@ -20,7 +19,6 @@ class AgentService:
 
     def __init__(self):
         """初始化 Agent 服务"""
-        self.agent_executor = AgentExecutor()
         self.agent_stream_executor = AgentStreamExecutor()
 
     async def create_agent(self, agent_config: Dict[str, Any], user_id: str) -> Dict[str, Any]:
