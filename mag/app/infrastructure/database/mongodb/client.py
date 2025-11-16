@@ -21,7 +21,6 @@ class MongoDBClient:
 
         self.conversations_collection = None
         self.graph_messages_collection = None
-        self.mcp_messages_collection = None
         self.graph_run_messages_collection = None
         self.tasks_collection = None
         self.graphs_collection = None
@@ -70,7 +69,6 @@ class MongoDBClient:
 
             self.conversations_collection = self.db.conversations
             self.graph_messages_collection = self.db.graph_gen
-            self.mcp_messages_collection = self.db.mcp_gen
             self.graph_run_messages_collection = self.db.graph_run
             self.tasks_collection = self.db.tasks
             self.graphs_collection = self.db.graphs
@@ -189,8 +187,6 @@ class MongoDBClient:
             await self.conversations_collection.create_index([("updated_at", -1)])
 
             await self.graph_messages_collection.create_index([("conversation_id", 1)])
-
-            await self.mcp_messages_collection.create_index([("conversation_id", 1)])
 
             await self.graph_run_messages_collection.create_index([("conversation_id", 1)])
             await self.graph_run_messages_collection.create_index([("graph_name", 1)])
