@@ -368,13 +368,13 @@ async def delete_agent(
         )
 
 
-# ======= Agent 调用 API接口 =======
-@router.post("/invoke")
-async def agent_invoke(
+# ======= Agent 运行 API接口 =======
+@router.post("/run")
+async def agent_run(
     request: AgentInvokeRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
-    """Agent 调用（流式响应，SSE）- 支持配置覆盖"""
+    """Agent 运行（流式响应，SSE）- 支持配置覆盖"""
     try:
         # 从token获取user_id，覆盖请求体中的user_id
         user_id = current_user.user_id
@@ -544,8 +544,8 @@ async def agent_invoke(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Agent 调用处理出错: {str(e)}")
+        logger.error(f"Agent 运行处理出错: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"处理 Agent 调用时出错: {str(e)}"
+            detail=f"处理 Agent 运行时出错: {str(e)}"
         )

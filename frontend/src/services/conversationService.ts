@@ -141,7 +141,7 @@ export class ConversationService {
     }
 
     try {
-      const response = await fetch(`${api.defaults.baseURL}/agent/invoke`, {
+      const response = await fetch(`${api.defaults.baseURL}/agent/run`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ ...request, stream: true })
