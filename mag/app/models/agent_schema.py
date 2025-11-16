@@ -90,8 +90,8 @@ class AgentInCategoryResponse(BaseModel):
     total_count: int = Field(..., description="总数量")
 
 
-class AgentInvokeRequest(BaseModel):
-    """Agent调用请求（支持配置覆盖）"""
+class AgentRunRequest(BaseModel):
+    """Agent运行请求（支持配置覆盖）"""
     # Agent 选择（可选）
     agent_name: Optional[str] = Field(None, description="Agent名称，不提供则为手动配置模式")
 

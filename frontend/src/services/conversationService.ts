@@ -4,7 +4,7 @@ import {
   ConversationListResponse,
   ConversationDetail,
   GraphExecuteRequest,
-  AgentInvokeRequest
+  AgentRunRequest
 } from '../types/conversation';
 
 const CONVERSATION_API_BASE = '/conversations';
@@ -128,7 +128,7 @@ export class ConversationService {
 
 
   // Agent Invoke - 创建SSE连接
-  static async createAgentInvokeSSE(request: AgentInvokeRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+  static async createAgentRunSSE(request: AgentRunRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     const token = localStorage.getItem('auth_token');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

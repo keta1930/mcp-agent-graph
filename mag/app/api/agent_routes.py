@@ -17,7 +17,7 @@ from app.models.agent_schema import (
     AgentCategoryResponse,
     AgentInCategoryItem,
     AgentInCategoryResponse,
-    AgentInvokeRequest
+    AgentRunRequest
 )
 from app.auth.dependencies import get_current_user
 from app.models.auth_schema import CurrentUser
@@ -371,7 +371,7 @@ async def delete_agent(
 # ======= Agent 运行 API接口 =======
 @router.post("/run")
 async def agent_run(
-    request: AgentInvokeRequest,
+    request: AgentRunRequest,
     current_user: CurrentUser = Depends(get_current_user)
 ):
     """Agent 运行（流式响应，SSE）- 支持配置覆盖"""

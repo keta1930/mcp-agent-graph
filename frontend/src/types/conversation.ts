@@ -159,8 +159,8 @@ export interface SSEMessage {
   error_type?: string; // 错误类型
 }
 
-// Agent 调用请求
-export interface AgentInvokeRequest {
+// Agent 运行请求
+export interface AgentRunRequest {
   // Agent 选择（可选）
   agent_name?: string;
   

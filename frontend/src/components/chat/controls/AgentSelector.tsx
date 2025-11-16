@@ -1,7 +1,7 @@
 // src/components/chat/controls/AgentSelector.tsx
 import React, { useState, useEffect } from 'react';
 import { Tabs, Spin, message } from 'antd';
-import { AgentInvokeRequest } from '../../../types/conversation';
+import { AgentRunRequest } from '../../../types/conversation';
 import { AgentListItem, AgentCategoryItem } from '../../../services/agentService';
 import { listAgents, listCategories } from '../../../services/agentService';
 import AgentList from './AgentList';
@@ -19,9 +19,9 @@ interface AgentSelectorProps {
   /** Agent 选择回调 */
   onAgentSelect: (agentName: string | null) => void;
   /** 配置变更回调 */
-  onConfigChange: (config: Partial<AgentInvokeRequest>) => void;
+  onConfigChange: (config: Partial<AgentRunRequest>) => void;
   /** 当前配置 */
-  currentConfig?: Partial<AgentInvokeRequest>;
+  currentConfig?: Partial<AgentRunRequest>;
 }
 
 /**

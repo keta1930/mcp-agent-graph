@@ -6,7 +6,7 @@ import {
 } from '../services/conversationService';
 import {
   GraphExecuteRequest,
-  AgentInvokeRequest,
+  AgentRunRequest,
   SSEMessage,
   ConversationMode,
   StreamingBlock,
@@ -567,7 +567,7 @@ export function useSSEConnection() {
       switch (options.mode) {
         case 'agent': {
           console.log('Creating Agent Invoke SSE connection');
-          const request: AgentInvokeRequest = {
+          const request: AgentRunRequest = {
             agent_name: options.agent_name,
             user_prompt: options.user_prompt || inputText,
             conversation_id: conversationId,
@@ -577,7 +577,7 @@ export function useSSEConnection() {
             system_tools: options.system_tools || [],
             max_iterations: options.max_iterations
           };
-          reader = await ConversationService.createAgentInvokeSSE(request);
+          reader = await ConversationService.createAgentRunSSE(request);
           break;
         }
 
