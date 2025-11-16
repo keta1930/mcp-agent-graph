@@ -1,5 +1,4 @@
 from .conversation_repository import ConversationRepository
-from .chat_repository import ChatRepository
 from .graph_repository import GraphRepository
 from .mcp_repository import MCPRepository
 from .graph_run_repository import GraphRunRepository
@@ -19,7 +18,6 @@ from .memory_repository import MemoryRepository
 
 __all__ = [
     'ConversationRepository',
-    'ChatRepository',
     'GraphRepository',
     'MCPRepository',
     'GraphRunRepository',

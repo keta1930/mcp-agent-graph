@@ -3,7 +3,7 @@ from fastapi import APIRouter
 # 导入所有子路由模块
 from .auth_routes import router as auth_router
 from .admin_routes import router as admin_router
-from .chat_routes import router as chat_router
+from .conversation_routes import router as conversation_router
 from .graph_import_export_routes import router as graph_import_export_router
 from .mcp_routes import router as mcp_router
 from .model_routes import router as model_router
@@ -29,7 +29,7 @@ router.include_router(auth_router)
 router.include_router(admin_router)
 
 # 其他业务路由
-router.include_router(chat_router)
+router.include_router(conversation_router)
 router.include_router(graph_import_export_router)
 router.include_router(mcp_router)
 router.include_router(model_router)
