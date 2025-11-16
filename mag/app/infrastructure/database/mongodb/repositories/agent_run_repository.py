@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class AgentRunRepository:
-    """Agent Run Repository - 负责 agent_runs 集合的操作"""
+    """Agent Run Repository - 负责 agent_run 集合的操作"""
 
     def __init__(self, db, agent_run_collection):
         """初始化 Agent Run Repository"""

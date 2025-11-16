@@ -24,7 +24,7 @@ class MongoDBClient:
         self.mcp_messages_collection = None
         self.graph_run_messages_collection = None
         self.tasks_collection = None
-        self.agent_graphs_collection = None
+        self.graphs_collection = None
         self.prompts_collection = None
         self.model_configs_collection = None
         self.mcp_configs_collection = None
@@ -74,7 +74,7 @@ class MongoDBClient:
             self.mcp_messages_collection = self.db.mcp_gen
             self.graph_run_messages_collection = self.db.graph_run
             self.tasks_collection = self.db.tasks
-            self.agent_graphs_collection = self.db.agent_graphs
+            self.graphs_collection = self.db.graphs
             self.prompts_collection = self.db.prompts
             self.model_configs_collection = self.db.model_configs
             self.mcp_configs_collection = self.db.mcp_configs
@@ -84,7 +84,7 @@ class MongoDBClient:
             self.team_settings_collection = self.db.team_settings
             self.refresh_tokens_collection = self.db.refresh_tokens
             self.agents_collection = self.db.agents
-            self.agent_run_collection = self.db.agent_runs
+            self.agent_run_collection = self.db.agent_run
             self.memories_collection = self.db.memories
 
             await self.client.admin.command('ping')
@@ -130,7 +130,7 @@ class MongoDBClient:
 
         self.graph_config_repository = GraphConfigRepository(
             self.db,
-            self.agent_graphs_collection
+            self.graphs_collection
         )
 
         self.prompt_repository = PromptRepository(
@@ -213,10 +213,10 @@ class MongoDBClient:
             await self.tasks_collection.create_index([("execution_stats.last_executed_at.executed_at", -1)])
             await self.tasks_collection.create_index([("execution_stats.total_triggers", -1)])
 
-            await self.agent_graphs_collection.create_index([("user_id", 1), ("updated_at", -1)])
-            await self.agent_graphs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
-            await self.agent_graphs_collection.create_index([("name", 1)])
-            await self.agent_graphs_collection.create_index([("shared_with", 1)])
+            await self.graphs_collection.create_index([("user_id", 1), ("updated_at", -1)])
+            await self.graphs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
+            await self.graphs_collection.create_index([("name", 1)])
+            await self.graphs_collection.create_index([("shared_with", 1)])
 
             await self.prompts_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.prompts_collection.create_index([("user_id", 1), ("updated_at", -1)])

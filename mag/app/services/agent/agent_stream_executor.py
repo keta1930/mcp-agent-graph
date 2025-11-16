@@ -597,7 +597,7 @@ class AgentStreamExecutor:
             prompt_tokens = token_usage.get("prompt_tokens", 0)
             completion_tokens = token_usage.get("completion_tokens", 0)
 
-            # 保存轮次数据到 agent_runs 集合的主线程 rounds
+            # 保存轮次数据到 agent_run 集合的主线程 rounds
             success = await mongodb_client.agent_run_repository.add_round_to_main(
                 conversation_id=conversation_id,
                 round_number=next_round_number,

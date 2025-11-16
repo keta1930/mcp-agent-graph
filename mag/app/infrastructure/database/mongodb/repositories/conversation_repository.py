@@ -825,7 +825,7 @@ class ConversationRepository:
 
             # 获取 agent_run 数据
             from app.infrastructure.database.mongodb.repositories.agent_run_repository import AgentRunRepository
-            agent_run_repo = AgentRunRepository(self.db, self.db.agent_runs)
+            agent_run_repo = AgentRunRepository(self.db, self.db.agent_run)
 
             agent_run_doc = await agent_run_repo.get_agent_run(conversation_id)
             if not agent_run_doc:
@@ -850,7 +850,7 @@ class ConversationRepository:
                 )
 
             # 更新数据库
-            update_result = await self.db.agent_runs.update_one(
+            update_result = await self.db.agent_run.update_one(
                 {"conversation_id": conversation_id},
                 {"$set": {"rounds": compacted_rounds}}
             )
