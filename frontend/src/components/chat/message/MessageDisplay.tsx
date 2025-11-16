@@ -23,6 +23,19 @@ import StaticTaskBlock from './StaticTaskBlock';
 
 const { Text, Paragraph } = Typography;
 
+// 自定义语法高亮主题 - 移除背景色，保留其他样式
+const customCodeStyle = {
+  ...oneLight,
+  'code[class*="language-"]': {
+    ...oneLight['code[class*="language-"]'],
+    background: 'transparent'
+  },
+  'pre[class*="language-"]': {
+    ...oneLight['pre[class*="language-"]'],
+    background: 'transparent'
+  }
+};
+
 interface TypewriterTextProps {
   text: string;
   speed?: number;
@@ -70,13 +83,21 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const copyButtonRef = React.useRef<HTMLDivElement>(null);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(children);
       setCopied(true);
       message.success('代码已复制');
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => {
+        setCopied(false);
+        // 清除可能残留的内联样式
+        if (copyButtonRef.current) {
+          copyButtonRef.current.style.color = '';
+          copyButtonRef.current.style.background = '';
+        }
+      }, 500);
     } catch (err) {
       message.error('复制失败');
     }
@@ -86,9 +107,9 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
     <div style={{
       margin: '12px 0',
       borderRadius: '6px',
-      background: 'rgba(255, 255, 255, 0.85)',
+      background: 'rgba(255, 255, 255, 1)',
       border: '1px solid rgba(139, 115, 85, 0.15)',
-      boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      boxShadow: 'none',
       overflow: 'hidden',
       transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
     }}>
@@ -128,6 +149,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
             conversationId={conversationId}
           />
           <div
+            ref={copyButtonRef}
             onClick={(e) => {
               e.stopPropagation();
               handleCopy();
@@ -161,16 +183,17 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
         <div style={{
           maxHeight: '400px',
           overflow: 'auto',
+          background: 'rgba(255, 255, 255, 0.85)',
           // 滚动条样式
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
         }} className="code-block-scrollbar">
           <SyntaxHighlighter
             language={language || 'text'}
-            style={oneLight as any}
+            style={customCodeStyle as any}
             PreTag="div"
             customStyle={{
-              background: 'transparent',
+              background: 'rgba(255, 255, 255, 1)',
               margin: 0,
               padding: '14px 16px',
               fontSize: '13px',
@@ -362,7 +385,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, con
             <div style={{ marginTop: '8px' }}>
               <SyntaxHighlighter
                 language="json"
-                style={oneLight}
+                style={customCodeStyle}
                 customStyle={{
                   background: 'rgba(245, 243, 240, 0.6)',
                   padding: '10px 12px',
