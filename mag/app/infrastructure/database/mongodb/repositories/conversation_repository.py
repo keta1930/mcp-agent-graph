@@ -823,15 +823,15 @@ class ConversationRepository:
             if conversation_type != "agent":
                 return {"status": "error", "error": "目前仅支持 Agent 对话的压缩"}
 
-            # 获取 agent_invoke 数据
-            from app.infrastructure.database.mongodb.repositories.agent_invoke_repository import AgentInvokeRepository
-            agent_invoke_repo = AgentInvokeRepository(self.db, self.db.agent_invoke)
+            # 获取 agent_run 数据
+            from app.infrastructure.database.mongodb.repositories.agent_run_repository import AgentRunRepository
+            agent_run_repo = AgentRunRepository(self.db, self.db.agent_runs)
 
-            agent_invoke_doc = await agent_invoke_repo.get_agent_invoke(conversation_id)
-            if not agent_invoke_doc:
+            agent_run_doc = await agent_run_repo.get_agent_run(conversation_id)
+            if not agent_run_doc:
                 return {"status": "error", "error": "对话消息不存在"}
 
-            rounds = agent_invoke_doc.get("rounds", [])
+            rounds = agent_run_doc.get("rounds", [])
             if not rounds:
                 return {"status": "error", "error": "对话无内容可压缩"}
 
@@ -850,7 +850,7 @@ class ConversationRepository:
                 )
 
             # 更新数据库
-            update_result = await self.db.agent_invoke.update_one(
+            update_result = await self.db.agent_runs.update_one(
                 {"conversation_id": conversation_id},
                 {"$set": {"rounds": compacted_rounds}}
             )

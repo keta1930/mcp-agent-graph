@@ -6,7 +6,7 @@ from app.infrastructure.database.mongodb.repositories import (
     TaskRepository, GraphConfigRepository, PromptRepository, ModelConfigRepository,
     MCPConfigRepository, PreviewRepository, UserRepository, InviteCodeRepository,
     TeamSettingsRepository, RefreshTokenRepository, AgentRepository,
-    AgentInvokeRepository, MemoryRepository
+    AgentRunRepository, MemoryRepository
 )
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class MongoDBClient:
         self.team_settings_collection = None
         self.refresh_tokens_collection = None
         self.agents_collection = None
-        self.agent_invoke_collection = None
+        self.agent_run_collection = None
         self.memories_collection = None
 
         self.is_connected = False
@@ -54,7 +54,7 @@ class MongoDBClient:
         self.team_settings_repository = None
         self.refresh_token_repository = None
         self.agent_repository = None
-        self.agent_invoke_repository = None
+        self.agent_run_repository = None
         self.memory_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
@@ -84,7 +84,7 @@ class MongoDBClient:
             self.team_settings_collection = self.db.team_settings
             self.refresh_tokens_collection = self.db.refresh_tokens
             self.agents_collection = self.db.agents
-            self.agent_invoke_collection = self.db.agent_invoke
+            self.agent_run_collection = self.db.agent_runs
             self.memories_collection = self.db.memories
 
             await self.client.admin.command('ping')
@@ -178,9 +178,9 @@ class MongoDBClient:
             self.agents_collection
         )
 
-        self.agent_invoke_repository = AgentInvokeRepository(
+        self.agent_run_repository = AgentRunRepository(
             self.db,
-            self.agent_invoke_collection
+            self.agent_run_collection
         )
 
         self.memory_repository = MemoryRepository(
@@ -255,9 +255,9 @@ class MongoDBClient:
             await self.agents_collection.create_index([("agent_config.category", 1)])
             await self.agents_collection.create_index([("created_at", -1)])
 
-            await self.agent_invoke_collection.create_index([("conversation_id", 1)])
-            await self.agent_invoke_collection.create_index([("rounds.agent_name", 1)])
-            await self.agent_invoke_collection.create_index([("tasks.task_id", 1)])
+            await self.agent_run_collection.create_index([("conversation_id", 1)])
+            await self.agent_run_collection.create_index([("rounds.agent_name", 1)])
+            await self.agent_run_collection.create_index([("tasks.task_id", 1)])
 
             await self.memories_collection.create_index([("user_id", 1), ("owner_type", 1), ("owner_id", 1)],
                                                         unique=True)
@@ -310,11 +310,11 @@ class MongoDBClient:
 
             elif conversation_type == "agent":
                 # Agent 对话类型
-                agent_invoke_doc = await self.agent_invoke_repository.get_agent_invoke(conversation_id)
+                agent_run_doc = await self.agent_run_repository.get_agent_run(conversation_id)
 
-                if agent_invoke_doc and agent_invoke_doc.get("rounds"):
-                    conversation["rounds"] = agent_invoke_doc.get("rounds", [])
-                    conversation["tasks"] = agent_invoke_doc.get("tasks", [])
+                if agent_run_doc and agent_run_doc.get("rounds"):
+                    conversation["rounds"] = agent_run_doc.get("rounds", [])
+                    conversation["tasks"] = agent_run_doc.get("tasks", [])
                     conversation["generation_type"] = "agent"
                 else:
                     conversation["rounds"] = []
@@ -375,8 +375,8 @@ class MongoDBClient:
                 # 图运行类型，删除graph_run消息
                 await self.graph_run_repository.delete_graph_run_messages(conversation_id)
             elif conversation_type == "agent":
-                # Agent对话类型，删除agent_invoke消息
-                await self.agent_invoke_repository.delete_agent_invoke(conversation_id)
+                # Agent对话类型，删除agent_run消息
+                await self.agent_run_repository.delete_agent_run(conversation_id)
                 # 同时删除可能存在的AI生成消息
                 await self.graph_repository.delete_graph_generation_messages(conversation_id)
                 await self.mcp_repository.delete_mcp_generation_messages(conversation_id)

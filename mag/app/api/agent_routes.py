@@ -424,8 +424,8 @@ async def agent_run(
                 title=f"{request.agent_name or 'Manual'} 对话"
             )
 
-            # 创建 agent_invoke 记录
-            await mongodb_client.agent_invoke_repository.create_agent_invoke(
+            # 创建 agent_run 记录
+            await mongodb_client.agent_run_repository.create_agent_run(
                 conversation_id=conversation_id
             )
 

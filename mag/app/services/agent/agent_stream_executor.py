@@ -154,14 +154,14 @@ class AgentStreamExecutor:
                 })
 
             # 2. 获取并添加历史消息
-            agent_invoke_doc = await mongodb_client.agent_invoke_repository.get_agent_invoke(
+            agent_run_doc = await mongodb_client.agent_run_repository.get_agent_run(
                 conversation_id
             )
 
-            if agent_invoke_doc and agent_invoke_doc.get("rounds"):
-                logger.debug(f"加载历史消息: {len(agent_invoke_doc['rounds'])} 轮")
+            if agent_run_doc and agent_run_doc.get("rounds"):
+                logger.debug(f"加载历史消息: {len(agent_run_doc['rounds'])} 轮")
 
-                for round_data in agent_invoke_doc["rounds"]:
+                for round_data in agent_run_doc["rounds"]:
                     round_messages = round_data.get("messages", [])
                     for msg in round_messages:
                         # 跳过历史中的 system 消息（已在开头添加）
@@ -583,11 +583,11 @@ class AgentStreamExecutor:
                     tags=[]
                 )
 
-            # 确保 agent_invoke 文档存在
-            await mongodb_client.agent_invoke_repository.create_agent_invoke(conversation_id)
+            # 确保 agent_run 文档存在
+            await mongodb_client.agent_run_repository.create_agent_run(conversation_id)
 
             # 获取当前主线程的 round 数量
-            current_round_count = await mongodb_client.agent_invoke_repository.get_round_count(
+            current_round_count = await mongodb_client.agent_run_repository.get_round_count(
                 conversation_id
             )
             next_round_number = current_round_count + 1
@@ -597,8 +597,8 @@ class AgentStreamExecutor:
             prompt_tokens = token_usage.get("prompt_tokens", 0)
             completion_tokens = token_usage.get("completion_tokens", 0)
 
-            # 保存轮次数据到 agent_invoke 集合的主线程 rounds
-            success = await mongodb_client.agent_invoke_repository.add_round_to_main(
+            # 保存轮次数据到 agent_runs 集合的主线程 rounds
+            success = await mongodb_client.agent_run_repository.add_round_to_main(
                 conversation_id=conversation_id,
                 round_number=next_round_number,
                 agent_name=agent_name,

@@ -5,17 +5,17 @@ from bson import ObjectId
 logger = logging.getLogger(__name__)
 
 
-class AgentInvokeRepository:
-    """Agent Invoke Repository - 负责 agent_invoke 集合的操作"""
+class AgentRunRepository:
+    """Agent Run Repository - 负责 agent_runs 集合的操作"""
 
-    def __init__(self, db, agent_invoke_collection):
-        """初始化 Agent Invoke Repository"""
+    def __init__(self, db, agent_run_collection):
+        """初始化 Agent Run Repository"""
         self.db = db
-        self.agent_invoke_collection = agent_invoke_collection
+        self.agent_run_collection = agent_run_collection
 
-    async def create_agent_invoke(self, conversation_id: str) -> bool:
+    async def create_agent_run(self, conversation_id: str) -> bool:
         """
-        创建 agent_invoke 文档
+        创建 agent_run 文档
 
         Args:
             conversation_id: 对话 ID
@@ -24,39 +24,39 @@ class AgentInvokeRepository:
             创建成功返回 True，失败返回 False
         """
         try:
-            agent_invoke_doc = {
+            agent_run_doc = {
                 "_id": conversation_id,
                 "conversation_id": conversation_id,
                 "rounds": [],
                 "tasks": []
             }
 
-            await self.agent_invoke_collection.insert_one(agent_invoke_doc)
-            logger.info(f"创建 agent_invoke 文档成功: {conversation_id}")
+            await self.agent_run_collection.insert_one(agent_run_doc)
+            logger.info(f"创建 agent_run 文档成功: {conversation_id}")
             return True
 
         except Exception as e:
-            logger.error(f"创建 agent_invoke 文档失败: {str(e)}")
+            logger.error(f"创建 agent_run 文档失败: {str(e)}")
             if "duplicate key" in str(e).lower():
-                logger.warning(f"agent_invoke 文档已存在: {conversation_id}")
+                logger.warning(f"agent_run 文档已存在: {conversation_id}")
             return False
 
-    async def get_agent_invoke(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+    async def get_agent_run(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """
-        获取 agent_invoke 文档
+        获取 agent_run 文档
 
         Args:
             conversation_id: 对话 ID
 
         Returns:
-            agent_invoke 文档，不存在返回 None
+            agent_run 文档，不存在返回 None
         """
         try:
-            agent_invoke = await self.agent_invoke_collection.find_one({"_id": conversation_id})
-            return agent_invoke
+            agent_run = await self.agent_run_collection.find_one({"_id": conversation_id})
+            return agent_run
 
         except Exception as e:
-            logger.error(f"获取 agent_invoke 文档失败: {str(e)}")
+            logger.error(f"获取 agent_run 文档失败: {str(e)}")
             return None
 
     async def add_round_to_main(
@@ -102,7 +102,7 @@ class AgentInvokeRepository:
             if completion_tokens is not None:
                 round_doc["completion_tokens"] = completion_tokens
 
-            result = await self.agent_invoke_collection.update_one(
+            result = await self.agent_run_collection.update_one(
                 {"_id": conversation_id},
                 {"$push": {"rounds": round_doc}}
             )
@@ -142,7 +142,7 @@ class AgentInvokeRepository:
                 "rounds": []
             }
 
-            result = await self.agent_invoke_collection.update_one(
+            result = await self.agent_run_collection.update_one(
                 {"_id": conversation_id},
                 {"$push": {"tasks": task_doc}}
             )
@@ -174,13 +174,13 @@ class AgentInvokeRepository:
             任务文档，不存在返回 None
         """
         try:
-            agent_invoke = await self.get_agent_invoke(conversation_id)
+            agent_run = await self.get_agent_run(conversation_id)
 
-            if not agent_invoke:
+            if not agent_run:
                 return None
 
             # 在 tasks 数组中查找指定 task_id
-            for task in agent_invoke.get("tasks", []):
+            for task in agent_run.get("tasks", []):
                 if task.get("task_id") == task_id:
                     return task
 
@@ -228,7 +228,7 @@ class AgentInvokeRepository:
             if tool_call_id is not None:
                 round_doc["tool_call_id"] = tool_call_id
 
-            result = await self.agent_invoke_collection.update_one(
+            result = await self.agent_run_collection.update_one(
                 {
                     "_id": conversation_id,
                     "tasks.task_id": task_id
@@ -290,12 +290,12 @@ class AgentInvokeRepository:
             rounds 列表
         """
         try:
-            agent_invoke = await self.get_agent_invoke(conversation_id)
+            agent_run = await self.get_agent_run(conversation_id)
 
-            if not agent_invoke:
+            if not agent_run:
                 return []
 
-            return agent_invoke.get("rounds", [])
+            return agent_run.get("rounds", [])
 
         except Exception as e:
             logger.error(f"获取主线程 rounds 失败: {str(e)}")
@@ -309,13 +309,13 @@ class AgentInvokeRepository:
             conversation_id: 对话 ID
 
         Returns:
-            完整的 agent_invoke 文档
+            完整的 agent_run 文档
         """
-        return await self.get_agent_invoke(conversation_id)
+        return await self.get_agent_run(conversation_id)
 
-    async def delete_agent_invoke(self, conversation_id: str) -> bool:
+    async def delete_agent_run(self, conversation_id: str) -> bool:
         """
-        删除 agent_invoke 文档
+        删除 agent_run 文档
 
         Args:
             conversation_id: 对话 ID
@@ -324,17 +324,17 @@ class AgentInvokeRepository:
             删除成功返回 True，失败返回 False
         """
         try:
-            result = await self.agent_invoke_collection.delete_one({"_id": conversation_id})
+            result = await self.agent_run_collection.delete_one({"_id": conversation_id})
 
             if result.deleted_count > 0:
-                logger.info(f"删除 agent_invoke 文档成功: {conversation_id}")
+                logger.info(f"删除 agent_run 文档成功: {conversation_id}")
                 return True
             else:
-                logger.warning(f"agent_invoke 文档未找到: {conversation_id}")
+                logger.warning(f"agent_run 文档未找到: {conversation_id}")
                 return False
 
         except Exception as e:
-            logger.error(f"删除 agent_invoke 文档失败: {str(e)}")
+            logger.error(f"删除 agent_run 文档失败: {str(e)}")
             return False
 
     async def get_round_count(self, conversation_id: str) -> int:
@@ -348,12 +348,12 @@ class AgentInvokeRepository:
             round 数量
         """
         try:
-            agent_invoke = await self.get_agent_invoke(conversation_id)
+            agent_run = await self.get_agent_run(conversation_id)
 
-            if not agent_invoke:
+            if not agent_run:
                 return 0
 
-            return len(agent_invoke.get("rounds", []))
+            return len(agent_run.get("rounds", []))
 
         except Exception as e:
             logger.error(f"获取 round 数量失败: {str(e)}")
@@ -370,12 +370,12 @@ class AgentInvokeRepository:
             任务数量
         """
         try:
-            agent_invoke = await self.get_agent_invoke(conversation_id)
+            agent_run = await self.get_agent_run(conversation_id)
 
-            if not agent_invoke:
+            if not agent_run:
                 return 0
 
-            return len(agent_invoke.get("tasks", []))
+            return len(agent_run.get("tasks", []))
 
         except Exception as e:
             logger.error(f"获取任务数量失败: {str(e)}")

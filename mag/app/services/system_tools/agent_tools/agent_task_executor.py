@@ -196,7 +196,7 @@ async def execute_agent_task_stream(
 
         # 如果 task 不存在，创建新 task
         if not task_history:
-            await mongodb_client.agent_invoke_repository.add_task(
+            await mongodb_client.agent_run_repository.add_task(
                 conversation_id=conversation_id,
                 task_id=task_id,
                 agent_name=agent_name
@@ -250,10 +250,10 @@ async def execute_agent_task_stream(
 
         # 保存 task round（包含 tool_call_id）
         task_messages = final_result.get("round_messages", [])
-        current_round = await mongodb_client.agent_invoke_repository.get_task(conversation_id, task_id)
+        current_round = await mongodb_client.agent_run_repository.get_task(conversation_id, task_id)
         round_number = len(current_round.get("rounds", [])) + 1 if current_round else 1
 
-        await mongodb_client.agent_invoke_repository.add_round_to_task(
+        await mongodb_client.agent_run_repository.add_round_to_task(
             conversation_id=conversation_id,
             task_id=task_id,
             round_number=round_number,
@@ -370,7 +370,7 @@ async def get_task_history(
     try:
         from app.infrastructure.database.mongodb.client import mongodb_client
 
-        history = await mongodb_client.agent_invoke_repository.get_task_history(
+        history = await mongodb_client.agent_run_repository.get_task_history(
             conversation_id=conversation_id,
             task_id=task_id
         )
