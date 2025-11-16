@@ -53,7 +53,10 @@ const CodeBlockPreview: React.FC<CodeBlockPreviewProps> = ({ language, content, 
     }
   }, [isStreaming, storageKey, content, language, hasBeenReady]);
 
-  const handlePreview = async () => {
+  const handlePreview = async (e: React.MouseEvent) => {
+    // 阻止事件冒泡，避免触发父组件的展开/收起
+    e.stopPropagation();
+
     // 调用后端生成短链ID，打开短链预览页面
     try {
       const resp = await previewService.createShare({

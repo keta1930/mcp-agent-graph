@@ -82,8 +82,23 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
   conversationId
 }) => {
   const [copied, setCopied] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const copyButtonRef = React.useRef<HTMLDivElement>(null);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [lockAtBottom, setLockAtBottom] = useState(true);
+
+  React.useLayoutEffect(() => {
+    if (scrollContainerRef.current && isStreaming && expanded && lockAtBottom) {
+      const el = scrollContainerRef.current;
+      el.scrollTop = el.scrollHeight - el.clientHeight;
+    }
+  }, [children, isStreaming, expanded, lockAtBottom]);
+
+  useEffect(() => {
+    if (isStreaming) {
+      setLockAtBottom(true);
+    }
+  }, [isStreaming]);
 
   const handleCopy = async () => {
     try {
@@ -180,14 +195,25 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
         </div>
       </div>
       {expanded && (
-        <div style={{
-          maxHeight: '400px',
-          overflow: 'auto',
-          background: 'rgba(255, 255, 255, 0.85)',
-          // 滚动条样式
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
-        }} className="code-block-scrollbar">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={() => {
+            if (!scrollContainerRef.current) return;
+            const el = scrollContainerRef.current;
+            const dist = el.scrollHeight - el.clientHeight - el.scrollTop;
+            const nearBottom = dist <= 4;
+            if (isStreaming) setLockAtBottom(nearBottom);
+          }}
+          style={{
+            maxHeight: '400px',
+            overflow: 'auto',
+            background: 'rgba(255, 255, 255, 0.85)',
+            // 滚动条样式
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
+          }} 
+          className="code-block-scrollbar"
+        >
           <SyntaxHighlighter
             language={language || 'text'}
             style={customCodeStyle as any}
@@ -275,7 +301,58 @@ const SmartMarkdown: React.FC<SmartMarkdownProps> = ({
   };
 
 
-  // 使用常规渲染
+  const parsed = parseCodeBlocks(content);
+  const tail = parsed.length > 0 ? parsed[parsed.length - 1] : null;
+  const hasIncompleteTail = isStreaming && tail && !tail.isComplete;
+
+  if (hasIncompleteTail) {
+    const before = content.slice(0, tail.startIndex);
+    const language = tail.type || 'text';
+    const codeText = tail.content || '';
+
+    return (
+      <div style={{
+        fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif",
+        fontSize: 'inherit'
+      }}>
+        {before && (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code({ node, ...codeProps }) {
+                const { children: codeChildren, className: codeClassName, ...restProps } = codeProps;
+                const match = /language-(\w+)/.exec(codeClassName || '');
+                const lang = match ? match[1] : '';
+                const inline = !match;
+                return !inline ? (
+                  <GlassCodeBlock language={lang} isStreaming={false} conversationId={conversationId}>
+                    {String(codeChildren).replace(/\n$/, '')}
+                  </GlassCodeBlock>
+                ) : (
+                  <code style={{
+                    background: 'rgba(139, 115, 85, 0.08)',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    fontSize: '0.9em',
+                    fontFamily: "'SF Mono', monospace",
+                    color: '#b85845'
+                  }} {...restProps}>
+                    {codeChildren}
+                  </code>
+                );
+              }
+            }}
+          >
+            {before}
+          </ReactMarkdown>
+        )}
+        <GlassCodeBlock language={language} isStreaming={true} conversationId={conversationId}>
+          {codeText}
+        </GlassCodeBlock>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif",
