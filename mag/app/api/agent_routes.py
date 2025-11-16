@@ -469,7 +469,7 @@ async def agent_run(
                 # 创建agent执行流的异步任务
                 async def agent_stream_wrapper():
                     nonlocal stream_done
-                    async for chunk in agent_stream_executor.execute_agent_invoke_stream(
+                    async for chunk in agent_stream_executor.run_agent_stream(
                         agent_name=request.agent_name,
                         user_prompt=request.user_prompt,
                         user_id=user_id,

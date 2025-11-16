@@ -221,7 +221,7 @@ async def execute_agent_task_stream(
 
         # 执行流式任务，收集所有数据
         final_result = None
-        async for item in agent_stream_executor.execute_complete_flow(
+        async for item in agent_stream_executor.run_agent_loop(
             agent_name=agent_name,
             model_name=model_name,
             messages=messages,

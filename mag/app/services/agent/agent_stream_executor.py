@@ -21,7 +21,7 @@ class AgentStreamExecutor:
         """初始化 Agent 流式执行器"""
         self.tool_executor = ToolExecutor()
 
-    async def execute_agent_invoke_stream(
+    async def run_agent_stream(
             self,
             agent_name: Optional[str],
             user_prompt: str,
@@ -34,7 +34,7 @@ class AgentStreamExecutor:
             max_iterations: Optional[int] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Agent 调用流式执行（主入口，支持多轮对话）
+        Agent 流式运行（主入口，支持多轮对话）
 
         Args:
             agent_name: Agent 名称（None 表示手动配置模式）
@@ -87,7 +87,7 @@ class AgentStreamExecutor:
 
             # 执行完整流程
             final_result = None
-            async for item in self.execute_complete_flow(
+            async for item in self.run_agent_loop(
                     agent_name=effective_config["agent_name"],
                     model_name=effective_config["model_name"],
                     messages=messages,
@@ -106,7 +106,7 @@ class AgentStreamExecutor:
 
             # 保存执行结果到数据库
             if final_result:
-                await self._save_agent_invoke_result(
+                await self._save_agent_run_result(
                     conversation_id=conversation_id,
                     agent_name=effective_config["agent_name"],
                     result=final_result,
@@ -119,7 +119,7 @@ class AgentStreamExecutor:
             yield "data: [DONE]\n\n"
 
         except Exception as e:
-            logger.error(f"execute_agent_invoke_stream 失败: {str(e)}")
+            logger.error(f"run_agent_stream 失败: {str(e)}")
             error_msg = {"error": str(e)}
             yield f"data: {json.dumps(error_msg)}\n\n"
             yield "data: [DONE]\n\n"
@@ -299,7 +299,7 @@ class AgentStreamExecutor:
         logger.info(f"✓ 加载配置完成: agent={agent_name}, model={config['model_name']}")
         return config
 
-    async def execute_complete_flow(
+    async def run_agent_loop(
             self,
             agent_name: str,
             model_name: str,
@@ -312,7 +312,7 @@ class AgentStreamExecutor:
             task_id: Optional[str] = None
     ) -> AsyncGenerator[str | Dict[str, Any], None]:
         """
-        执行完整的流式执行流程（含工具调用循环）
+        运行 Agent 循环（含工具调用循环）
 
         Args:
             agent_name: Agent 名称
@@ -506,7 +506,7 @@ class AgentStreamExecutor:
             yield result
 
         except Exception as e:
-            logger.error(f"execute_complete_flow 失败 ({agent_name}): {str(e)}")
+            logger.error(f"run_agent_loop 失败 ({agent_name}): {str(e)}")
             raise
 
     async def _prepare_agent_tools(
@@ -546,7 +546,7 @@ class AgentStreamExecutor:
 
         return tools
 
-    async def _save_agent_invoke_result(
+    async def _save_agent_run_result(
             self,
             conversation_id: str,
             agent_name: str,
@@ -556,7 +556,7 @@ class AgentStreamExecutor:
             model_name: str
     ) -> Optional[Dict[str, Any]]:
         """
-        保存 Agent 执行结果到数据库
+        保存 Agent 运行结果到数据库
 
         Args:
             conversation_id: 对话 ID
