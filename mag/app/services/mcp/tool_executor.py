@@ -163,7 +163,7 @@ class ToolExecutor:
                 arguments["agent_id"] = agent_id
             
             # 调用流式执行版本
-            async for item in agent_task_executor.handler_stream(**arguments):
+            async for item in agent_task_executor.handler(**arguments):
                 if isinstance(item, str):
                     # SSE 事件
                     yield item
