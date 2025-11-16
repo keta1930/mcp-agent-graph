@@ -3,14 +3,11 @@ import json
 import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.responses import StreamingResponse
 from typing import Dict, List, Any
 from app.infrastructure.storage.file_storage import FileManager
 from app.services.mcp.mcp_service import mcp_service
-from app.services.model.model_service import model_service
 from app.infrastructure.database.mongodb import mongodb_client
 from app.models.mcp_schema import (
-    MCPGenerationRequest,
     MCPToolRegistration, MCPToolTestRequest, MCPToolTestResponse,
     MCPConfigWithVersion, MCPServerAddRequest, MCPServerRemoveRequest
 )
@@ -567,107 +564,6 @@ async def get_mcp_tools(current_user: CurrentUser = Depends(get_current_user)):
             detail=f"获取MCP工具信息时出错: {str(e)}"
         )
 
-@router.get("/mcp/ai-generator-template", response_model=Dict[str, str])
-async def get_mcp_generator_template(current_user: CurrentUser = Depends(get_current_user)):
-    """获取AI生成MCP的提示词模板"""
-    try:
-        template = await mcp_service.get_mcp_generator_template()
-
-        return {
-            "template": template,
-            "note": "模版可作为系统提示词使用，您的需求可作为用户输入"
-        }
-    except Exception as e:
-        logger.error(f"获取MCP生成器模板时出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取MCP生成器模板时出错: {str(e)}"
-        )
-
-
-@router.post("/mcp/generate")
-async def generate_mcp_tool(request: MCPGenerationRequest, current_user: CurrentUser = Depends(get_current_user)):
-    """AI生成MCP工具接口 - 支持流式和非流式响应"""
-    try:
-        # 基本参数验证
-        if not request.requirement.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户需求不能为空"
-            )
-
-        if not request.model_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须指定模型名称"
-            )
-
-        # 验证模型是否存在
-        model_config = await model_service.get_model(request.model_name, user_id=current_user.user_id)
-        if not model_config:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"找不到模型 '{request.model_name}'"
-            )
-
-        # 生成流式响应的生成器
-        async def generate_stream():
-            try:
-                async for chunk in mcp_service.ai_generate_mcp_stream(
-                        requirement=request.requirement,
-                        model_name=request.model_name,
-                        conversation_id=request.conversation_id,
-                        user_id=current_user.user_id
-                ):
-                    yield chunk
-            except Exception as e:
-                logger.error(f"AI MCP生成流式响应出错: {str(e)}")
-                error_chunk = {
-                    "error": {
-                        "message": str(e),
-                        "type": "api_error"
-                    }
-                }
-                yield f"data: {json.dumps(error_chunk)}\n\n"
-                yield "data: [DONE]\n\n"
-
-        # 根据stream参数决定响应类型
-        if request.stream:
-            # 流式响应
-            return StreamingResponse(
-                generate_stream(),
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "X-Accel-Buffering": "no"
-                }
-            )
-        else:
-            async for chunk in generate_stream():
-                pass
-
-            if request.conversation_id:
-                from app.api.chat_routes import get_conversation_detail
-                conversation_detail = await get_conversation_detail(request.conversation_id)
-
-                conversation_detail_dict = conversation_detail.dict(exclude_none=True)
-                conversation_detail_dict["model"] = request.model_name
-                return conversation_detail_dict
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="非流式响应缺少conversation_id"
-                )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"AI MCP生成处理出错: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"处理AI MCP生成请求时出错: {str(e)}"
-        )
 
 @router.post("/mcp/register-tool", response_model=Dict[str, Any])
 async def register_mcp_tool(request: MCPToolRegistration, current_user: CurrentUser = Depends(get_current_user)):
@@ -695,7 +591,7 @@ async def register_mcp_tool(request: MCPToolRegistration, current_user: CurrentU
             )
 
         # 注册到MCP配置
-        success = await mcp_service.register_ai_mcp_tool(request.folder_name, user_id=current_user.user_id)
+        success = await mcp_service.register_mcp_tool(request.folder_name, user_id=current_user.user_id)
         if not success:
             # 注册失败，清理文件
             FileManager.delete_mcp_tool(request.folder_name)

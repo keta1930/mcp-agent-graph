@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Any, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.infrastructure.database.mongodb.repositories import (
-    ConversationRepository, GraphRepository, MCPRepository, GraphRunRepository,
+    ConversationRepository, GraphRepository, GraphRunRepository,
     TaskRepository, GraphConfigRepository, PromptRepository, ModelConfigRepository,
     MCPConfigRepository, PreviewRepository, UserRepository, InviteCodeRepository,
     TeamSettingsRepository, RefreshTokenRepository, AgentRepository,
@@ -41,7 +41,6 @@ class MongoDBClient:
 
         self.conversation_repository = None
         self.graph_repository = None
-        self.mcp_repository = None
         self.graph_run_repository = None
         self.task_repository = None
         self.graph_config_repository = None
@@ -111,12 +110,6 @@ class MongoDBClient:
         self.graph_repository = GraphRepository(
             self.db,
             self.graph_messages_collection,
-            self.conversation_repository
-        )
-
-        self.mcp_repository = MCPRepository(
-            self.db,
-            self.mcp_messages_collection,
             self.conversation_repository
         )
 
@@ -379,7 +372,6 @@ class MongoDBClient:
                 await self.agent_run_repository.delete_agent_run(conversation_id)
                 # 同时删除可能存在的AI生成消息
                 await self.graph_repository.delete_graph_generation_messages(conversation_id)
-                await self.mcp_repository.delete_mcp_generation_messages(conversation_id)
 
             # 删除conversation元数据
             return await self.conversation_repository.permanently_delete_conversation(conversation_id)
@@ -521,34 +513,6 @@ class MongoDBClient:
         """更新图生成对话的最终图配置"""
         return await self.graph_repository.update_graph_generation_final_config(conversation_id, final_graph_config)
 
-    # === MCP生成管理方法 ===
-
-    async def create_mcp_generation_conversation(self, conversation_id: str, user_id: str = "default_user") -> bool:
-        """创建新的MCP生成对话"""
-        return await self.mcp_repository.create_mcp_generation_conversation(conversation_id, user_id)
-
-    async def get_mcp_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取MCP生成对话"""
-        return await self.mcp_repository.get_mcp_generation_conversation(conversation_id)
-
-    async def add_message_to_mcp_generation(self, conversation_id: str,
-                                            message: Dict[str, Any],
-                                            model_name: str = None) -> bool:
-        """向MCP生成对话添加消息"""
-        return await self.mcp_repository.add_message_to_mcp_generation(
-            conversation_id, message, model_name
-        )
-
-    async def update_mcp_generation_parsed_results(self, conversation_id: str,
-                                                   parsed_results: Dict[str, Any]) -> bool:
-        """更新MCP生成对话的解析结果"""
-        return await self.mcp_repository.update_mcp_generation_parsed_results(conversation_id, parsed_results)
-
-    async def update_mcp_generation_token_usage(self, conversation_id: str,
-                                                prompt_tokens: int, completion_tokens: int) -> bool:
-        """更新MCP生成对话的token使用量"""
-        return await self.mcp_repository.update_mcp_generation_token_usage(conversation_id, prompt_tokens,
-                                                                           completion_tokens)
 
     # === Prompt管理方法 ===
 

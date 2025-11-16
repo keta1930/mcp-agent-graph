@@ -18,6 +18,7 @@ from .registry import (
 from . import agent_tools
 from . import conversation_document_tools
 from . import memory_tools
+from . import mcp_builder
 
 __all__ = [
     "register_system_tool",
@@ -31,5 +32,6 @@ __all__ = [
     "SYSTEM_TOOLS_REGISTRY",
     "agent_tools",
     "conversation_document_tools",
-    "memory_tools"
+    "memory_tools",
+    "mcp_builder"
 ]

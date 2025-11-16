@@ -1,8 +1,7 @@
 import logging
-from typing import Dict, List, Any, Optional, AsyncGenerator
+from typing import Dict, List, Any, Optional
 from app.services.mcp.client_manager import MCPClientManager
 from app.services.mcp.server_manager import MCPServerManager
-from app.services.mcp.ai_mcp_generator import AIMCPGenerator
 from app.services.mcp.tool_executor import ToolExecutor
 from app.services.chat.message_builder import MessageBuilder
 from app.infrastructure.database.mongodb import mongodb_client
@@ -18,7 +17,6 @@ class MCPService:
         self.server_manager: Optional[MCPServerManager] = None
 
         # 共享模块（不依赖用户状态）
-        self.ai_mcp_generator = AIMCPGenerator()
         self.message_builder = MessageBuilder()
 
     def _ensure_managers(self):
@@ -203,29 +201,8 @@ class MCPService:
         tool_executor = ToolExecutor(self)
         return await tool_executor.execute_single_tool(server_name, tool_name, params)
 
-    async def get_mcp_generator_template(self) -> str:
-        """获取MCP生成器的提示词模板"""
-        return await self.ai_mcp_generator.get_mcp_generator_template()
 
-    async def ai_generate_mcp_stream(self,
-                                     requirement: str,
-                                     model_name: str,
-                                     conversation_id: Optional[str] = None,
-                                     user_id: str = "default_user") -> AsyncGenerator[str, None]:
-        """AI生成MCP工具的流式接口"""
-        async for chunk in self.ai_mcp_generator.ai_generate_stream(
-                requirement=requirement,
-                model_name=model_name,
-                conversation_id=conversation_id,
-                user_id=user_id
-        ):
-            yield chunk
-
-    async def get_mcp_generation_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
-        """获取MCP生成对话"""
-        return await mongodb_client.get_mcp_generation_conversation(conversation_id)
-
-    async def register_ai_mcp_tool(self, tool_name: str, user_id: str = "default_user") -> bool:
+    async def register_mcp_tool(self, tool_name: str, user_id: str = "default_user") -> bool:
         """注册AI生成的MCP工具到团队配置
 
         Args:
@@ -235,7 +212,67 @@ class MCPService:
         Returns:
             bool: 是否成功
         """
-        return await self.ai_mcp_generator.register_ai_mcp_tool_stdio(tool_name, user_id)
+        try:
+            import asyncio
+            from datetime import datetime
+            from app.infrastructure.storage.file_storage import FileManager
+
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    # 获取当前配置
+                    current_config_data = await mongodb_client.get_mcp_config()
+                    current_config = current_config_data.get("config", {"mcpServers": {}})
+                    current_version = current_config_data.get("version", 1)
+
+                    # 获取虚拟环境Python解释器和主脚本路径
+                    venv_python = FileManager.get_mcp_tool_venv_python(tool_name)
+                    main_script = FileManager.get_mcp_tool_main_script(tool_name)
+
+                    if not venv_python or not main_script:
+                        logger.error(f"找不到工具 {tool_name} 的Python解释器或主脚本")
+                        return False
+
+                    # 添加到配置
+                    current_config.setdefault("mcpServers", {})[tool_name] = {
+                        "autoApprove": [],
+                        "disabled": False,
+                        "timeout": 60,
+                        "command": str(venv_python),
+                        "args": [str(main_script)],
+                        "transportType": "stdio",
+                        "ai_generated": True,
+                        "provider_user_id": user_id,
+                        "created_at": datetime.now().isoformat()
+                    }
+
+                    # 更新配置（带版本控制）
+                    success = await self.update_config(current_config, current_version)
+
+                    # 检查版本冲突
+                    if success.get("status", {}).get("error") == "version_conflict":
+                        logger.warning(f"注册MCP工具时版本冲突，重试 {attempt + 1}/{max_retries}")
+                        await asyncio.sleep(0.1)
+                        continue
+
+                    # 检查是否成功
+                    if success.get("status", {}).get("message"):
+                        logger.info(f"成功注册AI生成的MCP工具: {tool_name}")
+                        return True
+                    else:
+                        logger.error(f"注册MCP工具失败: {success}")
+                        return False
+
+                except Exception as e:
+                    logger.error(f"注册AI生成的MCP工具时出错: {str(e)}")
+                    return False
+
+            logger.error(f"注册MCP工具超过最大重试次数: {tool_name}")
+            return False
+
+        except Exception as e:
+            logger.error(f"register_ai_mcp_tool 执行失败: {str(e)}")
+            return False
 
     async def cleanup(self, force: bool = True):
         """清理资源

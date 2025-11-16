@@ -127,15 +127,6 @@ class MCPConfigResponse(BaseModel):
     updated_at: Optional[str] = Field(None, description="最后更新时间")
 
 
-class MCPGenerationRequest(BaseModel):
-    """MCP生成请求"""
-    requirement: str
-    model_name: str
-    conversation_id: Optional[str] = None
-    user_id: str = Field(default="default_user", description="用户ID")
-    stream: bool = Field(default=True, description="是否使用流式响应")
-
-
 class MCPToolRegistration(BaseModel):
     """MCP工具注册请求"""
     folder_name: str
