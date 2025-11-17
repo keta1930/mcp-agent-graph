@@ -584,7 +584,9 @@ class AgentStreamExecutor:
                 )
 
             # 确保 agent_run 文档存在
-            await mongodb_client.agent_run_repository.create_agent_run(conversation_id)
+            agent_run = await mongodb_client.agent_run_repository.get_agent_run(conversation_id)
+            if not agent_run:
+                await mongodb_client.agent_run_repository.create_agent_run(conversation_id)
 
             # 获取当前主线程的 round 数量
             current_round_count = await mongodb_client.agent_run_repository.get_round_count(
