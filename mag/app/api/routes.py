@@ -7,7 +7,6 @@ from .conversation_routes import router as conversation_router
 from .graph_import_export_routes import router as graph_import_export_router
 from .mcp_routes import router as mcp_router
 from .model_routes import router as model_router
-from .graph_gen_routes import router as graph_gen_router
 from .graph_routes import router as graph_router
 from .system_routes import router as system_router
 from .prompt_routes import router as prompt_router
@@ -33,7 +32,6 @@ router.include_router(conversation_router)
 router.include_router(graph_import_export_router)
 router.include_router(mcp_router)
 router.include_router(model_router)
-router.include_router(graph_gen_router)
 router.include_router(graph_router)
 router.include_router(system_router)
 router.include_router(prompt_router)

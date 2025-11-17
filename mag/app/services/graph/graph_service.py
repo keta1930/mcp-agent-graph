@@ -11,7 +11,6 @@ from app.services.prompt.prompt_service import prompt_service
 from app.services.graph.graph_processor import GraphProcessor
 from app.services.graph.conversation_manager import ConversationManager
 from app.services.graph.graph_executor import GraphExecutor
-from app.services.graph.ai_graph_generator import AIGraphGenerator
 from app.utils.sse_helper import SSEHelper
 from app.services.graph.background_executor import BackgroundExecutor
 from app.infrastructure.database.mongodb import mongodb_client
@@ -28,7 +27,6 @@ class GraphService:
         self.conversation_manager = ConversationManager()
         self.executor = GraphExecutor(self.conversation_manager, mcp_service)
         self.background_executor = BackgroundExecutor(self.conversation_manager, mcp_service)
-        self.ai_generator = AIGraphGenerator()
         self.active_conversations = self.conversation_manager.active_conversations
         self.mongodb_client = mongodb_client
         self._task_service = None
@@ -390,24 +388,7 @@ class GraphService:
             logger.error(f"继续会话流式处理时出错: {str(e)}")
             yield SSEHelper.send_error(f"继续会话时出错: {str(e)}")
 
-    async def ai_generate_graph(self,
-                                requirement: str,
-                                model_name: str,
-                                mcp_servers: List[str],
-                                conversation_id: Optional[str] = None,
-                                user_id: str = "default_user",
-                                graph_config: Optional[Dict[str, Any]] = None,
-                                ) -> AsyncGenerator[str, None]:
-        """AI生成图的流式接口"""
-        async for chunk in self.ai_generator.ai_generate_stream(
-                requirement=requirement,
-                model_name=model_name,
-                mcp_servers=mcp_servers,
-                conversation_id=conversation_id,
-                user_id=user_id,
-                graph_config=graph_config,
-        ):
-            yield chunk
+
 
     def generate_mcp_script(self, graph_name: str, graph_config: Dict[str, Any], host_url: str) -> Dict[str, Any]:
         """生成MCP服务器脚本"""
