@@ -83,6 +83,35 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
     }
   };
 
+  // 处理分类选择变更
+  const handleCategoryToggle = (category: ToolCategory, checked: boolean) => {
+    const categoryToolNames = category.tools.map(tool => tool.name);
+    if (checked) {
+      // 添加该分类下所有工具
+      const newTools = [...selectedTools];
+      categoryToolNames.forEach(toolName => {
+        if (!newTools.includes(toolName)) {
+          newTools.push(toolName);
+        }
+      });
+      onToolsChange(newTools);
+    } else {
+      // 移除该分类下所有工具
+      onToolsChange(selectedTools.filter(t => !categoryToolNames.includes(t)));
+    }
+  };
+
+  // 检查某个分类是否全部选中
+  const isCategoryFullySelected = (category: ToolCategory): boolean => {
+    return category.tools.every(tool => selectedTools.includes(tool.name));
+  };
+
+  // 检查某个分类是否部分选中
+  const isCategoryPartiallySelected = (category: ToolCategory): boolean => {
+    const selectedInCategory = category.tools.filter(tool => selectedTools.includes(tool.name));
+    return selectedInCategory.length > 0 && selectedInCategory.length < category.tools.length;
+  };
+
   // 计算已选择的工具数量
   const selectedCount = selectedTools.length;
 
@@ -122,14 +151,32 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
             ) : (
               <Collapse
                 ghost
-                defaultActiveKey={categories.map(cat => cat.category)}
+                defaultActiveKey={[]}
                 className="system-tool-selector-collapse"
               >
                 {categories.map(category => (
                   <Panel
                     header={
-                      <div className="system-tool-category-header">
-                        <Text strong>{category.category}</Text>
+                      <div 
+                        className="system-tool-category-header"
+                        onClick={(e) => {
+                          // 阻止点击checkbox时触发折叠面板
+                          if ((e.target as HTMLElement).closest('.ant-checkbox-wrapper')) {
+                            e.stopPropagation();
+                          }
+                        }}
+                      >
+                        <Checkbox
+                          checked={isCategoryFullySelected(category)}
+                          indeterminate={isCategoryPartiallySelected(category)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleCategoryToggle(category, e.target.checked);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Text strong>{category.category}</Text>
+                        </Checkbox>
                         <Text type="secondary" style={{ fontSize: '12px' }}>
                           {category.tool_count} 个工具
                         </Text>

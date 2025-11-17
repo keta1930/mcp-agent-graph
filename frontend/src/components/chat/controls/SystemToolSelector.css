@@ -19,17 +19,18 @@
 }
 
 .system-tool-selector-button:hover {
-  color: #a0826d;
-  background: rgba(160, 130, 109, 0.1);
+  color: #b85845;
+  background: rgba(184, 88, 69, 0.1);
 }
 
 .system-tool-selector-button.active {
-  color: #a0826d;
-  background: rgba(160, 130, 109, 0.1);
+  color: #b85845;
+  background: rgba(184, 88, 69, 0.1);
 }
 
 .system-tool-selector-button.has-selection {
-  color: #a0826d;
+  color: #b85845;
+  background: rgba(184, 88, 69, 0.1);
 }
 
 .system-tool-selector-panel {
@@ -99,10 +100,17 @@
   padding: 8px 12px !important;
   border-radius: 6px;
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: row-reverse;
 }
 
 .system-tool-selector-collapse .ant-collapse-header:hover {
   background: rgba(160, 130, 109, 0.05);
+}
+
+.system-tool-selector-collapse .ant-collapse-expand-icon {
+  padding-inline-start: 8px !important;
+  padding-inline-end: 0 !important;
 }
 
 .system-tool-category-header {
@@ -115,6 +123,16 @@
 
 .system-tool-category-header .ant-typography {
   margin: 0;
+}
+
+.system-tool-category-header .ant-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+.system-tool-category-header .ant-checkbox-wrapper .ant-typography {
+  margin-right: 8px;
 }
 
 .system-tool-list {

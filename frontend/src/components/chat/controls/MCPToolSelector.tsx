@@ -74,9 +74,9 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
           onClick={() => setShowPanel(!showPanel)}
           size={size}
           style={{
-            color: enabledMcpCount > 0 ? '#a0826d' : 'rgba(139, 115, 85, 0.75)',
+            color: enabledMcpCount > 0 ? '#b85845' : 'rgba(139, 115, 85, 0.75)',
             border: 'none',
-            background: showPanel ? 'rgba(160, 130, 109, 0.1)' : 'transparent',
+            background: showPanel || enabledMcpCount > 0 ? 'rgba(184, 88, 69, 0.1)' : 'transparent',
             transition: 'all 0.2s ease',
             width: '28px',
             height: '28px',
@@ -87,12 +87,12 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
             padding: 0
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#a0826d';
-            e.currentTarget.style.background = 'rgba(160, 130, 109, 0.1)';
+            e.currentTarget.style.color = '#b85845';
+            e.currentTarget.style.background = 'rgba(184, 88, 69, 0.1)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = enabledMcpCount > 0 ? '#a0826d' : 'rgba(139, 115, 85, 0.75)';
-            e.currentTarget.style.background = showPanel ? 'rgba(160, 130, 109, 0.1)' : 'transparent';
+            e.currentTarget.style.color = enabledMcpCount > 0 ? '#b85845' : 'rgba(139, 115, 85, 0.75)';
+            e.currentTarget.style.background = showPanel || enabledMcpCount > 0 ? 'rgba(184, 88, 69, 0.1)' : 'transparent';
           }}
         />
       </Tooltip>
@@ -157,7 +157,7 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
                   transition: 'all 0.2s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(160, 130, 109, 0.05)';
+                  e.currentTarget.style.background = 'rgba(184, 88, 69, 0.05)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
@@ -175,8 +175,8 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
                         height: '6px',
                         borderRadius: '50%',
                         flexShrink: 0,
-                        background: isConnected ? '#a0826d' : '#d4c4b0',
-                        boxShadow: isConnected ? '0 0 0 2px rgba(160, 130, 109, 0.2)' : 'none'
+                        background: isConnected ? '#b85845' : '#d4c4b0',
+                        boxShadow: isConnected ? '0 0 0 2px rgba(184, 88, 69, 0.2)' : 'none'
                       }}
                       title={isConnected ? '已连接' : '未连接'}
                     />
