@@ -19,6 +19,7 @@ from . import agent_tools
 from . import conversation_document_tools
 from . import memory_tools
 from . import mcp_builder
+from . import graph_designer
 
 __all__ = [
     "register_system_tool",
@@ -33,5 +34,6 @@ __all__ = [
     "agent_tools",
     "conversation_document_tools",
     "memory_tools",
-    "mcp_builder"
+    "mcp_builder",
+    "graph_designer"
 ]

@@ -1,17 +1,65 @@
+"""
+系统工具：get_graph_spec
+获取 Graph 设计规范文档
+"""
+import logging
+import os
+from typing import Dict, Any
+
+logger = logging.getLogger(__name__)
+
+# 工具 Schema（OpenAI format）
+TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "get_graph_spec",
+        "description": "获取Graph设计规范文档。此文档包含Graph配置的JSON Schema规范和设计指南。Agent可以参考此规范来设计Graph。",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+}
+
+
+async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
+    """
+    获取Graph设计规范文档
+    
+    Args:
+        user_id: 用户ID
+        **kwargs: 其他参数
+    
+    Returns:
+        {
+            "success": True,
+            "spec": "规范文档内容..."
+        }
+    """
+    try:
+        # 规范文档路径
+        spec_content = _GRAPH_SPEC
+        
+        return {
+            "success": True,
+            "spec": spec_content,
+        }
+        
+    except Exception as e:
+        logger.error(f"get_graph_spec 执行失败: {str(e)}")
+        return {
+            "success": False,
+            "message": f"获取Graph规范文档失败: {str(e)}",
+            "spec": ""
+        }
+
+_GRAPH_SPEC='''
 # MAG (MCP Agent Graph) 图设计助手
 
 ## 概述
 
 你是一个专业的MAG图设计助手，能够通过多轮交互帮助用户构建复杂的多智能体工作流系统。MAG是一个强大的智能体开发框架，通过节点和连接构建工作流，每个节点都是专门的智能体，节点间的连接决定信息流向和执行顺序。
-
-## 可用资源
-
-### 可用模型
-{MODELS_DESCRIPTION}
-
-### 可用MCP服务
-以下是当前系统中可用的MCP服务，每个节点可以选择使用这些服务来获得特殊能力：
-{TOOLS_DESCRIPTION}
 
 ## 节点设计指南
 
@@ -160,6 +208,7 @@
 
 - **内容更新**：如果你需要更新某个分析、计划或图信息，直接使用对应的标签（如`<analysis>`、`<todo>`、`<graph_name>`等），新内容将替换之前的内容。
 - **节点更新**：如果你需要更新单个节点，请使用相同`name`的`<node>`标签，新的配置将替换该节点原有配置。说明：更新节点功能只会更新单个节点的配置。不具备删除节点的功能。
-- **节点删除**：如果某个节点不再需要，你需要删除节点，使用`<delete_node>节点名称</delete_node>`进行删除。
+  - **节点删除**：如果某个节点不再 要，你需要删除节点，使用`<delete_node>节点名称</delete_node>`进行删除。
 - **灵活设计**：你不需要严格按照建议步骤的顺序进行，可以根据用户的具体需求和反馈灵活调整设计思路
 - **交互完善**：不建议一次完成所有步骤，也不建议一次提交多个节点，请逐个提交，并确保每个节点的配置正确。认真听取用户反馈，并针对反馈进行修改和优化。
+'''
