@@ -1,6 +1,6 @@
 // src/pages/ChatSystem.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { message, Button, Dropdown, Menu, Tooltip, Badge } from 'antd';
+import { message, Button, Dropdown, Menu, Tooltip } from 'antd';
 import { CompressOutlined, DownOutlined, FileOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConversationSidebar from '../components/chat/sidebar/ConversationSidebar';
@@ -615,36 +615,34 @@ const ChatSystem: React.FC = () => {
                   {/* Documents 按钮 */}
                   {displayConversation && (
                     <Tooltip title="查看对话文档">
-                      <Badge count={displayConversation.documents?.total_count || 0} showZero={false}>
-                        <Button
-                          type="text"
-                          icon={<FileOutlined />}
-                          size="small"
-                          onClick={() => setDocumentsDrawerVisible(true)}
-                          style={{
-                            color: '#8b7355',
-                            border: '1px solid rgba(139, 115, 85, 0.2)',
-                            borderRadius: '6px',
-                            background: 'rgba(255, 255, 255, 0.6)',
-                            padding: '4px 12px',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = '#a0826d';
-                            e.currentTarget.style.borderColor = 'rgba(160, 130, 109, 0.3)';
-                            e.currentTarget.style.background = 'rgba(160, 130, 109, 0.05)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = '#8b7355';
-                            e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)';
-                          }}
-                        >
-                          文档
-                        </Button>
-                      </Badge>
+                      <Button
+                        type="text"
+                        icon={<FileOutlined />}
+                        size="small"
+                        onClick={() => setDocumentsDrawerVisible(true)}
+                        style={{
+                          color: '#8b7355',
+                          border: '1px solid rgba(139, 115, 85, 0.2)',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 255, 255, 0.6)',
+                          padding: '4px 12px',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#a0826d';
+                          e.currentTarget.style.borderColor = 'rgba(160, 130, 109, 0.3)';
+                          e.currentTarget.style.background = 'rgba(160, 130, 109, 0.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#8b7355';
+                          e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)';
+                        }}
+                      >
+                        文档：{displayConversation.documents?.total_count || 0}
+                      </Button>
                     </Tooltip>
                   )}
                   
