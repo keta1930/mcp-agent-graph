@@ -128,7 +128,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
       overflow: 'hidden',
       transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
     }}>
-      <div 
+      <div
         onClick={() => setExpanded(!expanded)}
         style={{
           display: 'flex',
@@ -195,7 +195,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
         </div>
       </div>
       {expanded && (
-        <div 
+        <div
           ref={scrollContainerRef}
           onScroll={() => {
             if (!scrollContainerRef.current) return;
@@ -211,7 +211,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
             // 滚动条样式
             scrollbarWidth: 'thin',
             scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
-          }} 
+          }}
           className="code-block-scrollbar"
         >
           <SyntaxHighlighter
@@ -400,10 +400,21 @@ interface ToolCallDisplayProps {
   toolCall: any;
   result?: string;
   conversationId?: string;
+  isStreaming?: boolean;
 }
 
-const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, conversationId }) => {
+const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, conversationId, isStreaming = false }) => {
   const [expanded, setExpanded] = useState(false);
+  const paramsRef = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    if (paramsRef.current && isStreaming && expanded) {
+      const el = paramsRef.current;
+      el.scrollTop = el.scrollHeight - el.clientHeight;
+    }
+  }, [toolCall?.function?.arguments, isStreaming, expanded]);
+  useEffect(() => {
+    if (isStreaming) setExpanded(true);
+  }, [isStreaming]);
 
   return (
     <div style={{
@@ -439,6 +450,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, con
           }}>
             工具调用
           </Tag>
+          {isStreaming && !result && <LoadingOutlined style={{ color: '#b85845', fontSize: '14px' }} />}
         </div>
         {expanded ? (
           <ChevronDown size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
@@ -456,7 +468,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, con
           // 滚动条样式
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
-        }} className="tool-call-scrollbar">
+        }} className="tool-call-scrollbar" ref={paramsRef}>
           <div style={{ marginTop: '12px' }}>
             <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>参数</Text>
             <div style={{ marginTop: '8px' }}>
@@ -746,8 +758,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
             height: '8px',
             borderRadius: '50%',
             background: isUser ? '#a0826d' : '#b85845',
-            boxShadow: isUser 
-              ? '0 0 0 0 rgba(160, 130, 109, 0.4)' 
+            boxShadow: isUser
+              ? '0 0 0 0 rgba(160, 130, 109, 0.4)'
               : '0 0 0 0 rgba(184, 88, 69, 0.4)',
             animation: 'inkDotPulse 2s ease-in-out infinite'
           }} />
@@ -943,6 +955,7 @@ const StreamingBlockDisplay: React.FC<StreamingBlockDisplayProps> = ({
               toolCall={toolCall}
               result={toolCall.id ? combinedToolResults[toolCall.id] : undefined}
               conversationId={conversationId}
+              isStreaming={!block.isComplete}
             />
           ))}
         </div>
@@ -1167,7 +1180,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                     />
                   );
                 })}
-                
+
                 {/* Agent 元信息展示 - 仅在 Agent 模式下显示，移到消息下方 */}
                 {renderingMode === 'agent' && (round.agent_name || round.model || round.prompt_tokens !== undefined) && (
                   <div style={{
@@ -1290,7 +1303,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                 const taskBlocks = enhancedStreamingState.blocks.filter(
                   (b: StreamingBlock) => b.taskId === taskBlock.taskId && b.type !== 'task'
                 );
-                
+
                 return (
                   <div key={block.id} className="streaming-block task-block">
                     <TaskBlock
@@ -1303,12 +1316,12 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                   </div>
                 );
               }
-              
+
               // Skip blocks that belong to a task (they're rendered inside TaskBlock)
               if (block.taskId) {
                 return null;
               }
-              
+
               // Render regular blocks
               return (
                 <div key={block.id} className={`streaming-block ${block.type}-block`}>
@@ -1456,9 +1469,14 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
       const prevBlock = prevStreamingState.blocks[i];
       const nextBlock = nextStreamingState.blocks[i];
 
+      const prevToolCalls = prevBlock?.toolCalls || [];
+      const nextToolCalls = nextBlock?.toolCalls || [];
+
       if (prevBlock?.content !== nextBlock?.content ||
           prevBlock?.isComplete !== nextBlock?.isComplete ||
-          prevBlock?.id !== nextBlock?.id) {
+          prevBlock?.id !== nextBlock?.id ||
+          prevToolCalls.length !== nextToolCalls.length ||
+          JSON.stringify(prevToolCalls) !== JSON.stringify(nextToolCalls)) {
         return false;
       }
     }

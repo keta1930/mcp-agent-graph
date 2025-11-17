@@ -80,8 +80,11 @@ const ReasoningDisplay: React.FC<{ content: string }> = ({ content }) => {
   );
 };
 
-const ToolCallDisplay: React.FC<{ toolCall: any; result?: string }> = ({ toolCall, result }) => {
+const ToolCallDisplay: React.FC<{ toolCall: any; result?: string; isStreaming?: boolean }> = ({ toolCall, result, isStreaming = false }) => {
   const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (isStreaming) setExpanded(true);
+  }, [isStreaming]);
 
   return (
     <div style={{
@@ -116,6 +119,7 @@ const ToolCallDisplay: React.FC<{ toolCall: any; result?: string }> = ({ toolCal
           }}>
             工具调用
           </Tag>
+          {isStreaming && !result && <Loader size={14} style={{ color: '#b85845' }} />}
         </div>
         {expanded ? (
           <ChevronDown size={18} strokeWidth={1.5} style={{ color: '#8b7355' }} />
@@ -187,12 +191,12 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
   useEffect(() => {
     if (taskBlock.taskStatus === 'completed' || taskBlock.taskStatus === 'failed') {
       setShowCompletionFeedback(true);
-      
+
       // Auto-collapse after completion (optional)
       const timer = setTimeout(() => {
         setShowCompletionFeedback(false);
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [taskBlock.taskStatus]);
@@ -237,7 +241,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
   };
 
   return (
-    <div 
+    <div
       className={`task-block-container ${showCompletionFeedback ? 'task-completed-feedback' : ''}`}
       data-task-status={taskBlock.taskStatus}
     >
@@ -246,17 +250,17 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
         onClick={() => setExpanded(!expanded)}
         style={{
           borderColor: `rgba(${taskBlock.taskStatus === 'running' ? '184, 88, 69' : taskBlock.taskStatus === 'completed' ? '160, 130, 109' : '212, 87, 77'}, 0.2)`,
-          background: showCompletionFeedback 
-            ? taskBlock.taskStatus === 'completed' 
-              ? 'rgba(160, 130, 109, 0.12)' 
+          background: showCompletionFeedback
+            ? taskBlock.taskStatus === 'completed'
+              ? 'rgba(160, 130, 109, 0.12)'
               : 'rgba(212, 87, 77, 0.12)'
             : 'rgba(245, 243, 240, 0.6)'
         }}
       >
         <div className="task-block-header-left">
-          <div 
+          <div
             className={`task-status-indicator ${taskBlock.taskStatus === 'running' ? 'running' : ''}`}
-            style={{ background: getStatusColor() }} 
+            style={{ background: getStatusColor() }}
           />
           {getStatusIcon()}
           <span className="task-id">Task {taskBlock.taskId}</span>
@@ -289,7 +293,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
                 {block.type === 'reasoning' && block.content && (
                   <ReasoningDisplay content={block.content} />
                 )}
-                
+
                 {block.type === 'content' && block.content && (
                   <div style={{
                     color: '#2d2d2d',
@@ -303,7 +307,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
                     </ReactMarkdown>
                   </div>
                 )}
-                
+
                 {block.type === 'tool_calls' && block.toolCalls && block.toolCalls.length > 0 && (
                   <div>
                     {block.toolCalls.map((toolCall, index) => (
@@ -311,6 +315,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
                         key={toolCall.id || index}
                         toolCall={toolCall}
                         result={toolCall.id ? toolResults[toolCall.id] : undefined}
+                        isStreaming={!block.isComplete}
                       />
                     ))}
                   </div>
