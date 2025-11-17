@@ -64,7 +64,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         summary = kwargs.get("summary", "")
         content = kwargs.get("content", "")
         log = kwargs.get("log", "")
-        agent = kwargs.get("agent", "assistant")
+        agent = kwargs.get("agent_id", "assistant")
 
         if not conversation_id or not filename:
             return {
@@ -81,9 +81,6 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 "message": error_msg,
                 "filename": filename
             }
-
-        # 初始化documents字段
-        await mongodb_client.conversation_repository.initialize_documents_field(conversation_id)
 
         # 检查文件是否已存在
         file_exists = await mongodb_client.conversation_repository.file_exists(conversation_id, filename)
@@ -116,7 +113,8 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             summary=summary,
             size=minio_result["size"],
             version_id=minio_result["version_id"],
-            agent=agent
+            agent=agent,
+            comment=log
         )
 
         if success:

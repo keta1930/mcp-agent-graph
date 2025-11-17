@@ -85,8 +85,6 @@ class ConversationRepository:
             conversation = await self.get_conversation(conversation_id)
             if conversation:
                 logger.debug(f"对话已存在: {conversation_id}")
-                # 确保 documents 字段存在（兼容旧数据）
-                await self.initialize_documents_field(conversation_id)
                 return True
 
             # 对话不存在，创建新对话
@@ -512,7 +510,7 @@ class ConversationRepository:
 
     async def add_file_metadata(self, conversation_id: str, filename: str,
                                summary: str, size: int, version_id: str,
-                               agent: str = "user") -> bool:
+                               agent: str = "user", comment: str = "创建文件") -> bool:
         """
         添加文件元数据到MongoDB
 
@@ -523,6 +521,7 @@ class ConversationRepository:
             size: 文件大小（字节）
             version_id: MinIO版本ID
             agent: 执行操作的agent名称
+            comment: 操作日志说明（默认：创建文件）
 
         Returns:
             bool: 是否成功
@@ -542,7 +541,7 @@ class ConversationRepository:
                     {
                         "log_id": log_id,
                         "agent": agent,
-                        "comment": "创建文件",
+                        "comment": comment,
                         "timestamp": now
                     }
                 ]
@@ -757,38 +756,6 @@ class ConversationRepository:
 
         except Exception as e:
             logger.error(f"检查文件是否存在失败: {str(e)}")
-            return False
-
-    async def initialize_documents_field(self, conversation_id: str) -> bool:
-        """
-        初始化会话的documents字段（如果不存在）
-
-        Args:
-            conversation_id: 会话ID
-
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            result = await self.conversations_collection.update_one(
-                {"_id": conversation_id, "documents": {"$exists": False}},
-                {
-                    "$set": {
-                        "documents": {
-                            "total_count": 0,
-                            "files": []
-                        }
-                    }
-                }
-            )
-
-            if result.modified_count > 0:
-                logger.info(f"初始化documents字段成功: {conversation_id}")
-
-            return True
-
-        except Exception as e:
-            logger.error(f"初始化documents字段失败: {str(e)}")
             return False
 
     async def compact_conversation(self,

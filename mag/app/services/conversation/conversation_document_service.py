@@ -218,9 +218,6 @@ class ConversationDocumentService:
                     "message": "会话不存在或无权限访问"
                 }
 
-            # 初始化documents字段
-            await mongodb_client.conversation_repository.initialize_documents_field(conversation_id)
-
             # 检查文件是否已存在
             file_exists = await mongodb_client.conversation_repository.file_exists(conversation_id, filename)
             if file_exists:

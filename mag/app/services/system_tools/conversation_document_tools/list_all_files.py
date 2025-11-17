@@ -29,7 +29,6 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if not conversation_id:
             return {"success": False, "error": "缺少conversation_id参数", "total_count": 0, "files": []}
 
-        await mongodb_client.conversation_repository.initialize_documents_field(conversation_id)
         documents = await mongodb_client.conversation_repository.get_all_files_metadata(conversation_id)
         files = [file["filename"] for file in documents.get("files", [])]
 
