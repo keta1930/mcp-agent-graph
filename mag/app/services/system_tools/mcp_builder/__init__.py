@@ -2,10 +2,7 @@
 MCP构建器系统工具
 提供MCP工具的规范获取和注册功能
 """
-import logging
 from ..registry import register_system_tool
-
-logger = logging.getLogger(__name__)
 
 # 导入工具模块
 from . import get_mcp_spec
@@ -26,4 +23,7 @@ register_system_tool(
     category="mcp_builder"
 )
 
-logger.info("MCP构建器工具已注册：get_mcp_spec, register_mcp")
+__all__ = [
+    "get_mcp_spec",
+    "register_mcp"
+]

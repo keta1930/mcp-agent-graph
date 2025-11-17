@@ -2,10 +2,7 @@
 Agent 创建器系统工具
 提供 Agent 的规范获取和注册功能
 """
-import logging
 from ..registry import register_system_tool
-
-logger = logging.getLogger(__name__)
 
 # 导入工具模块
 from . import get_agent_spec
@@ -26,4 +23,7 @@ register_system_tool(
     category="agent_creator"
 )
 
-logger.info("Agent 创建器工具已注册：get_agent_spec, register_agent")
+__all__ = [
+    "get_agent_spec",
+    "register_agent"
+]

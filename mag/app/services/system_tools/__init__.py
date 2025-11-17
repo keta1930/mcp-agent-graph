@@ -21,6 +21,7 @@ from . import memory_tools
 from . import mcp_builder
 from . import graph_designer
 from . import agent_creator
+from . import prompt_generator
 
 __all__ = [
     "register_system_tool",
@@ -37,5 +38,6 @@ __all__ = [
     "memory_tools",
     "mcp_builder",
     "graph_designer",
-    "agent_creator"
+    "agent_creator",
+    "prompt_generator"
 ]
