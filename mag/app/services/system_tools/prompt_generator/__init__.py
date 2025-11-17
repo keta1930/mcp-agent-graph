@@ -1,11 +1,12 @@
 """
 Prompt 生成器系统工具
-提供 Prompt 的规范获取和注册功能
+提供 Prompt 的规范获取、导出和注册功能
 """
 from ..registry import register_system_tool
 
 # 导入工具模块
 from . import get_prompt_spec
+from . import export_prompt_to_document
 from . import register_prompt
 
 # 注册工具
@@ -13,6 +14,13 @@ register_system_tool(
     name="get_prompt_spec",
     schema=get_prompt_spec.TOOL_SCHEMA,
     handler=get_prompt_spec.handler,
+    category="prompt_generator"
+)
+
+register_system_tool(
+    name="export_prompt_to_document",
+    schema=export_prompt_to_document.TOOL_SCHEMA,
+    handler=export_prompt_to_document.handler,
     category="prompt_generator"
 )
 
@@ -25,5 +33,6 @@ register_system_tool(
 
 __all__ = [
     "get_prompt_spec",
+    "export_prompt_to_document",
     "register_prompt"
 ]
