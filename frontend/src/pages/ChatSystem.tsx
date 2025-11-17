@@ -121,7 +121,6 @@ const ChatSystem: React.FC = () => {
     setPendingUserMessage(null);
     setTemporaryConversation(null);
     setSelectedGraphName('');
-    setInheritedConfig({}); // 清除继承的配置，切换到现有对话时不应保留新建对话的配置
 
     // 先设置新的活跃对话ID并加载新对话，不清除当前对话以避免闪烁
     setActiveConversationId(conversationId);
@@ -168,17 +167,15 @@ const ChatSystem: React.FC = () => {
       }
 
       // 从对话详情中恢复输入配置
-      if (currentConversation.input_config) {
-        setInheritedConfig({
-          selectedModel: currentConversation.input_config.selected_model,
-          selectedGraph: currentConversation.input_config.selected_graph,
-          systemPrompt: currentConversation.input_config.system_prompt,
-          selectedMCPServers: currentConversation.input_config.selected_mcp_servers || [],
-          selectedAgent: currentConversation.input_config.selected_agent,
-          selectedSystemTools: currentConversation.input_config.selected_system_tools || [],
-          maxIterations: currentConversation.input_config.max_iterations
-        });
-      }
+      setInheritedConfig({
+        selectedModel: currentConversation.input_config?.selected_model,
+        selectedGraph: currentConversation.input_config?.selected_graph,
+        systemPrompt: currentConversation.input_config?.system_prompt,
+        selectedMCPServers: currentConversation.input_config?.selected_mcp_servers || [],
+        selectedAgent: currentConversation.input_config?.selected_agent,
+        selectedSystemTools: currentConversation.input_config?.selected_system_tools || [],
+        maxIterations: currentConversation.input_config?.max_iterations
+      });
 
       // 对话加载完成后，平滑滚动到底部
       setTimeout(() => {

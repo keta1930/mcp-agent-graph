@@ -76,51 +76,30 @@ const InputArea: React.FC<InputAreaProps> = ({
   // 初始化继承的配置（只在第一次或配置变化时执行）
   useEffect(() => {
     if (!isConfigInitialized || Object.keys(inheritedConfig).length > 0) {
-      // 设置模型
-      if (inheritedConfig.selectedModel) {
-        setSelectedModel(inheritedConfig.selectedModel);
-      }
+      // 设置模型（如果为 undefined 则清空）
+      setSelectedModel(inheritedConfig.selectedModel || '');
       
-      // 设置图
-      if (inheritedConfig.selectedGraph) {
-        setSelectedGraph(inheritedConfig.selectedGraph);
-      }
+      // 设置图（如果为 undefined 则清空）
+      setSelectedGraph(inheritedConfig.selectedGraph || '');
       
-      // 设置系统提示词
-      if (inheritedConfig.systemPrompt !== undefined) {
-        setSystemPrompt(inheritedConfig.systemPrompt);
-      }
+      // 设置系统提示词（如果为 undefined 则清空）
+      setSystemPrompt(inheritedConfig.systemPrompt || '');
       
-      // 设置 Agent
-      if (inheritedConfig.selectedAgent !== undefined) {
-        setSelectedAgent(inheritedConfig.selectedAgent);
-      }
+      // 设置 Agent（如果为 undefined 则清空）
+      setSelectedAgent(inheritedConfig.selectedAgent !== undefined ? inheritedConfig.selectedAgent : null);
       
-      // 设置系统工具
-      if (inheritedConfig.selectedSystemTools && inheritedConfig.selectedSystemTools.length > 0) {
-        setSelectedSystemTools(inheritedConfig.selectedSystemTools);
-      }
+      // 设置系统工具（如果为 undefined 或空数组则清空）
+      setSelectedSystemTools(inheritedConfig.selectedSystemTools || []);
       
-      // 设置最大迭代次数
-      if (inheritedConfig.maxIterations !== undefined) {
-        setMaxIterations(inheritedConfig.maxIterations);
-      }
+      // 设置最大迭代次数（如果为 undefined 则清空）
+      setMaxIterations(inheritedConfig.maxIterations !== undefined ? inheritedConfig.maxIterations : null);
       
       // 设置 MCP 服务器
-      if (inheritedConfig.selectedMCPServers && inheritedConfig.selectedMCPServers.length > 0) {
-        const initialStates: Record<string, boolean> = {};
-        availableMCPServers.forEach(serverName => {
-          initialStates[serverName] = inheritedConfig.selectedMCPServers?.includes(serverName) || false;
-        });
-        setSelectedMCPServers(initialStates);
-      } else if (!isConfigInitialized) {
-        // 只在第一次初始化时设置默认值
-        const initialStates: Record<string, boolean> = {};
-        availableMCPServers.forEach(serverName => {
-          initialStates[serverName] = false;
-        });
-        setSelectedMCPServers(initialStates);
-      }
+      const initialStates: Record<string, boolean> = {};
+      availableMCPServers.forEach(serverName => {
+        initialStates[serverName] = inheritedConfig.selectedMCPServers?.includes(serverName) || false;
+      });
+      setSelectedMCPServers(initialStates);
       
       setIsConfigInitialized(true);
     }
