@@ -1,5 +1,6 @@
 // src/hooks/useSSEConnection.ts
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import {
   ConversationService,
   generateMongoId
@@ -625,9 +626,12 @@ export function useSSEConnection() {
           buffer = lines.pop() || ''; // 保留最后一个不完整的行
 
           // 处理每一行
+          // 使用 flushSync 确保每次更新都立即渲染，避免 React 18 的自动批处理
           for (const line of lines) {
             if (line.trim()) {
-              processSSEData(line, options);
+              flushSync(() => {
+                processSSEData(line, options);
+              });
             }
           }
         }
