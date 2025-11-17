@@ -22,6 +22,7 @@ from . import mcp_builder
 from . import graph_designer
 from . import agent_creator
 from . import prompt_generator
+from . import task_manager
 
 __all__ = [
     "register_system_tool",
@@ -39,5 +40,6 @@ __all__ = [
     "mcp_builder",
     "graph_designer",
     "agent_creator",
-    "prompt_generator"
+    "prompt_generator",
+    "task_manager"
 ]
