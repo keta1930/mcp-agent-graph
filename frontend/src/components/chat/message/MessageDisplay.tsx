@@ -1009,10 +1009,9 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
       return 'graph_run';
     }
 
-    // 备用：根据后端数据推断（向后兼容）
-    if (conversation.generation_type === 'agent') {
+    if (conversation.type === 'agent') {
       return 'agent';
-    } else if (conversation.generation_type === 'graph_run') {
+    } else if (conversation.type === 'graph') {
       return 'graph_run';
     }
 
@@ -1042,7 +1041,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
     </div>;
   }
 
-  // 根据generation_type决定消息显示方式
+  // 根据type决定消息显示方式
   const isGraphExecution = renderingMode === 'graph_run';
 
   // 构建工具调用结果映射

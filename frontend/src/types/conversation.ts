@@ -68,7 +68,7 @@ export interface ConversationDetail {
   conversation_id: string;
   title: string;
   rounds: ConversationRound[];
-  generation_type: 'agent' | 'graph_run'; // 删除 'chat', 'mcp', 'graph'
+  type: 'agent' | 'graph';
   documents?: ConversationDocuments; // 新增：文档列表
   parsed_results?: ParsedResults;
   execution_chain?: string[][];
