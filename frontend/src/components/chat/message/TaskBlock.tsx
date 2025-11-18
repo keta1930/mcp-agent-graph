@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useT } from '../../../i18n/hooks';
 import './TaskBlock.css';
 
 interface TaskBlockProps {
@@ -19,6 +20,7 @@ interface TaskBlockProps {
 
 // Reuse the same components from MessageDisplay for consistency
 const ReasoningDisplay: React.FC<{ content: string }> = ({ content }) => {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -42,7 +44,7 @@ const ReasoningDisplay: React.FC<{ content: string }> = ({ content }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#2d2d2d' }}>AI思考过程</span>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: '#2d2d2d' }}>{t('pages.chatSystem.messageDisplay.aiThinking')}</span>
           <Tag style={{
             background: 'rgba(184, 88, 69, 0.08)',
             color: '#b85845',
@@ -52,7 +54,7 @@ const ReasoningDisplay: React.FC<{ content: string }> = ({ content }) => {
             padding: '2px 10px',
             fontSize: '12px'
           }}>
-            推理
+            {t('pages.chatSystem.messageDisplay.reasoning')}
           </Tag>
         </div>
         {expanded ? (
@@ -81,6 +83,7 @@ const ReasoningDisplay: React.FC<{ content: string }> = ({ content }) => {
 };
 
 const ToolCallDisplay: React.FC<{ toolCall: any; result?: string; isStreaming?: boolean }> = ({ toolCall, result, isStreaming = false }) => {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     if (isStreaming) setExpanded(true);
@@ -117,7 +120,7 @@ const ToolCallDisplay: React.FC<{ toolCall: any; result?: string; isStreaming?: 
             padding: '2px 10px',
             fontSize: '12px'
           }}>
-            工具调用
+            {t('pages.chatSystem.messageDisplay.toolCall')}
           </Tag>
           {isStreaming && !result && <Loader size={14} style={{ color: '#b85845' }} />}
         </div>
@@ -136,7 +139,7 @@ const ToolCallDisplay: React.FC<{ toolCall: any; result?: string; isStreaming?: 
           overflow: 'auto'
         }}>
           <div style={{ marginTop: '12px' }}>
-            <div style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>参数</div>
+            <div style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>{t('pages.chatSystem.messageDisplay.parameters')}</div>
             <div style={{ marginTop: '8px' }}>
               <SyntaxHighlighter
                 language="json"
@@ -156,7 +159,7 @@ const ToolCallDisplay: React.FC<{ toolCall: any; result?: string; isStreaming?: 
 
           {result && (
             <div style={{ marginTop: '12px' }}>
-              <div style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>结果</div>
+              <div style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>{t('pages.chatSystem.messageDisplay.result')}</div>
               <div style={{
                 marginTop: '8px',
                 padding: '10px 12px',
@@ -184,6 +187,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
   toolResults = {},
   conversationId
 }) => {
+  const t = useT();
   const [expanded, setExpanded] = useState(true);
   const [showCompletionFeedback, setShowCompletionFeedback] = useState(false);
 
@@ -228,15 +232,16 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
   };
 
   const getStatusText = () => {
+    const t = useT();
     switch (taskBlock.taskStatus) {
       case 'running':
-        return '执行中';
+        return t('components.taskBlock.statusRunning');
       case 'completed':
-        return '已完成';
+        return t('components.taskBlock.statusCompleted');
       case 'failed':
-        return '失败';
+        return t('components.taskBlock.statusFailed');
       default:
-        return '未知';
+        return t('components.taskBlock.statusUnknown');
     }
   };
 
@@ -263,7 +268,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
             style={{ background: getStatusColor() }}
           />
           {getStatusIcon()}
-          <span className="task-id">Task {taskBlock.taskId}</span>
+          <span className="task-id">{t('components.taskBlock.taskLabel')} {taskBlock.taskId}</span>
           <Tag
             className="task-status-tag"
             style={{
@@ -324,7 +329,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
             ))
           ) : (
             <div className="task-empty-state">
-              {taskBlock.taskStatus === 'running' ? '正在执行...' : taskBlock.content || '无内容'}
+              {taskBlock.taskStatus === 'running' ? t('components.taskBlock.executing') : taskBlock.content || t('components.taskBlock.noContent')}
             </div>
           )}
         </div>
