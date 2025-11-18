@@ -155,11 +155,11 @@ export const useConversationStore = create<ConversationState>()(
         const detail = await ConversationService.getConversationDetail(conversationId);
         ConversationStorage.setCurrentConversation(detail);
         
-        // 根据 generation_type 设置正确的 currentMode
+        // 根据 type 设置正确的 currentMode
         let mode: ConversationMode = 'agent'; // 默认为 agent
-        if (detail.generation_type === 'graph_run') {
+        if (detail.type === 'graph') {
           mode = 'graph';
-        } else if (detail.generation_type === 'agent') {
+        } else if (detail.type === 'agent') {
           mode = 'agent';
         }
         

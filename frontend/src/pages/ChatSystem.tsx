@@ -99,14 +99,14 @@ const ChatSystem: React.FC = () => {
 
   // 创建临时对话数据结构
   const createTemporaryConversation = useCallback((conversationId: string, title: string, mode: ConversationMode): ConversationDetail => {
-    // 根据模式确定generation_type
-    const generationType = mode === 'graph' ? 'graph_run' : 'agent';
+    // 根据模式确定type
+    const conversationType = mode === 'graph' ? 'graph' : 'agent';
 
     return {
       conversation_id: conversationId,
       title,
       rounds: [],
-      generation_type: generationType
+      type: conversationType
     };
   }, []);
 
@@ -159,10 +159,10 @@ const ChatSystem: React.FC = () => {
   // 当对话加载完成后，根据对话类型设置正确的模式（不可变）
   useEffect(() => {
     if (currentConversation && !temporaryConversation) {
-      // 根据对话的generation_type设置模式
-      if (currentConversation.generation_type === 'graph_run') {
+      // 根据对话的type设置模式
+      if (currentConversation.type === 'graph') {
         setCurrentMode('graph');
-      } else if (currentConversation.generation_type === 'agent') {
+      } else if (currentConversation.type === 'agent') {
         setCurrentMode('agent');
       }
 
@@ -212,14 +212,14 @@ const ChatSystem: React.FC = () => {
       const isGraphMode = conversationMode === 'graph';
 
       // 记录选择的Graph名称
-      if (isGraphMode && options.selectedGraph) {
-        setSelectedGraphName(options.selectedGraph);
+      if (isGraphMode && options.graph_name) {
+        setSelectedGraphName(options.graph_name);
       }
 
       // 保存从新建对话界面继承的配置，确保所有参数都被保存
       setInheritedConfig({
         selectedModel: options.model_name || options.selectedModel,
-        selectedGraph: options.graph_name || options.selectedGraph,
+        selectedGraph: options.graph_name,
         systemPrompt: options.system_prompt || options.systemPrompt,
         selectedMCPServers: options.mcp_servers || options.selectedMCPServers || [],
         selectedAgent: options.agent_name || null,
@@ -262,7 +262,7 @@ const ChatSystem: React.FC = () => {
         max_iterations: options.max_iterations,
         user_prompt: options.user_prompt || inputText,
         // Graph 模式参数
-        graph_name: options.selectedGraph,
+        graph_name: options.graph_name,
         onConversationCreated: (backendConversationId: string) => {
           // Graph模式时更新实际的对话ID和标题
           if (isGraphMode) {
@@ -311,7 +311,7 @@ const ChatSystem: React.FC = () => {
             try {
               const configToSave = {
                 selected_model: options.model_name || options.selectedModel,
-                selected_graph: options.graph_name || options.selectedGraph,
+                selected_graph: options.graph_name,
                 system_prompt: options.system_prompt || options.systemPrompt,
                 selected_mcp_servers: options.mcp_servers || options.selectedMCPServers || [],
                 selected_agent: options.agent_name || null,
@@ -720,7 +720,7 @@ const ChatSystem: React.FC = () => {
                   conversation_id: activeConversationId || '',
                   title: '新对话',
                   rounds: [],
-                  generation_type: currentMode === 'graph' ? 'graph_run' : 'agent'
+                  type: currentMode === 'graph' ? 'graph' : 'agent'
                 }}
                 enhancedStreamingState={enhancedStreamingState}
                 pendingUserMessage={pendingUserMessage}
