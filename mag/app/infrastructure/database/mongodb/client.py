@@ -350,7 +350,13 @@ class MongoDBClient:
                 return False
 
             conversation_type = conversation.get("type")
+            user_id = conversation.get("user_id", "default_user")
 
+            # 1. 删除 MinIO 中的所有文件
+            from app.infrastructure.storage.object_storage.conversation_document_manager import conversation_document_manager
+            await conversation_document_manager.delete_all_conversation_files(user_id, conversation_id)
+
+            # 2. 删除消息数据
             if conversation_type == "graph":
                 # 图运行类型，删除graph_run消息
                 await self.graph_run_repository.delete_graph_run_messages(conversation_id)
@@ -358,7 +364,7 @@ class MongoDBClient:
                 # Agent对话类型，删除agent_run消息
                 await self.agent_run_repository.delete_agent_run(conversation_id)
 
-            # 删除conversation元数据
+            # 3. 删除conversation元数据
             return await self.conversation_repository.permanently_delete_conversation(conversation_id)
 
         except Exception as e:
