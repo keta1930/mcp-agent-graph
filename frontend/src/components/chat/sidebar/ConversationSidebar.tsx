@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, User, Home, Clock, ChevronLeft } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
 import { getCurrentUserDisplayName } from '../../../config/user';
+import { useT } from '../../../i18n/hooks';
 import CollapsedSidebar from './CollapsedSidebar';
 import ConversationItem from './ConversationItem';
 import ExportManagerButton from '../modal/ExportManagerButton';
@@ -23,6 +24,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   activeConversationId,
 }) => {
   const navigate = useNavigate();
+  const t = useT();
   const [scrollPosition, setScrollPosition] = useState(0);
   const currentUserDisplayName = getCurrentUserDisplayName();
   const [isBatchMode, setIsBatchMode] = useState(false);
@@ -141,26 +143,26 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         const res = await batchDeleteConversations(toSoft, false);
         if (res.success > 0)
           showNotification(
-            `已将 ${res.success} 个对话移至回收站`,
+            t('components.conversationSidebar.movedToTrash', { count: res.success }),
             'success'
           );
         if (res.failed > 0)
-          showNotification(`${res.failed} 个对话软删除失败`, 'error');
+          showNotification(t('components.conversationSidebar.softDeleteFailed', { count: res.failed }), 'error');
       }
 
       if (toPermanent.length > 0) {
         const res2 = await batchDeleteConversations(toPermanent, true);
         if (res2.success > 0)
-          showNotification(`已永久删除 ${res2.success} 个对话`, 'success');
+          showNotification(t('components.conversationSidebar.permanentlyDeleted', { count: res2.success }), 'success');
         if (res2.failed > 0)
-          showNotification(`${res2.failed} 个对话永久删除失败`, 'error');
+          showNotification(t('components.conversationSidebar.permanentDeleteFailed', { count: res2.failed }), 'error');
       }
 
       setSelectedConversations(new Set());
       setIsBatchMode(false);
     } catch (error) {
       console.error('Batch delete failed:', error);
-      showNotification('批量删除失败', 'error');
+      showNotification(t('components.conversationSidebar.batchDeleteFailed'), 'error');
     }
   };
 
@@ -200,7 +202,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               style={{ color: 'rgba(45, 45, 45, 0.45)' }}
             />
           }
-          placeholder="搜索对话..."
+          placeholder={t('components.conversationSidebar.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           allowClear
@@ -248,7 +250,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 e.currentTarget.style.background = 'transparent';
               }}
             >
-              新建
+              {t('components.conversationSidebar.newConversation')}
             </Button>
           )}
 
@@ -299,7 +301,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               fontWeight: 400,
             }}
           >
-            已选 {selectedConversations.size} 项
+            {t('components.conversationSidebar.selectedCount', { count: selectedConversations.size })}
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <Button
@@ -317,7 +319,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 border: 'none',
               }}
             >
-              全选
+              {t('components.conversationSidebar.selectAll')}
             </Button>
             <Button
               type="text"
@@ -332,7 +334,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 border: 'none',
               }}
             >
-              清空
+              {t('components.conversationSidebar.deselectAll')}
             </Button>
             <div
               style={{
@@ -354,7 +356,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 border: 'none',
               }}
             >
-              删除
+              {t('common.delete')}
             </Button>
           </div>
         </div>
@@ -387,7 +389,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           </div>
         ) : visibleConversations.length === 0 ? (
           <Empty
-            description={searchQuery ? '没有找到匹配的对话' : '暂无对话'}
+            description={searchQuery ? t('components.conversationSidebar.noMatchingConversations') : t('components.conversationSidebar.noConversations')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             style={{
               padding: '40px 20px',
@@ -457,10 +459,10 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 : 'transparent';
             }}
           >
-            {isBatchMode ? '取消选择' : '批量'}
+            {isBatchMode ? t('components.conversationSidebar.cancelSelection') : t('components.conversationSidebar.batchMode')}
           </Button>
 
-          <Tooltip title="任务中心">
+          <Tooltip title={t('components.conversationSidebar.taskCenter')}>
             <Button
               type="text"
               icon={<Clock size={16} strokeWidth={1.5} />}
@@ -486,7 +488,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             />
           </Tooltip>
 
-          <Tooltip title="返回主页">
+          <Tooltip title={t('components.conversationSidebar.backToHome')}>
             <Button
               type="text"
               icon={<Home size={16} strokeWidth={1.5} />}

@@ -1011,6 +1011,24 @@
       "english": "English",
       "chinese": "中文"
     },
+    "conversationSidebar": {
+      "searchPlaceholder": "搜索对话...",
+      "newConversation": "新建",
+      "selectedCount": "已选 {{count}} 项",
+      "selectAll": "全选",
+      "deselectAll": "清空",
+      "batchMode": "批量",
+      "cancelSelection": "取消选择",
+      "taskCenter": "任务中心",
+      "backToHome": "返回主页",
+      "noConversations": "暂无对话",
+      "noMatchingConversations": "没有找到匹配的对话",
+      "movedToTrash": "已将 {{count}} 个对话移至回收站",
+      "softDeleteFailed": "{{count}} 个对话软删除失败",
+      "permanentlyDeleted": "已永久删除 {{count}} 个对话",
+      "permanentDeleteFailed": "{{count}} 个对话永久删除失败",
+      "batchDeleteFailed": "批量删除失败"
+    },
     "navigation": {
       "home": "首页",
       "chat": "对话",

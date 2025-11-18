@@ -1011,6 +1011,24 @@
       "english": "English",
       "chinese": "中文"
     },
+    "conversationSidebar": {
+      "searchPlaceholder": "Search conversations...",
+      "newConversation": "New",
+      "selectedCount": "Selected {{count}} items",
+      "selectAll": "Select All",
+      "deselectAll": "Clear",
+      "batchMode": "Batch",
+      "cancelSelection": "Cancel",
+      "taskCenter": "Task Center",
+      "backToHome": "Back to Home",
+      "noConversations": "No conversations yet",
+      "noMatchingConversations": "No matching conversations found",
+      "movedToTrash": "Moved {{count}} conversations to trash",
+      "softDeleteFailed": "Failed to delete {{count}} conversations",
+      "permanentlyDeleted": "Permanently deleted {{count}} conversations",
+      "permanentDeleteFailed": "Failed to permanently delete {{count}} conversations",
+      "batchDeleteFailed": "Batch delete failed"
+    },
     "navigation": {
       "home": "Home",
       "chat": "Chat",
