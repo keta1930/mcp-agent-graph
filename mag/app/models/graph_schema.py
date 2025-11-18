@@ -2,19 +2,33 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field, validator
 
 class AgentNode(BaseModel):
-    """Agent节点配置"""
+    """Graph节点配置，支持Agent调用与参数覆盖"""
+    # 节点标识
     name: str = Field(..., description="节点名称")
-    description: Optional[str] = Field(default="", description="节点描述，用于工具选择提示")
-    model_name: Optional[str] = Field(default=None, description="使用的模型名称")
-    mcp_servers: List[str] = Field(default_factory=list, description="使用的MCP服务器名称列表")
-    system_prompt: str = Field(default="", description="系统提示词")
-    user_prompt: str = Field(default="", description="用户提示词")
+    description: Optional[str] = Field(default="", description="节点描述")
+
+    # Agent配置
+    agent_name: Optional[str] = Field(default=None, description="Agent名称，不提供则为手动配置模式")
+
+    # 执行参数
+    model_name: Optional[str] = Field(default=None, description="模型名称")
+    system_prompt: Optional[str] = Field(default="", description="系统提示词")
+    user_prompt: Optional[str] = Field(default="", description="用户提示词")
+    mcp_servers: Optional[List[str]] = Field(default=None, description="MCP服务器列表")
+    system_tools: Optional[List[str]] = Field(default=None, description="系统工具列表")
+    max_iterations: Optional[int] = Field(default=50, description="最大迭代次数")
+
+    # Graph流程控制
     input_nodes: List[str] = Field(default_factory=list, description="输入节点列表")
     output_nodes: List[str] = Field(default_factory=list, description="输出节点列表")
     handoffs: Optional[int] = Field(default=None, description="节点可以执行的选择次数，用于支持循环流程")
     output_enabled: bool = Field(default=True, description="是否输出回复")
+
+    # 子图支持
     is_subgraph: bool = Field(default=False, description="是否为子图节点")
     subgraph_name: Optional[str] = Field(default=None, description="子图名称")
+
+    # UI相关
     position: Optional[Dict[str, float]] = Field(default=None, description="节点在画布中的位置")
     level: Optional[int] = Field(default=None, description="节点在图中的层级，用于确定执行顺序")
 
@@ -27,10 +41,21 @@ class AgentNode(BaseModel):
     @validator('model_name')
     def validate_model_name(cls, v, values):
         is_subgraph = values.get('is_subgraph', False)
-        # 检查空字符串和None
-        if not is_subgraph and (not v or (isinstance(v, str) and v.strip() == "")) and values.get('name'):
-            raise ValueError(f"普通节点 '{values['name']}' 必须指定模型名称")
-        return v
+        agent_name = values.get('agent_name')
+        node_name = values.get('name', '')
+
+        # 子图节点不需要验证
+        if is_subgraph:
+            return v
+
+        # 清理 model_name
+        model_name = v.strip() if v else None
+
+        # 普通节点：必须提供 agent_name 或 model_name
+        if not agent_name and not model_name:
+            raise ValueError(f"节点 '{node_name}' 必须提供 agent_name 或 model_name")
+
+        return model_name
 
     @validator('subgraph_name')
     def validate_subgraph_name(cls, v, values):

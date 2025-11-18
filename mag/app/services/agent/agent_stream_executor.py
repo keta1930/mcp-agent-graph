@@ -104,7 +104,7 @@ class AgentStreamExecutor:
                     # Dict 结果，保存但不转发到客户端
                     final_result = item
 
-            # 保存执行结果到数据库
+            # 保存执行结果到数据库（is_graph_node 默认为 False）
             if final_result:
                 await self._save_agent_run_result(
                     conversation_id=conversation_id,
@@ -112,7 +112,8 @@ class AgentStreamExecutor:
                     result=final_result,
                     user_id=user_id,
                     user_prompt=user_prompt,
-                    model_name=effective_config["model_name"]
+                    model_name=effective_config["model_name"],
+                    is_graph_node=False
                 )
 
             # 发送完成信号
@@ -309,7 +310,8 @@ class AgentStreamExecutor:
             max_iterations: int,
             user_id: str,
             conversation_id: str,
-            task_id: Optional[str] = None
+            task_id: Optional[str] = None,
+            is_graph_node: bool = False
     ) -> AsyncGenerator[str | Dict[str, Any], None]:
         """
         运行 Agent 循环（含工具调用循环）
@@ -324,6 +326,7 @@ class AgentStreamExecutor:
             user_id: 用户 ID
             conversation_id: 对话 ID
             task_id: 任务 ID（Sub Agent 时提供）
+            is_graph_node: 是否为 Graph 节点调用（默认 False）
 
         Yields:
             - 中间 yield: SSE 格式字符串 "data: {...}\\n\\n"
@@ -340,6 +343,10 @@ class AgentStreamExecutor:
 
         # 标识是否为 Sub Agent
         is_sub_agent = task_id is not None
+        
+        # 记录 Graph 节点调用
+        if is_graph_node:
+            logger.debug(f"Graph 节点调用 Agent: {agent_name}, conversation_id={conversation_id}")
 
         try:
             while iteration < max_iterations:
@@ -553,7 +560,8 @@ class AgentStreamExecutor:
             result: Dict[str, Any],
             user_id: str,
             user_prompt: str,
-            model_name: str
+            model_name: str,
+            is_graph_node: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
         保存 Agent 运行结果到数据库
@@ -565,10 +573,16 @@ class AgentStreamExecutor:
             user_id: 用户 ID
             user_prompt: 用户输入
             model_name: 模型名称
+            is_graph_node: 是否为 Graph 节点调用（默认 False）
 
         Returns:
             如果生成了新标题，返回 {"title": str, "tags": List[str]}，否则返回 None
         """
+        # 如果是 Graph 节点调用，跳过所有数据库写入操作
+        if is_graph_node:
+            logger.debug(f"Graph 节点调用，跳过数据库写入: conversation_id={conversation_id}")
+            return None
+        
         try:
             from app.infrastructure.database.mongodb.client import mongodb_client
 

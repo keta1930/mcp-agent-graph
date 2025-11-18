@@ -37,6 +37,17 @@ class ToolExecutor:
                 })
                 continue
 
+            # 检查是否为 handoffs 工具（Graph 特有）
+            if tool_name.startswith("transfer_to_"):
+                selected_node = tool_name[len("transfer_to_"):]
+                logger.info(f"执行 handoffs 工具: {tool_name} -> {selected_node}")
+                tool_results.append({
+                    "tool_call_id": tool_id,
+                    "content": f"已选择节点: {selected_node}",
+                    "_handoffs_selected": selected_node  # 标记这是 handoffs 工具调用
+                })
+                continue
+
             # 检查是否为系统工具
             if is_system_tool(tool_name):
                 logger.info(f"执行系统工具: {tool_name}")
@@ -103,6 +114,17 @@ class ToolExecutor:
                 yield {
                     "tool_call_id": tool_id,
                     "content": f"工具调用解析失败：{str(e)}"
+                }
+                continue
+
+            # 检查是否为 handoffs 工具（Graph 特有）
+            if tool_name.startswith("transfer_to_"):
+                selected_node = tool_name[len("transfer_to_"):]
+                logger.info(f"执行 handoffs 工具: {tool_name} -> {selected_node}")
+                yield {
+                    "tool_call_id": tool_id,
+                    "content": f"已选择节点: {selected_node}",
+                    "_handoffs_selected": selected_node  # 标记这是 handoffs 工具调用
                 }
                 continue
 

@@ -5,6 +5,7 @@ import copy
 from typing import Dict, List, Any, AsyncGenerator
 from app.services.model.model_service import model_service
 from app.services.graph.handoffs_manager import HandoffsManager
+from app.services.agent.agent_stream_executor import AgentStreamExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class NodeExecutorCore:
         self.conversation_manager = conversation_manager
         self.tool_executor = tool_executor
         self.message_creator = message_creator
+        self.agent_stream_executor = AgentStreamExecutor()
 
     async def execute_node(self,
                           node: Dict[str, Any],
@@ -56,164 +58,134 @@ class NodeExecutorCore:
             conversation["_current_round"] += 1
             current_round = conversation["_current_round"]
 
-            model_name = node["model_name"]
-            mcp_servers = node.get("mcp_servers", [])
             output_enabled = node.get("output_enabled", True)
 
-            # 2. 创建消息列表
+            # 2. 加载有效配置（智能合并 Agent 配置和 Node 配置）
+            effective_config = await self.agent_stream_executor._load_effective_config(
+                agent_name=node.get("agent_name"),
+                user_id=actual_user_id,
+                model_name=node.get("model_name"),
+                system_prompt=node.get("system_prompt"),
+                mcp_servers=node.get("mcp_servers"),
+                system_tools=node.get("system_tools"),
+                max_iterations=node.get("max_iterations")
+            )
+
+            if not effective_config:
+                raise Exception(f"无法加载节点 '{node_name}' 的有效配置")
+
+            # 使用合并后的配置
+            agent_name = effective_config["agent_name"]
+            model_name = effective_config["model_name"]
+            mcp_servers = effective_config["mcp_servers"]
+            system_tools = effective_config["system_tools"]
+            max_iterations = effective_config["max_iterations"]
+
+            # 3. 创建消息列表
             node_copy = copy.deepcopy(node)
             node_copy["_conversation_id"] = conversation_id
             conversation_messages = await self.message_creator.create_agent_messages(node_copy)
 
-            # 3. 准备工具列表
+            # 4. 准备工具列表
             handoffs_tools = await self._prepare_handoffs_tools(
                 node, conversation_id, conversation
             )
             mcp_tools = await self._prepare_mcp_tools(mcp_servers)
-            all_tools = handoffs_tools + mcp_tools
-
-            # 4. 执行多轮模型调用
-            round_messages = conversation_messages.copy()
-            current_messages = conversation_messages.copy()
-            assistant_final_output = ""
-            tool_results_content = []
-            has_handoffs = False
-            selected_node = None
             
+            # 准备系统工具
+            system_tools_list = []
+            if system_tools:
+                from app.services.system_tools import get_system_tools_by_names
+                system_tools_list = get_system_tools_by_names(system_tools)
+            
+            all_tools = handoffs_tools + mcp_tools + system_tools_list
+
+            # 5. 调用 AgentStreamExecutor 执行节点
+            round_messages = []
             node_token_usage = {
                 "total_tokens": 0,
                 "prompt_tokens": 0,
                 "completion_tokens": 0
             }
+            has_handoffs = False
+            selected_node = None
+            assistant_final_output = ""
+            tool_results_content = []
 
-            max_iterations = 10
-            for iteration in range(max_iterations):
-                logger.info(f"节点 '{node_name}' 第 {iteration + 1} 轮对话")
-
-                # 过滤reasoning_content字段
-                messages = model_service.filter_reasoning_content(current_messages)
-
-                # 调用模型
-                accumulated_result = None
-                async for item in model_service.stream_chat_with_tools(
-                    model_name=model_name,
-                    messages=messages,
-                    tools=all_tools if all_tools else None,
-                    yield_chunks=yield_sse,  # 根据模式决定是否yield chunks
-                    user_id=actual_user_id
-                ):
-                    if isinstance(item, str):
-                        if yield_sse:
-                            yield item
-                    else:
-                        # 累积结果
-                        accumulated_result = item
-
-                if not accumulated_result:
-                    raise Exception("未收到模型响应")
-
-                # 提取结果
-                accumulated_content = accumulated_result["accumulated_content"]
-                accumulated_reasoning = accumulated_result.get("accumulated_reasoning", "")
-                current_tool_calls = accumulated_result.get("tool_calls", [])
-                iteration_usage = accumulated_result.get("api_usage")
-
-                # 更新token使用量
-                if iteration_usage:
-                    node_token_usage["total_tokens"] += iteration_usage["total_tokens"]
-                    node_token_usage["prompt_tokens"] += iteration_usage["prompt_tokens"]
-                    node_token_usage["completion_tokens"] += iteration_usage["completion_tokens"]
-
-                # 构建assistant消息
-                assistant_msg = {"role": "assistant"}
-                if accumulated_reasoning:
-                    assistant_msg["reasoning_content"] = accumulated_reasoning
-                assistant_msg["content"] = accumulated_content or ""
-                if current_tool_calls:
-                    assistant_msg["tool_calls"] = current_tool_calls
-
-                round_messages.append(assistant_msg)
-                current_messages.append(assistant_msg)
-
-                # 如果没有工具调用，结束循环
-                if not current_tool_calls:
-                    assistant_final_output = accumulated_content
-                    break
-
-                # 执行工具调用
-                for tool_call in current_tool_calls:
-                    tool_name = tool_call["function"]["name"]
-
-                    # 处理handoffs工具
-                    if tool_name.startswith("transfer_to_"):
-                        selected_node_name = tool_name[len("transfer_to_"):]
-                        if selected_node_name in node.get("output_nodes", []):
-                            has_handoffs = True
-                            selected_node = selected_node_name
-                            
-                            # 更新handoffs状态
-                            handoffs_limit = node.get("handoffs")
-                            if handoffs_limit is not None:
-                                handoffs_status = await self.conversation_manager.get_handoffs_status(
-                                    conversation_id, node_name
-                                )
-                                current_count = handoffs_status.get("used_count", 0)
-                                await self.conversation_manager.update_handoffs_status(
-                                    conversation_id, node_name, handoffs_limit, 
-                                    current_count + 1, selected_node
-                                )
-                            
-                            tool_content = f"已选择节点: {selected_node_name}"
-                        else:
-                            tool_content = f"无效的节点选择: {selected_node_name}"
-                    else:
-                        # 执行普通工具
-                        try:
-                            tool_args = json.loads(tool_call["function"]["arguments"]) if tool_call["function"]["arguments"] else {}
-                        except json.JSONDecodeError:
-                            tool_args = {}
-
-                        tool_result = await self.tool_executor.execute_tool_for_graph(
-                            tool_name, tool_args, mcp_servers
-                        )
-                        tool_content = tool_result.get("content", "")
-
-                        if tool_content and not tool_name.startswith("transfer_to_"):
-                            tool_results_content.append(tool_content)
-
-                    # 添加工具结果消息
-                    tool_result_msg = {
-                        "role": "tool",
-                        "tool_call_id": tool_call["id"],
-                        "content": tool_content
-                    }
-                    round_messages.append(tool_result_msg)
-                    current_messages.append(tool_result_msg)
-
-                    # 发送工具消息（如果是stream模式）
+            # 调用 Agent 执行器
+            async for item in self.agent_stream_executor.run_agent_loop(
+                agent_name=agent_name,
+                model_name=model_name,
+                messages=conversation_messages,
+                tools=all_tools,
+                mcp_servers=mcp_servers,
+                max_iterations=max_iterations,
+                user_id=actual_user_id,
+                conversation_id=conversation_id,
+                task_id=None,
+                is_graph_node=True
+            ):
+                if isinstance(item, str):
+                    # SSE 事件，直接转发
                     if yield_sse:
-                        from app.utils.sse_helper import SSEHelper
-                        yield SSEHelper.send_tool_message(tool_call["id"], tool_content)
+                        yield item
+                else:
+                    # 结果字典
+                    round_messages = item.get("round_messages", [])
+                    node_token_usage = item.get("round_token_usage", {})
 
-                # 如果有handoffs，结束循环
-                if has_handoffs:
-                    assistant_final_output = accumulated_content
-                    break
+            # 6. 检查是否有 handoffs 选择
+            for msg in round_messages:
+                if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                    for tool_call in msg["tool_calls"]:
+                        tool_name = tool_call["function"]["name"]
+                        if tool_name.startswith("transfer_to_"):
+                            selected_node_name = tool_name[len("transfer_to_"):]
+                            if selected_node_name in node.get("output_nodes", []):
+                                has_handoffs = True
+                                selected_node = selected_node_name
+                                
+                                # 更新 handoffs 状态
+                                handoffs_limit = node.get("handoffs")
+                                if handoffs_limit is not None:
+                                    handoffs_status = await self.conversation_manager.get_handoffs_status(
+                                        conversation_id, node_name
+                                    )
+                                    current_count = handoffs_status.get("used_count", 0)
+                                    await self.conversation_manager.update_handoffs_status(
+                                        conversation_id, node_name, handoffs_limit, 
+                                        current_count + 1, selected_node
+                                    )
+                                break
+                    if has_handoffs:
+                        break
 
-            # 5. 处理输出
+            # 7. 提取最终输出
+            for msg in round_messages:
+                if msg.get("role") == "assistant":
+                    assistant_final_output = msg.get("content", "")
+                elif msg.get("role") == "tool" and not msg.get("content", "").startswith("已选择节点:"):
+                    tool_content = msg.get("content", "")
+                    if tool_content:
+                        tool_results_content.append(tool_content)
+
+            # 8. 处理输出
             if output_enabled:
                 final_output = assistant_final_output
             else:
                 final_output = "\n".join(tool_results_content) if tool_results_content else ""
 
-            # 6. 保存round数据
+            # 9. 保存round数据
             round_data = {
                 "round": current_round,
                 "node_name": node_name,
+                "agent_name": agent_name,
                 "level": node_level,
                 "output_enabled": output_enabled,
                 "messages": round_messages,
-                "model": model_name
+                "model": model_name,
+                "prompt_tokens": node_token_usage.get("prompt_tokens", 0),
+                "completion_tokens": node_token_usage.get("completion_tokens", 0)
             }
             if mcp_servers:
                 round_data["mcp_servers"] = mcp_servers
@@ -227,16 +199,16 @@ class NodeExecutorCore:
                 tools_schema=all_tools
             )
 
-            # 7. 更新token使用量
+            # 10. 更新token使用量
             if node_token_usage["total_tokens"] > 0:
-                await mongodb_client.update_conversation_token_usage(
+                await mongodb_client.conversation_repository.update_conversation_token_usage(
                     conversation_id=conversation_id,
                     prompt_tokens=node_token_usage["prompt_tokens"],
                     completion_tokens=node_token_usage["completion_tokens"]
                 )
                 logger.info(f"节点 '{node_name}' token使用量: {node_token_usage}")
 
-            # 8. 保存全局输出
+            # 11. 保存全局输出
             if output_enabled and final_output:
                 await self.conversation_manager._add_global_output(
                     conversation_id, node_name, final_output
@@ -247,11 +219,11 @@ class NodeExecutorCore:
                     conversation_id, node_name, tool_output
                 )
 
-            # 9. 更新执行链
+            # 12. 更新执行链
             from app.services.graph.execution_chain_manager import ExecutionChainManager
             await ExecutionChainManager.update_execution_chain(conversation)
 
-            # 10. 保存会话文件
+            # 13. 保存会话文件
             await self.conversation_manager.update_conversation_file(conversation_id)
 
             # 返回执行结果
