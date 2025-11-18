@@ -73,7 +73,6 @@ _GRAPH_SPEC='''
 | `mcp_servers` | string[] | 使用的MCP服务名称列表，可以指定多个服务。例如：`["search_server", "code_execution"]` | 否 | `[]` |
 | `system_prompt` | string | 系统提示词，定义智能体的角色和能力。支持占位符语法（详见下方注释） | 否 | `""` |
 | `user_prompt` | string | 用户提示词，包含具体任务指令。支持占位符语法（详见下方注释） | 否 | `""` |
-| `save` | string | 指定节点输出自动保存的文件格式扩展名，如md、html、py、txt等 | 否 | `null` |
 | `input_nodes` | string[] | 提供输入的节点名称列表。特殊值`"start"`表示接收用户的原始输入 | 否 | `[]` |
 | `output_nodes` | string[] | 接收本节点输出的节点名称列表。特殊值`"end"`表示输出包含在最终结果中 | 否 | `[]` |
 | `handoffs` | number | 节点可以重定向流程的最大次数，用于实现条件分支和循环功能 | 否 | `null` |

@@ -5,7 +5,6 @@ import copy
 from typing import Dict, List, Any, AsyncGenerator
 from app.services.model.model_service import model_service
 from app.services.graph.handoffs_manager import HandoffsManager
-from app.infrastructure.storage.object_storage import graph_run_storage
 
 logger = logging.getLogger(__name__)
 
@@ -248,25 +247,11 @@ class NodeExecutorCore:
                     conversation_id, node_name, tool_output
                 )
 
-            # 9. 保存节点输出到MinIO（如果需要）
-            save_ext = node.get("save")
-            if save_ext and final_output.strip():
-                graph_name = conversation.get("graph_name", "unknown")
-                user_id = conversation.get("user_id", "default_user")
-                graph_run_storage.save_node_output(
-                    graph_name=graph_name,
-                    graph_run_id=conversation_id,
-                    node_name=node_name,
-                    content=final_output,
-                    file_ext=save_ext,
-                    user_id=user_id
-                )
-
-            # 10. 更新执行链
+            # 9. 更新执行链
             from app.services.graph.execution_chain_manager import ExecutionChainManager
             await ExecutionChainManager.update_execution_chain(conversation)
 
-            # 11. 保存会话文件
+            # 10. 保存会话文件
             await self.conversation_manager.update_conversation_file(conversation_id)
 
             # 返回执行结果
