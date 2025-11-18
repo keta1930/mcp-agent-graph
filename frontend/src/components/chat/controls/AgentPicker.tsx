@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Button, Tooltip, Typography, Spin, message, Tag } from 'antd';
 import { Bot } from 'lucide-react';
 import { listAgents, AgentListItem } from '../../../services/agentService';
+import { useT } from '../../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -33,6 +34,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
   size = 'small',
   className = ''
 }) => {
+  const t = useT();
   const [showPanel, setShowPanel] = useState(false);
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,8 +59,8 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
       const response = await listAgents();
       setAgents(response.agents || []);
     } catch (error) {
-      console.error('加载 Agent 列表失败:', error);
-      message.error('加载 Agent 列表失败');
+      console.error(t('components.agentPicker.loadAgentsFailed'), error);
+      message.error(t('components.agentPicker.loadAgentsFailed'));
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
 
   return (
     <div style={{ position: 'relative' }} ref={dropdownRef}>
-      <Tooltip title={selectedAgent ? `当前 Agent: ${selectedAgent}` : '选择 Agent'}>
+      <Tooltip title={selectedAgent ? t('components.agentPicker.currentAgent', { agent: selectedAgent }) : t('components.agentPicker.selectAgent')}>
         <Button
           type="text"
           icon={<Bot size={14} strokeWidth={1.5} />}
@@ -135,7 +137,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between'
           }}>
-            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>选择 Agent</Text>
+            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>{t('components.agentPicker.selectAgent')}</Text>
             {selectedAgent && (
               <Button
                 type="text"
@@ -143,7 +145,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
                 onClick={() => handleSelectAgent(selectedAgent)}
                 style={{ fontSize: '12px', color: '#b85845' }}
               >
-                清除选择
+                {t('components.agentPicker.clearSelection')}
               </Button>
             )}
           </div>
@@ -158,7 +160,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
                 textAlign: 'center',
                 color: 'rgba(45, 45, 45, 0.45)',
                 fontSize: '13px'
-              }}>暂无可用的 Agent</div>
+              }}>{t('components.agentPicker.noAgents')}</div>
             ) : (
               agents.map(agent => (
                 <div

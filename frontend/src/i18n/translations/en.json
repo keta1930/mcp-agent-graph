@@ -1093,6 +1093,13 @@
       "loadDetailsFailed": "Failed to load agent details",
       "loadDetailsError": "Failed to load {{name}} details"
     },
+    "agentPicker": {
+      "selectAgent": "Select Agent",
+      "currentAgent": "Current Agent: {{agent}}",
+      "clearSelection": "Clear Selection",
+      "noAgents": "No agents available",
+      "loadAgentsFailed": "Failed to load agent list"
+    },
     "navigation": {
       "home": "Home",
       "chat": "Chat",

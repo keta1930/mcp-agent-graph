@@ -1093,6 +1093,13 @@
       "loadDetailsFailed": "加载 Agent 详情失败",
       "loadDetailsError": "加载 {{name}} 详情失败"
     },
+    "agentPicker": {
+      "selectAgent": "选择 Agent",
+      "currentAgent": "当前 Agent: {{agent}}",
+      "clearSelection": "清除选择",
+      "noAgents": "暂无可用的 Agent",
+      "loadAgentsFailed": "加载 Agent 列表失败"
+    },
     "navigation": {
       "home": "首页",
       "chat": "对话",
