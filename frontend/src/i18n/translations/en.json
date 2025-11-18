@@ -1029,6 +1029,13 @@
       "permanentDeleteFailed": "Failed to permanently delete {{count}} conversations",
       "batchDeleteFailed": "Batch delete failed"
     },
+    "collapsedSidebar": {
+      "expandSidebar": "Expand sidebar",
+      "newConversation": "New conversation",
+      "taskCenter": "Task Center",
+      "user": "User: {{name}}",
+      "backToHome": "Back to Home"
+    },
     "navigation": {
       "home": "Home",
       "chat": "Chat",

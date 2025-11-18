@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, User, Clock, ChevronRight } from 'lucide-react';
+import { useT } from '../../../i18n/hooks';
 
 interface CollapsedSidebarProps {
   onExpand: () => void;
@@ -15,6 +16,7 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
   currentUserDisplayName,
 }) => {
   const navigate = useNavigate();
+  const t = useT();
 
   const NavButton: React.FC<{
     icon: React.ReactNode;
@@ -98,8 +100,8 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
         <button
           type="button"
           onClick={onExpand}
-          title="展开侧边栏"
-          aria-label="展开侧边栏"
+          title={t('components.collapsedSidebar.expandSidebar')}
+          aria-label={t('components.collapsedSidebar.expandSidebar')}
           style={{
             width: '32px',
             height: '32px',
@@ -151,14 +153,14 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
                 <path d="M12 5v14M5 12h14" />
               </svg>
             }
-            title="新建对话"
+            title={t('components.collapsedSidebar.newConversation')}
             onClick={onNewConversation}
           />
         )}
 
         <NavButton
           icon={<Clock size={18} strokeWidth={1.5} />}
-          title="任务中心"
+          title={t('components.collapsedSidebar.taskCenter')}
           onClick={() => navigate('/tasks')}
         />
       </div>
@@ -176,13 +178,13 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
       >
         <NavButton
           icon={<User size={18} strokeWidth={1.5} />}
-          title={`用户: ${currentUserDisplayName}`}
+          title={t('components.collapsedSidebar.user', { name: currentUserDisplayName })}
           onClick={() => {}}
         />
 
         <NavButton
           icon={<Home size={18} strokeWidth={1.5} />}
-          title="返回主页"
+          title={t('components.collapsedSidebar.backToHome')}
           onClick={() => navigate('/')}
         />
       </div>

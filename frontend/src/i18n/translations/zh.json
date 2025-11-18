@@ -1029,6 +1029,13 @@
       "permanentDeleteFailed": "{{count}} 个对话永久删除失败",
       "batchDeleteFailed": "批量删除失败"
     },
+    "collapsedSidebar": {
+      "expandSidebar": "展开侧边栏",
+      "newConversation": "新建对话",
+      "taskCenter": "任务中心",
+      "user": "用户: {{name}}",
+      "backToHome": "返回主页"
+    },
     "navigation": {
       "home": "首页",
       "chat": "对话",
