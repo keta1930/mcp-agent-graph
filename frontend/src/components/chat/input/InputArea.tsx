@@ -15,6 +15,7 @@ import PromptSelector from '../controls/PromptSelector';
 import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
+import { useT } from '../../../i18n/hooks';
 
 interface InputAreaProps {
   onSendMessage: (message: string, options?: any) => void;
@@ -43,6 +44,7 @@ const InputArea: React.FC<InputAreaProps> = ({
   mode,
   inheritedConfig = {}
 }) => {
+  const t = useT();
   const [inputValue, setInputValue] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
   const [isSystemPromptMode, setIsSystemPromptMode] = useState(false);
@@ -206,19 +208,19 @@ const InputArea: React.FC<InputAreaProps> = ({
 
   const getInputPlaceholder = () => {
     if (isSystemPromptMode) {
-      return '输入系统提示词... (Ctrl+Enter保存)';
+      return t('pages.chatSystem.inputArea.systemPromptPlaceholder');
     }
 
     switch (mode) {
       case 'agent':
         if (selectedAgent) {
-          return `使用 ${selectedAgent} 进行对话... (Ctrl+Enter发送)`;
+          return t('pages.chatSystem.inputArea.agentWithNamePlaceholder', { agent: selectedAgent });
         }
-        return '输入您的问题或任务... (Ctrl+Enter发送)';
+        return t('pages.chatSystem.inputArea.agentPlaceholder');
       case 'graph':
-        return '输入要传递给Graph的内容... (Ctrl+Enter发送)';
+        return t('pages.chatSystem.inputArea.graphPlaceholder');
       default:
-        return '输入消息...';
+        return t('pages.chatSystem.inputArea.defaultPlaceholder');
     }
   };
 

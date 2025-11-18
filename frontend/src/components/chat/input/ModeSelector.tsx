@@ -15,6 +15,7 @@ import PromptSelector from '../controls/PromptSelector';
 import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
+import { useT } from '../../../i18n/hooks';
 
 interface ModeSelectorProps {
   onModeSelect: (mode: ConversationMode) => void;
@@ -31,6 +32,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   onModeSelect,
   onStartConversation
 }) => {
+  const t = useT();
   const { currentMode, setCurrentMode } = useConversationStore();
   const { models: availableModels, fetchModels } = useModelStore();
   const { graphs: availableGraphs, fetchGraphs } = useGraphEditorStore();
@@ -168,14 +170,14 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const modes = [
     {
       key: 'agent' as ConversationMode,
-      title: 'Agent',
-      description: 'AI 助手对话',
+      title: t('pages.chatSystem.modeSelector.agentMode'),
+      description: t('pages.chatSystem.modeSelector.agentModeDesc'),
       icon: Bot
     },
     {
       key: 'graph' as ConversationMode,
-      title: 'Graph',
-      description: '执行流程',
+      title: t('pages.chatSystem.modeSelector.graphMode'),
+      description: t('pages.chatSystem.modeSelector.graphModeDesc'),
       icon: GitBranch
     }
   ];
@@ -194,13 +196,13 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
 
   const getInputPlaceholder = () => {
     if (isSystemPromptMode) {
-      return '输入系统提示词（可选）... (Ctrl+Enter发送)';
+      return t('pages.chatSystem.modeSelector.systemPromptPlaceholder');
     }
 
     if (currentMode === 'agent') {
-      return '输入您的问题或请求... (Ctrl+Enter发送)';
+      return t('pages.chatSystem.modeSelector.agentPlaceholder');
     }
-    return '输入要传递给Graph的内容... (Ctrl+Enter发送)';
+    return t('pages.chatSystem.modeSelector.graphPlaceholder');
   };
 
   return (

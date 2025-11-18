@@ -829,6 +829,38 @@
         "brutalCompact": "暴力压缩",
         "brutalCompactDesc": "每轮只保留用户和最终AI回复"
       },
+      "modeSelector": {
+        "agentMode": "Agent",
+        "agentModeDesc": "AI 助手对话",
+        "graphMode": "Graph",
+        "graphModeDesc": "执行流程",
+        "systemPromptPlaceholder": "输入系统提示词（可选）... (Ctrl+Enter发送)",
+        "agentPlaceholder": "输入您的问题或请求... (Ctrl+Enter发送)",
+        "graphPlaceholder": "输入要传递给Graph的内容... (Ctrl+Enter发送)"
+      },
+      "inputArea": {
+        "systemPromptPlaceholder": "输入系统提示词... (Ctrl+Enter保存)",
+        "agentWithNamePlaceholder": "使用 {{agent}} 进行对话... (Ctrl+Enter发送)",
+        "agentPlaceholder": "输入您的问题或任务... (Ctrl+Enter发送)",
+        "graphPlaceholder": "输入要传递给Graph的内容... (Ctrl+Enter发送)",
+        "defaultPlaceholder": "输入消息..."
+      },
+      "messageDisplay": {
+        "codeCopied": "代码已复制",
+        "copyFailed": "复制失败",
+        "toolCall": "工具调用",
+        "parameters": "参数",
+        "result": "结果",
+        "aiThinking": "AI思考过程",
+        "reasoning": "推理",
+        "node": "节点",
+        "mcpTools": "MCP工具: {{count}}个",
+        "executionSummary": "执行总结",
+        "executionChain": "执行链:",
+        "finalResult": "最终结果:",
+        "level": "Level",
+        "nodeLabel": "节点: {{name}}"
+      },
       "messages": {
         "conversationComplete": "对话完成",
         "compactComplete": "\"{{title}}\" 压缩完成"

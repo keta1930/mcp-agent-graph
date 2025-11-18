@@ -20,6 +20,7 @@ import { getCurrentUserDisplayName } from '../../../config/user';
 import CodeBlockPreview from '../../common/CodeBlockPreview';
 import TaskBlock from './TaskBlock';
 import StaticTaskBlock from './StaticTaskBlock';
+import { useT } from '../../../i18n/hooks';
 
 const { Text, Paragraph } = Typography;
 
@@ -81,6 +82,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
   isStreaming = false,
   conversationId
 }) => {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const copyButtonRef = React.useRef<HTMLDivElement>(null);
@@ -104,7 +106,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
     try {
       await navigator.clipboard.writeText(children);
       setCopied(true);
-      message.success('代码已复制');
+      message.success(t('pages.chatSystem.messageDisplay.codeCopied'));
       setTimeout(() => {
         setCopied(false);
         // 清除可能残留的内联样式
@@ -114,7 +116,7 @@ const GlassCodeBlock: React.FC<CodeBlockProps> = ({
         }
       }, 500);
     } catch (err) {
-      message.error('复制失败');
+      message.error(t('pages.chatSystem.messageDisplay.copyFailed'));
     }
   };
 
@@ -404,6 +406,7 @@ interface ToolCallDisplayProps {
 }
 
 const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, conversationId, isStreaming = false }) => {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const paramsRef = React.useRef<HTMLDivElement>(null);
   React.useLayoutEffect(() => {
@@ -448,7 +451,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, con
             padding: '2px 10px',
             fontSize: '12px'
           }}>
-            工具调用
+            {t('pages.chatSystem.messageDisplay.toolCall')}
           </Tag>
           {isStreaming && !result && <LoadingOutlined style={{ color: '#b85845', fontSize: '14px' }} />}
         </div>
@@ -470,7 +473,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, con
           scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(245, 243, 240, 0.6)'
         }} className="tool-call-scrollbar" ref={paramsRef}>
           <div style={{ marginTop: '12px' }}>
-            <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>参数</Text>
+            <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>{t('pages.chatSystem.messageDisplay.parameters')}</Text>
             <div style={{ marginTop: '8px' }}>
               <SyntaxHighlighter
                 language="json"
@@ -490,7 +493,7 @@ const ToolCallDisplay: React.FC<ToolCallDisplayProps> = ({ toolCall, result, con
 
           {result && (
             <div style={{ marginTop: '12px' }}>
-              <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>结果</Text>
+              <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '12px', fontWeight: 500 }}>{t('pages.chatSystem.messageDisplay.result')}</Text>
               <div style={{
                 marginTop: '8px',
                 padding: '10px 12px',
@@ -513,6 +516,7 @@ interface ReasoningDisplayProps {
 }
 
 const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -537,7 +541,7 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Bot size={16} strokeWidth={1.5} style={{ color: '#b85845' }} />
-          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>AI思考过程</Text>
+          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>{t('pages.chatSystem.messageDisplay.aiThinking')}</Text>
           <Tag style={{
             background: 'rgba(184, 88, 69, 0.08)',
             color: '#b85845',
@@ -547,7 +551,7 @@ const ReasoningDisplay: React.FC<ReasoningDisplayProps> = ({ content }) => {
             padding: '2px 10px',
             fontSize: '12px'
           }}>
-            推理
+            {t('pages.chatSystem.messageDisplay.reasoning')}
           </Tag>
         </div>
         {expanded ? (
@@ -620,6 +624,7 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
   mcpServers,
   status
 }) => {
+  const t = useT();
   const getStatusIcon = () => {
     switch (status) {
       case 'running':
@@ -662,8 +667,8 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
           {getStatusIcon()}
         </div>
         <div>
-          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>节点: {nodeName}</Text>
-          <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px', marginLeft: '6px' }}>(Level {level})</Text>
+          <Text strong style={{ color: '#2d2d2d', fontSize: '14px' }}>{t('pages.chatSystem.messageDisplay.nodeLabel', { name: nodeName })}</Text>
+          <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px', marginLeft: '6px' }}>({t('pages.chatSystem.messageDisplay.level')} {level})</Text>
         </div>
       </div>
 
@@ -679,7 +684,7 @@ const NodeExecutionInfo: React.FC<NodeExecutionInfoProps> = ({
               padding: '2px 10px',
               fontSize: '12px'
             }}>
-              MCP工具: {mcpServers.length}个
+              {t('pages.chatSystem.messageDisplay.mcpTools', { count: mcpServers.length })}
             </Tag>
           </Tooltip>
         </div>
@@ -1337,7 +1342,9 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
         )}
 
         {/* Graph执行的总结信息 */}
-        {isGraphExecution && conversation.execution_chain && (
+        {isGraphExecution && conversation.execution_chain && (() => {
+          const t = useT();
+          return (
           <div style={{
             marginBottom: '24px',
             padding: '20px 24px',
@@ -1356,7 +1363,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                 color: '#2d2d2d',
                 fontWeight: 600,
                 letterSpacing: '0.5px',
-              }}>执行总结</Text>
+              }}>{t('pages.chatSystem.messageDisplay.executionSummary')}</Text>
             </div>
 
             <div style={{ marginBottom: '16px' }}>
@@ -1366,7 +1373,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                 fontWeight: 500,
                 marginBottom: '8px',
                 display: 'block',
-              }}>执行链:</Text>
+              }}>{t('pages.chatSystem.messageDisplay.executionChain')}</Text>
               <div style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -1391,7 +1398,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                       padding: '4px 12px',
                       fontSize: '12px',
                       margin: 0,
-                    }}>Level {index}</Tag>
+                    }}>{t('pages.chatSystem.messageDisplay.level')} {index}</Tag>
                     <Space wrap size={8}>
                       {level.map(nodeName => (
                         <Tag key={nodeName} style={{
@@ -1423,7 +1430,7 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
                   fontWeight: 500,
                   marginBottom: '8px',
                   display: 'block',
-                }}>最终结果:</Text>
+                }}>{t('pages.chatSystem.messageDisplay.finalResult')}</Text>
                 <Paragraph style={{
                   margin: 0,
                   padding: '12px 14px',
@@ -1439,7 +1446,8 @@ const MessageDisplay: React.FC<MessageDisplayProps> = React.memo(({
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

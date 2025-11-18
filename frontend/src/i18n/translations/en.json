@@ -829,6 +829,38 @@
         "brutalCompact": "Brutal Compact",
         "brutalCompactDesc": "Keep only user and final AI response per round"
       },
+      "modeSelector": {
+        "agentMode": "Agent",
+        "agentModeDesc": "AI Assistant Conversation",
+        "graphMode": "Graph",
+        "graphModeDesc": "Execute Workflow",
+        "systemPromptPlaceholder": "Enter system prompt (optional)... (Ctrl+Enter to send)",
+        "agentPlaceholder": "Enter your question or request... (Ctrl+Enter to send)",
+        "graphPlaceholder": "Enter content to pass to Graph... (Ctrl+Enter to send)"
+      },
+      "inputArea": {
+        "systemPromptPlaceholder": "Enter system prompt... (Ctrl+Enter to save)",
+        "agentWithNamePlaceholder": "Chat with {{agent}}... (Ctrl+Enter to send)",
+        "agentPlaceholder": "Enter your question or task... (Ctrl+Enter to send)",
+        "graphPlaceholder": "Enter content to pass to Graph... (Ctrl+Enter to send)",
+        "defaultPlaceholder": "Enter message..."
+      },
+      "messageDisplay": {
+        "codeCopied": "Code copied",
+        "copyFailed": "Copy failed",
+        "toolCall": "Tool Call",
+        "parameters": "Parameters",
+        "result": "Result",
+        "aiThinking": "AI Thinking Process",
+        "reasoning": "Reasoning",
+        "node": "Node",
+        "mcpTools": "MCP Tools: {{count}}",
+        "executionSummary": "Execution Summary",
+        "executionChain": "Execution Chain:",
+        "finalResult": "Final Result:",
+        "level": "Level",
+        "nodeLabel": "Node: {{name}}"
+      },
       "messages": {
         "conversationComplete": "Conversation complete",
         "compactComplete": "\"{{title}}\" compacted successfully"
