@@ -1,7 +1,7 @@
 // src/components/graph-editor/NodePropertiesPanel.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
-  Form, Input, Switch, Select, Button, Card, Typography, Tabs, Tag,
+  Form, Input, Switch, Select, Button, Typography, Tabs, Tag,
   Tooltip, InputNumber, Divider, Space
 } from 'antd';
 import {
@@ -10,7 +10,8 @@ import {
 import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
-import { SAVE_FORMAT_OPTIONS } from '../../types/graph';
+import { useAgentStore } from '../../store/agentStore';
+import { useSystemToolsStore } from '../../store/systemToolsStore';
 import SmartPromptEditor from '../common/SmartPromptEditor';
 import { useT } from '../../i18n/hooks';
 
@@ -25,6 +26,8 @@ const NodePropertiesPanel: React.FC = () => {
   const { currentGraph, selectedNode, updateNode, removeNode, graphs, selectNode } = useGraphEditorStore();
   const { models, fetchModels } = useModelStore();
   const { config, status, fetchConfig } = useMCPStore();
+  const { agents, fetchAgents } = useAgentStore();
+  const { systemTools, fetchSystemTools } = useSystemToolsStore();
 
   // Get selected node
   const node = currentGraph?.nodes.find(n => n.id === selectedNode);
@@ -75,11 +78,13 @@ const NodePropertiesPanel: React.FC = () => {
     }
   ) || [];
 
-  // Get models and MCP server list
+  // Get models, MCP server list, agents, and system tools
   useEffect(() => {
     fetchModels();
     fetchConfig();
-  }, [fetchModels, fetchConfig]);
+    fetchAgents();
+    fetchSystemTools();
+  }, [fetchModels, fetchConfig, fetchAgents, fetchSystemTools]);
 
   // Update form when selected node changes
   useEffect(() => {
@@ -87,18 +92,20 @@ const NodePropertiesPanel: React.FC = () => {
       form.setFieldsValue({
         name: node.name,
         description: node.description || "",
+        agent_name: node.agent_name,
         is_subgraph: node.is_subgraph,
         model_name: node.model_name,
         subgraph_name: node.subgraph_name,
         mcp_servers: node.mcp_servers,
+        system_tools: node.system_tools || [],
         system_prompt: node.system_prompt,
         user_prompt: node.user_prompt,
+        max_iterations: node.max_iterations,
         input_nodes: node.input_nodes || [],
         output_nodes: node.output_nodes || [],
         output_enabled: node.output_enabled,
         handoffs: node.handoffs,
-        level: node.level,
-        save: node.save
+        level: node.level
       });
     } else {
       form.resetFields();
@@ -203,14 +210,6 @@ const NodePropertiesPanel: React.FC = () => {
                   borderRadius: '6px'
                 }}>{t('components.graphEditor.nodePropertiesPanel.loopExecution')}: {node.handoffs}{t('components.graphEditor.nodePropertiesPanel.times')}</Tag>
               )}
-              {node.save && (
-                <Tag style={{
-                  background: 'rgba(160, 130, 109, 0.08)',
-                  color: '#a0826d',
-                  border: '1px solid rgba(160, 130, 109, 0.25)',
-                  borderRadius: '6px'
-                }}>{t('components.graphEditor.nodePropertiesPanel.saveFormat')}: {node.save}</Tag>
-              )}
             </div>
           </div>
         </div>
@@ -281,6 +280,28 @@ const NodePropertiesPanel: React.FC = () => {
               />
             </Form.Item>
 
+            <Form.Item
+              name="agent_name"
+              label={
+                <span>
+                  Agent {' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.agentTooltip')}>
+                    <HelpCircle size={14} strokeWidth={1.5} />
+                  </Tooltip>
+                </span>
+              }
+            >
+              <Select
+                placeholder={t('components.graphEditor.nodePropertiesPanel.agentPlaceholder')}
+                allowClear
+                size="large"
+              >
+                {agents.map(agent => (
+                  <Option key={agent.name} value={agent.name}>{agent.name}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+
             {!node.is_subgraph ? (
               <Form.Item
                 name="model_name"
@@ -328,6 +349,21 @@ const NodePropertiesPanel: React.FC = () => {
                       </Text>
                     )}
                   </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="system_tools"
+              label={t('components.graphEditor.nodePropertiesPanel.systemTools')}
+            >
+              <Select
+                mode="multiple"
+                placeholder={t('components.graphEditor.nodePropertiesPanel.systemToolsPlaceholder')}
+                size="large"
+              >
+                {systemTools.map(tool => (
+                  <Option key={tool} value={tool}>{tool}</Option>
                 ))}
               </Select>
             </Form.Item>
@@ -529,23 +565,23 @@ const NodePropertiesPanel: React.FC = () => {
             </Form.Item>
 
             <Form.Item
-              name="save"
+              name="max_iterations"
               label={
                 <span>
-                  {t('components.graphEditor.nodePropertiesPanel.saveFormat')}{' '}
-                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.saveFormatTooltip')}>
+                  {t('components.graphEditor.nodePropertiesPanel.maxIterations')}{' '}
+                  <Tooltip title={t('components.graphEditor.nodePropertiesPanel.maxIterationsTooltip')}>
                     <HelpCircle size={14} strokeWidth={1.5} />
                   </Tooltip>
                 </span>
               }
             >
-              <Select placeholder={t('components.graphEditor.nodePropertiesPanel.saveFormatPlaceholder')} allowClear size="large">
-                {SAVE_FORMAT_OPTIONS.map(option => (
-                  <Option key={option.value} value={option.value}>
-                    {option.label}
-                  </Option>
-                ))}
-              </Select>
+              <InputNumber
+                placeholder={t('components.graphEditor.nodePropertiesPanel.maxIterationsPlaceholder')}
+                style={{ width: '100%' }}
+                size="large"
+                min={1}
+                max={200}
+              />
             </Form.Item>
           </Form>
         </TabPane>
