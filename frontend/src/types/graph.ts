@@ -7,19 +7,21 @@ export interface NodePosition {
 export interface AgentNode {
   name: string;
   description?: string;
+  agent_name?: string;
   is_subgraph: boolean;
   model_name?: string;
   subgraph_name?: string;
   mcp_servers: string[];
+  system_tools?: string[];
   system_prompt: string;
   user_prompt: string;
+  max_iterations?: number;
   input_nodes: string[];
   output_nodes: string[];
   handoffs?: number;
   output_enabled: boolean;
   position?: NodePosition;
   level?: number;
-  save?: string;
   id?: string;
 }
 
