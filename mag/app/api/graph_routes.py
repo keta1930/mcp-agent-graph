@@ -2,7 +2,6 @@ import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 from typing import Dict, List, Any
-from app.infrastructure.storage.object_storage import graph_run_storage
 from app.services.model.model_service import model_service
 from app.services.graph.graph_service import graph_service
 from app.templates.flow_diagram import FlowDiagram
