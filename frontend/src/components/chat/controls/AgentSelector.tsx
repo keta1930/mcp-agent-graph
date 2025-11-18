@@ -5,7 +5,6 @@ import { AgentRunRequest } from '../../../types/conversation';
 import { AgentListItem, AgentCategoryItem } from '../../../services/agentService';
 import { listAgents, listCategories } from '../../../services/agentService';
 import AgentList from './AgentList';
-import ManualConfig from './ManualConfig';
 import './AgentSelector.css';
 
 const { TabPane } = Tabs;
