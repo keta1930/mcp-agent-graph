@@ -276,7 +276,7 @@ class MongoDBClient:
                 run_doc = await self.graph_run_repository.get_graph_run_messages_only(conversation_id)
                 if run_doc and run_doc.get("rounds"):
                     conversation["rounds"] = run_doc.get("rounds", [])
-                    conversation["generation_type"] = "graph_run"
+                    conversation["type"] = "graph"
                     conversation["graph_name"] = run_doc.get("graph_name")
                     conversation["graph_config"] = run_doc.get("graph_config")
                     conversation["global_outputs"] = run_doc.get("global_outputs", {})
@@ -284,9 +284,10 @@ class MongoDBClient:
                     conversation["execution_chain"] = run_doc.get("execution_chain", [])
                     conversation["handoffs_status"] = run_doc.get("handoffs_status", {})
                     conversation["completed"] = run_doc.get("completed", False)
+                    conversation["tasks"] = run_doc.get("tasks", [])
                 else:
                     conversation["rounds"] = []
-                    conversation["generation_type"] = "graph_run"
+                    conversation["type"] = "graph"
 
             elif conversation_type == "agent":
                 # Agent 对话类型
@@ -295,15 +296,15 @@ class MongoDBClient:
                 if agent_run_doc and agent_run_doc.get("rounds"):
                     conversation["rounds"] = agent_run_doc.get("rounds", [])
                     conversation["tasks"] = agent_run_doc.get("tasks", [])
-                    conversation["generation_type"] = "agent"
+                    conversation["type"] = "agent"
                 else:
                     conversation["rounds"] = []
-                    conversation["generation_type"] = "agent"
+                    conversation["type"] = "agent"
 
             else:
                 logger.warning(f"未知的对话类型: {conversation_type}")
                 conversation["rounds"] = []
-                conversation["generation_type"] = "unknown"
+                conversation["type"] = "agent"
 
             return conversation
 

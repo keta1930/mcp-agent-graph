@@ -106,14 +106,14 @@ async def get_conversation_detail(
 
         # 处理轮次数据 - 转换为OpenAI格式
         rounds = conversation.get("rounds", [])
-        generation_type = conversation.get("generation_type")
+        conversation_type = conversation.get("type", "agent")
 
         # 准备响应数据
         response_data = {
             "_id": conversation["_id"],
             "title": conversation.get("title", "新对话"),
             "rounds": rounds,
-            "generation_type": generation_type,
+            "type": conversation_type,
         }
 
         # 添加文档/文件信息（如果存在）
@@ -124,17 +124,14 @@ async def get_conversation_detail(
         if "input_config" in conversation:
             response_data["input_config"] = conversation["input_config"]
 
-        # 根据generation_type添加相应的扩展字段
-        if generation_type in ["graph", "mcp"]:
-            # AI生成对话，添加 parsed_results
-            response_data["parsed_results"] = conversation.get("parsed_results")
-
-        elif generation_type == "graph_run":
-            # 图执行对话，添加 execution_chain和final_result
+        # 根据type添加相应的扩展字段
+        if conversation_type == "graph":
+            # 图执行对话，添加 execution_chain、final_result 和 tasks
             response_data["execution_chain"] = conversation.get("execution_chain")
             response_data["final_result"] = conversation.get("final_result")
+            response_data["tasks"] = conversation.get("tasks", [])
         
-        elif generation_type == "agent":
+        elif conversation_type == "agent":
             # Agent 对话，添加 tasks 数据
             response_data["tasks"] = conversation.get("tasks", [])
 

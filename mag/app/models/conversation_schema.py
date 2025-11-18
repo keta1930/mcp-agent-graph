@@ -54,7 +54,7 @@ class ConversationDetailResponse(BaseModel):
     conversation_id: str = Field(..., description="对话ID", alias="_id")
     title: str = Field(..., description="对话标题")
     rounds: List[Dict[str, Any]] = Field(default_factory=list, description="完整消息轮次（原始格式）")
-    generation_type: Optional[str] = Field(None, description="生成类型：agent（Agent对话）/ graph_run（图执行）/ graph（图生成）/ mcp（MCP生成）")
+    type: Optional[str] = Field(None, description="对话类型：agent（Agent对话）/ graph（图执行）")
 
     # 文档/文件信息
     documents: Optional[Dict[str, Any]] = Field(None, description="对话关联的文档/文件信息")

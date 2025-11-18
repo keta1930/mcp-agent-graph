@@ -39,6 +39,7 @@ class GraphRunRepository:
                 "graph_name": graph_name,
                 "graph_config": graph_config,
                 "rounds": [],
+                "tasks": [],
                 "input": "",
                 "global_outputs": {},
                 "final_result": "",
@@ -224,6 +225,167 @@ class GraphRunRepository:
         except Exception as e:
             logger.error(f"获取图运行消息失败: {str(e)}")
             return None
+
+    async def add_task(
+        self,
+        conversation_id: str,
+        task_id: str,
+        agent_name: str
+    ) -> bool:
+        """
+        添加新任务（创建空的 task 记录）
+
+        Args:
+            conversation_id: 对话 ID
+            task_id: 任务 ID
+            agent_name: Agent 名称
+
+        Returns:
+            添加成功返回 True，失败返回 False
+        """
+        try:
+            task_doc = {
+                "task_id": task_id,
+                "agent_name": agent_name,
+                "rounds": []
+            }
+
+            result = await self.graph_run_messages_collection.update_one(
+                {"conversation_id": conversation_id},
+                {"$push": {"tasks": task_doc}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"添加新任务成功: {conversation_id}, task_id: {task_id}")
+                return True
+            else:
+                logger.warning(f"添加新任务失败: 文档未找到")
+                return False
+
+        except Exception as e:
+            logger.error(f"添加新任务失败: {str(e)}")
+            return False
+
+    async def get_task(
+        self,
+        conversation_id: str,
+        task_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        获取任务（通过 task_id）
+
+        Args:
+            conversation_id: 对话 ID
+            task_id: 任务 ID
+
+        Returns:
+            任务文档，不存在返回 None
+        """
+        try:
+            graph_run = await self.get_graph_run_conversation(conversation_id)
+
+            if not graph_run:
+                return None
+
+            # 在 tasks 数组中查找指定 task_id
+            for task in graph_run.get("tasks", []):
+                if task.get("task_id") == task_id:
+                    return task
+
+            return None
+
+        except Exception as e:
+            logger.error(f"获取任务失败 ({task_id}): {str(e)}")
+            return None
+
+    async def add_round_to_task(
+        self,
+        conversation_id: str,
+        task_id: str,
+        round_number: int,
+        messages: List[Dict[str, Any]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        model: Optional[str] = None,
+        tool_call_id: Optional[str] = None
+    ) -> bool:
+        """
+        添加任务 round
+
+        Args:
+            conversation_id: 对话 ID
+            task_id: 任务 ID
+            round_number: 轮次编号
+            messages: 消息列表
+            tools: 工具 schema 列表（可选）
+            model: 模型名称（可选）
+            tool_call_id: 工具调用 ID（用于关联主对话，可选）
+
+        Returns:
+            添加成功返回 True，失败返回 False
+        """
+        try:
+            round_doc = {
+                "round": round_number,
+                "messages": messages
+            }
+
+            if tools is not None:
+                round_doc["tools"] = tools
+            if model is not None:
+                round_doc["model"] = model
+            if tool_call_id is not None:
+                round_doc["tool_call_id"] = tool_call_id
+
+            result = await self.graph_run_messages_collection.update_one(
+                {
+                    "conversation_id": conversation_id,
+                    "tasks.task_id": task_id
+                },
+                {"$push": {"tasks.$.rounds": round_doc}}
+            )
+
+            if result.modified_count > 0:
+                logger.debug(f"添加任务 round 成功: task_id {task_id}, round {round_number}, tool_call_id {tool_call_id}")
+                return True
+            else:
+                logger.warning(f"添加任务 round 失败: task 未找到或未修改")
+                return False
+
+        except Exception as e:
+            logger.error(f"添加任务 round 失败: {str(e)}")
+            return False
+
+    async def get_task_history(
+        self,
+        conversation_id: str,
+        task_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        获取任务的完整历史消息（所有 rounds 的 messages 合并）
+
+        Args:
+            conversation_id: 对话 ID
+            task_id: 任务 ID
+
+        Returns:
+            消息列表
+        """
+        try:
+            task = await self.get_task(conversation_id, task_id)
+
+            if not task:
+                return []
+
+            # 合并所有 rounds 的 messages
+            messages = []
+            for round_doc in task.get("rounds", []):
+                messages.extend(round_doc.get("messages", []))
+
+            return messages
+
+        except Exception as e:
+            logger.error(f"获取任务历史失败 ({task_id}): {str(e)}")
+            return []
 
     def _convert_objectid_to_str(self, doc: Dict[str, Any]) -> Dict[str, Any]:
         """将ObjectId转换为字符串"""
