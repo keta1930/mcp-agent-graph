@@ -1080,6 +1080,19 @@
       "executing": "正在执行...",
       "noContent": "无内容"
     },
+    "agentList": {
+      "noAgents": "暂无可用的 Agent",
+      "uncategorized": "未分类",
+      "description": "描述",
+      "noDescription": "无描述",
+      "model": "模型",
+      "systemPrompt": "系统提示词",
+      "maxIterations": "最大迭代次数",
+      "mcpServers": "MCP 服务器",
+      "systemTools": "系统工具",
+      "loadDetailsFailed": "加载 Agent 详情失败",
+      "loadDetailsError": "加载 {{name}} 详情失败"
+    },
     "navigation": {
       "home": "首页",
       "chat": "对话",

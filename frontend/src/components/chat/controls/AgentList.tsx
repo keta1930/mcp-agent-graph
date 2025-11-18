@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { List, Card, Tag, Empty, Collapse, Descriptions, message, Spin } from 'antd';
 import { RobotOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { AgentListItem, AgentCategoryItem, getAgent, Agent } from '../../../services/agentService';
+import { useT } from '../../../i18n/hooks';
 import './AgentList.css';
 
 const { Panel } = Collapse;
@@ -32,6 +33,7 @@ const AgentList: React.FC<AgentListProps> = ({
   selectedAgent,
   onSelect
 }) => {
+  const t = useT();
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [agentDetails, setAgentDetails] = useState<Record<string, Agent>>({});
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
@@ -63,8 +65,8 @@ const AgentList: React.FC<AgentListProps> = ({
       const agent = await getAgent(agentName);
       setAgentDetails(prev => ({ ...prev, [agentName]: agent }));
     } catch (error) {
-      console.error('加载 Agent 详情失败:', error);
-      message.error(`加载 ${agentName} 详情失败`);
+      console.error(t('components.agentList.loadDetailsFailed'), error);
+      message.error(t('components.agentList.loadDetailsError', { name: agentName }));
     } finally {
       setLoadingDetails(prev => ({ ...prev, [agentName]: false }));
     }
@@ -106,26 +108,26 @@ const AgentList: React.FC<AgentListProps> = ({
     return (
       <div className="agent-details">
         <Descriptions column={1} size="small" bordered>
-          <Descriptions.Item label="描述">
-            {config.card || '无描述'}
+          <Descriptions.Item label={t('components.agentList.description')}>
+            {config.card || t('components.agentList.noDescription')}
           </Descriptions.Item>
-          <Descriptions.Item label="模型">
+          <Descriptions.Item label={t('components.agentList.model')}>
             {config.model}
           </Descriptions.Item>
           {config.instruction && (
-            <Descriptions.Item label="系统提示词">
+            <Descriptions.Item label={t('components.agentList.systemPrompt')}>
               <div className="agent-instruction">
                 {config.instruction}
               </div>
             </Descriptions.Item>
           )}
           {config.max_actions && (
-            <Descriptions.Item label="最大迭代次数">
+            <Descriptions.Item label={t('components.agentList.maxIterations')}>
               {config.max_actions}
             </Descriptions.Item>
           )}
           {config.mcp && config.mcp.length > 0 && (
-            <Descriptions.Item label="MCP 服务器">
+            <Descriptions.Item label={t('components.agentList.mcpServers')}>
               <div className="agent-tools">
                 {config.mcp.map(mcp => (
                   <Tag key={mcp} color="blue">{mcp}</Tag>
@@ -134,7 +136,7 @@ const AgentList: React.FC<AgentListProps> = ({
             </Descriptions.Item>
           )}
           {config.system_tools && config.system_tools.length > 0 && (
-            <Descriptions.Item label="系统工具">
+            <Descriptions.Item label={t('components.agentList.systemTools')}>
               <div className="agent-tools">
                 {config.system_tools.map(tool => (
                   <Tag key={tool} color="green">{tool}</Tag>
@@ -150,7 +152,7 @@ const AgentList: React.FC<AgentListProps> = ({
   if (agents.length === 0) {
     return (
       <Empty
-        description="暂无可用的 Agent"
+        description={t('components.agentList.noAgents')}
         image={Empty.PRESENTED_IMAGE_SIMPLE}
       />
     );
@@ -219,7 +221,7 @@ const AgentList: React.FC<AgentListProps> = ({
           <Panel
             header={
               <div className="category-header">
-                <span className="category-name">未分类</span>
+                <span className="category-name">{t('components.agentList.uncategorized')}</span>
                 <Tag color="default">{agentsByCategory['uncategorized'].length}</Tag>
               </div>
             }

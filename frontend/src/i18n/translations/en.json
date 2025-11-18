@@ -1080,6 +1080,19 @@
       "executing": "Executing...",
       "noContent": "No content"
     },
+    "agentList": {
+      "noAgents": "No agents available",
+      "uncategorized": "Uncategorized",
+      "description": "Description",
+      "noDescription": "No description",
+      "model": "Model",
+      "systemPrompt": "System Prompt",
+      "maxIterations": "Max Iterations",
+      "mcpServers": "MCP Servers",
+      "systemTools": "System Tools",
+      "loadDetailsFailed": "Failed to load agent details",
+      "loadDetailsError": "Failed to load {{name}} details"
+    },
     "navigation": {
       "home": "Home",
       "chat": "Chat",
