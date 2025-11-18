@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button, Tooltip } from 'antd';
 import { ArrowLeftRight } from 'lucide-react';
+import { useT } from '../../../i18n/hooks';
 
 /**
  * 系统提示词切换按钮组件属性
@@ -29,12 +30,14 @@ const SystemPromptToggle: React.FC<SystemPromptToggleProps> = ({
   size = 'small',
   className = ''
 }) => {
+  const t = useT();
+  
   const getTooltipTitle = () => {
-    return isSystemPromptMode ? '切换到用户消息' : '切换到系统提示词';
+    return isSystemPromptMode ? t('components.systemPromptToggle.switchToUser') : t('components.systemPromptToggle.switchToSystem');
   };
 
   const getButtonText = () => {
-    return isSystemPromptMode ? '系统' : '用户';
+    return isSystemPromptMode ? t('components.systemPromptToggle.system') : t('components.systemPromptToggle.user');
   };
 
   return (

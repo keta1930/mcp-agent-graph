@@ -1100,6 +1100,101 @@
       "noAgents": "暂无可用的 Agent",
       "loadAgentsFailed": "加载 Agent 列表失败"
     },
+    "modelSelector": {
+      "placeholder": "点击选择AI模型"
+    },
+    "graphSelector": {
+      "placeholder": "点击选择Graph"
+    },
+    "promptSelector": {
+      "selectPrompt": "选择提示词",
+      "noPrompts": "暂无提示词",
+      "fetchPromptsFailed": "获取提示词列表失败",
+      "fetchContentFailed": "获取提示词内容失败"
+    },
+    "systemPromptToggle": {
+      "switchToUser": "切换到用户消息",
+      "switchToSystem": "切换到系统提示词",
+      "system": "系统",
+      "user": "用户"
+    },
+    "maxIterationsConfig": {
+      "title": "最大迭代次数",
+      "configure": "配置最大迭代次数",
+      "currentValue": "最大迭代: {{value}}次",
+      "description": "设置 Agent 执行的最大迭代次数",
+      "placeholder": "输入次数 (1-100)",
+      "clear": "清除",
+      "apply": "应用"
+    },
+    "compactConfigModal": {
+      "title": "对话压缩配置",
+      "startCompact": "开始压缩",
+      "selectModel": "选择压缩模型",
+      "modelRequired": "请选择一个模型",
+      "modelPlaceholder": "选择用于压缩的模型",
+      "threshold": "压缩阈值（字符数）",
+      "thresholdHelp": "超过此字符数的工具调用结果将被AI总结压缩",
+      "preciseTitle": "精确压缩",
+      "preciseDescription": "AI会智能总结工具调用的内容，保留完整的对话结构和上下文。适合需要保持对话完整性的场景。",
+      "brutalTitle": "暴力压缩",
+      "brutalDescription": "每轮对话只保留用户消息和最后的AI回复，大幅减少对话长度。适合只需要保留核心交互的场景。",
+      "warning": "⚠️ 压缩操作不可逆，建议在压缩前确认对话内容无需完整保留。"
+    },
+    "conversationItem": {
+      "favorited": "已收藏",
+      "unfavorited": "已取消收藏",
+      "operationFailed": "操作失败",
+      "movedToTrash": "已移除到回收站",
+      "deleteFailed": "删除失败",
+      "restored": "已恢复为普通",
+      "restoreFailed": "恢复失败",
+      "permanentlyDeleted": "对话已永久删除",
+      "restoreToNormal": "恢复为普通",
+      "favorite": "收藏",
+      "unfavorite": "取消收藏",
+      "editTitle": "编辑标题",
+      "editTags": "编辑标签",
+      "permanentDelete": "永久删除",
+      "editTitleModal": "编辑对话标题",
+      "titlePlaceholder": "请输入新标题",
+      "editTagsModal": "编辑对话标签",
+      "tagsPlaceholder": "请输入标签，用逗号分隔",
+      "confirmPermanentDelete": "确认永久删除",
+      "confirmDelete": "确认删除",
+      "deleteWarning": "确定要永久删除这个对话吗？此操作不可撤销。",
+      "type": "类型",
+      "created": "创建",
+      "updated": "更新",
+      "rounds": "轮次",
+      "tags": "标签"
+    },
+    "documentsDrawer": {
+      "title": "对话文档",
+      "noDocuments": "暂无文档",
+      "justNow": "刚刚",
+      "minutesAgo": "{{count}}分钟前",
+      "hoursAgo": "{{count}}小时前",
+      "daysAgo": "{{count}}天前"
+    },
+    "systemToolSelector": {
+      "title": "系统工具",
+      "tooltip": "系统工具 ({{count}}个已选择)",
+      "selected": "已选择 {{count}} 个",
+      "toolCount": "{{count}} 个工具",
+      "loading": "加载中...",
+      "noTools": "暂无可用的系统工具",
+      "loadFailed": "加载系统工具列表失败"
+    },
+    "mcpToolSelector": {
+      "title": "MCP工具",
+      "tooltip": "MCP工具 ({{count}}个已启用)",
+      "noMCP": "还未注册MCP",
+      "noServers": "还未注册MCP服务器",
+      "goToManager": "请前往 MCP Manager 注册",
+      "connected": "已连接",
+      "disconnected": "未连接"
+    },
     "navigation": {
       "home": "首页",
       "chat": "对话",

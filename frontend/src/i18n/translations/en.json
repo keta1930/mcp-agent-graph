@@ -1100,6 +1100,101 @@
       "noAgents": "No agents available",
       "loadAgentsFailed": "Failed to load agent list"
     },
+    "modelSelector": {
+      "placeholder": "Select AI Model"
+    },
+    "graphSelector": {
+      "placeholder": "Select Graph"
+    },
+    "promptSelector": {
+      "selectPrompt": "Select Prompt",
+      "noPrompts": "No prompts available",
+      "fetchPromptsFailed": "Failed to fetch prompts list",
+      "fetchContentFailed": "Failed to fetch prompt content"
+    },
+    "systemPromptToggle": {
+      "switchToUser": "Switch to User Message",
+      "switchToSystem": "Switch to System Prompt",
+      "system": "System",
+      "user": "User"
+    },
+    "maxIterationsConfig": {
+      "title": "Max Iterations",
+      "configure": "Configure max iterations",
+      "currentValue": "Max Iterations: {{value}}",
+      "description": "Set the maximum number of iterations for Agent execution",
+      "placeholder": "Enter count (1-100)",
+      "clear": "Clear",
+      "apply": "Apply"
+    },
+    "compactConfigModal": {
+      "title": "Conversation Compact Configuration",
+      "startCompact": "Start Compact",
+      "selectModel": "Select Compact Model",
+      "modelRequired": "Please select a model",
+      "modelPlaceholder": "Select model for compacting",
+      "threshold": "Compact Threshold (Characters)",
+      "thresholdHelp": "Tool call results exceeding this character count will be summarized by AI",
+      "preciseTitle": "Precise Compact",
+      "preciseDescription": "AI intelligently summarizes tool call content while preserving complete conversation structure and context. Suitable for scenarios requiring conversation integrity.",
+      "brutalTitle": "Brutal Compact",
+      "brutalDescription": "Only keeps user messages and final AI responses per round, significantly reducing conversation length. Suitable for scenarios requiring only core interactions.",
+      "warning": "⚠️ Compact operation is irreversible. Please confirm that the conversation content does not need to be fully preserved before compacting."
+    },
+    "conversationItem": {
+      "favorited": "Favorited",
+      "unfavorited": "Unfavorited",
+      "operationFailed": "Operation failed",
+      "movedToTrash": "Moved to trash",
+      "deleteFailed": "Delete failed",
+      "restored": "Restored to normal",
+      "restoreFailed": "Restore failed",
+      "permanentlyDeleted": "Conversation permanently deleted",
+      "restoreToNormal": "Restore to Normal",
+      "favorite": "Favorite",
+      "unfavorite": "Unfavorite",
+      "editTitle": "Edit Title",
+      "editTags": "Edit Tags",
+      "permanentDelete": "Permanent Delete",
+      "editTitleModal": "Edit Conversation Title",
+      "titlePlaceholder": "Please enter new title",
+      "editTagsModal": "Edit Conversation Tags",
+      "tagsPlaceholder": "Enter tags, separated by commas",
+      "confirmPermanentDelete": "Confirm Permanent Delete",
+      "confirmDelete": "Confirm Delete",
+      "deleteWarning": "Are you sure you want to permanently delete this conversation? This action cannot be undone.",
+      "type": "Type",
+      "created": "Created",
+      "updated": "Updated",
+      "rounds": "Rounds",
+      "tags": "Tags"
+    },
+    "documentsDrawer": {
+      "title": "Conversation Documents",
+      "noDocuments": "No documents",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hours ago",
+      "daysAgo": "{{count}} days ago"
+    },
+    "systemToolSelector": {
+      "title": "System Tools",
+      "tooltip": "System Tools ({{count}} selected)",
+      "selected": "{{count}} selected",
+      "toolCount": "{{count}} tools",
+      "loading": "Loading...",
+      "noTools": "No system tools available",
+      "loadFailed": "Failed to load system tools"
+    },
+    "mcpToolSelector": {
+      "title": "MCP Tools",
+      "tooltip": "MCP Tools ({{count}} enabled)",
+      "noMCP": "No MCP registered",
+      "noServers": "No MCP servers registered",
+      "goToManager": "Please go to MCP Manager to register",
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
     "navigation": {
       "home": "Home",
       "chat": "Chat",

@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Button, Switch, Tooltip, Typography } from 'antd';
 import { Wrench } from 'lucide-react';
+import { useT } from '../../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -38,6 +39,7 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
   size = 'small',
   className = ''
 }) => {
+  const t = useT();
   const [showPanel, setShowPanel] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -60,9 +62,9 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
 
   const getTooltipTitle = () => {
     if (availableMCPServers.length === 0) {
-      return '还未注册MCP';
+      return t('components.mcpToolSelector.noMCP');
     }
-    return `MCP工具 (${enabledMcpCount}个已启用)`;
+    return t('components.mcpToolSelector.tooltip', { count: enabledMcpCount });
   };
 
   return (
@@ -117,7 +119,7 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
             padding: '12px 16px',
             borderBottom: '1px solid rgba(139, 115, 85, 0.15)'
           }}>
-            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>MCP工具</Text>
+            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>{t('components.mcpToolSelector.title')}</Text>
           </div>
           <div style={{
             padding: '8px',
@@ -135,13 +137,13 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
                   display: 'block',
                   marginBottom: '8px'
                 }}>
-                  还未注册MCP服务器
+                  {t('components.mcpToolSelector.noServers')}
                 </Text>
                 <Text style={{
                   fontSize: '12px',
                   color: 'rgba(45, 45, 45, 0.45)'
                 }}>
-                  请前往 MCP Manager 注册
+                  {t('components.mcpToolSelector.goToManager')}
                 </Text>
               </div>
             ) : (
@@ -178,7 +180,7 @@ const MCPToolSelector: React.FC<MCPToolSelectorProps> = ({
                         background: isConnected ? '#b85845' : '#d4c4b0',
                         boxShadow: isConnected ? '0 0 0 2px rgba(184, 88, 69, 0.2)' : 'none'
                       }}
-                      title={isConnected ? '已连接' : '未连接'}
+                      title={isConnected ? t('components.mcpToolSelector.connected') : t('components.mcpToolSelector.disconnected')}
                     />
                     <Tooltip title={serverName} placement="top">
                       <span style={{

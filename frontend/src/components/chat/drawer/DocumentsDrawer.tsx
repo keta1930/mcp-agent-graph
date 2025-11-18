@@ -3,6 +3,7 @@ import React from 'react';
 import { Drawer, List, Empty, Typography } from 'antd';
 import { FileOutlined, FileTextOutlined, FileImageOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { ConversationDocuments, DocumentFile } from '../../../types/conversation';
+import { useT } from '../../../i18n/hooks';
 import './DocumentsDrawer.css';
 
 const { Text } = Typography;
@@ -21,6 +22,8 @@ const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
   onClose,
   onDocumentClick
 }) => {
+  const t = useT();
+  
   // 根据文件名返回对应的图标
   const getFileIcon = (filename: string) => {
     const ext = filename.toLowerCase().split('.').pop() || '';
@@ -45,10 +48,10 @@ const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return '刚刚';
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    if (diffDays < 7) return `${diffDays}天前`;
+    if (diffMins < 1) return t('components.documentsDrawer.justNow');
+    if (diffMins < 60) return t('components.documentsDrawer.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('components.documentsDrawer.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('components.documentsDrawer.daysAgo', { count: diffDays });
     
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -71,7 +74,7 @@ const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
       title={
         <div className="documents-drawer-title">
           <FileOutlined />
-          <span>对话文档</span>
+          <span>{t('components.documentsDrawer.title')}</span>
           {totalCount > 0 && (
             <span className="document-count">{totalCount}</span>
           )}
@@ -88,7 +91,7 @@ const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description={
             <span className="empty-description">
-              暂无文档
+              {t('components.documentsDrawer.noDocuments')}
             </span>
           }
         />

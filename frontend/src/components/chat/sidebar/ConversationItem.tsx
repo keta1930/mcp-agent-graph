@@ -10,9 +10,11 @@ import {
   Check,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { zhCN, enUS } from 'date-fns/locale';
 import { ConversationSummary } from '../../../types/conversation';
 import { useConversationStore } from '../../../store/conversationStore';
+import { useT } from '../../../i18n/hooks';
+import { useI18n } from '../../../i18n/I18nContext';
 
 const { TextArea } = Input;
 
@@ -33,6 +35,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   isSelected = false,
   onSelect,
 }) => {
+  const t = useT();
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [tagsModalVisible, setTagsModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -55,12 +58,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         conversation.status === 'favorite' ? 'active' : 'favorite';
       await updateConversationStatus(conversation._id, newStatus);
       showNotification(
-        `已${newStatus === 'favorite' ? '收藏' : '取消收藏'}`,
+        newStatus === 'favorite' ? t('components.conversationItem.favorited') : t('components.conversationItem.unfavorited'),
         'success'
       );
     } catch (error) {
       console.error('Status toggle failed:', error);
-      showNotification('操作失败', 'error');
+      showNotification(t('components.conversationItem.operationFailed'), 'error');
     }
   };
 
@@ -71,11 +74,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         setDeleteModalVisible(true);
       } else {
         await updateConversationStatus(conversation._id, 'deleted');
-        showNotification('已移除到回收站', 'success');
+        showNotification(t('components.conversationItem.movedToTrash'), 'success');
       }
     } catch (error) {
       console.error('Delete failed:', error);
-      showNotification('删除失败', 'error');
+      showNotification(t('components.conversationItem.deleteFailed'), 'error');
     }
   };
 
@@ -83,10 +86,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     if (e) e.stopPropagation();
     try {
       await updateConversationStatus(conversation._id, 'active');
-      showNotification('已恢复为普通', 'success');
+      showNotification(t('components.conversationItem.restored'), 'success');
     } catch (error) {
       console.error('Restore failed:', error);
-      showNotification('恢复失败', 'error');
+      showNotification(t('components.conversationItem.restoreFailed'), 'error');
     }
   };
 
@@ -109,7 +112,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const handlePermanentDelete = async () => {
     await deleteConversationPermanent(conversation._id);
     setDeleteModalVisible(false);
-    showNotification('对话已永久删除', 'success');
+    showNotification(t('components.conversationItem.permanentlyDeleted'), 'success');
   };
 
   const menuItems = [
@@ -118,7 +121,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           {
             key: 'restore',
             icon: <Check size={14} strokeWidth={1.5} />,
-            label: '恢复为普通',
+            label: t('components.conversationItem.restoreToNormal'),
             onClick: (e: any) => {
               e.domEvent?.stopPropagation();
               handleRestore();
@@ -135,7 +138,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           fill={conversation.status === 'favorite' ? '#d4a574' : 'none'}
         />
       ),
-      label: conversation.status === 'favorite' ? '取消收藏' : '收藏',
+      label: conversation.status === 'favorite' ? t('components.conversationItem.unfavorite') : t('components.conversationItem.favorite'),
       onClick: (e: any) => {
         e.domEvent?.stopPropagation();
         handleStatusToggle();
@@ -144,7 +147,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     {
       key: 'edit',
       icon: <Edit size={14} strokeWidth={1.5} />,
-      label: '编辑标题',
+      label: t('components.conversationItem.editTitle'),
       onClick: (e: any) => {
         e.domEvent?.stopPropagation();
         setEditModalVisible(true);
@@ -153,7 +156,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     {
       key: 'tags',
       icon: <TagIcon size={14} strokeWidth={1.5} />,
-      label: '编辑标签',
+      label: t('components.conversationItem.editTags'),
       onClick: (e: any) => {
         e.domEvent?.stopPropagation();
         setTagsModalVisible(true);
@@ -162,7 +165,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     {
       key: 'delete',
       icon: <Trash2 size={14} strokeWidth={1.5} />,
-      label: conversation.status === 'deleted' ? '永久删除' : '删除',
+      label: conversation.status === 'deleted' ? t('components.conversationItem.permanentDelete') : t('common.delete'),
       onClick: (e: any) => {
         e.domEvent?.stopPropagation();
         handleDelete();
@@ -171,6 +174,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     },
   ];
 
+  const { locale: currentLocale } = useI18n();
+  const dateLocale = currentLocale === 'zh' ? zhCN : enUS;
+  
   const hoverContent = (
     <div style={{ padding: '8px' }}>
       <div style={{ marginBottom: '8px' }}>
@@ -182,7 +188,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             lineHeight: '1.6',
           }}
         >
-          <strong>类型:</strong> {conversation.type}
+          <strong>{t('components.conversationItem.type')}:</strong> {conversation.type}
         </div>
         <div
           style={{
@@ -192,10 +198,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             lineHeight: '1.6',
           }}
         >
-          <strong>创建:</strong>{' '}
+          <strong>{t('components.conversationItem.created')}:</strong>{' '}
           {formatDistanceToNow(new Date(conversation.created_at), {
             addSuffix: true,
-            locale: zhCN,
+            locale: dateLocale,
           })}
         </div>
         <div
@@ -206,10 +212,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             lineHeight: '1.6',
           }}
         >
-          <strong>更新:</strong>{' '}
+          <strong>{t('components.conversationItem.updated')}:</strong>{' '}
           {formatDistanceToNow(new Date(conversation.updated_at), {
             addSuffix: true,
-            locale: zhCN,
+            locale: dateLocale,
           })}
         </div>
         <div
@@ -220,7 +226,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             lineHeight: '1.6',
           }}
         >
-          <strong>轮次:</strong> {conversation.round_count}
+          <strong>{t('components.conversationItem.rounds')}:</strong> {conversation.round_count}
         </div>
         <div
           style={{ fontSize: '12px', color: '#2d2d2d', lineHeight: '1.6' }}
@@ -243,7 +249,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               lineHeight: '1.6',
             }}
           >
-            <strong>标签:</strong>
+            <strong>{t('components.conversationItem.tags')}:</strong>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {conversation.tags.map((tag) => (
@@ -453,17 +459,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       </Tooltip>
 
       <Modal
-        title="编辑对话标题"
+        title={t('components.conversationItem.editTitleModal')}
         open={editModalVisible}
         onOk={handleEditTitle}
         onCancel={() => setEditModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
+        okText={t('common.save')}
+        cancelText={t('common.cancel')}
       >
         <Input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="请输入新标题"
+          placeholder={t('components.conversationItem.titlePlaceholder')}
           maxLength={100}
           style={{
             height: '40px',
@@ -475,17 +481,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       </Modal>
 
       <Modal
-        title="编辑对话标签"
+        title={t('components.conversationItem.editTagsModal')}
         open={tagsModalVisible}
         onOk={handleEditTags}
         onCancel={() => setTagsModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
+        okText={t('common.save')}
+        cancelText={t('common.cancel')}
       >
         <TextArea
           value={newTags}
           onChange={(e) => setNewTags(e.target.value)}
-          placeholder="请输入标签，用逗号分隔"
+          placeholder={t('components.conversationItem.tagsPlaceholder')}
           rows={3}
           style={{
             borderRadius: '6px',
@@ -496,16 +502,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       </Modal>
 
       <Modal
-        title="确认永久删除"
+        title={t('components.conversationItem.confirmPermanentDelete')}
         open={deleteModalVisible}
         onOk={handlePermanentDelete}
         onCancel={() => setDeleteModalVisible(false)}
-        okText="确认删除"
-        cancelText="取消"
+        okText={t('components.conversationItem.confirmDelete')}
+        cancelText={t('common.cancel')}
         okButtonProps={{ danger: true }}
       >
         <p style={{ color: '#2d2d2d', marginBottom: '8px', lineHeight: '1.6' }}>
-          确定要永久删除这个对话吗？此操作不可撤销。
+          {t('components.conversationItem.deleteWarning')}
         </p>
         <p style={{ color: '#b85845', fontWeight: 500 }}>
           <strong>{conversation.title}</strong>

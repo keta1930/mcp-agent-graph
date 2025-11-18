@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button, Tooltip, Typography, InputNumber } from 'antd';
 import { Repeat } from 'lucide-react';
+import { useT } from '../../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -31,6 +32,7 @@ const MaxIterationsConfig: React.FC<MaxIterationsConfigProps> = ({
   size = 'small',
   className = ''
 }) => {
+  const t = useT();
   const [showPanel, setShowPanel] = useState(false);
   const [tempValue, setTempValue] = useState<number | null>(value);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -65,7 +67,7 @@ const MaxIterationsConfig: React.FC<MaxIterationsConfigProps> = ({
 
   return (
     <div style={{ position: 'relative' }} ref={dropdownRef}>
-      <Tooltip title={value ? `最大迭代: ${value}次` : '配置最大迭代次数'}>
+      <Tooltip title={value ? t('components.maxIterationsConfig.currentValue', { value }) : t('components.maxIterationsConfig.configure')}>
         <Button
           type="text"
           icon={<Repeat size={14} strokeWidth={1.5} />}
@@ -113,21 +115,21 @@ const MaxIterationsConfig: React.FC<MaxIterationsConfigProps> = ({
             padding: '12px 16px',
             borderBottom: '1px solid rgba(139, 115, 85, 0.15)'
           }}>
-            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>最大迭代次数</Text>
+            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>{t('components.maxIterationsConfig.title')}</Text>
           </div>
           <div style={{
             padding: '16px'
           }}>
             <div style={{ marginBottom: '12px' }}>
               <Text style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', display: 'block', marginBottom: '8px' }}>
-                设置 Agent 执行的最大迭代次数
+                {t('components.maxIterationsConfig.description')}
               </Text>
               <InputNumber
                 value={tempValue}
                 onChange={setTempValue}
                 min={1}
                 max={100}
-                placeholder="输入次数 (1-100)"
+                placeholder={t('components.maxIterationsConfig.placeholder')}
                 style={{ width: '100%' }}
                 size="small"
               />
@@ -142,7 +144,7 @@ const MaxIterationsConfig: React.FC<MaxIterationsConfigProps> = ({
                 onClick={handleClear}
                 style={{ fontSize: '12px' }}
               >
-                清除
+                {t('components.maxIterationsConfig.clear')}
               </Button>
               <Button
                 type="primary"
@@ -154,7 +156,7 @@ const MaxIterationsConfig: React.FC<MaxIterationsConfigProps> = ({
                   borderColor: '#8b7355'
                 }}
               >
-                应用
+                {t('components.maxIterationsConfig.apply')}
               </Button>
             </div>
           </div>

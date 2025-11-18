@@ -4,6 +4,7 @@ import { Button, Tooltip, Typography } from 'antd';
 import { FileText } from 'lucide-react';
 import { promptService } from '../../../services/promptService';
 import { PromptInfo } from '../../../types/prompt';
+import { useT } from '../../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -31,6 +32,7 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
   size = 'small',
   className = ''
 }) => {
+  const t = useT();
   const [showPanel, setShowPanel] = useState(false);
   const [availablePrompts, setAvailablePrompts] = useState<PromptInfo[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
@@ -59,7 +61,7 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
         setAvailablePrompts(response.data.prompts);
       }
     } catch (error) {
-      console.error('获取提示词列表失败:', error);
+      console.error(t('components.promptSelector.fetchPromptsFailed'), error);
     } finally {
       setLoadingPrompts(false);
     }
@@ -82,13 +84,13 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
         setShowPanel(false);
       }
     } catch (error) {
-      console.error('获取提示词内容失败:', error);
+      console.error(t('components.promptSelector.fetchContentFailed'), error);
     }
   };
 
   return (
     <div style={{ position: 'relative' }} ref={dropdownRef}>
-      <Tooltip title="选择提示词">
+      <Tooltip title={t('components.promptSelector.selectPrompt')}>
         <Button
           type="text"
           icon={<FileText size={14} strokeWidth={1.5} />}
@@ -139,7 +141,7 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
             padding: '12px 16px',
             borderBottom: '1px solid rgba(139, 115, 85, 0.15)'
           }}>
-            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>选择提示词</Text>
+            <Text strong style={{ color: '#2d2d2d', fontSize: '13px' }}>{t('components.promptSelector.selectPrompt')}</Text>
           </div>
           <div style={{
             padding: '8px',
@@ -152,7 +154,7 @@ const PromptSelector: React.FC<PromptSelectorProps> = ({
                 textAlign: 'center',
                 color: 'rgba(45, 45, 45, 0.45)',
                 fontSize: '13px'
-              }}>暂无提示词</div>
+              }}>{t('components.promptSelector.noPrompts')}</div>
             ) : (
               availablePrompts.map(prompt => (
                 <div

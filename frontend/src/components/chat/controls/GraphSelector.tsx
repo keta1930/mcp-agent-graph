@@ -2,6 +2,7 @@
 import React from 'react';
 import { Select } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
+import { useT } from '../../../i18n/hooks';
 
 const { Option } = Select;
 
@@ -33,16 +34,19 @@ const GraphSelector: React.FC<GraphSelectorProps> = ({
   value,
   onChange,
   availableGraphs,
-  placeholder = '点击选择Graph',
+  placeholder,
   size = 'small',
   className = 'graph-select-dropdown'
 }) => {
+  const t = useT();
+  const defaultPlaceholder = placeholder || t('components.graphSelector.placeholder');
+  
   return (
     <div className="graph-selector-new">
       <Select
         value={value}
         onChange={onChange}
-        placeholder={placeholder}
+        placeholder={defaultPlaceholder}
         size={size}
         bordered={false}
         className={className}

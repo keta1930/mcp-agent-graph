@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Checkbox, Tooltip, Typography, Spin, message, Collapse } from 'antd';
 import { ToolOutlined } from '@ant-design/icons';
 import { listSystemTools, ToolCategory } from '../../../services/systemToolsService';
+import { useT } from '../../../i18n/hooks';
 import './SystemToolSelector.css';
 
 const { Text } = Typography;
@@ -35,6 +36,7 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
   size = 'small',
   className = ''
 }) => {
+  const t = useT();
   const [showPanel, setShowPanel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<ToolCategory[]>([]);
@@ -67,8 +69,8 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
       const response = await listSystemTools();
       setCategories(response.categories || []);
     } catch (error) {
-      console.error('加载系统工具列表失败:', error);
-      message.error('加载系统工具列表失败');
+      console.error(t('components.systemToolSelector.loadFailed'), error);
+      message.error(t('components.systemToolSelector.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -117,7 +119,7 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
 
   return (
     <div className={`system-tool-selector ${className}`} ref={dropdownRef}>
-      <Tooltip title={`系统工具 (${selectedCount}个已选择)`}>
+      <Tooltip title={t('components.systemToolSelector.tooltip', { count: selectedCount })}>
         <Button
           type="text"
           icon={<ToolOutlined />}
@@ -131,10 +133,10 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
       {showPanel && (
         <div className="system-tool-selector-panel">
           <div className="system-tool-selector-header">
-            <Text strong>系统工具</Text>
+            <Text strong>{t('components.systemToolSelector.title')}</Text>
             {selectedCount > 0 && (
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                已选择 {selectedCount} 个
+                {t('components.systemToolSelector.selected', { count: selectedCount })}
               </Text>
             )}
           </div>
@@ -142,11 +144,11 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
           <div className="system-tool-selector-content">
             {loading ? (
               <div className="system-tool-selector-loading">
-                <Spin tip="加载中..." />
+                <Spin tip={t('components.systemToolSelector.loading')} />
               </div>
             ) : categories.length === 0 ? (
               <div className="system-tool-selector-empty">
-                <Text type="secondary">暂无可用的系统工具</Text>
+                <Text type="secondary">{t('components.systemToolSelector.noTools')}</Text>
               </div>
             ) : (
               <Collapse
@@ -178,7 +180,7 @@ const SystemToolSelector: React.FC<SystemToolSelectorProps> = ({
                           <Text strong>{category.category}</Text>
                         </Checkbox>
                         <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {category.tool_count} 个工具
+                          {t('components.systemToolSelector.toolCount', { count: category.tool_count })}
                         </Text>
                       </div>
                     }

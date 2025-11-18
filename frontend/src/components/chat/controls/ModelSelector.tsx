@@ -2,6 +2,7 @@
 import React from 'react';
 import { Select } from 'antd';
 import { ChevronDown } from 'lucide-react';
+import { useT } from '../../../i18n/hooks';
 
 const { Option } = Select;
 
@@ -33,16 +34,19 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   value,
   onChange,
   availableModels,
-  placeholder = '点击选择AI模型',
+  placeholder,
   size = 'small',
   className = 'model-select-dropdown'
 }) => {
+  const t = useT();
+  const defaultPlaceholder = placeholder || t('components.modelSelector.placeholder');
+  
   return (
     <div className="model-selector-new">
       <Select
         value={value}
         onChange={onChange}
-        placeholder={placeholder}
+        placeholder={defaultPlaceholder}
         size={size}
         bordered={false}
         className={className}
@@ -50,11 +54,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         showSearch
         placement="topRight"
         dropdownStyle={{ minWidth: '220px' }}
-        filterOption={(input, option) =>
-          (option?.children as string)
-            ?.toLowerCase()
-            .indexOf(input.toLowerCase()) >= 0
-        }
+        filterOption={(input, option) => {
+          if (!option || !option.children) return false;
+          const children = String(option.children);
+          return children.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+        }}
       >
         {availableModels && availableModels.length > 0 && (
           availableModels.map(model => (

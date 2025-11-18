@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Select, InputNumber, Form, Typography, Divider } from 'antd';
 import { useModelStore } from '../../../store/modelStore';
+import { useT } from '../../../i18n/hooks';
 import './CompactConfigModal.css';
 
 const { Option } = Select;
@@ -20,6 +21,7 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
   onCancel,
   compactType
 }) => {
+  const t = useT();
   const [form] = Form.useForm();
   const { models: availableModels } = useModelStore();
   const [selectedModel, setSelectedModel] = useState<string>('');
@@ -48,13 +50,13 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
     switch (compactType) {
       case 'precise':
         return {
-          title: '精确压缩',
-          description: 'AI会智能总结工具调用的内容，保留完整的对话结构和上下文。适合需要保持对话完整性的场景。'
+          title: t('components.compactConfigModal.preciseTitle'),
+          description: t('components.compactConfigModal.preciseDescription')
         };
       case 'brutal':
         return {
-          title: '暴力压缩', 
-          description: '每轮对话只保留用户消息和最后的AI回复，大幅减少对话长度。适合只需要保留核心交互的场景。'
+          title: t('components.compactConfigModal.brutalTitle'), 
+          description: t('components.compactConfigModal.brutalDescription')
         };
       default:
         return { title: '', description: '' };
@@ -65,12 +67,12 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
 
   return (
     <Modal
-      title="对话压缩配置"
+      title={t('components.compactConfigModal.title')}
       open={visible}
       onOk={handleConfirm}
       onCancel={onCancel}
-      okText="开始压缩"
-      cancelText="取消"
+      okText={t('components.compactConfigModal.startCompact')}
+      cancelText={t('common.cancel')}
       width={480}
       okButtonProps={{ disabled: !selectedModel }}
     >
@@ -93,20 +95,20 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
           }}
         >
           <Form.Item
-            label="选择压缩模型"
+            label={t('components.compactConfigModal.selectModel')}
             name="model"
-            rules={[{ required: true, message: '请选择一个模型' }]}
+            rules={[{ required: true, message: t('components.compactConfigModal.modelRequired') }]}
           >
             <Select
               value={selectedModel}
               onChange={setSelectedModel}
-              placeholder="选择用于压缩的模型"
+              placeholder={t('components.compactConfigModal.modelPlaceholder')}
               showSearch
-              filterOption={(input, option) =>
-                (option?.children as string)
-                  ?.toLowerCase()
-                  .indexOf(input.toLowerCase()) >= 0
-              }
+              filterOption={(input, option) => {
+                if (!option || !option.children) return false;
+                const children = String(option.children);
+                return children.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+              }}
             >
               {availableModels.map(model => (
                 <Option key={model.name} value={model.name}>
@@ -118,9 +120,9 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
 
           {compactType === 'precise' && (
             <Form.Item
-              label="压缩阈值（字符数）"
+              label={t('components.compactConfigModal.threshold')}
               name="threshold"
-              help="超过此字符数的工具调用结果将被AI总结压缩"
+              help={t('components.compactConfigModal.thresholdHelp')}
             >
               <InputNumber
                 value={threshold}
@@ -130,7 +132,7 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
                 step={500}
                 style={{ width: '100%' }}
                 formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+                parser={(value) => Number(value!.replace(/\$\s?|(,*)/g, ''))}
               />
             </Form.Item>
           )}
@@ -145,7 +147,7 @@ const CompactConfigModal: React.FC<CompactConfigModalProps> = ({
           fontSize: '13px'
         }}>
           <Text type="warning">
-            ⚠️ 压缩操作不可逆，建议在压缩前确认对话内容无需完整保留。
+            {t('components.compactConfigModal.warning')}
           </Text>
         </div>
       </div>
