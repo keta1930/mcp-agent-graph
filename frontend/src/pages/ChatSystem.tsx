@@ -14,7 +14,7 @@ import { DocumentsDrawer } from '../components/chat/drawer';
 import { FileViewModal } from '../components/conversation-file/FileViewModal';
 import { useConversationStore } from '../store/conversationStore';
 import { useSSEConnection } from '../hooks/useSSEConnection';
-
+import { useT } from '../i18n/hooks';
 import { useGlobalNotification } from '../hooks/useGlobalNotification';
 import { ConversationService, generateMongoId } from '../services/conversationService';
 import { ConversationMode, ConversationDetail } from '../types/conversation';
@@ -23,6 +23,7 @@ import '../styles/chat-system.css';
 const ChatSystem: React.FC = () => {
   const { conversationId: urlConversationId } = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
+  const t = useT();
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   // 用于处理正在进行的对话，避免全局状态泄露
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
@@ -236,7 +237,7 @@ const ChatSystem: React.FC = () => {
       // 创建临时对话数据结构
       const tempConversation = createTemporaryConversation(
         conversationId,
-        '新对话',
+        t('pages.chatSystem.newConversation'),
         conversationMode
       );
       setTemporaryConversation(tempConversation);
@@ -320,7 +321,7 @@ const ChatSystem: React.FC = () => {
               };
               await ConversationService.updateInputConfig(actualConversationId, configToSave);
             } catch (error) {
-              console.error('保存输入配置失败:', error);
+              console.error(t('pages.chatSystem.errors.saveConfigFailed'), error);
               // 不影响主流程，只记录错误
             }
             
@@ -331,7 +332,7 @@ const ChatSystem: React.FC = () => {
             setTemporaryConversation(null);
             // 静默更新对话列表以显示新对话
             silentUpdateConversations();
-            message.success('对话完成');
+            message.success(t('pages.chatSystem.messages.conversationComplete'));
           }, 0);
         },
         onError: (error) => {
@@ -340,26 +341,26 @@ const ChatSystem: React.FC = () => {
             // 清除待发送消息状态和临时对话
             setPendingUserMessage(null);
             setTemporaryConversation(null);
-            message.error(`连接错误: ${error}`);
+            message.error(`${t('pages.chatSystem.errors.connectionError')}: ${error}`);
           }, 0);
         }
       }).catch(error => {
-        console.error('启动SSE连接失败:', error);
+        console.error(t('pages.chatSystem.errors.startConnectionFailed'), error);
         setPendingUserMessage(null);
         setTemporaryConversation(null);
-        message.error('启动对话失败');
+        message.error(t('pages.chatSystem.errors.startConversationFailed'));
       });
 
     } catch (error) {
-      console.error('启动对话失败:', error);
+      console.error(t('pages.chatSystem.errors.startConversationFailed'), error);
       // 异步执行状态更新，避免在渲染期间调用setState
       setTimeout(() => {
-        message.error('启动对话失败');
+        message.error(t('pages.chatSystem.errors.startConversationFailed'));
         setPendingUserMessage(null);
         setTemporaryConversation(null);
       }, 0);
     }
-  }, [currentMode, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation, navigate]);
+  }, [currentMode, startConnection, loadConversationDetail, silentUpdateConversations, createTemporaryConversation, navigate, t]);
 
   // 发送消息
   const handleSendMessage = useCallback(async (messageText: string, options: any = {}) => {
@@ -421,7 +422,7 @@ const ChatSystem: React.FC = () => {
                 await ConversationService.updateInputConfig(activeConversationId, configToSave);
               }
             } catch (error) {
-              console.error('保存输入配置失败:', error);
+              console.error(t('pages.chatSystem.errors.saveConfigFailed'), error);
               // 不影响主流程，只记录错误
             }
             
@@ -438,7 +439,7 @@ const ChatSystem: React.FC = () => {
         onError: (error) => {
           // 异步执行状态更新，避免在渲染期间调用setState
           setTimeout(() => {
-            message.error(`发送失败: ${error}`);
+            message.error(`${t('pages.chatSystem.errors.sendFailed')}: ${error}`);
             // 清除待发送消息状态
             setPendingUserMessage(null);
             // 出错时保持当前状态，不重新加载对话以避免打断用户体验
@@ -446,34 +447,34 @@ const ChatSystem: React.FC = () => {
         }
       });
     } catch (error) {
-      console.error('发送消息失败:', error);
+      console.error(t('pages.chatSystem.errors.sendMessageFailed'), error);
       // 异步执行状态更新，避免在渲染期间调用setState
       setTimeout(() => {
-        message.error('发送消息失败');
+        message.error(t('pages.chatSystem.errors.sendMessageFailed'));
         // 清除待发送消息状态
         setPendingUserMessage(null);
       }, 0);
     }
-  }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail, silentUpdateConversations]);
+  }, [activeConversationId, currentMode, startConnection, handleStartConversation, loadConversationDetail, silentUpdateConversations, t]);
 
   // 处理压缩类型选择
   const handleCompactTypeSelect = useCallback((compactType: 'brutal' | 'precise') => {
     const displayConversation = getDisplayConversation();
     if (!activeConversationId || !displayConversation) {
-      message.error('没有选中的对话');
+      message.error(t('pages.chatSystem.errors.noConversationSelected'));
       return;
     }
 
     // 压缩功能现在支持所有对话类型
     setSelectedCompactType(compactType);
     setCompactConfigVisible(true);
-  }, [activeConversationId, getDisplayConversation]);
+  }, [activeConversationId, getDisplayConversation, t]);
 
   // 执行对话压缩
   const handleCompactConfirm = useCallback(async (config: { modelName: string; compactType: 'brutal' | 'precise'; threshold: number }) => {
     const displayConversation = getDisplayConversation();
     if (!activeConversationId || !displayConversation) {
-      message.error('没有选中的对话');
+      message.error(t('pages.chatSystem.errors.noConversationSelected'));
       return;
     }
 
@@ -493,7 +494,7 @@ const ChatSystem: React.FC = () => {
       if (result.status === 'success') {
         // 显示全局玻璃拟态通知
         showSuccessNotification(
-          `"${displayConversation.title}" 压缩完成`,
+          t('pages.chatSystem.messages.compactComplete', { title: displayConversation.title }),
           undefined, // 不显示详细信息
           4000
         );
@@ -502,11 +503,11 @@ const ChatSystem: React.FC = () => {
         // 清除临时对话
         setTemporaryConversation(null);
       } else {
-        message.error(result.message || '压缩失败');
+        message.error(result.message || t('pages.chatSystem.errors.compactFailed'));
       }
     } catch (error) {
-      console.error('压缩对话失败:', error);
-      message.error('压缩对话失败');
+      console.error(t('pages.chatSystem.errors.compactConversationFailed'), error);
+      message.error(t('pages.chatSystem.errors.compactConversationFailed'));
     } finally {
       // 从压缩中的对话集合中移除当前对话ID
       setCompactingConversations(prev => {
@@ -515,7 +516,7 @@ const ChatSystem: React.FC = () => {
         return newSet;
       });
     }
-  }, [activeConversationId, getDisplayConversation, loadConversationDetail]);
+  }, [activeConversationId, getDisplayConversation, loadConversationDetail, t, showSuccessNotification]);
 
   // 获取主对话区域的样式
   const getMainAreaStyle = () => {
@@ -531,7 +532,7 @@ const ChatSystem: React.FC = () => {
       return displayConversation.title;
     }
     if (pendingUserMessage) {
-      return '新对话';
+      return t('pages.chatSystem.newConversation');
     }
     return '';
   };
@@ -611,7 +612,7 @@ const ChatSystem: React.FC = () => {
                   
                   {/* Documents 按钮 */}
                   {displayConversation && (
-                    <Tooltip title="查看对话文档">
+                    <Tooltip title={t('pages.chatSystem.viewDocuments')}>
                       <Button
                         type="text"
                         icon={<FileOutlined />}
@@ -638,7 +639,7 @@ const ChatSystem: React.FC = () => {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.6)';
                         }}
                       >
-                        文档：{displayConversation.documents?.total_count || 0}
+                        {t('pages.chatSystem.documents')}: {displayConversation.documents?.total_count || 0}
                       </Button>
                     </Tooltip>
                   )}
@@ -652,17 +653,17 @@ const ChatSystem: React.FC = () => {
                           <Menu onClick={({ key }) => handleCompactTypeSelect(key as 'brutal' | 'precise')}>
                             <Menu.Item key="precise">
                               <div>
-                                <div>精确压缩</div>
+                                <div>{t('pages.chatSystem.compact.preciseCompact')}</div>
                                 <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>
-                                  AI总结工具内容，保留完整对话结构
+                                  {t('pages.chatSystem.compact.preciseCompactDesc')}
                                 </div>
                               </div>
                             </Menu.Item>
                             <Menu.Item key="brutal">
                               <div>
-                                <div>暴力压缩</div>
+                                <div>{t('pages.chatSystem.compact.brutalCompact')}</div>
                                 <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)' }}>
-                                  每轮只保留用户和最终AI回复
+                                  {t('pages.chatSystem.compact.brutalCompactDesc')}
                                 </div>
                               </div>
                             </Menu.Item>
@@ -672,7 +673,7 @@ const ChatSystem: React.FC = () => {
                         placement="bottomRight"
                         disabled={isCurrentConversationCompacting}
                       >
-                        <Tooltip title={isCurrentConversationCompacting ? "正在压缩中..." : "压缩对话内容"}>
+                        <Tooltip title={isCurrentConversationCompacting ? t('pages.chatSystem.compact.compacting') : t('pages.chatSystem.compact.compactConversation')}>
                           <Button
                             type="text"
                             icon={<CompressOutlined />}
@@ -704,7 +705,7 @@ const ChatSystem: React.FC = () => {
                               }
                             }}
                           >
-                            {isCurrentConversationCompacting ? '压缩中' : '压缩'} <DownOutlined />
+                            {isCurrentConversationCompacting ? t('pages.chatSystem.compact.compacting') : t('pages.chatSystem.compact.compact')} <DownOutlined />
                           </Button>
                         </Tooltip>
                       </Dropdown>
@@ -718,7 +719,7 @@ const ChatSystem: React.FC = () => {
                 key={displayConversation?.conversation_id || 'new'}
                 conversation={displayConversation || {
                   conversation_id: activeConversationId || '',
-                  title: '新对话',
+                  title: t('pages.chatSystem.newConversation'),
                   rounds: [],
                   type: currentMode === 'graph' ? 'graph' : 'agent'
                 }}

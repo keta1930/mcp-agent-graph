@@ -816,6 +816,35 @@
         "totalCodes": "Total {{total}} invite codes"
       }
     },
+    "chatSystem": {
+      "newConversation": "New Conversation",
+      "viewDocuments": "View conversation documents",
+      "documents": "Documents",
+      "compact": {
+        "compact": "Compact",
+        "compacting": "Compacting",
+        "compactConversation": "Compact conversation content",
+        "preciseCompact": "Precise Compact",
+        "preciseCompactDesc": "AI summarizes tool content, preserves complete conversation structure",
+        "brutalCompact": "Brutal Compact",
+        "brutalCompactDesc": "Keep only user and final AI response per round"
+      },
+      "messages": {
+        "conversationComplete": "Conversation complete",
+        "compactComplete": "\"{{title}}\" compacted successfully"
+      },
+      "errors": {
+        "noConversationSelected": "No conversation selected",
+        "compactFailed": "Compact failed",
+        "compactConversationFailed": "Failed to compact conversation",
+        "connectionError": "Connection error",
+        "startConnectionFailed": "Failed to start SSE connection",
+        "startConversationFailed": "Failed to start conversation",
+        "sendFailed": "Send failed",
+        "sendMessageFailed": "Failed to send message",
+        "saveConfigFailed": "Failed to save input configuration"
+      }
+    },
     "taskManager": {
       "title": "Task Center",
       "tasksCount": "{{count}} tasks",

@@ -816,6 +816,35 @@
         "totalCodes": "共 {{total}} 个邀请码"
       }
     },
+    "chatSystem": {
+      "newConversation": "新对话",
+      "viewDocuments": "查看对话文档",
+      "documents": "文档",
+      "compact": {
+        "compact": "压缩",
+        "compacting": "压缩中",
+        "compactConversation": "压缩对话内容",
+        "preciseCompact": "精确压缩",
+        "preciseCompactDesc": "AI总结工具内容，保留完整对话结构",
+        "brutalCompact": "暴力压缩",
+        "brutalCompactDesc": "每轮只保留用户和最终AI回复"
+      },
+      "messages": {
+        "conversationComplete": "对话完成",
+        "compactComplete": "\"{{title}}\" 压缩完成"
+      },
+      "errors": {
+        "noConversationSelected": "没有选中的对话",
+        "compactFailed": "压缩失败",
+        "compactConversationFailed": "压缩对话失败",
+        "connectionError": "连接错误",
+        "startConnectionFailed": "启动SSE连接失败",
+        "startConversationFailed": "启动对话失败",
+        "sendFailed": "发送失败",
+        "sendMessageFailed": "发送消息失败",
+        "saveConfigFailed": "保存输入配置失败"
+      }
+    },
     "taskManager": {
       "title": "任务中心",
       "tasksCount": "{{count}} 个任务",
