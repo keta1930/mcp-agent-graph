@@ -1,13 +1,9 @@
 // src/components/chat/controls/AgentSelector.tsx
 import React, { useState, useEffect } from 'react';
-import { Tabs, Spin, message } from 'antd';
-import { AgentRunRequest } from '../../../types/conversation';
+import { Spin, message } from 'antd';
 import { AgentListItem, AgentCategoryItem } from '../../../services/agentService';
 import { listAgents, listCategories } from '../../../services/agentService';
 import AgentList from './AgentList';
-import './AgentSelector.css';
-
-const { TabPane } = Tabs;
 
 /**
  * Agent 选择器组件属性
@@ -17,26 +13,17 @@ interface AgentSelectorProps {
   selectedAgent?: string | null;
   /** Agent 选择回调 */
   onAgentSelect: (agentName: string | null) => void;
-  /** 配置变更回调 */
-  onConfigChange: (config: Partial<AgentRunRequest>) => void;
-  /** 当前配置 */
-  currentConfig?: Partial<AgentRunRequest>;
 }
 
 /**
  * Agent 选择器组件
  * 
- * 提供两种模式：
- * 1. Agent 模式：从列表中选择预配置的 Agent
- * 2. 手动配置模式：手动配置模型、系统提示词等参数
+ * 从列表中选择预配置的 Agent
  */
 const AgentSelector: React.FC<AgentSelectorProps> = ({
   selectedAgent,
-  onAgentSelect,
-  onConfigChange,
-  currentConfig = {}
+  onAgentSelect
 }) => {
-  const [activeTab, setActiveTab] = useState<'agent' | 'manual'>('agent');
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [categories, setCategories] = useState<AgentCategoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,44 +51,46 @@ const AgentSelector: React.FC<AgentSelectorProps> = ({
     }
   };
 
-  const handleTabChange = (key: string) => {
-    setActiveTab(key as 'agent' | 'manual');
-    
-    // 切换到手动配置时，清除选中的 Agent
-    if (key === 'manual') {
-      onAgentSelect(null);
-    }
-  };
-
   return (
-    <div className="agent-selector">
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={handleTabChange}
-        className="agent-selector-tabs"
-      >
-        <TabPane tab="选择 Agent" key="agent">
-          {loading ? (
-            <div className="agent-selector-loading">
-              <Spin tip="加载中..." />
-            </div>
-          ) : (
-            <AgentList
-              agents={agents}
-              categories={categories}
-              selectedAgent={selectedAgent}
-              onSelect={onAgentSelect}
-            />
-          )}
-        </TabPane>
-        
-        <TabPane tab="手动配置" key="manual">
-          <ManualConfig
-            config={currentConfig}
-            onConfigChange={onConfigChange}
+    <div style={{ 
+      width: '100%', 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      background: '#faf8f5'
+    }}>
+      {loading ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '300px',
+          gap: '12px'
+        }}>
+          <Spin size="large" />
+          <div style={{
+            fontSize: '13px',
+            color: 'rgba(45, 45, 45, 0.65)',
+            letterSpacing: '0.3px'
+          }}>
+            加载中...
+          </div>
+        </div>
+      ) : (
+        <div style={{ 
+          height: '100%', 
+          overflowY: 'auto',
+          padding: '16px'
+        }}>
+          <AgentList
+            agents={agents}
+            categories={categories}
+            selectedAgent={selectedAgent}
+            onSelect={onAgentSelect}
           />
-        </TabPane>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 };

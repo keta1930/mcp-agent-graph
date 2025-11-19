@@ -782,11 +782,6 @@ const AgentManager: React.FC = () => {
         <Form
           form={form}
           layout="vertical"
-          style={{
-            '.ant-form-item': {
-              marginBottom: '20px'
-            }
-          }}
         >
           {/* 基础信息区块 */}
           <div style={{
