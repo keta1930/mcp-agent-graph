@@ -3,7 +3,6 @@ from typing import Dict, List, Any, Optional
 from app.services.mcp.client_manager import MCPClientManager
 from app.services.mcp.server_manager import MCPServerManager
 from app.services.mcp.tool_executor import ToolExecutor
-from app.services.chat.message_builder import MessageBuilder
 from app.infrastructure.database.mongodb import mongodb_client
 logger = logging.getLogger(__name__)
 
@@ -15,9 +14,6 @@ class MCPService:
         # 团队级单一MCP客户端
         self.client_manager: Optional[MCPClientManager] = None
         self.server_manager: Optional[MCPServerManager] = None
-
-        # 共享模块（不依赖用户状态）
-        self.message_builder = MessageBuilder()
 
     def _ensure_managers(self):
         """确保管理器已初始化"""
