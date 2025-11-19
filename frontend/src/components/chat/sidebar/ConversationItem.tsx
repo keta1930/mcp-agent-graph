@@ -453,6 +453,27 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         onCancel={() => setEditModalVisible(false)}
         okText={t('common.save')}
         cancelText={t('common.cancel')}
+        okButtonProps={{
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            color: '#8b7355',
+          }
+        }}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+          }
+        }}
       >
         <Input
           value={newTitle}
@@ -463,7 +484,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             height: '40px',
             borderRadius: '6px',
             border: '1px solid rgba(139, 115, 85, 0.2)',
-            background: '#ffffff',
+            background: 'rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
           }}
         />
       </Modal>
@@ -475,6 +497,27 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         onCancel={() => setTagsModalVisible(false)}
         okText={t('common.save')}
         cancelText={t('common.cancel')}
+        okButtonProps={{
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            color: '#8b7355',
+          }
+        }}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+          }
+        }}
       >
         <TextArea
           value={newTags}
@@ -484,7 +527,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           style={{
             borderRadius: '6px',
             border: '1px solid rgba(139, 115, 85, 0.2)',
-            background: '#ffffff',
+            background: 'rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
           }}
         />
       </Modal>
@@ -496,12 +540,33 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         onCancel={() => setDeleteModalVisible(false)}
         okText={t('components.conversationItem.confirmDelete')}
         cancelText={t('common.cancel')}
-        okButtonProps={{ danger: true }}
+        okButtonProps={{
+          danger: true,
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            color: '#8b7355',
+          }
+        }}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+          }
+        }}
       >
-        <p style={{ color: '#2d2d2d', marginBottom: '8px', lineHeight: '1.6' }}>
+        <p style={{ color: '#2d2d2d', marginBottom: '8px', lineHeight: '1.6', letterSpacing: '0.3px' }}>
           {t('components.conversationItem.deleteWarning')}
         </p>
-        <p style={{ color: '#b85845', fontWeight: 500 }}>
+        <p style={{ color: '#b85845', fontWeight: 500, margin: 0 }}>
           <strong>{conversation.title}</strong>
         </p>
       </Modal>
