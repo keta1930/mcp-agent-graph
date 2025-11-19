@@ -15,28 +15,28 @@ register_system_tool(
     name="list_agent_categories",
     schema=list_categories.TOOL_SCHEMA,
     handler=list_categories.handler,
-    category="agent_tools"
+    category="subagent"
 )
 
 register_system_tool(
     name="list_agents_in_category",
     schema=list_agents_in_category.TOOL_SCHEMA,
     handler=list_agents_in_category.handler,
-    category="agent_tools"
+    category="subagent"
 )
 
 register_system_tool(
     name="get_agent_details",
     schema=get_agent_details.TOOL_SCHEMA,
     handler=get_agent_details.handler,
-    category="agent_tools"
+    category="subagent"
 )
 
 register_system_tool(
     name="agent_task_executor",
     schema=agent_task_executor.TOOL_SCHEMA,
     handler=agent_task_executor.handler,
-    category="agent_tools"
+    category="subagent"
 )
 
 __all__ = [

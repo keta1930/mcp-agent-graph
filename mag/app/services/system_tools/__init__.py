@@ -15,7 +15,7 @@ from .registry import (
 )
 
 # 导入所有工具模块（触发注册）
-from . import agent_tools
+from . import subagent
 from . import file_creator
 from . import memory_tools
 from . import mcp_builder
@@ -35,7 +35,7 @@ __all__ = [
     "get_system_tools_by_names",
     "get_tools_by_category",
     "SYSTEM_TOOLS_REGISTRY",
-    "agent_tools",
+    "subagent",
     "file_creator",
     "memory_tools",
     "mcp_builder",
