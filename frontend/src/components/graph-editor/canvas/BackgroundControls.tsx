@@ -20,25 +20,25 @@ const backgroundConfigs = {
     variant: 'dots' as const,
     gap: 20,
     size: 2,
-    color: '#d1d5db', // 浅灰色点,在白色背景下清晰可见
+    color: 'rgba(139, 115, 85, 0.15)', // 系统主题色的浅色点
   },
   lines: {
     variant: 'lines' as const,
     gap: 24,
     size: 1,
-    color: '#e5e7eb', // 浅灰色线条
+    color: 'rgba(139, 115, 85, 0.1)', // 系统主题色的浅色线条
   },
   grid: {
     variant: 'lines' as const,
     gap: 16,
     size: 1,
-    color: '#d1d5db', // 浅灰色网格
+    color: 'rgba(139, 115, 85, 0.15)', // 系统主题色的浅色网格
   },
   cross: {
     variant: 'cross' as const,
     gap: 32,
     size: 2,
-    color: '#9ca3af', // 稍深的灰色交叉
+    color: 'rgba(139, 115, 85, 0.25)', // 系统主题色的稍深交叉
   },
 };
 

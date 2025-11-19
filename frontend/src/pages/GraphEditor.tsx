@@ -950,7 +950,7 @@ const GraphEditor: React.FC = () => {
       {/* 画布区域 */}
       <div style={{ padding: '24px 48px' }}>
         <Card
-          bodyStyle={{ padding: 0 }}
+          bodyStyle={{ padding: 0, height: '100%' }}
           className="overflow-hidden"
           style={{
             height: 'calc(100vh - 180px)',

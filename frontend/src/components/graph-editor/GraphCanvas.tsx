@@ -111,7 +111,7 @@ const GraphCanvas: React.FC = () => {
                 sourceHandle: 'handoff-source',
                 targetHandle: 'handoff-target',
                 style: {
-                  stroke: '#fa8c16',
+                  stroke: '#d4a574',
                   strokeWidth: 3,
                   strokeDasharray: '8,4',
                 },
@@ -155,16 +155,16 @@ const GraphCanvas: React.FC = () => {
   }, [currentGraph, selectedNode, selectNode]);
 
   /**
-   * 根据源节点的执行层级确定边的颜色
+   * 根据源节点的执行层级确定边的颜色 - 使用大地色系
    */
   const getEdgeStyle = (sourceNode: any, _targetNode: any) => {
     let style: any = { 
-      stroke: '#555', 
+      stroke: '#8b7355', 
       strokeWidth: 2
     };
 
     if (sourceNode.level !== undefined && sourceNode.level !== null) {
-      const levelColors = ['#ff4d4f', '#fa8c16', '#fadb14', '#a0d911', '#52c41a'];
+      const levelColors = ['#b85845', '#cd7f32', '#d4a574', '#a0826d', '#8b7355'];
       const colorIndex = Math.min(sourceNode.level, levelColors.length - 1);
       style.stroke = levelColors[colorIndex];
     }
@@ -231,7 +231,7 @@ const GraphCanvas: React.FC = () => {
           target: connection.target,
           sourceHandle: connection.sourceHandle,
           targetHandle: connection.targetHandle,
-          style: { stroke: '#555', strokeWidth: 2 }
+          style: { stroke: '#8b7355', strokeWidth: 2 }
         };
 
         setEdges(eds => [...eds, newEdge]);
@@ -247,17 +247,26 @@ const GraphCanvas: React.FC = () => {
   const nodeColor = (node: Node) => {
     const nodeData = node.data;
     
-    if (nodeData.selected) return '#1677ff';
-    if (nodeData.is_subgraph) return '#1677ff';
-    if (nodeData.handoffs && nodeData.handoffs > 1) return '#fa8c16';
-    if (nodeData.input_nodes?.includes('start')) return '#52c41a';
-    if (nodeData.output_nodes?.includes('end')) return '#f5222d';
+    if (nodeData.selected) return '#b85845';
+    if (nodeData.is_subgraph) return '#cd7f32';
+    if (nodeData.handoffs && nodeData.handoffs > 1) return '#d4a574';
+    if (nodeData.input_nodes?.includes('start')) return '#a0826d';
+    if (nodeData.output_nodes?.includes('end')) return '#b85845';
     
-    return '#d9d9d9';
+    return '#d4c4b0';
   };
 
   return (
-    <div style={{ width: '100%', height: '72vh', position: 'relative' }}>
+    <div style={{ 
+      width: '100%', 
+      height: '100%', 
+      position: 'relative',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      border: '1px solid rgba(139, 115, 85, 0.15)',
+      boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
+    }}>
+      {/* 画布背景 - 纸张质感 */}
       <div
         style={{
           position: 'absolute',
@@ -265,10 +274,21 @@ const GraphCanvas: React.FC = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: '#ffffff',
+          background: 'linear-gradient(to bottom, #faf8f5 0%, #f5f3f0 100%)',
           zIndex: 0,
         }}
       />
+
+      {/* 顶部装饰性渐变线 */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: '15%',
+        right: '15%',
+        height: '1px',
+        background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.2) 50%, transparent)',
+        zIndex: 2
+      }} />
 
       <BackgroundControls
         backgroundType={backgroundType}
@@ -288,81 +308,99 @@ const GraphCanvas: React.FC = () => {
         connectionLineType={ConnectionLineType.Straight}
         defaultEdgeOptions={{
           type: 'button',
-          style: { stroke: '#555', strokeWidth: 2 }
+          style: { stroke: '#8b7355', strokeWidth: 2 }
         }}
         selectNodesOnDrag={false}
-        connectionLineStyle={{ stroke: '#1677ff', strokeWidth: 2 }}
+        connectionLineStyle={{ stroke: '#b85845', strokeWidth: 2 }}
         style={{ position: 'relative', zIndex: 1 }}
       >
         <Controls 
           style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(229, 231, 235, 0.8)',
-            borderRadius: '8px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(250, 248, 245, 0.85))',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            borderRadius: '6px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+            padding: '4px'
           }}
         />
         <MiniMap 
           nodeColor={nodeColor}
-          nodeStrokeWidth={3}
+          nodeStrokeWidth={2}
           pannable
           zoomable
           style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(4px)',
-            border: '1px solid rgba(229, 231, 235, 0.8)',
-            borderRadius: '8px',
+            background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.9), rgba(250, 248, 245, 0.85))',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(139, 115, 85, 0.15)',
+            borderRadius: '6px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
           }}
+          maskColor="rgba(250, 248, 245, 0.6)"
         />
         {renderBackground(backgroundType)}
       </ReactFlow>
 
       <style>{`
+        /* 边删除按钮 - 陶土质感 */
         .edge-button {
-          width: 20px;
-          height: 20px;
-          background: #ff4d4f;
-          border: none;
-          color: white;
+          width: 22px;
+          height: 22px;
+          background: linear-gradient(135deg, #b85845 0%, #a0826d 100%);
+          border: 1px solid rgba(139, 115, 85, 0.2);
+          color: #faf8f5;
           border-radius: 50%;
           cursor: pointer;
-          font-size: 14px;
+          font-size: 11px;
           line-height: 1;
-          display: 'flex';
+          display: flex;
           align-items: center;
           justify-content: center;
-          opacity: 0.8;
-          transition: opacity 0.2s, transform 0.2s;
-          box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+          opacity: 0.95;
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+          box-shadow: 0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(4px);
         }
         
         .edge-button:hover {
           opacity: 1;
-          background: #ff7875;
-          transform: scale(1.1);
-          box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
+          transform: translateY(-1px) scale(1.1);
+          box-shadow: 0 4px 12px rgba(184, 88, 69, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+          border-color: rgba(184, 88, 69, 0.3);
+        }
+
+        .arc-edge-button {
+          background: linear-gradient(135deg, #d4a574 0%, #cd7f32 100%) !important;
         }
 
         .arc-edge-button:hover {
-          background: #ffa940 !important;
-          box-shadow: 0 4px 12px rgba(250, 140, 22, 0.6) !important;
+          box-shadow: 0 4px 12px rgba(212, 165, 116, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
         }
         
+        /* Agent 节点容器 */
         .react-flow__node-agent {
           background: transparent;
           border: none;
+          filter: drop-shadow(0 1px 3px rgba(139, 115, 85, 0.08));
         }
         
+        /* 连接点 - 纸张质感 */
         .react-flow__handle {
-          border: 2px solid #fff;
-          box-shadow: 0 0 8px rgba(0,0,0,0.2);
-          transition: all 0.2s ease;
+          width: 12px;
+          height: 12px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 248, 245, 0.9) 100%);
+          border: 2px solid rgba(139, 115, 85, 0.3);
+          box-shadow: 0 1px 3px rgba(139, 115, 85, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+          backdrop-filter: blur(4px);
         }
         
         .react-flow__handle:hover {
-          box-shadow: 0 0 12px rgba(22, 119, 255, 0.4);
-          border-color: #1677ff;
+          background: linear-gradient(135deg, rgba(250, 248, 245, 1) 0%, rgba(245, 243, 240, 0.95) 100%);
+          border-color: #b85845;
+          border-width: 2.5px;
+          box-shadow: 0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+          transform: scale(1.3);
         }
         
         .react-flow__handle-top,
@@ -377,29 +415,80 @@ const GraphCanvas: React.FC = () => {
           transform: translateY(-50%);
         }
 
+        .react-flow__handle-top:hover,
+        .react-flow__handle-bottom:hover {
+          transform: translateX(-50%) scale(1.3);
+        }
+
+        .react-flow__handle-left:hover,
+        .react-flow__handle-right:hover {
+          transform: translateY(-50%) scale(1.3);
+        }
+
+        /* 控制面板 */
+        .react-flow__controls {
+          box-shadow: 0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+          border-radius: 6px !important;
+        }
+
         .react-flow__controls-button {
           background: transparent;
           border: none;
-          border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+          border-bottom: 1px solid rgba(139, 115, 85, 0.08);
+          color: #8b7355;
           transition: all 0.2s ease;
+          width: 32px;
+          height: 32px;
+          padding: 0;
         }
 
         .react-flow__controls-button:hover {
-          background: rgba(22, 119, 255, 0.1);
-          color: #1677ff;
+          background: rgba(184, 88, 69, 0.08);
+          color: #b85845;
         }
 
         .react-flow__controls-button:last-child {
           border-bottom: none;
         }
 
-        .react-flow__minimap {
-          border-radius: 8px !important;
-          overflow: hidden;
+        .react-flow__controls-button svg {
+          width: 16px;
+          height: 16px;
         }
 
+        /* 小地图 - 纸张质感 */
+        .react-flow__minimap {
+          border-radius: 6px !important;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+        }
+
+        .react-flow__minimap-mask {
+          fill: rgba(139, 115, 85, 0.06);
+          stroke: rgba(139, 115, 85, 0.15);
+          stroke-width: 1;
+        }
+
+        .react-flow__minimap-node {
+          stroke: rgba(139, 115, 85, 0.25);
+          stroke-width: 1.5;
+        }
+
+        /* 背景网格 - 更柔和 */
         .react-flow__background {
-          opacity: 0.8;
+          opacity: 0.5;
+        }
+
+        /* 边的样式 - 自然流畅 */
+        .react-flow__edge path {
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .react-flow__edge.selected path {
+          stroke: #b85845 !important;
+          stroke-width: 2.5 !important;
+          filter: drop-shadow(0 1px 3px rgba(184, 88, 69, 0.3));
         }
 
         .react-flow__edge.react-flow__edge-arc path {
@@ -411,6 +500,41 @@ const GraphCanvas: React.FC = () => {
           to {
             stroke-dashoffset: -24;
           }
+        }
+
+        /* 连接线预览 */
+        .react-flow__connectionline {
+          stroke: #b85845;
+          stroke-width: 2;
+          stroke-dasharray: 5,5;
+          animation: dash 1s linear infinite;
+        }
+
+        /* 选择框 */
+        .react-flow__selection {
+          background: rgba(184, 88, 69, 0.08);
+          border: 1px solid rgba(184, 88, 69, 0.3);
+        }
+
+        /* 版权信息 */
+        .react-flow__attribution {
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(250, 248, 245, 0.85) 100%);
+          color: rgba(139, 115, 85, 0.65);
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 4px;
+          border: 1px solid rgba(139, 115, 85, 0.1);
+          box-shadow: 0 1px 2px rgba(139, 115, 85, 0.06);
+          backdrop-filter: blur(8px);
+        }
+
+        /* 画布整体 - 纸张纹理感 */
+        .react-flow__pane {
+          cursor: grab;
+        }
+
+        .react-flow__pane:active {
+          cursor: grabbing;
         }
       `}</style>
     </div>
