@@ -77,7 +77,7 @@ const GraphCanvas: React.FC = () => {
         handoffs: node.handoffs,
         level: node.level,
         save: node.save,
-        selected: selectedNode === node.id,
+        selected: false,
         onClick: () => selectNode(node.id!)
       },
     }));

@@ -973,11 +973,25 @@ const GraphEditor: React.FC = () => {
         onCancel={() => selectNode(null)}
         footer={null}
         width={1000}
-        style={{ top: 20 }}
-        bodyStyle={{
-          height: '80vh',
-          overflow: 'auto',
-          padding: '0'
+        styles={{
+          content: {
+            borderRadius: '10px',
+            boxShadow: '0 12px 40px rgba(139, 115, 85, 0.2)',
+            padding: 0,
+            overflow: 'hidden'
+          },
+          header: {
+            background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(255, 255, 255, 0.9))',
+            borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
+            padding: '18px 28px',
+            marginBottom: 0
+          },
+          body: {
+            padding: '0',
+            background: '#fff',
+            height: '80vh',
+            overflowY: 'auto'
+          }
         }}
         destroyOnClose={true}
       >
