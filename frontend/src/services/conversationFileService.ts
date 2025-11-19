@@ -88,12 +88,11 @@ export const conversationFileService = {
    */
   async downloadFile(
     conversationId: string,
-    filename: string,
-    format: 'md' | 'docx' | 'pdf' = 'md'
+    filename: string
   ): Promise<Blob> {
     const encodedFilename = encodeURIComponent(filename);
     const response = await api.get(
-      `/conversations/${conversationId}/files/${encodedFilename}/download?format=${format}`,
+      `/conversations/${conversationId}/files/${encodedFilename}/download`,
       { responseType: 'blob' }
     );
     return response.data;

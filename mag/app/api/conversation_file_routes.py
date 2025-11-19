@@ -117,19 +117,14 @@ async def download_all_files(
         logger.error(f"批量下载失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"批量下载失败: {str(e)}")
 
-
-# 注意：具体路由必须在通用路由之前
 @router.get("/{filename:path}/download")
 async def download_file(
     conversation_id: str = Path(..., description="会话ID"),
     filename: str = Path(..., description="文件名（含路径）"),
-    format: str = Query(default="md", description="下载格式：md, docx, pdf"),
     current_user: CurrentUser = Depends(get_current_user)
 ):
     """
     下载单个文件
-
-    支持多种格式：md（默认）, docx, pdf
     """
     try:
         # URL解码文件名
@@ -146,33 +141,14 @@ async def download_file(
             raise HTTPException(status_code=404, detail=result.get("error", "文件不存在"))
 
         content = result["file"]["content"]
-
-        # 根据格式返回不同的响应
-        if format == "md":
-            # 直接返回Markdown
-            media_type = "text/markdown"
-            file_content = content.encode('utf-8')
-            download_filename = filename
-
-        elif format == "docx":
-            # TODO: 实现转换为Word文档
-            # 这里需要使用python-docx等库将Markdown转换为docx
-            raise HTTPException(status_code=501, detail="Word格式导出功能尚未实现")
-
-        elif format == "pdf":
-            # TODO: 实现转换为PDF
-            # 这里需要使用markdown2pdf等库将Markdown转换为PDF
-            raise HTTPException(status_code=501, detail="PDF格式导出功能尚未实现")
-
-        else:
-            raise HTTPException(status_code=400, detail=f"不支持的格式: {format}")
+        file_content = content.encode('utf-8')
 
         # 返回文件下载响应
         return Response(
             content=file_content,
-            media_type=media_type,
+            media_type="text/plain",
             headers={
-                "Content-Disposition": f'attachment; filename="{download_filename}"'
+                "Content-Disposition": f'attachment; filename="{filename}"'
             }
         )
 
