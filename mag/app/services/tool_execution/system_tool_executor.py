@@ -100,7 +100,7 @@ class SystemToolExecutor(BaseToolExecutor):
             Dict: 最终工具结果
         """
         try:
-            from app.services.system_tools.agent_tools import agent_task_executor
+            from app.services.system_tools.subagent import agent_task_executor
             
             # 添加上下文参数
             user_id = context.get("user_id")
