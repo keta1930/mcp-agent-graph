@@ -3,7 +3,7 @@ import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { Card, Typography, Tooltip } from 'antd';
 import {
-  GitBranch, Bot, Wrench, AlertTriangle, Globe,
+  GitBranch, Bot, Wrench, AlertTriangle,
   RefreshCw, Zap
 } from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
@@ -20,8 +20,10 @@ interface AgentNodeProps {
     input_nodes: string[];
     output_nodes: string[];
     model_name?: string;
+    agent_name?: string;
     subgraph_name?: string;
     mcp_servers: string[];
+    system_tools: string[];
     handoffs?: number;
     level?: number;
     selected: boolean;
@@ -33,13 +35,14 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
   const t = useT();
   const {
     name,
-    description,
     is_subgraph,
     input_nodes,
     output_nodes,
     model_name,
+    agent_name,
     subgraph_name,
     mcp_servers,
+    system_tools,
     handoffs,
     level,
     selected,
@@ -48,9 +51,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
 
   const { status } = useMCPStore();
 
-  // Determine start and end status from input_nodes and output_nodes
-  const is_start = input_nodes?.includes('start') || false;
-  const is_end = output_nodes?.includes('end') || false;
+
 
   // Check server connection status
   const hasDisconnectedServers = mcp_servers?.some(server => {
@@ -165,223 +166,102 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
   );
 
   // 构建节点内容区域 - 层次分明的信息展示
-  const renderNodeContent = () => (
-    <div style={{ 
-      fontSize: '12px', 
-      color: 'rgba(45, 45, 45, 0.85)', 
-      lineHeight: '18px',
+  const renderNodeContent = () => {
+    // 确定显示的主要信息（优先级：agent > model > subgraph）
+    let mainIcon = null;
+    let mainText = '';
+
+    if (is_subgraph) {
+      mainIcon = <GitBranch size={11} strokeWidth={2} style={{ color: '#cd7f32', flexShrink: 0 }} />;
+      mainText = subgraph_name || 'N/A';
+    } else if (agent_name) {
+      mainIcon = <Bot size={11} strokeWidth={2} style={{ color: '#a0826d', flexShrink: 0 }} />;
+      mainText = agent_name;
+    } else if (model_name) {
+      mainIcon = <Zap size={11} strokeWidth={2} style={{ color: '#8b7355', flexShrink: 0 }} />;
+      mainText = model_name;
+    }
+
+    // 统一的块样式（无背景、无边框）
+    const blockStyle = {
       display: 'flex',
-      flexDirection: 'column',
-      gap: '8px'
-    }}>
-      {/* 描述信息 - 斜体辅助文字 */}
-      {description && (
-        <div style={{ 
-          padding: '6px 8px',
-          borderRadius: '4px',
-          background: 'rgba(139, 115, 85, 0.04)',
-          border: '1px solid rgba(139, 115, 85, 0.08)',
-          color: 'rgba(45, 45, 45, 0.65)',
-          fontSize: '11px',
-          fontStyle: 'italic',
-          lineHeight: '16px'
-        }}>
-          <Text ellipsis style={{ maxWidth: '100%' }}>{description}</Text>
-        </div>
-      )}
+      alignItems: 'center',
+      gap: '6px',
+      padding: '4px 0'
+    };
 
-      {/* 模型/子图信息 - 主要信息 */}
+    return (
       <div style={{ 
-        display: 'flex', 
-        alignItems: 'center',
-        gap: '6px',
-        padding: '4px 0'
-      }}>
-        {is_subgraph ? (
-          <>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '16px',
-              height: '16px',
-              borderRadius: '3px',
-              background: 'rgba(205, 127, 50, 0.08)',
-              flexShrink: 0
-            }}>
-              <GitBranch size={10} strokeWidth={2} style={{ color: '#cd7f32' }} />
-            </div>
-            <Text 
-              ellipsis 
-              style={{ 
-                flex: 1,
-                fontSize: '12px',
-                color: '#2d2d2d',
-                fontWeight: 500
-              }}
-            >
-              {subgraph_name || 'N/A'}
-            </Text>
-          </>
-        ) : (
-          <>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '16px',
-              height: '16px',
-              borderRadius: '3px',
-              background: 'rgba(139, 115, 85, 0.08)',
-              flexShrink: 0
-            }}>
-              <Bot size={10} strokeWidth={2} style={{ color: '#8b7355' }} />
-            </div>
-            <Text 
-              ellipsis 
-              style={{ 
-                flex: 1,
-                fontSize: '12px',
-                color: '#2d2d2d',
-                fontWeight: 500
-              }}
-            >
-              {model_name || 'N/A'}
-            </Text>
-          </>
-        )}
-      </div>
-
-      {/* MCP服务器信息 */}
-      {mcp_servers && mcp_servers.length > 0 && (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: '6px',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          background: 'rgba(212, 165, 116, 0.06)',
-          border: '1px solid rgba(212, 165, 116, 0.12)'
-        }}>
-          <Wrench size={11} strokeWidth={2} style={{ color: '#d4a574', flexShrink: 0 }} />
-          {mcp_servers.length > 1 ? (
-            <Tooltip title={mcp_servers.join(', ')}>
-              <Text style={{ 
-                fontSize: '11px',
-                color: 'rgba(45, 45, 45, 0.75)',
-                fontWeight: 500
-              }}>
-                {mcp_servers.length} {t('components.graphEditor.addNodeModal.mcpServers')}
-              </Text>
-            </Tooltip>
-          ) : (
-            <Text 
-              ellipsis 
-              style={{ 
-                flex: 1,
-                fontSize: '11px',
-                color: 'rgba(45, 45, 45, 0.75)',
-                fontWeight: 500
-              }}
-            >
-              {mcp_servers[0]}
-            </Text>
-          )}
-        </div>
-      )}
-
-      {/* 连接信息 - 辅助信息 */}
-      {((input_nodes && input_nodes.length > 0) || (output_nodes && output_nodes.length > 0)) && (
-        <div style={{ 
-          fontSize: '10px', 
-          color: 'rgba(45, 45, 45, 0.45)',
-          paddingTop: '4px',
-          borderTop: '1px solid rgba(139, 115, 85, 0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '3px'
-        }}>
-          {input_nodes && input_nodes.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ opacity: 0.6 }}>←</span>
-              <span>{input_nodes.slice(0, 2).join(', ')}{input_nodes.length > 2 ? '...' : ''}</span>
-            </div>
-          )}
-          {output_nodes && output_nodes.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ opacity: 0.6 }}>→</span>
-              <span>{output_nodes.slice(0, 2).join(', ')}{output_nodes.length > 2 ? '...' : ''}</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  // 构建底部标签区域 - 自然色系标签
-  const renderNodeTags = () => {
-    const tags = [];
-    
-    if (is_start) {
-      tags.push(
-        <div 
-          key="start" 
-          style={{ 
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            background: 'rgba(160, 130, 109, 0.1)',
-            border: '1px solid rgba(160, 130, 109, 0.25)',
-            fontSize: '10px',
-            fontWeight: 600,
-            color: '#a0826d',
-            letterSpacing: '0.3px'
-          }}
-        >
-          <Zap size={9} strokeWidth={2.5} />
-          {t('components.graphEditor.nodePropertiesPanel.startNode')}
-        </div>
-      );
-    }
-    if (is_end) {
-      tags.push(
-        <div 
-          key="end" 
-          style={{ 
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            padding: '3px 8px',
-            borderRadius: '4px',
-            background: 'rgba(184, 88, 69, 0.1)',
-            border: '1px solid rgba(184, 88, 69, 0.25)',
-            fontSize: '10px',
-            fontWeight: 600,
-            color: '#b85845',
-            letterSpacing: '0.3px'
-          }}
-        >
-          <Globe size={9} strokeWidth={2.5} />
-          {t('components.graphEditor.nodePropertiesPanel.endNode')}
-        </div>
-      );
-    }
-    
-    return tags.length > 0 ? (
-      <div style={{ 
-        marginTop: '8px',
-        paddingTop: '8px',
-        borderTop: '1px solid rgba(139, 115, 85, 0.08)',
-        display: 'flex', 
-        flexWrap: 'wrap',
+        fontSize: '12px', 
+        color: 'rgba(45, 45, 45, 0.85)', 
+        lineHeight: '18px',
+        display: 'flex',
+        flexDirection: 'column',
         gap: '6px'
       }}>
-        {tags}
+        {/* Agent/Model/Subgraph 信息 */}
+        {mainText && (
+          <div style={blockStyle}>
+            {mainIcon}
+            <Text 
+              ellipsis 
+              style={{ 
+                flex: 1,
+                fontSize: '11px',
+                color: 'rgba(45, 45, 45, 0.75)',
+                fontWeight: 500
+              }}
+            >
+              {mainText}
+            </Text>
+          </div>
+        )}
+
+        {/* 工具信息（MCP + 系统工具） */}
+        {((mcp_servers && mcp_servers.length > 0) || (system_tools && system_tools.length > 0)) && (
+          <div style={blockStyle}>
+            <Wrench size={11} strokeWidth={2} style={{ color: '#8b7355', flexShrink: 0 }} />
+            <Text style={{ 
+              fontSize: '11px',
+              color: 'rgba(45, 45, 45, 0.75)',
+              fontWeight: 500
+            }}>
+              {mcp_servers?.length || 0} MCP + {system_tools?.length || 0} System Tools
+            </Text>
+          </div>
+        )}
+
+        {/* 节点流向信息 */}
+        {((input_nodes && input_nodes.length > 0) || (output_nodes && output_nodes.length > 0)) && (
+          <div style={blockStyle}>
+            <div style={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              flex: 1,
+              fontSize: '10px',
+              color: 'rgba(45, 45, 45, 0.65)'
+            }}>
+              {input_nodes && input_nodes.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ opacity: 0.6 }}>←</span>
+                  <span>{input_nodes.slice(0, 2).join(', ')}{input_nodes.length > 2 ? '...' : ''}</span>
+                </div>
+              )}
+              {output_nodes && output_nodes.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ opacity: 0.6 }}>→</span>
+                  <span>{output_nodes.slice(0, 2).join(', ')}{output_nodes.length > 2 ? '...' : ''}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    ) : null;
+    );
   };
+
+
 
   // 确定节点样式 - 自然质感设计
   const getNodeStyle = () => {
@@ -498,7 +378,6 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         }}
       >
         {renderNodeContent()}
-        {renderNodeTags()}
 
         {/* 关键节点标识 - 锈红色点 */}
         {(level !== undefined && level !== null && level < 3) && (

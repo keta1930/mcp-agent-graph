@@ -72,11 +72,12 @@ const GraphCanvas: React.FC = () => {
         input_nodes: node.input_nodes || [],
         output_nodes: node.output_nodes || [],
         model_name: node.model_name,
+        agent_name: node.agent_name,
         subgraph_name: node.subgraph_name,
         mcp_servers: node.mcp_servers || [],
+        system_tools: node.system_tools || [],
         handoffs: node.handoffs,
         level: node.level,
-        save: node.save,
         selected: false,
         onClick: () => selectNode(node.id!)
       },
