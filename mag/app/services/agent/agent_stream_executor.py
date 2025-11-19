@@ -113,6 +113,7 @@ class AgentStreamExecutor:
                     user_id=user_id,
                     user_prompt=user_prompt,
                     model_name=effective_config["model_name"],
+                    tools=tools,
                     is_graph_node=False
                 )
 
@@ -561,6 +562,7 @@ class AgentStreamExecutor:
             user_id: str,
             user_prompt: str,
             model_name: str,
+            tools: Optional[List[Dict[str, Any]]] = None,
             is_graph_node: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
@@ -573,6 +575,7 @@ class AgentStreamExecutor:
             user_id: 用户 ID
             user_prompt: 用户输入
             model_name: 模型名称
+            tools: 工具 schema 列表（可选）
             is_graph_node: 是否为 Graph 节点调用（默认 False）
 
         Returns:
@@ -619,7 +622,7 @@ class AgentStreamExecutor:
                 round_number=next_round_number,
                 agent_name=agent_name,
                 messages=result.get("round_messages", []),
-                tools=None,
+                tools=tools,
                 model=model_name,
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens
@@ -630,6 +633,12 @@ class AgentStreamExecutor:
             if not success:
                 logger.error(f"保存主线程 round 失败: {conversation_id}")
                 return None
+
+            # 更新 conversation 的 round_count
+            await mongodb_client.conversation_repository.update_conversation_round_count(
+                conversation_id=conversation_id,
+                increment=1
+            )
 
             # 更新 conversation 的 token 使用量
             if token_usage:
