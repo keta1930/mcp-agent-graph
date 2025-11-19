@@ -18,7 +18,7 @@ import {
   Popconfirm,
   Collapse
 } from 'antd';
-import { Plus, Search, Upload as UploadIcon, Download, Trash2, Edit, FileText, ChevronDown } from 'lucide-react';
+import { Plus, Search, Upload as UploadIcon, Download, Trash2, Edit, FileText, ChevronDown, BookOpen } from 'lucide-react';
 import { promptService } from '../services/promptService';
 import { PromptInfo, PromptDetail, PromptCreate, PromptUpdate } from '../types/prompt';
 import PromptEditor from '../components/prompt/PromptEditor';
@@ -416,7 +416,7 @@ const PromptManager: React.FC = () => {
             <Empty description={t('pages.promptManager.noPrompts')} style={{ marginTop: '40px' }} />
           ) : (
             <Collapse
-              defaultActiveKey={filteredGroups.map(group => group.category)}
+              defaultActiveKey={[]}
               expandIconPosition="end"
               expandIcon={({ isActive }) => (
                 <ChevronDown
@@ -438,12 +438,14 @@ const PromptManager: React.FC = () => {
                 <Collapse.Panel
                   key={group.category}
                   header={
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
+                      <BookOpen size={18} color="#b85845" strokeWidth={1.5} />
                       <Text strong style={{
                         fontSize: '14px',
                         color: '#2d2d2d',
                         fontWeight: 500,
-                        letterSpacing: '0.3px'
+                        letterSpacing: '0.3px',
+                        flex: 1
                       }}>
                         {group.category}
                       </Text>
@@ -462,13 +464,13 @@ const PromptManager: React.FC = () => {
                   }
                   style={{
                     marginBottom: '16px',
-                    background: 'rgba(255, 255, 255, 0.6)',
-                    border: '1px solid rgba(139, 115, 85, 0.15)',
                     borderRadius: '8px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
+                    background: 'rgba(250, 248, 245, 0.6)',
                     overflow: 'hidden'
                   }}
                 >
-                  <Row gutter={[12, 12]}>
+                  <Row gutter={[12, 12]} style={{ marginTop: '8px' }}>
                     {group.prompts.map((prompt) => (
                   <Col key={prompt.name} xs={24} sm={12} md={12} lg={8} xl={6}>
                     <Card

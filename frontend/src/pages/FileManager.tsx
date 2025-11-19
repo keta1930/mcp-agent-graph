@@ -276,7 +276,7 @@ const FileManager: React.FC = () => {
           />
         ) : (
           <Collapse
-            defaultActiveKey={filteredGroups.map(g => g.conversationId)}
+            defaultActiveKey={[]}
             expandIconPosition="end"
             style={{
               background: 'transparent',

@@ -394,7 +394,7 @@ const AgentManager: React.FC = () => {
           </div>
         ) : (
           <Collapse
-            defaultActiveKey={filteredGroups.map(g => g.category)}
+            defaultActiveKey={[]}
             expandIconPosition="end"
             style={{
               background: 'transparent',
