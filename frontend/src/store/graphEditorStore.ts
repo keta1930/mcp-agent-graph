@@ -74,20 +74,21 @@ const createDefaultNode = (nodeData: Partial<AgentNode>): AgentNode => {
     id: uuidv4(),
     name: nodeData.name || `Node ${Date.now()}`,
     description: nodeData.description || "",
+    agent_name: nodeData.agent_name,
     is_subgraph: nodeData.is_subgraph || false,
     model_name: nodeData.model_name || "",
     subgraph_name: nodeData.subgraph_name || "",
     mcp_servers: nodeData.mcp_servers || [],
+    system_tools: nodeData.system_tools || [],
     system_prompt: nodeData.system_prompt || "",
     user_prompt: nodeData.user_prompt || "",
+    max_iterations: nodeData.max_iterations,
     input_nodes: nodeData.input_nodes || [],
     output_nodes: nodeData.output_nodes || [],
     handoffs: nodeData.handoffs,
     output_enabled: nodeData.output_enabled ?? true,
     position: nodeData.position || { x: 100, y: 100 },
-    level: nodeData.level,
-    save: nodeData.save,
-    ...nodeData
+    level: nodeData.level
   };
 };
 
@@ -101,17 +102,19 @@ const convertToBackendFormat = (graph: GraphConfig): BackendGraphConfig => {
       const result: any = {
         name: node.name,
         description: node.description || "",
+        agent_name: node.agent_name || null,
         is_subgraph: node.is_subgraph,
         mcp_servers: node.mcp_servers || [],
+        system_tools: node.system_tools || [],
         system_prompt: node.system_prompt || "",
         user_prompt: node.user_prompt || "",
+        max_iterations: node.max_iterations || undefined,
         input_nodes: node.input_nodes || [],
         output_nodes: node.output_nodes || [],
         handoffs: node.handoffs,
         output_enabled: node.output_enabled ?? true,
         position: node.position || { x: 100, y: 100 },
-        level: node.level,
-        save: node.save
+        level: node.level
       };
 
       // 根据节点类型添加特定字段
@@ -134,6 +137,9 @@ const convertFromBackendFormat = (backendGraph: any): GraphConfig => {
       ...node,
       id: uuidv4(), // 添加前端ID
       description: node.description || "",
+      agent_name: node.agent_name,
+      system_tools: node.system_tools || [],
+      max_iterations: node.max_iterations,
       position: node.position || { x: 100, y: 100 },
       input_nodes: node.input_nodes || [],
       output_nodes: node.output_nodes || [],
@@ -443,11 +449,6 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
       // 移除输出引用
       if (updatedNode.output_nodes?.includes(nodeToRemove.name)) {
         updatedNode.output_nodes = updatedNode.output_nodes.filter(n => n !== nodeToRemove.name);
-      }
-
-      // 移除context引用
-      if (updatedNode.context?.includes(nodeToRemove.name)) {
-        updatedNode.context = updatedNode.context.filter(n => n !== nodeToRemove.name);
       }
 
       return updatedNode;

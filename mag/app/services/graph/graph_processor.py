@@ -472,14 +472,18 @@ class GraphProcessor:
                     if cycle:
                         return False, f"检测到循环引用链: {' -> '.join(cycle)}"
                 else:
-                    # 检查普通节点是否指定了模型
-                    if "model_name" not in node:
-                        return False, f"节点 '{node['name']}' 未指定模型"
+                    # 检查普通节点：必须指定 agent_name 或 model_name（至少一个）
+                    agent_name = node.get("agent_name")
+                    model_name = node.get("model_name")
 
-                    # 检查模型是否存在
-                    model_config = await get_model_func(node["model_name"])
-                    if not model_config:
-                        return False, f"节点 '{node['name']}' 使用了不存在的模型 '{node['model_name']}'"
+                    if not agent_name and not model_name:
+                        return False, f"节点 '{node['name']}' 必须指定 agent_name 或 model_name（至少一个）"
+
+                    # 如果指定了 model_name，检查模型是否存在
+                    if model_name:
+                        model_config = await get_model_func(model_name)
+                        if not model_config:
+                            return False, f"节点 '{node['name']}' 使用了不存在的模型 '{model_name}'"
 
                 # 检查MCP服务器是否存在和连接
                 for server_name in node.get("mcp_servers", []):

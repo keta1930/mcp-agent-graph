@@ -60,7 +60,7 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
     if (!Array.isArray(node.input_nodes)) node.input_nodes = [];
     if (!Array.isArray(node.output_nodes)) node.output_nodes = [];
     if (!Array.isArray(node.mcp_servers)) node.mcp_servers = [];
-    if (!Array.isArray(node.context)) node.context = [];
+    if (!Array.isArray(node.system_tools)) node.system_tools = [];
 
     const allNodeNames = cleanedGraph.nodes.map((n: any) => n.name);
     node.input_nodes = node.input_nodes.filter(
@@ -68,9 +68,6 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
     );
     node.output_nodes = node.output_nodes.filter(
       (output: string) => output === "end" || allNodeNames.includes(output)
-    );
-    node.context = node.context.filter(
-      (contextNode: string) => allNodeNames.includes(contextNode)
     );
   });
 
@@ -82,17 +79,19 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
       const result: any = {
         name: node.name,
         description: node.description || "",
+        agent_name: node.agent_name || null,
         is_subgraph: Boolean(node.is_subgraph),
         mcp_servers: Array.isArray(node.mcp_servers) ? node.mcp_servers : [],
+        system_tools: Array.isArray(node.system_tools) ? node.system_tools : [],
         system_prompt: typeof node.system_prompt === 'string' ? node.system_prompt : "",
         user_prompt: typeof node.user_prompt === 'string' ? node.user_prompt : "",
+        max_iterations: node.max_iterations || null,
         input_nodes: Array.isArray(node.input_nodes) ? node.input_nodes : [],
         output_nodes: Array.isArray(node.output_nodes) ? node.output_nodes : [],
         handoffs: node.handoffs || null,
         output_enabled: node.output_enabled !== undefined ? Boolean(node.output_enabled) : true,
         position: node.position || { x: 0, y: 0 },
-        level: node.level || null,
-        save: node.save || null
+        level: node.level || null
       };
 
       if (node.is_subgraph) {

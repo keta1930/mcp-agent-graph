@@ -3,7 +3,7 @@ import React from 'react';
 import { Handle, Position } from 'reactflow';
 import { Card, Typography, Tooltip } from 'antd';
 import {
-  GitBranch, Bot, Wrench, AlertTriangle, Globe, Save,
+  GitBranch, Bot, Wrench, AlertTriangle, Globe,
   RefreshCw, Zap
 } from 'lucide-react';
 import { useMCPStore } from '../../store/mcpStore';
@@ -24,7 +24,6 @@ interface AgentNodeProps {
     mcp_servers: string[];
     handoffs?: number;
     level?: number;
-    save?: string;
     selected: boolean;
     onClick: () => void;
   };
@@ -43,7 +42,6 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
     mcp_servers,
     handoffs,
     level,
-    save,
     selected,
     onClick
   } = data;
@@ -141,24 +139,6 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
               border: '1px solid rgba(212, 165, 116, 0.2)'
             }}>
               <RefreshCw size={10} strokeWidth={2} style={{ color: '#d4a574' }} />
-            </div>
-          </Tooltip>
-        )}
-
-        {/* 文件保存 */}
-        {save && (
-          <Tooltip title={`${t('components.graphEditor.nodePropertiesPanel.saveFormat')}: ${save.toUpperCase()}`}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '18px',
-              height: '18px',
-              borderRadius: '4px',
-              background: 'rgba(160, 130, 109, 0.1)',
-              border: '1px solid rgba(160, 130, 109, 0.2)'
-            }}>
-              <Save size={10} strokeWidth={2} style={{ color: '#a0826d' }} />
             </div>
           </Tooltip>
         )}
