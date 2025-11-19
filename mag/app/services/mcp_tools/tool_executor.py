@@ -12,8 +12,20 @@ class ToolExecutor:
     """统一的工具调用执行器"""
 
     def __init__(self, mcp_service=None):
-        """初始化工具执行器"""
-        self.mcp_service = mcp_service
+        """初始化工具执行器
+        
+        Args:
+            mcp_service: MCP服务实例（可选）。如果不传入，会在需要时自动获取全局实例
+        """
+        self._mcp_service = mcp_service
+    
+    @property
+    def mcp_service(self):
+        """延迟获取 MCP 服务实例"""
+        if self._mcp_service is None:
+            from app.services.mcp.mcp_service import mcp_service
+            self._mcp_service = mcp_service
+        return self._mcp_service
 
     async def execute_tools_batch(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str],
                                  user_id: str = None, conversation_id: str = None, agent_id: str = None) -> List[Dict[str, Any]]:
@@ -398,18 +410,34 @@ class ToolExecutor:
     async def _find_tool_server(self, tool_name: str, mcp_servers: List[str]) -> Optional[str]:
         """查找工具所属的服务器"""
         try:
+            if not tool_name:
+                logger.error(f"工具名称为空，无法查找服务器。mcp_servers: {mcp_servers}")
+                return None
+            
             if not self.mcp_service:
+                logger.error(f"MCP服务未初始化，无法查找工具 '{tool_name}' 的服务器")
+                return None
+            
+            if not mcp_servers:
+                logger.warning(f"mcp_servers 列表为空，无法查找工具 '{tool_name}' 的服务器")
                 return None
                 
             all_tools = await self.mcp_service.get_all_tools()
+            logger.debug(f"查找工具 '{tool_name}'，可用服务器: {list(all_tools.keys())}, 指定服务器: {mcp_servers}")
+            
             for server_name in mcp_servers:
                 if server_name in all_tools:
                     for tool in all_tools[server_name]:
                         if tool["name"] == tool_name:
+                            logger.info(f"找到工具 '{tool_name}' 在服务器 '{server_name}'")
                             return server_name
+                else:
+                    logger.warning(f"服务器 '{server_name}' 不在可用工具列表中")
+            
+            logger.warning(f"在指定的服务器 {mcp_servers} 中未找到工具 '{tool_name}'")
             return None
         except Exception as e:
-            logger.error(f"查找工具服务器时出错: {str(e)}")
+            logger.error(f"查找工具 '{tool_name}' 服务器时出错: {str(e)}", exc_info=True)
             return None
 
     async def _call_mcp_client_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
