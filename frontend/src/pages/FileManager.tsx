@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Input, Card, Row, Col, Space, Typography, Spin, message, Empty, Tag, Collapse } from 'antd';
+import { Layout, Input, Card, Row, Col, Space, Typography, Spin, Empty, Tag, Collapse, App } from 'antd';
 import {
   Search as SearchIcon,
   Download,
@@ -35,6 +35,7 @@ interface ConversationGroup {
 
 const FileManager: React.FC = () => {
   const t = useT();
+  const { message } = App.useApp();
   const [allFiles, setAllFiles] = useState<FileItem[]>([]);
   const [groupedConversations, setGroupedConversations] = useState<ConversationGroup[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<ConversationGroup[]>([]);
@@ -143,6 +144,16 @@ const FileManager: React.FC = () => {
       message.success(t('pages.fileManager.downloadSuccess'));
     } catch (error: any) {
       message.error(t('pages.fileManager.downloadFailed', { error: error.message }));
+    }
+  };
+
+  const handleDownloadAll = async (conversationId: string) => {
+    try {
+      const blob = await conversationFileService.downloadAllFiles(conversationId);
+      downloadBlob(blob, `conversation_${conversationId}_files.zip`);
+      message.success(t('pages.fileManager.downloadAllSuccess'));
+    } catch (error: any) {
+      message.error(t('pages.fileManager.downloadAllFailed', { error: error.message }));
     }
   };
 
@@ -309,6 +320,15 @@ const FileManager: React.FC = () => {
                     }}>
                       {group.files.length}
                     </Tag>
+                    <Download
+                      size={16}
+                      strokeWidth={1.5}
+                      style={{ color: '#8b7355', cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadAll(group.conversationId);
+                      }}
+                    />
                   </div>
                 }
                 style={{

@@ -646,6 +646,8 @@
       "loadFailed": "加载文件列表失败: {{error}}",
       "downloadSuccess": "文件下载成功",
       "downloadFailed": "下载文件失败: {{error}}",
+      "downloadAllSuccess": "所有文件打包下载成功",
+      "downloadAllFailed": "打包下载失败: {{error}}",
       "fileViewModal": {
         "editor": "编辑器",
         "versionHistory": "版本历史",
@@ -1172,6 +1174,8 @@
     "documentsDrawer": {
       "title": "对话文档",
       "noDocuments": "暂无文档",
+      "downloadAllSuccess": "所有文件打包下载成功",
+      "downloadAllFailed": "打包下载失败: {{error}}",
       "justNow": "刚刚",
       "minutesAgo": "{{count}}分钟前",
       "hoursAgo": "{{count}}小时前",

@@ -100,12 +100,10 @@ export const conversationFileService = {
 
   /**
    * Download all files in a conversation as ZIP
-   * Note: This endpoint may not be implemented yet on backend
    */
   async downloadAllFiles(conversationId: string): Promise<Blob> {
-    const response = await api.post(
+    const response = await api.get(
       `/conversations/${conversationId}/files/download-all`,
-      {},
       { responseType: 'blob' }
     );
     return response.data;

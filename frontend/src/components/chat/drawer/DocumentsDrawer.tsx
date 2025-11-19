@@ -1,9 +1,12 @@
 // src/components/chat/drawer/DocumentsDrawer.tsx
 import React from 'react';
-import { Drawer, List, Empty, Typography } from 'antd';
+import { Drawer, List, Empty, Typography, Button, App } from 'antd';
 import { FileOutlined, FileTextOutlined, FileImageOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Download } from 'lucide-react';
 import { ConversationDocuments, DocumentFile } from '../../../types/conversation';
 import { useT } from '../../../i18n/hooks';
+import conversationFileService from '../../../services/conversationFileService';
+import { downloadBlob } from '../../../utils/fileUtils';
 import './DocumentsDrawer.css';
 
 const { Text } = Typography;
@@ -18,11 +21,13 @@ interface DocumentsDrawerProps {
 
 const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
   visible,
+  conversationId,
   documents,
   onClose,
   onDocumentClick
 }) => {
   const t = useT();
+  const { message } = App.useApp();
   
   // 根据文件名返回对应的图标
   const getFileIcon = (filename: string) => {
@@ -66,6 +71,16 @@ const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
     }
   };
 
+  const handleDownloadAll = async () => {
+    try {
+      const blob = await conversationFileService.downloadAllFiles(conversationId);
+      downloadBlob(blob, `conversation_${conversationId}_files.zip`);
+      message.success(t('components.documentsDrawer.downloadAllSuccess'));
+    } catch (error: any) {
+      message.error(t('components.documentsDrawer.downloadAllFailed', { error: error.message }));
+    }
+  };
+
   const totalCount = documents?.total_count || 0;
   const files = documents?.files || [];
 
@@ -76,7 +91,19 @@ const DocumentsDrawer: React.FC<DocumentsDrawerProps> = ({
           <FileOutlined />
           <span>{t('components.documentsDrawer.title')}</span>
           {totalCount > 0 && (
-            <span className="document-count">{totalCount}</span>
+            <>
+              <span className="document-count">{totalCount}</span>
+              <Button
+                type="text"
+                size="small"
+                icon={<Download size={16} strokeWidth={1.5} />}
+                onClick={handleDownloadAll}
+                style={{
+                  marginLeft: 'auto',
+                  color: '#8b7355'
+                }}
+              />
+            </>
           )}
         </div>
       }

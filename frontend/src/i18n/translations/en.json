@@ -646,6 +646,8 @@
       "loadFailed": "Failed to load file list: {{error}}",
       "downloadSuccess": "File downloaded successfully",
       "downloadFailed": "Failed to download file: {{error}}",
+      "downloadAllSuccess": "All files downloaded successfully",
+      "downloadAllFailed": "Failed to download all files: {{error}}",
       "fileViewModal": {
         "editor": "Editor",
         "versionHistory": "Version History",
@@ -1172,6 +1174,8 @@
     "documentsDrawer": {
       "title": "Conversation Documents",
       "noDocuments": "No documents",
+      "downloadAllSuccess": "All files downloaded successfully",
+      "downloadAllFailed": "Failed to download files: {{error}}",
       "justNow": "Just now",
       "minutesAgo": "{{count}} minutes ago",
       "hoursAgo": "{{count}} hours ago",

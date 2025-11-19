@@ -3,8 +3,12 @@
 提供文件的CRUD操作、版本查看、下载等功能
 """
 import logging
-from fastapi import APIRouter, HTTPException, Depends, Path, Query
-from fastapi.responses import Response
+import os
+import tempfile
+import zipfile
+import shutil
+from fastapi import APIRouter, HTTPException, Depends, Path, Query, BackgroundTasks
+from fastapi.responses import Response, FileResponse
 from urllib.parse import unquote
 
 from app.models.auth_schema import CurrentUser
@@ -91,10 +95,10 @@ async def create_file(
         raise HTTPException(status_code=500, detail=f"创建文件失败: {str(e)}")
 
 
-@router.post("/download-all")
+@router.get("/download-all")
 async def download_all_files(
     conversation_id: str = Path(..., description="会话ID"),
-    request: DownloadAllRequest = ...,
+    background_tasks: BackgroundTasks = ...,
     current_user: CurrentUser = Depends(get_current_user)
 ):
     """
@@ -103,13 +107,48 @@ async def download_all_files(
     将会话内所有文件打包为zip下载，保持目录结构
     """
     try:
-        # TODO: 实现批量打包下载
-        # 1. 获取所有文件列表
-        # 2. 遍历读取每个文件
-        # 3. 创建zip文件（保持目录结构）
-        # 4. 返回zip文件
+        # 获取所有文件列表
+        files_result = await conversation_document_service.get_all_files(
+            conversation_id=conversation_id,
+            user_id=current_user.user_id
+        )
 
-        raise HTTPException(status_code=501, detail="批量下载功能尚未实现")
+        if not files_result["success"]:
+            raise HTTPException(status_code=404, detail=files_result.get("error", "获取文件列表失败"))
+
+        files = files_result["files"]
+        
+        if not files:
+            raise HTTPException(status_code=404, detail="该会话没有文件")
+
+        # 创建临时目录
+        temp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(temp_dir, f"conversation_{conversation_id}_files.zip")
+
+        # 创建zip文件
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for filename in files:
+                # 获取文件内容
+                file_result = await conversation_document_service.get_file(
+                    conversation_id=conversation_id,
+                    filename=filename,
+                    user_id=current_user.user_id
+                )
+                
+                if file_result["success"]:
+                    content = file_result["file"]["content"]
+                    # 将文件添加到zip，保持目录结构
+                    zipf.writestr(filename, content.encode('utf-8'))
+
+        # 在响应完成后清理临时目录
+        background_tasks.add_task(shutil.rmtree, temp_dir, ignore_errors=True)
+
+        return FileResponse(
+            path=zip_path,
+            filename=f"conversation_{conversation_id}_files.zip",
+            media_type="application/zip",
+            background=background_tasks
+        )
 
     except HTTPException:
         raise
