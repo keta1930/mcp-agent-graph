@@ -1047,7 +1047,7 @@
     },
     "conversationSidebar": {
       "searchPlaceholder": "Search conversations...",
-      "newConversation": "New",
+      "newConversation": "New Conversation",
       "selectedCount": "Selected {{count}} items",
       "selectAll": "Select All",
       "deselectAll": "Clear",

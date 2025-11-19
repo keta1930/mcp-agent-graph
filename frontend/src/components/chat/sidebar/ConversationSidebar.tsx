@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Input, Button, Empty, Spin, Tooltip } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, User, Home, Clock, ChevronLeft } from 'lucide-react';
+import { Search, Plus, User, Home, Clock, ChevronLeft, CheckSquare } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
 import { getCurrentUserDisplayName } from '../../../config/user';
 import { useT } from '../../../i18n/hooks';
@@ -189,80 +189,47 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       {/* 头部 */}
       <div
         style={{
-          padding: '20px 16px 16px',
+          padding: '16px',
           borderBottom: '1px solid rgba(139, 115, 85, 0.08)',
         }}
       >
-        {/* 搜索框 */}
-        <Input
-          prefix={
-            <Search
-              size={16}
-              strokeWidth={1.5}
-              style={{ color: 'rgba(45, 45, 45, 0.45)' }}
-            />
-          }
-          placeholder={t('components.conversationSidebar.searchPlaceholder')}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          allowClear
-          style={{
-            height: '36px',
-            borderRadius: '6px',
-            border: '1px solid rgba(139, 115, 85, 0.15)',
-            background: '#ffffff',
-            fontSize: '14px',
-            marginBottom: '12px',
-          }}
-        />
-
-        {/* 功能按钮区 */}
+        {/* 搜索框和收起按钮 */}
         <div
           style={{
             display: 'flex',
-            gap: '8px',
             alignItems: 'center',
+            gap: '8px',
+            marginBottom: '12px',
           }}
         >
-          {onNewConversation && (
-            <Button
-              type="text"
-              icon={<Plus size={16} strokeWidth={1.5} />}
-              onClick={onNewConversation}
-              style={{
-                flex: 1,
-                height: '32px',
-                borderRadius: '6px',
-                border: 'none',
-                background: 'transparent',
-                color: '#8b7355',
-                fontSize: '13px',
-                fontWeight: 400,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              {t('components.conversationSidebar.newConversation')}
-            </Button>
-          )}
-
-          <ExportManagerButton />
-
+          <Input
+            prefix={
+              <Search
+                size={16}
+                strokeWidth={1.5}
+                style={{ color: 'rgba(45, 45, 45, 0.45)' }}
+              />
+            }
+            placeholder={t('components.conversationSidebar.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            style={{
+              flex: 1,
+              height: '36px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.15)',
+              background: '#ffffff',
+              fontSize: '14px',
+            }}
+          />
           <Button
             type="text"
             icon={<ChevronLeft size={16} strokeWidth={1.5} />}
             onClick={toggleSidebar}
             style={{
-              height: '32px',
-              width: '32px',
+              height: '36px',
+              width: '36px',
               borderRadius: '6px',
               border: 'none',
               background: 'transparent',
@@ -271,15 +238,51 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.06)';
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
             }}
           />
         </div>
+
+        {/* 新建对话按钮 - 显眼的全宽按钮 */}
+        {onNewConversation && (
+          <Button
+            type="primary"
+            icon={<Plus size={16} strokeWidth={1.5} />}
+            onClick={onNewConversation}
+            block
+            style={{
+              height: '36px',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+              color: '#ffffff',
+              fontSize: '14px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25)';
+            }}
+          >
+            {t('components.conversationSidebar.newConversation')}
+          </Button>
+        )}
       </div>
 
       {/* 批量操作工具栏 */}
@@ -410,7 +413,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         )}
       </div>
 
-      {/* 底部 */}
+      {/* 底部 - 单行布局 */}
       <div
         style={{
           padding: '12px 16px',
@@ -420,6 +423,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           alignItems: 'center',
         }}
       >
+        {/* 用户信息 */}
         <div
           style={{
             display: 'flex',
@@ -434,33 +438,27 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           <span>{currentUserDisplayName}</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <Button
-            type="text"
-            onClick={handleBatchModeToggle}
-            style={{
-              height: '28px',
-              padding: '0 10px',
-              borderRadius: '4px',
-              border: 'none',
-              background: isBatchMode
-                ? 'rgba(139, 115, 85, 0.08)'
-                : 'transparent',
-              color: isBatchMode ? '#8b7355' : 'rgba(45, 45, 45, 0.65)',
-              fontSize: '12px',
-              fontWeight: 400,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = isBatchMode
-                ? 'rgba(139, 115, 85, 0.08)'
-                : 'transparent';
-            }}
-          >
-            {isBatchMode ? t('components.conversationSidebar.cancelSelection') : t('components.conversationSidebar.batchMode')}
-          </Button>
+        {/* 功能按钮组 */}
+        <div style={{ display: 'flex', gap: '2px' }}>
+          <Tooltip title={isBatchMode ? t('components.conversationSidebar.cancelSelection') : t('components.conversationSidebar.batchMode')}>
+            <Button
+              type="text"
+              icon={<CheckSquare size={16} strokeWidth={1.5} />}
+              onClick={handleBatchModeToggle}
+              style={{
+                background: isBatchMode ? 'rgba(139, 115, 85, 0.08)' : 'transparent',
+                color: isBatchMode ? '#8b7355' : 'rgba(45, 45, 45, 0.65)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isBatchMode ? 'rgba(139, 115, 85, 0.08)' : 'transparent';
+              }}
+            />
+          </Tooltip>
+
+          <ExportManagerButton />
 
           <Tooltip title={t('components.conversationSidebar.taskCenter')}>
             <Button
@@ -468,16 +466,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               icon={<Clock size={16} strokeWidth={1.5} />}
               onClick={() => navigate('/tasks')}
               style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '4px',
-                border: 'none',
-                background: 'transparent',
                 color: 'rgba(45, 45, 45, 0.65)',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
@@ -494,16 +483,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               icon={<Home size={16} strokeWidth={1.5} />}
               onClick={() => navigate('/')}
               style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '4px',
-                border: 'none',
-                background: 'transparent',
                 color: 'rgba(45, 45, 45, 0.65)',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';

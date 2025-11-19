@@ -1,6 +1,7 @@
 // src/layouts/WorkspaceLayout.tsx
 import React, { useState, CSSProperties } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button, Tooltip } from 'antd';
 import {
   Bot,
   Network,
@@ -11,10 +12,12 @@ import {
   FolderOpen,
   Database,
   Home,
+  User,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
 import { useT } from '../i18n';
+import { getCurrentUserDisplayName } from '../config/user';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -24,6 +27,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
+  const currentUserDisplayName = getCurrentUserDisplayName();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -85,21 +89,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
     opacity: collapsed ? 0 : 1,
     transition: 'opacity 0.3s ease',
     whiteSpace: 'nowrap'
-  };
-
-  const toggleButtonStyle: CSSProperties = {
-    width: '32px',
-    height: '32px',
-    borderRadius: '6px',
-    border: '1px solid rgba(139, 115, 85, 0.15)',
-    background: 'rgba(255, 255, 255, 0.8)',
-    color: '#8b7355',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
-    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)'
   };
 
   // 导航区域样式
@@ -167,57 +156,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
     background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)'
   };
 
-  const footerButtonStyle = (isHovered: boolean, isDanger: boolean = false): CSSProperties => ({
-    width: '36px',
-    height: '36px',
-    borderRadius: '6px',
-    border: '1px solid rgba(139, 115, 85, 0.15)',
-    background: isHovered 
-      ? (isDanger ? 'rgba(184, 88, 69, 0.08)' : 'rgba(139, 115, 85, 0.08)')
-      : 'rgba(255, 255, 255, 0.8)',
-    color: isHovered ? (isDanger ? '#b85845' : '#8b7355') : '#8b7355',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
-    boxShadow: isHovered 
-      ? '0 4px 12px rgba(139, 115, 85, 0.12)'
-      : '0 1px 3px rgba(139, 115, 85, 0.08)',
-    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
-  });
-
-  // Tooltip 样式
-  const tooltipStyle: CSSProperties = {
-    position: 'absolute',
-    left: '80px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    background: 'rgba(45, 45, 45, 0.95)',
-    color: '#faf8f5',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: 500,
-    whiteSpace: 'nowrap',
-    pointerEvents: 'none',
-    zIndex: 1000,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    letterSpacing: '0.3px'
-  };
-
-  const tooltipArrowStyle: CSSProperties = {
-    position: 'absolute',
-    left: '-4px',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: 0,
-    height: 0,
-    borderTop: '4px solid transparent',
-    borderBottom: '4px solid transparent',
-    borderRight: '4px solid rgba(45, 45, 45, 0.95)'
-  };
-
   return (
     <>
       <style>
@@ -236,29 +174,20 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           <div style={headerStyle}>
             <div style={headerDecorStyle} />
             {!collapsed && <h3 style={titleStyle}>{t('pages.workspace.title')}</h3>}
-            <button
-              type="button"
+            <Button
+              type="text"
+              icon={collapsed ? <ChevronRight size={16} strokeWidth={1.5} /> : <ChevronLeft size={16} strokeWidth={1.5} />}
               onClick={() => setCollapsed(!collapsed)}
-              style={toggleButtonStyle}
+              style={{
+                color: 'rgba(45, 45, 45, 0.65)',
+              }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
-                e.currentTarget.style.color = '#b85845';
-                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
-                e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
-                e.currentTarget.style.color = '#8b7355';
-                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.background = 'transparent';
               }}
-            >
-              {collapsed ? (
-                <ChevronRight size={16} strokeWidth={1.5} />
-              ) : (
-                <ChevronLeft size={16} strokeWidth={1.5} />
-              )}
-            </button>
+            />
           </div>
 
           {/* 导航列表 */}
@@ -269,24 +198,21 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               const isHovered = hoveredItem === item.path;
 
               return (
-                <Link
+                <Tooltip 
                   key={item.path}
-                  to={item.path}
-                  style={getNavItemStyle(isActive, isHovered)}
-                  onMouseEnter={() => setHoveredItem(item.path)}
-                  onMouseLeave={() => setHoveredItem(null)}
+                  title={collapsed ? t(item.labelKey) : ''}
+                  placement="right"
                 >
-                  <Icon size={20} strokeWidth={1.5} />
-                  {!collapsed && <span style={navLabelStyle}>{t(item.labelKey)}</span>}
-                  
-                  {/* Tooltip for collapsed state */}
-                  {collapsed && isHovered && (
-                    <div style={tooltipStyle}>
-                      <div style={tooltipArrowStyle} />
-                      {t(item.labelKey)}
-                    </div>
-                  )}
-                </Link>
+                  <Link
+                    to={item.path}
+                    style={getNavItemStyle(isActive, isHovered)}
+                    onMouseEnter={() => setHoveredItem(item.path)}
+                    onMouseLeave={() => setHoveredItem(null)}
+                  >
+                    <Icon size={20} strokeWidth={1.5} />
+                    {!collapsed && <span style={navLabelStyle}>{t(item.labelKey)}</span>}
+                  </Link>
+                </Tooltip>
               );
             })}
           </div>
@@ -295,22 +221,39 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           <div style={footerStyle}>
             <div style={footerDecorStyle} />
             
-            <button
-              type="button"
-              onClick={handleBackHome}
-              style={footerButtonStyle(hoveredItem === 'home')}
-              onMouseEnter={() => setHoveredItem('home')}
-              onMouseLeave={() => setHoveredItem(null)}
-              title={collapsed ? t('pages.workspace.backHome') : undefined}
-            >
-              <Home size={18} strokeWidth={1.5} />
-              {collapsed && hoveredItem === 'home' && (
-                <div style={tooltipStyle}>
-                  <div style={tooltipArrowStyle} />
-                  {t('pages.workspace.backHome')}
-                </div>
-              )}
-            </button>
+            {!collapsed && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: 'rgba(45, 45, 45, 0.65)',
+                  fontSize: '13px',
+                  fontWeight: 400,
+                  flex: 1,
+                }}
+              >
+                <User size={16} strokeWidth={1.5} />
+                <span>{currentUserDisplayName}</span>
+              </div>
+            )}
+            
+            <Tooltip title={t('pages.workspace.backHome')}>
+              <Button
+                type="text"
+                icon={<Home size={16} strokeWidth={1.5} />}
+                onClick={handleBackHome}
+                style={{
+                  color: 'rgba(45, 45, 45, 0.65)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              />
+            </Tooltip>
           </div>
         </div>
 

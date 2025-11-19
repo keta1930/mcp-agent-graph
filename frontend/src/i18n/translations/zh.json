@@ -1047,7 +1047,7 @@
     },
     "conversationSidebar": {
       "searchPlaceholder": "搜索对话...",
-      "newConversation": "新建",
+      "newConversation": "新建对话",
       "selectedCount": "已选 {{count}} 项",
       "selectAll": "全选",
       "deselectAll": "清空",

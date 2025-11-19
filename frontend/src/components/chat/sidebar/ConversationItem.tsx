@@ -275,27 +275,23 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     </div>
   );
 
-  // 计算最终样式
+  // 计算最终样式 - Flat Design
   const getItemStyle = (): React.CSSProperties => {
     // 基础样式 - 所有状态共享
     const base: React.CSSProperties = {
-      marginBottom: '6px',
+      marginBottom: '4px',
       borderRadius: '6px',
       cursor: 'pointer',
       transition: 'all 0.2s ease',
       position: 'relative',
+      padding: '10px 12px',
     };
 
     // 激活状态
     if (isActive) {
       return {
         ...base,
-        padding: '10px 12px 10px 9px', // 左边减少3px因为有3px的边框
-        background: 'rgba(184, 88, 69, 0.03)',
-        borderLeft: '3px solid #b85845',
-        borderTop: '1px solid rgba(139, 115, 85, 0.12)',
-        borderRight: '1px solid rgba(139, 115, 85, 0.12)',
-        borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
+        background: 'rgba(184, 88, 69, 0.08)',
       };
     }
 
@@ -303,9 +299,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     if (isBatchMode && isSelected) {
       return {
         ...base,
-        padding: '10px 12px', // 保持一致的 padding
-        background: 'rgba(139, 115, 85, 0.03)',
-        border: '1px solid rgba(139, 115, 85, 0.12)',
+        background: 'rgba(139, 115, 85, 0.06)',
       };
     }
 
@@ -313,20 +307,14 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     if (isHovered) {
       return {
         ...base,
-        padding: '10px 12px', // 保持一致的 padding
-        background: 'rgba(250, 248, 245, 0.8)',
-        border: '1px solid rgba(139, 115, 85, 0.15)',
-        transform: 'translateY(-1px)',
-        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+        background: 'rgba(139, 115, 85, 0.04)',
       };
     }
 
-    // 默认状态
+    // 默认状态 - 无背景，无边框
     return {
       ...base,
-      padding: '10px 12px', // 保持一致的 padding
-      background: 'rgba(255, 255, 255, 0.6)',
-      border: '1px solid rgba(139, 115, 85, 0.12)',
+      background: 'transparent',
     };
   };
 
