@@ -8,7 +8,7 @@ import logging
 from typing import Dict, List, Any, Optional, AsyncGenerator
 
 from app.services.model.model_service import model_service
-from app.services.mcp.tool_executor import ToolExecutor
+from app.services.tool_execution import ToolExecutor
 from app.services.system_tools import get_system_tools_by_names
 
 logger = logging.getLogger(__name__)

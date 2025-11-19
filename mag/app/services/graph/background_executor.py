@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional
 from app.services.graph.graph_helper import GraphHelper
 from app.services.graph.handoffs_manager import HandoffsManager
 from app.services.graph.message_creator import MessageCreator
-from app.services.mcp.tool_executor import ToolExecutor
+from app.services.tool_execution import ToolExecutor
 from app.services.graph.node_executor_core import NodeExecutorCore
 
 logger = logging.getLogger(__name__)
