@@ -1,6 +1,6 @@
 // src/pages/MCPManager.tsx
 import React, { useEffect, useState } from 'react';
-import { Layout, Button, Row, Col, message, Alert, Modal, Input, Tag, Space, Typography, ConfigProvider } from 'antd';
+import { Layout, Button, Row, Col, Alert, Modal, Input, Tag, Space, Typography, ConfigProvider, App } from 'antd';
 import {
   Plus,
   RefreshCw,
@@ -24,6 +24,7 @@ const { Title } = Typography;
 
 const MCPManager: React.FC = () => {
   const t = useT();
+  const { message } = App.useApp();
   const {
     config,
     status,

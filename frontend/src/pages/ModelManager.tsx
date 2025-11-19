@@ -1,6 +1,6 @@
 // src/pages/ModelManager.tsx
 import React, { useEffect, useState } from 'react';
-import { Layout, Button, message, Select, Card, Row, Col, Typography, Input, Space, Tag as AntTag, Spin } from 'antd';
+import { Layout, Button, Select, Card, Row, Col, Typography, Input, Space, Tag as AntTag, Spin, App } from 'antd';
 import { Plus, Star, Edit, Trash2, Server, Globe, Tag, Search as SearchIcon, Settings } from 'lucide-react';
 import { useModelStore } from '../store/modelStore';
 import { ModelConfig } from '../types/model';
@@ -15,6 +15,7 @@ const { Text, Title } = Typography;
 
 const ModelManager: React.FC = () => {
   const t = useT();
+  const { message } = App.useApp();
   const { models, loading, error, fetchModels, addModel, updateModel, deleteModel } = useModelStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [currentModel, setCurrentModel] = useState<ModelConfig | undefined>(undefined);
