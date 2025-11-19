@@ -1,6 +1,5 @@
 // src/layouts/WorkspaceLayout.tsx
 import React, { useState, CSSProperties } from 'react';
-import { Modal, message } from 'antd';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bot,
@@ -12,12 +11,9 @@ import {
   FolderOpen,
   Database,
   Home,
-  Power,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { shutdownSystem } from '../services/systemService';
-import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { useT } from '../i18n';
 
 interface WorkspaceLayoutProps {
@@ -28,37 +24,8 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
-  const [isShuttingDown, setIsShuttingDown] = useState(false);
-  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-
-  const handleShutdown = async () => {
-    setIsShuttingDown(true);
-    try {
-      const response = await shutdownSystem();
-      message.success(t('pages.workspace.shutdownSuccess'));
-
-      if (response && response.active_sessions) {
-        message.info(t('pages.workspace.shutdownActiveSessions', { count: response.active_sessions }));
-      }
-
-      setConfirmModalVisible(false);
-      message.loading(t('pages.workspace.shutdownPending'), 10);
-    } catch (error) {
-      console.error('关闭服务失败:', error);
-      message.error(t('pages.workspace.shutdownFailed'));
-      setIsShuttingDown(false);
-    }
-  };
-
-  const showConfirmModal = () => {
-    setConfirmModalVisible(true);
-  };
-
-  const handleCancel = () => {
-    setConfirmModalVisible(false);
-  };
 
   const handleBackHome = () => {
     navigate('/');
@@ -328,18 +295,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           <div style={footerStyle}>
             <div style={footerDecorStyle} />
             
-            {/* Language Switcher - only show when not collapsed */}
-            {!collapsed && (
-              <div style={{ 
-                width: '100%', 
-                marginBottom: '8px',
-                display: 'flex',
-                justifyContent: 'center'
-              }}>
-                <LanguageSwitcher />
-              </div>
-            )}
-            
             <button
               type="button"
               onClick={handleBackHome}
@@ -353,24 +308,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                 <div style={tooltipStyle}>
                   <div style={tooltipArrowStyle} />
                   {t('pages.workspace.backHome')}
-                </div>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={showConfirmModal}
-              disabled={isShuttingDown}
-              style={footerButtonStyle(hoveredItem === 'power', true)}
-              onMouseEnter={() => setHoveredItem('power')}
-              onMouseLeave={() => setHoveredItem(null)}
-              title={collapsed ? t('pages.workspace.shutdown') : undefined}
-            >
-              <Power size={18} strokeWidth={1.5} />
-              {collapsed && hoveredItem === 'power' && (
-                <div style={tooltipStyle}>
-                  <div style={tooltipArrowStyle} />
-                  {t('pages.workspace.shutdown')}
                 </div>
               )}
             </button>
@@ -395,55 +332,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* 关闭系统确认对话框 */}
-        <Modal
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Power size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
-              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.workspace.shutdownConfirmTitle')}</span>
-            </div>
-          }
-          open={confirmModalVisible}
-          onOk={handleShutdown}
-          onCancel={handleCancel}
-          okText={t('pages.workspace.shutdownConfirmButton')}
-          cancelText={t('common.cancel')}
-          okButtonProps={{ 
-            danger: true, 
-            loading: isShuttingDown,
-            style: {
-              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-              border: 'none',
-              borderRadius: '6px',
-              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
-            }
-          }}
-          cancelButtonProps={{
-            style: {
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              color: '#8b7355'
-            }
-          }}
-          styles={{
-            content: {
-              borderRadius: '8px',
-              boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)'
-            }
-          }}
-        >
-          <div style={{ 
-            padding: '16px 0',
-            color: 'rgba(45, 45, 45, 0.85)',
-            lineHeight: 1.6,
-            letterSpacing: '0.3px'
-          }}>
-            <p style={{ margin: '0 0 8px 0' }}>{t('pages.workspace.shutdownConfirmMessage')}</p>
-            <p style={{ margin: 0, fontSize: '13px', color: 'rgba(45, 45, 45, 0.65)' }}>
-              {t('pages.workspace.shutdownConfirmDetail')}
-            </p>
-          </div>
-        </Modal>
+
       </div>
     </>
   );

@@ -9,7 +9,6 @@ import MessageDisplay from '../components/chat/message/MessageDisplay';
 import InputArea from '../components/chat/input/InputArea';
 import CompactConfigModal from '../components/chat/modal/CompactConfigModal';
 import GlobalNotification from '../components/common/GlobalNotification';
-import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { DocumentsDrawer } from '../components/chat/drawer';
 import { FileViewModal } from '../components/conversation-file/FileViewModal';
 import { useConversationStore } from '../store/conversationStore';
@@ -607,9 +606,6 @@ const ChatSystem: React.FC = () => {
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {/* Language Switcher */}
-                  <LanguageSwitcher />
-                  
                   {/* Documents 按钮 */}
                   {displayConversation && (
                     <Tooltip title={t('pages.chatSystem.viewDocuments')}>
