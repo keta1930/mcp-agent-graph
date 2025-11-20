@@ -16,7 +16,7 @@ import {
   Typography,
   Input
 } from 'antd';
-import { Wrench, Eye, Search } from 'lucide-react';
+import { Wrench, Eye, Search, ChevronRight } from 'lucide-react';
 import {
   listSystemTools,
   getSystemToolDetail,
@@ -36,6 +36,7 @@ const SystemToolsManager: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedTool, setSelectedTool] = useState<SystemToolSchema | null>(null);
   const [searchText, setSearchText] = useState('');
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   // 加载系统工具列表
   const loadTools = async () => {
@@ -54,6 +55,13 @@ const SystemToolsManager: React.FC = () => {
   useEffect(() => {
     loadTools();
   }, []);
+
+  // 初始化所有分类为折叠状态
+  useEffect(() => {
+    if (categories.length > 0) {
+      setCollapsedCategories(new Set(categories.map(cat => cat.category)));
+    }
+  }, [categories]);
 
   // 搜索过滤
   const handleSearch = (value: string) => {
@@ -76,6 +84,19 @@ const SystemToolsManager: React.FC = () => {
     }).filter((category) => category.tools.length > 0);
     
     setFilteredCategories(filtered);
+  };
+
+  // 切换分类折叠状态
+  const toggleCategoryCollapse = (category: string) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
   };
 
   // 显示工具详情
@@ -261,40 +282,78 @@ const SystemToolsManager: React.FC = () => {
           />
         ) : (
           <>
-            {filteredCategories.map((category) => (
-              <div key={category.category} style={{ marginBottom: '40px' }}>
-                {/* 类别标题 */}
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  marginBottom: '20px',
-                  paddingBottom: '12px',
-                  borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  color: '#2d2d2d',
-                  letterSpacing: '0.5px'
-                }}>
-                  <Tag style={{
-                    background: 'rgba(184, 88, 69, 0.08)',
-                    color: '#b85845',
-                    border: '1px solid rgba(184, 88, 69, 0.25)',
-                    borderRadius: '6px',
+            {filteredCategories.map((category) => {
+              const isCollapsed = collapsedCategories.has(category.category);
+              
+              return (
+                <div key={category.category} style={{ marginBottom: '40px' }}>
+                  {/* 类别标题 */}
+                  <div style={{
+                    fontSize: '16px',
                     fontWeight: 500,
-                    padding: '4px 12px',
-                    fontSize: '13px'
+                    marginBottom: '20px',
+                    paddingBottom: '12px',
+                    borderBottom: '1px solid rgba(139, 115, 85, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    color: '#2d2d2d',
+                    letterSpacing: '0.5px'
                   }}>
-                    {category.category}
-                  </Tag>
-                  <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px' }}>
-                    {t('pages.systemToolsManager.categoryLabel', { count: category.tool_count })}
-                  </Text>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Tag style={{
+                        background: 'rgba(184, 88, 69, 0.08)',
+                        color: '#b85845',
+                        border: '1px solid rgba(184, 88, 69, 0.25)',
+                        borderRadius: '6px',
+                        fontWeight: 500,
+                        padding: '4px 12px',
+                        fontSize: '13px'
+                      }}>
+                        {category.category}
+                      </Tag>
+                      <Text style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px' }}>
+                        {t('pages.systemToolsManager.categoryLabel', { count: category.tool_count })}
+                      </Text>
+                    </div>
+                    
+                    {/* 折叠按钮 */}
+                    <div
+                      onClick={() => toggleCategoryCollapse(category.category)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        color: '#8b7355'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+                        e.currentTarget.style.color = '#b85845';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#8b7355';
+                      }}
+                    >
+                      <ChevronRight 
+                        size={20} 
+                        strokeWidth={2}
+                        style={{
+                          transform: isCollapsed ? 'rotate(180deg)' : 'rotate(90deg)',
+                          transition: 'transform 0.3s ease'
+                        }}
+                      />
+                    </div>
+                  </div>
 
                 {/* 该类别下的工具卡片 */}
-                <Row gutter={[16, 16]}>
-                  {category.tools.map((tool) => (
+                {!isCollapsed && (
+                  <Row gutter={[16, 16]}>
+                    {category.tools.map((tool) => (
                     <Col xs={24} sm={12} md={12} lg={8} xl={6} key={tool.name}>
                       <Card
                         hoverable
@@ -397,10 +456,12 @@ const SystemToolsManager: React.FC = () => {
                         </div>
                       </Card>
                     </Col>
-                  ))}
-                </Row>
+                    ))}
+                  </Row>
+                )}
               </div>
-            ))}
+            );
+            })}
           </>
         )}
 
