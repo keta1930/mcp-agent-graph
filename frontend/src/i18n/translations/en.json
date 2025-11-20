@@ -104,7 +104,7 @@
     "workspace": {
       "title": "Workspace",
       "agentManager": "Agent Manager",
-      "graphEditor": "Graph Editor",
+      "graphEditor": "Workflow Editor",
       "modelManager": "Model Manager",
       "mcpManager": "MCP Manager",
       "promptManager": "Prompt Manager",

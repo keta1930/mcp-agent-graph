@@ -104,11 +104,11 @@
     "workspace": {
       "title": "工作台",
       "agentManager": "智能体管理",
-      "graphEditor": "图编辑器",
+      "graphEditor": "工作流管理",
       "modelManager": "模型管理",
       "mcpManager": "MCP 管理",
       "promptManager": "提示词管理",
-      "systemTools": "系统工具",
+      "systemTools": "系统工具箱",
       "systemToolsManager": "系统工具管理",
       "fileManager": "文件管理",
       "memoryManager": "记忆管理",
