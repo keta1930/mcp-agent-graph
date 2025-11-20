@@ -374,7 +374,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           flex: 1,
           overflowY: 'auto',
           padding: '12px',
-          // 滚动条样式 - 纸张质感
+          // 滚动条样式
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(139, 115, 85, 0.25) transparent',
         }}

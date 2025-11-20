@@ -267,7 +267,7 @@ const GraphCanvas: React.FC = () => {
       border: '1px solid rgba(139, 115, 85, 0.15)',
       boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
     }}>
-      {/* 画布背景 - 纸张质感 */}
+      {/* 画布背景*/}
       <div
         style={{
           position: 'absolute',
@@ -343,7 +343,7 @@ const GraphCanvas: React.FC = () => {
       </ReactFlow>
 
       <style>{`
-        /* 边删除按钮 - 陶土质感 */
+        /* 边删除按钮 */
         .edge-button {
           width: 22px;
           height: 22px;
@@ -385,7 +385,7 @@ const GraphCanvas: React.FC = () => {
           filter: drop-shadow(0 1px 3px rgba(139, 115, 85, 0.08));
         }
         
-        /* 连接点 - 纸张质感 */
+        /* 连接点 */
         .react-flow__handle {
           width: 12px;
           height: 12px;
@@ -457,7 +457,7 @@ const GraphCanvas: React.FC = () => {
           height: 16px;
         }
 
-        /* 小地图 - 纸张质感 */
+        /* 小地图 */
         .react-flow__minimap {
           border-radius: 6px !important;
           overflow: hidden;
@@ -529,7 +529,7 @@ const GraphCanvas: React.FC = () => {
           backdrop-filter: blur(8px);
         }
 
-        /* 画布整体 - 纸张纹理感 */
+        /* 画布整体 */
         .react-flow__pane {
           cursor: grab;
         }

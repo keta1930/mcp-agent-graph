@@ -263,9 +263,9 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
 
 
 
-  // 确定节点样式 - 自然质感设计
+  // 确定节点样式
   const getNodeStyle = () => {
-    // 基础样式 - 纸张质感
+    // 基础样式
     let borderColor = 'rgba(139, 115, 85, 0.25)';
     let boxShadow = '0 2px 6px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
     let background = 'linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(250, 248, 245, 0.9) 100%)';
@@ -308,7 +308,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
 
   return (
     <div onClick={onClick} style={{ position: 'relative' }}>
-      {/* 左侧输入连接点 - 纸张质感 */}
+      {/* 左侧输入连接点*/}
       <Handle
         type="target"
         position={Position.Left}
@@ -340,7 +340,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         />
       )}
 
-      {/* 顶部循环接收连接点 - 陶土色 */}
+      {/* 顶部循环接收连接点 */}
       <Handle
         type="target"
         position={Position.Top}
@@ -395,7 +395,7 @@ const AgentNodeComponent: React.FC<AgentNodeProps> = ({ data }) => {
         )}
       </Card>
 
-      {/* 右侧输出连接点 - 纸张质感 */}
+      {/* 右侧输出连接点 */}
       <Handle
         type="source"
         position={Position.Right}

@@ -1,6 +1,6 @@
 /* ConversationSidebar 组件样式 - 大地色系设计 */
 
-/* 对话列表滚动条 - 纸张质感 */
+/* 对话列表滚动条 */
 .conversation-list-scrollbar::-webkit-scrollbar {
   width: 6px;
 }

@@ -8,7 +8,7 @@
   background: #faf8f5;
 }
 
-/* 主消息区域滚动条 - 纸张质感 */
+/* 主消息区域滚动条 */
 .message-display::-webkit-scrollbar {
   width: 6px;
 }
@@ -63,7 +63,7 @@
   }
 }
 
-/* 用户消息滚动条 - 温润质感 */
+/* 用户消息滚动条 */
 .user-message-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -174,7 +174,7 @@
   border-bottom-color: #a0826d;
 }
 
-/* 表格样式 - 纸张质感 */
+/* 表格样式 */
 .message-display table {
   width: 100%;
   max-width: 100%;
