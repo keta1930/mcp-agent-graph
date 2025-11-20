@@ -1,6 +1,6 @@
 // 图编辑器视图组件
-import React from 'react';
-import { Card, Button, Tooltip, Space, Typography, Drawer } from 'antd';
+import React, { useState, useRef } from 'react';
+import { Card, Button, Tooltip, Space, Typography, Drawer, message } from 'antd';
 import { ReactFlowProvider } from 'reactflow';
 import {
   Workflow,
@@ -10,12 +10,17 @@ import {
   Plus,
   Settings,
   GitBranch,
-  Save
+  Save,
+  Code2,
+  Maximize2
 } from 'lucide-react';
 import GraphCanvas from './GraphCanvas';
+import GraphJsonEditor, { GraphJsonEditorHandle } from './GraphJsonEditor';
 import NodePropertiesPanel from './NodePropertiesPanel';
+import { useGraphEditorStore } from '../../store/graphEditorStore';
 import { useT } from '../../i18n/hooks';
 import { buttonStyles } from '../../utils/graphEditorConstants';
+import { BackendGraphConfig } from '../../types/graph';
 
 const { Text } = Typography;
 
@@ -25,7 +30,7 @@ interface GraphEditorViewProps {
   hasUnsavedChanges: boolean;
   selectedNode: string | null;
   onBack: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
   onViewReadme: () => void;
   onAutoLayout: () => void;
   onAddNode: () => void;
@@ -33,6 +38,8 @@ interface GraphEditorViewProps {
   onVersionManager: () => void;
   onCloseNodePanel: () => void;
 }
+
+type EditorViewMode = 'canvas' | 'json';
 
 /**
  * 图编辑器视图
@@ -52,6 +59,113 @@ const GraphEditorView: React.FC<GraphEditorViewProps> = ({
   onCloseNodePanel
 }) => {
   const t = useT();
+  const [viewMode, setViewMode] = useState<EditorViewMode>('canvas');
+  const jsonEditorRef = useRef<GraphJsonEditorHandle>(null);
+
+  const { currentGraph, updateGraphFromJson } = useGraphEditorStore();
+
+  // 转换当前图为后端格式（供JSON编辑器使用）
+  const getBackendConfig = (): BackendGraphConfig => {
+    if (!currentGraph) {
+      return {
+        name: graphName,
+        description: graphDescription || '',
+        nodes: []
+      };
+    }
+
+    return {
+      name: currentGraph.name,
+      description: currentGraph.description || '',
+      nodes: currentGraph.nodes.map(node => {
+        const result: any = {
+          name: node.name,
+          description: node.description || '',
+          agent_name: node.agent_name || null,
+          is_subgraph: node.is_subgraph,
+          mcp_servers: node.mcp_servers || [],
+          system_tools: node.system_tools || [],
+          system_prompt: node.system_prompt || '',
+          user_prompt: node.user_prompt || '',
+          max_iterations: node.max_iterations || undefined,
+          input_nodes: node.input_nodes || [],
+          output_nodes: node.output_nodes || [],
+          handoffs: node.handoffs,
+          output_enabled: node.output_enabled ?? true,
+          position: node.position || { x: 100, y: 100 },
+          level: node.level
+        };
+
+        if (node.is_subgraph) {
+          result.subgraph_name = node.subgraph_name || '';
+        } else {
+          result.model_name = node.model_name || '';
+        }
+
+        return result;
+      }),
+      end_template: currentGraph.end_template
+    };
+  };
+
+  // 处理视图切换
+  const handleViewModeToggle = () => {
+    if (viewMode === 'json') {
+      // JSON → 画布：需要验证并应用
+      if (!jsonEditorRef.current) return;
+
+      const result = jsonEditorRef.current.validateAndGetConfig();
+
+      if (!result.valid) {
+        message.error({
+          content: `Cannot switch to canvas view: ${result.error}`,
+          duration: 4
+        });
+        return; // 阻止切换
+      }
+
+      // 应用到 currentGraph
+      if (result.config) {
+        updateGraphFromJson(result.config);
+      }
+
+      setViewMode('canvas');
+      message.success('Switched to canvas view');
+    } else {
+      // 画布 → JSON：直接切换
+      setViewMode('json');
+    }
+  };
+
+  // 处理保存
+  const handleSave = async () => {
+    if (viewMode === 'json') {
+      // JSON视图下保存：先验证并应用
+      if (!jsonEditorRef.current) return;
+
+      const result = jsonEditorRef.current.validateAndGetConfig();
+
+      if (!result.valid) {
+        message.error({
+          content: `Cannot save: ${result.error}`,
+          duration: 4
+        });
+        return;
+      }
+
+      // 应用到 currentGraph
+      if (result.config) {
+        updateGraphFromJson(result.config);
+      }
+
+      // 延迟一下让状态更新
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await onSave();
+    } else {
+      // 画布视图下保存：直接保存
+      await onSave();
+    }
+  };
 
   return (
     <div style={{ background: '#faf8f5', minHeight: '100vh' }}>
@@ -123,22 +237,26 @@ const GraphEditorView: React.FC<GraphEditorViewProps> = ({
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
-            <Tooltip title={t('pages.graphEditor.autoLayout')}>
-              <Button
-                type="text"
-                icon={<LayoutGrid size={16} strokeWidth={1.5} />}
-                onClick={onAutoLayout}
-                style={{ color: '#8b7355' }}
-              />
-            </Tooltip>
-            <Tooltip title={t('pages.graphEditor.addNode')}>
-              <Button
-                type="text"
-                icon={<Plus size={16} strokeWidth={1.5} />}
-                onClick={onAddNode}
-                style={{ color: '#8b7355' }}
-              />
-            </Tooltip>
+            {viewMode === 'canvas' && (
+              <>
+                <Tooltip title={t('pages.graphEditor.autoLayout')}>
+                  <Button
+                    type="text"
+                    icon={<LayoutGrid size={16} strokeWidth={1.5} />}
+                    onClick={onAutoLayout}
+                    style={{ color: '#8b7355' }}
+                  />
+                </Tooltip>
+                <Tooltip title={t('pages.graphEditor.addNode')}>
+                  <Button
+                    type="text"
+                    icon={<Plus size={16} strokeWidth={1.5} />}
+                    onClick={onAddNode}
+                    style={{ color: '#8b7355' }}
+                  />
+                </Tooltip>
+              </>
+            )}
             <Tooltip title={t('pages.graphEditor.graphSettings')}>
               <Button
                 type="text"
@@ -155,11 +273,19 @@ const GraphEditorView: React.FC<GraphEditorViewProps> = ({
                 style={{ color: '#8b7355' }}
               />
             </Tooltip>
+            <Tooltip title={viewMode === 'canvas' ? 'JSON View' : 'Canvas View'}>
+              <Button
+                type="text"
+                icon={viewMode === 'canvas' ? <Code2 size={16} strokeWidth={1.5} /> : <Maximize2 size={16} strokeWidth={1.5} />}
+                onClick={handleViewModeToggle}
+                style={{ color: '#8b7355' }}
+              />
+            </Tooltip>
             <Tooltip title={hasUnsavedChanges ? t('pages.graphEditor.saveChanges') : t('pages.graphEditor.saved')}>
               <Button
                 type={hasUnsavedChanges ? 'primary' : 'text'}
                 icon={<Save size={16} strokeWidth={1.5} />}
-                onClick={onSave}
+                onClick={handleSave}
                 disabled={!hasUnsavedChanges}
                 style={hasUnsavedChanges ? {
                   ...buttonStyles.primary,
@@ -176,7 +302,7 @@ const GraphEditorView: React.FC<GraphEditorViewProps> = ({
         </div>
       </div>
 
-      {/* 画布区域 */}
+      {/* 编辑区域 */}
       <div style={{ padding: '24px 48px' }}>
         <Card
           bodyStyle={{ padding: 0, height: '100%' }}
@@ -189,33 +315,42 @@ const GraphEditorView: React.FC<GraphEditorViewProps> = ({
             boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8)'
           }}
         >
-          <ReactFlowProvider>
-            <GraphCanvas />
-          </ReactFlowProvider>
+          {viewMode === 'canvas' ? (
+            <ReactFlowProvider>
+              <GraphCanvas />
+            </ReactFlowProvider>
+          ) : (
+            <GraphJsonEditor
+              ref={jsonEditorRef}
+              graphConfig={getBackendConfig()}
+            />
+          )}
         </Card>
       </div>
 
-      {/* Node properties drawer */}
-      <Drawer
-        title={t('pages.graphEditor.nodeProperties')}
-        open={!!selectedNode}
-        onClose={onCloseNodePanel}
-        width={800}
-        styles={{
-          header: {
-            background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(255, 255, 255, 0.9))',
-            borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
-            padding: '18px 28px'
-          },
-          body: {
-            padding: '0',
-            background: '#fff'
-          }
-        }}
-        destroyOnClose={true}
-      >
-        <NodePropertiesPanel />
-      </Drawer>
+      {/* Node properties drawer - 仅在画布视图显示 */}
+      {viewMode === 'canvas' && (
+        <Drawer
+          title={t('pages.graphEditor.nodeProperties')}
+          open={!!selectedNode}
+          onClose={onCloseNodePanel}
+          width={800}
+          styles={{
+            header: {
+              background: 'linear-gradient(to bottom, rgba(250, 248, 245, 0.95), rgba(255, 255, 255, 0.9))',
+              borderBottom: '1px solid rgba(139, 115, 85, 0.12)',
+              padding: '18px 28px'
+            },
+            body: {
+              padding: '0',
+              background: '#fff'
+            }
+          }}
+          destroyOnClose={true}
+        >
+          <NodePropertiesPanel />
+        </Drawer>
+      )}
     </div>
   );
 };

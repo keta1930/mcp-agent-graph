@@ -30,6 +30,7 @@ interface GraphEditorState {
 
   // 图属性操作
   updateGraphProperties: (updates: Partial<GraphConfig>) => void;
+  updateGraphFromJson: (backendConfig: BackendGraphConfig) => void;
 
   // 节点操作
   addNode: (node: Partial<AgentNode>) => void;
@@ -393,6 +394,22 @@ export const useGraphEditorStore = create<GraphEditorState>((set, get) => ({
 
     set({
       currentGraph: { ...currentGraph, ...updates },
+      dirty: true
+    });
+  },
+
+  updateGraphFromJson: (backendConfig) => {
+    const { currentGraph } = get();
+    if (!currentGraph) return;
+
+    // 转换后端格式到前端格式，保留现有图名
+    const updatedGraph = convertFromBackendFormat({
+      ...backendConfig,
+      name: currentGraph.name // 保持当前图名不变
+    });
+
+    set({
+      currentGraph: updatedGraph,
       dirty: true
     });
   },
