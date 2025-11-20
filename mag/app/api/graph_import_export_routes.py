@@ -5,7 +5,9 @@ import zipfile
 import shutil
 import os
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends, BackgroundTasks
+from fastapi.responses import FileResponse
 from typing import Dict, Any
 from app.infrastructure.database.mongodb import mongodb_client
 from app.services.mcp.mcp_service import mcp_service
@@ -366,9 +368,9 @@ async def import_graph_package_from_file(file: UploadFile = File(...), current_u
         )
 
 
-@router.get("/graphs/{graph_name}/export", response_model=Dict[str, Any])
-async def export_graph(graph_name: str, current_user: CurrentUser = Depends(get_current_user)):
-    """打包并导出图配置"""
+@router.get("/graphs/{graph_name}/export")
+async def export_graph(graph_name: str, background_tasks: BackgroundTasks, current_user: CurrentUser = Depends(get_current_user)):
+    """导出图配置为ZIP文件"""
     try:
         graph_doc = await graph_service.get_graph(graph_name, user_id=current_user.user_id)
         if not graph_doc:
@@ -380,9 +382,11 @@ async def export_graph(graph_name: str, current_user: CurrentUser = Depends(get_
         # 提取config
         graph_config = graph_doc.get("config", {})
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
+        # 创建临时目录
+        temp_dir = tempfile.mkdtemp()
+        temp_path = Path(temp_dir)
 
+        try:
             attachment_dir = temp_path / "attachment"
             attachment_dir.mkdir()
 
@@ -457,12 +461,10 @@ async def export_graph(graph_name: str, current_user: CurrentUser = Depends(get_
                         shutil.copytree(tool_source_dir, tool_target_dir)
                         logger.info(f"已完整打包AI生成的MCP工具（含虚拟环境）: {tool_name}")
 
-            output_dir = settings.EXPORTS_DIR
-            output_dir.mkdir(exist_ok=True)
             zip_filename = f"{graph_name}.zip"
-            final_zip_path = output_dir / zip_filename
+            zip_path = temp_path / zip_filename
 
-            with zipfile.ZipFile(final_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for file_name in ["config.json", "readme.md"]:
                     file_path = temp_path / file_name
                     if file_path.exists() and file_path.is_file():
@@ -482,14 +484,21 @@ async def export_graph(graph_name: str, current_user: CurrentUser = Depends(get_
                                     relative_path = file_path.relative_to(temp_path)
                                     zipf.write(file_path, arcname=str(relative_path))
 
-            logger.info(f"图 '{graph_name}' 已成功导出到 {final_zip_path}")
+            logger.info(f"图 '{graph_name}' 已成功导出")
 
-            return {
-                "status": "success",
-                "message": f"图 '{graph_name}' 导出成功",
-                "file_path": str(final_zip_path),
-                "ai_mcp_tools": list(ai_mcp_tools) if ai_mcp_tools else []
-            }
+            # 在响应完成后清理临时目录
+            background_tasks.add_task(shutil.rmtree, temp_dir, ignore_errors=True)
+
+            return FileResponse(
+                path=str(zip_path),
+                filename=zip_filename,
+                media_type="application/zip",
+                background=background_tasks
+            )
+        except Exception as e:
+            # 如果出错，立即清理临时目录
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise
     except HTTPException:
         raise
     except Exception as e:

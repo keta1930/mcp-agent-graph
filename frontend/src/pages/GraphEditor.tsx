@@ -205,11 +205,8 @@ const GraphEditor: React.FC = () => {
   // 导出为压缩包
   const handleExportPackage = async (graphName: string) => {
     try {
-      const result = await exportGraph(graphName);
+      await exportGraph(graphName);
       message.success(t('pages.graphEditor.exportSuccess', { name: graphName }));
-      if (result.file_path) {
-        message.info(t('pages.graphEditor.exportFilePath', { path: result.file_path }));
-      }
     } catch (error: any) {
       message.error(t('pages.graphEditor.exportFailed', { error: error.message || t('errors.serverError') }));
     }

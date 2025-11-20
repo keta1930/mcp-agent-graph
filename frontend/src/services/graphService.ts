@@ -193,9 +193,21 @@ export const importGraphFromFile = async (file: File): Promise<ImportResult> => 
 };
 
 // Export graph to ZIP package
-export const exportGraph = async (graphName: string): Promise<ExportResult> => {
-  const response = await api.get(`/graphs/${graphName}/export`);
-  return response.data;
+export const exportGraph = async (graphName: string): Promise<void> => {
+  const response = await api.get(`/graphs/${graphName}/export`, {
+    responseType: 'blob'
+  });
+  
+  // 创建 Blob 并下载
+  const blob = new Blob([response.data], { type: 'application/zip' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${graphName}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 };
 
 // Import graph package from ZIP (by file path)
