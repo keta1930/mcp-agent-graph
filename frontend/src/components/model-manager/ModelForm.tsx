@@ -66,11 +66,6 @@ const ModelForm: React.FC<ModelFormProps> = ({
       }
       
       // 处理可选参数 - 只有明确有值时才添加
-      // Stream 开关
-      if (values.stream !== undefined && values.stream !== null) {
-        cleanedValues.stream = values.stream;
-      }
-      
       // 数值参数 - 只有当用户实际输入了值时才包含
       const numericFields = [
         'temperature', 'max_tokens', 'max_completion_tokens', 
@@ -261,22 +256,6 @@ const ModelForm: React.FC<ModelFormProps> = ({
           </div>
           {advancedExpanded && (
             <div style={{ padding: '16px', paddingTop: '8px' }}>
-              <div style={{ paddingBottom: '24px' }}>
-              <Form.Item
-                name="stream"
-                label={t('pages.modelManager.form.streamResponse')}
-                valuePropName="checked"
-                style={{ marginBottom: '24px' }}
-              >
-                <Switch
-                  style={{
-                    backgroundColor: 'rgba(139, 115, 85, 0.2)'
-                  }}
-                  className="custom-switch"
-                />
-              </Form.Item>
-            </div>
-
             <div style={{ paddingBottom: '24px' }}>
               <Form.Item
                 name="temperature"

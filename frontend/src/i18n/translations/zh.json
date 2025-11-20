@@ -281,7 +281,6 @@
         "modelIdentifierRequired": "请输入模型标识符!",
         "modelIdentifierPlaceholder": "gpt-4",
         "advancedConfig": "高级配置",
-        "streamResponse": "启用流式响应",
         "temperature": "温度参数",
         "temperatureHelp": "控制随机性 (0.0 到 2.0)。留空将移除此参数。",
         "temperaturePlaceholder": "0.7",

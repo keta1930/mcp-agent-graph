@@ -281,7 +281,6 @@
         "modelIdentifierRequired": "Please enter model identifier!",
         "modelIdentifierPlaceholder": "gpt-4",
         "advancedConfig": "Advanced Configuration",
-        "streamResponse": "Enable Streaming Response",
         "temperature": "Temperature",
         "temperatureHelp": "Controls randomness (0.0 to 2.0). Leave empty to remove this parameter.",
         "temperaturePlaceholder": "0.7",
