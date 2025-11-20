@@ -564,10 +564,15 @@
       "searchPlaceholder": "Search tool name or description",
       "categoryLabel": "{{count}} tools",
       "viewDetail": "View Details",
+      "viewCategoryReadme": "View Toolset Description",
       "noTools": "No system tools available",
       "noSearchResults": "No matching system tools found",
       "loadFailed": "Failed to load system tools list: {{error}}",
       "loadDetailFailed": "Failed to load tool details: {{error}}",
+      "readmeModal": {
+        "title": "Toolset Description",
+        "noContent": "No description available"
+      },
       "detailModal": {
         "title": "Tool Details: {{name}}",
         "toolName": "Tool Name",

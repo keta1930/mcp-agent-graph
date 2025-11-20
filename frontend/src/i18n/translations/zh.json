@@ -564,10 +564,15 @@
       "searchPlaceholder": "搜索工具名称或描述",
       "categoryLabel": "{{count}} 个工具",
       "viewDetail": "查看详情",
+      "viewCategoryReadme": "查看工具集说明",
       "noTools": "暂无系统工具",
       "noSearchResults": "未找到匹配的系统工具",
       "loadFailed": "加载系统工具列表失败: {{error}}",
       "loadDetailFailed": "加载工具详情失败: {{error}}",
+      "readmeModal": {
+        "title": "工具集说明",
+        "noContent": "暂无说明内容"
+      },
       "detailModal": {
         "title": "工具详情: {{name}}",
         "toolName": "工具名称",
