@@ -29,6 +29,7 @@ export interface PromptList {
 export interface PromptResponse<T = any> {
   success: boolean;
   message: string;
+  error_code?: string;
   data?: T;
 }
 

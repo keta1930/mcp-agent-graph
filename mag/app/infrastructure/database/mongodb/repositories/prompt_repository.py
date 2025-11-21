@@ -53,6 +53,7 @@ class PromptRepository:
             if existing:
                 return {
                     "success": False,
+                    "error_code": "PROMPT_ALREADY_EXISTS",
                     "message": f"提示词 '{prompt_data.name}' 已存在"
                 }
 
