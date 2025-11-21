@@ -146,7 +146,8 @@ class PromptService:
                     "message": "获取提示词内容成功",
                     "data": {
                         "name": prompt_detail.name,
-                        "content": prompt_detail.content
+                        "content": prompt_detail.content,
+                        "category": prompt_detail.category
                     }
                 }
             else:

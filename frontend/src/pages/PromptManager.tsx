@@ -11,12 +11,12 @@ import {
   Tag,
   Empty,
   Spin,
-  message,
   Modal,
   Form,
   Upload,
   Popconfirm,
-  Collapse
+  Collapse,
+  App
 } from 'antd';
 import { Plus, Search, Upload as UploadIcon, Download, Trash2, Edit, FileText, ChevronDown, BookOpen } from 'lucide-react';
 import { promptService } from '../services/promptService';
@@ -38,6 +38,7 @@ interface PromptGroup {
 
 const PromptManager: React.FC = () => {
   const t = useT();
+  const { message } = App.useApp();
   const [prompts, setPrompts] = useState<PromptInfo[]>([]);
   const [filteredGroups, setFilteredGroups] = useState<PromptGroup[]>([]);
   const [editingPrompt, setEditingPrompt] = useState<PromptDetail | null>(null);
@@ -132,7 +133,9 @@ const PromptManager: React.FC = () => {
   const loadPromptDetail = async (name: string) => {
     try {
       const response = await promptService.getPromptContent(name);
+      console.log('API Response:', response);
       if (response.success && response.data) {
+        console.log('Prompt data:', response.data);
         setEditingPrompt(response.data);
         return response.data;
       } else {
@@ -157,11 +160,26 @@ const PromptManager: React.FC = () => {
         setCreateContent('');
         loadPrompts();
       } else {
-        message.error(response.message || t('pages.promptManager.createModal.createFailed'));
+        // 显示后端返回的错误信息
+        const errorMsg = response.message || t('pages.promptManager.createModal.createFailed');
+        message.error(errorMsg);
+        console.error('Create prompt failed:', response);
       }
-    } catch (error) {
-      message.error(t('pages.promptManager.createModal.createFailed'));
+    } catch (error: any) {
+      // 捕获网络错误或其他异常
       console.error('Error creating prompt:', error);
+      
+      // 尝试从不同位置提取错误信息
+      let errorMsg = t('pages.promptManager.createModal.createFailed');
+      
+      if (error?.response?.data) {
+        const data = error.response.data;
+        errorMsg = data.message || data.detail || data.error || errorMsg;
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+      
+      message.error(errorMsg);
     } finally {
       setIsCreating(false);
     }
@@ -181,11 +199,26 @@ const PromptManager: React.FC = () => {
         setEditingPrompt(null);
         loadPrompts();
       } else {
-        message.error(response.message || t('pages.promptManager.editModal.updateFailed'));
+        // 显示后端返回的错误信息
+        const errorMsg = response.message || t('pages.promptManager.editModal.updateFailed');
+        message.error(errorMsg);
+        console.error('Update prompt failed:', response);
       }
-    } catch (error) {
-      message.error(t('pages.promptManager.editModal.updateFailed'));
+    } catch (error: any) {
+      // 捕获网络错误或其他异常
       console.error('Error updating prompt:', error);
+      
+      // 尝试从不同位置提取错误信息
+      let errorMsg = t('pages.promptManager.editModal.updateFailed');
+      
+      if (error?.response?.data) {
+        const data = error.response.data;
+        errorMsg = data.message || data.detail || data.error || errorMsg;
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+      
+      message.error(errorMsg);
     } finally {
       setIsUpdating(false);
     }
@@ -542,11 +575,17 @@ const PromptManager: React.FC = () => {
                               e.stopPropagation();
                               const promptDetail = await loadPromptDetail(prompt.name);
                               if (promptDetail) {
+                                console.log('Loaded prompt detail:', promptDetail);
+                                // 先设置 editingPrompt 状态
+                                setEditingPrompt(promptDetail);
+                                // 设置编辑器内容
                                 setEditContent(promptDetail.content);
+                                // 设置表单字段值 - 确保 category 有值
                                 editForm.setFieldsValue({
-                                  content: promptDetail.content,
-                                  category: promptDetail.category
+                                  category: promptDetail.category || '',
+                                  content: promptDetail.content
                                 });
+                                // 最后打开 Modal
                                 setShowEditModal(true);
                               }
                             }}
@@ -629,10 +668,12 @@ const PromptManager: React.FC = () => {
           maxHeight: '90vh',
           top: '5vh'
         }}
-        bodyStyle={{
-          height: 'calc(85vh - 120px)',
-          padding: 0,
-          overflow: 'hidden'
+        styles={{
+          body: {
+            height: 'calc(85vh - 120px)',
+            padding: 0,
+            overflow: 'hidden'
+          }
         }}
         footer={null}
         destroyOnClose
@@ -762,6 +803,7 @@ const PromptManager: React.FC = () => {
           if (!isUpdating) {
             editForm.resetFields();
             setEditContent('');
+            setEditingPrompt(null);
             setShowEditModal(false);
           }
         }}
@@ -770,10 +812,12 @@ const PromptManager: React.FC = () => {
           maxHeight: '90vh',
           top: '5vh'
         }}
-        bodyStyle={{
-          height: 'calc(85vh - 120px)',
-          padding: 0,
-          overflow: 'hidden'
+        styles={{
+          body: {
+            height: 'calc(85vh - 120px)',
+            padding: 0,
+            overflow: 'hidden'
+          }
         }}
         footer={null}
         destroyOnClose
@@ -905,9 +949,11 @@ const PromptManager: React.FC = () => {
           maxHeight: '80vh',
           top: '10vh'
         }}
-        bodyStyle={{
-          maxHeight: 'calc(70vh - 120px)',
-          overflow: 'auto'
+        styles={{
+          body: {
+            maxHeight: 'calc(70vh - 120px)',
+            overflow: 'auto'
+          }
         }}
         footer={null}
         destroyOnClose
