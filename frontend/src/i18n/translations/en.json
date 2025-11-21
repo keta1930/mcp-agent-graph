@@ -469,14 +469,13 @@
         "configMustBeObject": "Invalid MCP configuration: Configuration must be an object",
         "missingMcpServers": "Invalid MCP configuration: Missing mcpServers property or it is not an object",
         "missingTransportType": "Server \"{{name}}\" is missing required property: transportType",
-        "formatAndClean": "Format and Clean JSON",
+        "formatAndClean": "Format",
         "formatSuccess": "JSON formatted and cleaned",
         "formatFailed": "Cannot format JSON: Invalid format",
         "copy": "Copy",
         "copied": "Copied",
         "copySuccess": "JSON copied to clipboard",
-        "saveConfig": "Save Configuration",
-        "configNote": "Configuration will be automatically cleaned before saving, removing unnecessary fields."
+        "saveConfig": "Save"
       }
     },
     "promptManager": {

@@ -469,14 +469,13 @@
         "configMustBeObject": "无效的MCP配置: 配置必须是一个对象",
         "missingMcpServers": "无效的MCP配置: 缺少mcpServers属性或它不是一个对象",
         "missingTransportType": "服务器 \"{{name}}\" 缺少必需属性: transportType",
-        "formatAndClean": "格式化并清理JSON",
+        "formatAndClean": "格式化",
         "formatSuccess": "JSON格式化并清理完成",
         "formatFailed": "无法格式化JSON: 格式无效",
         "copy": "复制",
         "copied": "已复制",
         "copySuccess": "JSON已复制到剪贴板",
-        "saveConfig": "保存配置",
-        "configNote": "配置将在保存前自动清理，移除不必要的字段。"
+        "saveConfig": "保存"
       }
     },
     "promptManager": {
