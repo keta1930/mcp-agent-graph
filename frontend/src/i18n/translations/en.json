@@ -520,7 +520,8 @@
         "cancel": "Cancel",
         "create": "Create",
         "createSuccess": "Prompt created successfully",
-        "createFailed": "Failed to create prompt"
+        "createFailed": "Failed to create prompt",
+        "nameExists": "Prompt \"{{name}}\" already exists"
       },
       "editModal": {
         "title": "Edit Prompt",

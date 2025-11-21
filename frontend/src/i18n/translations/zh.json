@@ -520,7 +520,8 @@
         "cancel": "取消",
         "create": "创建",
         "createSuccess": "创建提示词成功",
-        "createFailed": "创建提示词失败"
+        "createFailed": "创建提示词失败",
+        "nameExists": "提示词 \"{{name}}\" 已存在"
       },
       "editModal": {
         "title": "编辑提示词",
