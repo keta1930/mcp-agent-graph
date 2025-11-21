@@ -1,26 +1,20 @@
 // src/pages/MCPManager.tsx
 import React, { useEffect, useState } from 'react';
-import { Layout, Button, Row, Col, Alert, Modal, Input, Tag, Space, Typography, ConfigProvider, App } from 'antd';
-import {
-  Plus,
-  RefreshCw,
-  Code,
-  Grid3x3,
-  Play,
-  Wrench,
-  Server
-} from 'lucide-react';
+import { Layout, Row, Col, Alert, App } from 'antd';
+import { Grid3x3 } from 'lucide-react';
 import { useMCPStore } from '../store/mcpStore';
 import MCPServerForm from '../components/mcp-manager/MCPServerForm';
 import MCPServerCard from '../components/mcp-manager/MCPServerCard';
 import MCPToolsViewer from '../components/mcp-manager/MCPToolsViewer';
 import MCPJsonEditor from '../components/mcp-manager/MCPJsonEditor';
+import MCPManagerHeader from '../components/mcp-manager/MCPManagerHeader';
+import MCPActionButtons from '../components/mcp-manager/MCPActionButtons';
 import { MCPServerConfig } from '../types/mcp';
 import { getUserInfo } from '../utils/auth';
 import { useT } from '../i18n/hooks';
+import { MCP_COLORS, getMCPEmptyStateStyle } from '../constants/mcpManagerStyles';
 
-const { Header, Content } = Layout;
-const { Title } = Typography;
+const { Content } = Layout;
 
 const MCPManager: React.FC = () => {
   const t = useT();
@@ -38,9 +32,7 @@ const MCPManager: React.FC = () => {
     deleteServer,
     connectServer,
     disconnectServer,
-    connectAllServers,
-    registerMCPTool,
-    getUsedPorts
+    connectAllServers
   } = useMCPStore();
 
   // 获取当前用户信息
@@ -53,23 +45,9 @@ const MCPManager: React.FC = () => {
   const [modalTitle, setModalTitle] = useState('');
   const [viewMode, setViewMode] = useState<'visual' | 'json'>('visual');
 
-  // 工具注册相关状态
-  const [toolRegistrationVisible, setToolRegistrationVisible] = useState(false);
-  const [toolFormData, setToolFormData] = useState({
-    folderName: '',
-    port: 8001,
-    mainScriptName: 'main_server.py',
-    mainScript: '',
-    dependencies: '',
-    readme: ''
-  });
-
   useEffect(() => {
-    // Load initial data
     fetchConfig();
     fetchStatus();
-  
-    // 删除定时器部分，不再自动轮询状态
   }, [fetchConfig, fetchStatus]);
 
   const showAddModal = () => {
@@ -89,21 +67,6 @@ const MCPManager: React.FC = () => {
   const showToolsModal = (serverName: string) => {
     setSelectedServer(serverName);
     setToolsModalVisible(true);
-  };
-
-  const showToolRegistration = () => {
-    const usedPorts = getUsedPorts();
-    // 找到下一个可用端口
-    let nextPort = 8001;
-    while (usedPorts.includes(nextPort) && nextPort <= 9099) {
-      nextPort++;
-    }
-    
-    setToolFormData(prev => ({
-      ...prev,
-      port: nextPort <= 9099 ? nextPort : 8001
-    }));
-    setToolRegistrationVisible(true);
   };
 
   const handleFormSubmit = async (serverName: string, serverConfig: MCPServerConfig) => {
@@ -168,7 +131,6 @@ const MCPManager: React.FC = () => {
     }
   };
 
-  // Handle batch connect operation for all servers
   const handleConnectAll = async () => {
     try {
       message.loading(t('pages.mcpManager.connectAllLoading'), 0);
@@ -207,158 +169,20 @@ const MCPManager: React.FC = () => {
     }
   };
 
-  // 工具注册处理
-  const handleToolRegister = async () => {
-    if (!toolFormData.folderName.trim()) {
-      message.error(t('pages.mcpManager.toolRegistration.folderNameRequired'));
-      return;
-    }
-    if (!toolFormData.mainScript.trim()) {
-      message.error(t('pages.mcpManager.toolRegistration.mainScriptRequired'));
-      return;
-    }
-
-    const usedPorts = getUsedPorts();
-    if (usedPorts.includes(toolFormData.port)) {
-      message.error(t('pages.mcpManager.toolRegistration.portOccupied', { port: toolFormData.port }));
-      return;
-    }
-
-    try {
-      const scriptFiles: Record<string, string> = {};
-      scriptFiles[toolFormData.mainScriptName] = toolFormData.mainScript;
-
-      await registerMCPTool({
-        folder_name: toolFormData.folderName,
-        script_files: scriptFiles,
-        readme: toolFormData.readme || '# MCP Tool\n\n手动注册的MCP工具',
-        dependencies: toolFormData.dependencies || '',
-        port: toolFormData.port
-      });
-
-      message.success(t('pages.mcpManager.toolRegistration.registerSuccess', { name: toolFormData.folderName }));
-      setToolRegistrationVisible(false);
-      setToolFormData({
-        folderName: '',
-        port: 8001,
-        mainScriptName: 'main_server.py',
-        mainScript: '',
-        dependencies: '',
-        readme: ''
-      });
-    } catch (error) {
-      message.error(t('pages.mcpManager.toolRegistration.registerFailed', { error: error instanceof Error ? error.message : String(error) }));
-    }
-  };
-
   const serverNames = Object.keys(config.mcpServers || {});
-  const usedPorts = getUsedPorts();
-
-  // 统计连接的服务器数量
   const connectedCount = serverNames.filter(name => status[name]?.connected).length;
 
   return (
-    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
-      {/* Header 顶栏 */}
-      <Header style={{
-        background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
-        backdropFilter: 'blur(20px)',
-        padding: '0 48px',
-        borderBottom: 'none',
-        boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
-        position: 'relative'
-      }}>
-        {/* 装饰性底部渐变线 */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: '20%',
-          right: '20%',
-          height: '1px',
-          background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)'
-        }} />
+    <Layout style={{ height: '100vh', background: MCP_COLORS.background, display: 'flex', flexDirection: 'column' }}>
+      <MCPManagerHeader
+        title={t('pages.mcpManager.title')}
+        serversCount={serverNames.length}
+        connectedCount={connectedCount}
+        viewMode={viewMode}
+        onViewModeChange={() => setViewMode(viewMode === 'visual' ? 'json' : 'visual')}
+        t={t}
+      />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-          <Space size="large">
-            <Server size={28} color="#b85845" strokeWidth={1.5} />
-            <Title level={4} style={{
-              margin: 0,
-              color: '#2d2d2d',
-              fontWeight: 500,
-              letterSpacing: '2px',
-              fontSize: '18px'
-            }}>
-              {t('pages.mcpManager.title')}
-            </Title>
-            <Tag style={{
-              background: 'rgba(184, 88, 69, 0.08)',
-              color: '#b85845',
-              border: '1px solid rgba(184, 88, 69, 0.25)',
-              borderRadius: '6px',
-              fontWeight: 500,
-              padding: '4px 12px',
-              fontSize: '12px'
-            }}>
-              {t('pages.mcpManager.serversCount', { count: serverNames.length })}
-            </Tag>
-            <Tag style={{
-              background: 'rgba(139, 115, 85, 0.08)',
-              color: '#8b7355',
-              border: '1px solid rgba(139, 115, 85, 0.25)',
-              borderRadius: '6px',
-              fontWeight: 500,
-              padding: '4px 12px',
-              fontSize: '12px'
-            }}>
-              {t('pages.mcpManager.connectedCount', { count: connectedCount })}
-            </Tag>
-          </Space>
-
-          {/* 视图切换按钮 */}
-          <Button
-            onClick={() => setViewMode(viewMode === 'visual' ? 'json' : 'visual')}
-            style={{
-              height: '36px',
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              color: '#8b7355',
-              fontSize: '14px',
-              fontWeight: 500,
-              letterSpacing: '0.3px',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#b85845';
-              e.currentTarget.style.color = '#b85845';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
-              e.currentTarget.style.color = '#8b7355';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.85)';
-            }}
-          >
-            {viewMode === 'visual' ? (
-              <>
-                <Code size={16} strokeWidth={1.5} />
-                {t('pages.mcpManager.jsonView')}
-              </>
-            ) : (
-              <>
-                <Grid3x3 size={16} strokeWidth={1.5} />
-                {t('pages.mcpManager.listView')}
-              </>
-            )}
-          </Button>
-        </div>
-      </Header>
-
-      {/* Content 内容区 */}
       <Content style={{
         flex: 1,
         padding: '32px 48px',
@@ -379,165 +203,26 @@ const MCPManager: React.FC = () => {
           />
         )}
 
-        {/* 根据视图模式渲染内容 */}
         {viewMode === 'visual' ? (
           <div>
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              marginBottom: '24px'
-            }}>
-              <Button
-                onClick={showAddModal}
-                style={{
-                  flex: 1,
-                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#fff',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  letterSpacing: '0.3px',
-                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                  transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  height: '36px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
-                }}
-              >
-                <Plus size={16} strokeWidth={1.5} />
-                {t('pages.mcpManager.addServer')}
-              </Button>
-              <Button
-                onClick={showToolRegistration}
-                style={{
-                  flex: 1,
-                  height: '36px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(139, 115, 85, 0.2)',
-                  background: 'rgba(255, 255, 255, 0.85)',
-                  color: '#8b7355',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  letterSpacing: '0.3px',
-                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#b85845';
-                  e.currentTarget.style.color = '#b85845';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
-                  e.currentTarget.style.color = '#8b7355';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.85)';
-                }}
-              >
-                <Wrench size={16} strokeWidth={1.5} />
-                {t('pages.mcpManager.registerTool')}
-              </Button>
-              <Button
-                onClick={handleRefresh}
-                loading={loading}
-                style={{
-                  flex: 1,
-                  height: '36px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(139, 115, 85, 0.2)',
-                  background: 'rgba(255, 255, 255, 0.85)',
-                  color: '#8b7355',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  letterSpacing: '0.3px',
-                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#b85845';
-                  e.currentTarget.style.color = '#b85845';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
-                  e.currentTarget.style.color = '#8b7355';
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.85)';
-                }}
-              >
-                <RefreshCw size={16} strokeWidth={1.5} />
-                {t('pages.mcpManager.refresh')}
-              </Button>
-              <Button
-                onClick={handleConnectAll}
-                loading={loading}
-                disabled={serverNames.length === 0}
-                style={{
-                  flex: 1,
-                  height: '36px',
-                  borderRadius: '6px',
-                  border: '1px solid #b85845',
-                  background: 'transparent',
-                  color: '#b85845',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  letterSpacing: '0.3px',
-                  boxShadow: '0 1px 3px rgba(184, 88, 69, 0.1)',
-                  transition: 'all 0.3s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  if (serverNames.length > 0) {
-                    e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
-                    e.currentTarget.style.borderColor = '#b85845';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = '#b85845';
-                }}
-              >
-                <Play size={16} strokeWidth={1.5} />
-                {t('pages.mcpManager.connectAll')}
-              </Button>
-            </div>
+            <MCPActionButtons
+              onAddServer={showAddModal}
+              onRefresh={handleRefresh}
+              onConnectAll={handleConnectAll}
+              loading={loading}
+              disabled={serverNames.length === 0}
+              t={t}
+            />
 
             {serverNames.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '80px 20px',
-                background: 'rgba(250, 248, 245, 0.6)',
-                borderRadius: '8px',
-                border: '1px solid rgba(139, 115, 85, 0.15)'
-              }}>
+              <div style={getMCPEmptyStateStyle()}>
                 <Grid3x3 size={48} strokeWidth={1.5} style={{
                   color: 'rgba(139, 115, 85, 0.3)',
                   margin: '0 auto 16px'
                 }} />
                 <div style={{
                   fontSize: '14px',
-                  color: 'rgba(45, 45, 45, 0.65)',
+                  color: MCP_COLORS.textSecondary,
                   marginBottom: '8px'
                 }}>
                   {t('pages.mcpManager.noServers')}
@@ -579,7 +264,6 @@ const MCPManager: React.FC = () => {
           />
         )}
 
-      {/* 现有模态框 */}
       <MCPServerForm
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -594,290 +278,6 @@ const MCPManager: React.FC = () => {
         onClose={() => setToolsModalVisible(false)}
         serverName={selectedServer}
       />
-
-      {/* 工具注册模态框 */}
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: '#b85845',
-            colorPrimaryHover: '#a0826d',
-            colorBorder: 'rgba(139, 115, 85, 0.2)',
-            colorBorderSecondary: 'rgba(139, 115, 85, 0.15)',
-            colorText: '#2d2d2d',
-            colorTextPlaceholder: 'rgba(45, 45, 45, 0.35)',
-            borderRadius: 6,
-            controlHeight: 40,
-          },
-          components: {
-            Input: {
-              activeBorderColor: '#b85845',
-              hoverBorderColor: 'rgba(184, 88, 69, 0.4)',
-              activeShadow: '0 0 0 2px rgba(184, 88, 69, 0.1)',
-            },
-          },
-        }}
-      >
-        <Modal
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Wrench size={18} strokeWidth={1.5} style={{ color: '#b85845' }} />
-              <span style={{ fontSize: '16px', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.mcpManager.toolRegistration.title')}</span>
-            </div>
-          }
-          open={toolRegistrationVisible}
-          onCancel={() => setToolRegistrationVisible(false)}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => setToolRegistrationVisible(false)}
-            style={{
-              height: '36px',
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              color: '#8b7355',
-              fontSize: '14px',
-              fontWeight: 500
-            }}
-          >
-            {t('common.cancel')}
-          </Button>,
-          <Button
-            key="submit"
-            onClick={handleToolRegister}
-            loading={loading}
-            style={{
-              height: '36px',
-              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-              border: 'none',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '14px',
-              fontWeight: 500,
-              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
-            }}
-          >
-            {t('pages.mcpManager.toolRegistration.registerButton')}
-          </Button>,
-        ]}
-        width={800}
-        styles={{
-          content: {
-            borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)'
-          }
-        }}
-      >
-        {usedPorts.length > 0 && (
-          <Alert
-            message={t('pages.mcpManager.toolRegistration.portOccupiedWarning')}
-            description={t('pages.mcpManager.toolRegistration.portOccupiedMessage', { ports: usedPorts.join(', ') })}
-            type="warning"
-            style={{
-              marginBottom: '16px',
-              borderRadius: '6px',
-              border: '1px solid rgba(212, 165, 116, 0.3)',
-              background: 'rgba(255, 250, 243, 0.9)'
-            }}
-          />
-        )}
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2d2d2d',
-            letterSpacing: '0.3px'
-          }}>
-            {t('pages.mcpManager.toolRegistration.folderName')}
-          </label>
-          <Input
-            value={toolFormData.folderName}
-            onChange={(e) => setToolFormData(prev => ({ ...prev, folderName: e.target.value }))}
-            placeholder={t('pages.mcpManager.toolRegistration.folderNamePlaceholder')}
-            style={{
-              height: '40px',
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-              fontSize: '14px',
-              color: '#2d2d2d',
-              letterSpacing: '0.3px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2d2d2d',
-            letterSpacing: '0.3px'
-          }}>
-            {t('pages.mcpManager.toolRegistration.port')}
-          </label>
-          <Input
-            type="number"
-            value={toolFormData.port}
-            onChange={(e) => setToolFormData(prev => ({ ...prev, port: parseInt(e.target.value) || 8001 }))}
-            placeholder={t('pages.mcpManager.toolRegistration.portPlaceholder')}
-            min={8001}
-            max={9099}
-            style={{
-              height: '40px',
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-              fontSize: '14px',
-              color: '#2d2d2d',
-              letterSpacing: '0.3px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2d2d2d',
-            letterSpacing: '0.3px'
-          }}>
-            {t('pages.mcpManager.toolRegistration.mainScriptName')}
-          </label>
-          <Input
-            value={toolFormData.mainScriptName}
-            onChange={(e) => setToolFormData(prev => ({ ...prev, mainScriptName: e.target.value }))}
-            placeholder={t('pages.mcpManager.toolRegistration.mainScriptNamePlaceholder')}
-            style={{
-              height: '40px',
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-              fontSize: '14px',
-              color: '#2d2d2d',
-              letterSpacing: '0.3px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2d2d2d',
-            letterSpacing: '0.3px'
-          }}>
-            {t('pages.mcpManager.toolRegistration.mainScript')}
-          </label>
-          <Input.TextArea
-            value={toolFormData.mainScript}
-            onChange={(e) => setToolFormData(prev => ({ ...prev, mainScript: e.target.value }))}
-            rows={12}
-            placeholder={t('pages.mcpManager.toolRegistration.mainScriptPlaceholder')}
-            style={{
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-              fontFamily: 'Monaco, "Courier New", monospace',
-              fontSize: '13px',
-              color: '#2d2d2d',
-              letterSpacing: '0.2px',
-              resize: 'vertical'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2d2d2d',
-            letterSpacing: '0.3px'
-          }}>
-            {t('pages.mcpManager.toolRegistration.dependencies')}
-          </label>
-          <Input
-            value={toolFormData.dependencies}
-            onChange={(e) => setToolFormData(prev => ({ ...prev, dependencies: e.target.value }))}
-            placeholder={t('pages.mcpManager.toolRegistration.dependenciesPlaceholder')}
-            style={{
-              height: '40px',
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-              fontSize: '14px',
-              color: '#2d2d2d',
-              letterSpacing: '0.3px'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            color: '#2d2d2d',
-            letterSpacing: '0.3px'
-          }}>
-            {t('pages.mcpManager.toolRegistration.readme')}
-          </label>
-          <Input.TextArea
-            value={toolFormData.readme}
-            onChange={(e) => setToolFormData(prev => ({ ...prev, readme: e.target.value }))}
-            rows={4}
-            placeholder={t('pages.mcpManager.toolRegistration.readmePlaceholder')}
-            style={{
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.2)',
-              background: 'rgba(255, 255, 255, 0.85)',
-              boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-              fontSize: '14px',
-              color: '#2d2d2d',
-              letterSpacing: '0.3px',
-              resize: 'vertical'
-            }}
-          />
-        </div>
-
-        <div style={{
-          padding: '16px',
-          background: 'rgba(250, 248, 245, 0.8)',
-          borderRadius: '6px',
-          border: '1px solid rgba(139, 115, 85, 0.12)'
-        }}>
-          <div style={{
-            fontSize: '13px',
-            color: 'rgba(45, 45, 45, 0.85)',
-            lineHeight: '1.6'
-          }}>
-            <p style={{ margin: '0 0 8px 0', fontWeight: 500, color: '#2d2d2d' }}>{t('pages.mcpManager.toolRegistration.notes')}</p>
-            <ul style={{ margin: 0, paddingLeft: '20px', color: 'rgba(45, 45, 45, 0.75)' }}>
-              <li style={{ marginBottom: '4px' }}>{t('pages.mcpManager.toolRegistration.note1')}</li>
-              <li style={{ marginBottom: '4px' }}>{t('pages.mcpManager.toolRegistration.note2')}</li>
-              <li style={{ marginBottom: '4px' }}>{t('pages.mcpManager.toolRegistration.note3')}</li>
-              <li>{t('pages.mcpManager.toolRegistration.note4')}</li>
-            </ul>
-          </div>
-        </div>
-      </Modal>
-      </ConfigProvider>
       </Content>
     </Layout>
   );

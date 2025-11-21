@@ -285,7 +285,7 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
         display: 'flex',
         gap: '8px',
         marginTop: '16px',
-        justifyContent: 'flex-start'
+        justifyContent: 'flex-end'
       }}>
         <Button
           onClick={formatJson}
@@ -385,23 +385,6 @@ const MCPJsonEditor: React.FC<MCPJsonEditorProps> = ({
           <Save size={16} strokeWidth={1.5} />
           {t('pages.mcpManager.jsonEditor.saveConfig')}
         </Button>
-      </div>
-
-      <div style={{
-        marginTop: '16px',
-        padding: '12px',
-        background: 'rgba(250, 248, 245, 0.6)',
-        borderRadius: '6px',
-        border: '1px solid rgba(139, 115, 85, 0.12)'
-      }}>
-        <p style={{
-          margin: 0,
-          fontSize: '13px',
-          color: 'rgba(45, 45, 45, 0.75)',
-          lineHeight: '1.6'
-        }}>
-          {t('pages.mcpManager.jsonEditor.configNote')}
-        </p>
       </div>
     </div>
   );
