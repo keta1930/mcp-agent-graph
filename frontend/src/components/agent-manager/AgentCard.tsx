@@ -32,16 +32,14 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onView, onEdit, onDelete }
     }
   };
 
-  const handleActionHover = (e: React.MouseEvent<HTMLDivElement>, isEnter: boolean, isDelete: boolean = false) => {
+  const handleActionHover = (e: React.MouseEvent<HTMLDivElement>, isEnter: boolean) => {
     const target = e.currentTarget;
     if (isEnter) {
-      const hoverStyle = isDelete ? ACTION_BUTTON_STYLES.deleteHover : ACTION_BUTTON_STYLES.hover;
-      Object.assign(target.style, hoverStyle);
+      Object.assign(target.style, ACTION_BUTTON_STYLES.hover);
     } else {
-      const baseStyle = isDelete ? ACTION_BUTTON_STYLES.delete : ACTION_BUTTON_STYLES.base;
-      target.style.color = baseStyle.color;
+      target.style.color = ACTION_BUTTON_STYLES.base.color;
       target.style.background = 'transparent';
-      target.style.borderColor = baseStyle.border.split(' ')[2];
+      target.style.borderColor = ACTION_BUTTON_STYLES.base.border.split(' ')[2];
     }
   };
 
@@ -80,9 +78,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onView, onEdit, onDelete }
           </Text>
           
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', overflow: 'hidden' }}>
-            <Tag style={{ ...TAG_STYLES.secondary, lineHeight: '1.4' }}>
-              {agent.model}
-            </Tag>
             {agent.tags && agent.tags.length > 0 && (
               <>
                 {agent.tags.slice(0, 2).map((tag, idx) => (
@@ -167,9 +162,9 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onView, onEdit, onDelete }
           >
             <Tooltip title={t('common.delete')}>
               <div
-                style={ACTION_BUTTON_STYLES.delete}
-                onMouseEnter={(e) => handleActionHover(e, true, true)}
-                onMouseLeave={(e) => handleActionHover(e, false, true)}
+                style={ACTION_BUTTON_STYLES.base}
+                onMouseEnter={(e) => handleActionHover(e, true)}
+                onMouseLeave={(e) => handleActionHover(e, false)}
               >
                 <Trash2 size={18} strokeWidth={1.5} />
               </div>
