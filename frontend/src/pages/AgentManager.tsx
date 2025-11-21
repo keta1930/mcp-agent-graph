@@ -5,7 +5,6 @@ import {
   Card,
   Row,
   Col,
-  message,
   Modal,
   Form,
   Input,
@@ -19,7 +18,8 @@ import {
   Popconfirm,
   AutoComplete,
   Collapse,
-  Typography
+  Typography,
+  App
 } from 'antd';
 import {
   Plus,
@@ -61,6 +61,7 @@ interface CategoryGroup {
 
 const AgentManager: React.FC = () => {
   const t = useT();
+  const { message } = App.useApp();
   const [agents, setAgents] = useState<AgentListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -87,7 +88,10 @@ const AgentManager: React.FC = () => {
       const response = await listAgents();
       setAgents(response.agents || []);
     } catch (error: any) {
-      message.error(t('pages.agentManager.loadFailed', { error: error.message || t('errors.serverError') }));
+      // 提取后端返回的详细错误信息
+      const errorDetail = error.response?.data?.detail || error.message || t('errors.serverError');
+      console.error('Load agents error:', error.response?.data);
+      message.error(t('pages.agentManager.loadFailed', { error: errorDetail }));
     } finally {
       setLoading(false);
     }
@@ -186,7 +190,10 @@ const AgentManager: React.FC = () => {
       form.setFieldsValue(agentData.agent_config);
       setModalVisible(true);
     } catch (error: any) {
-      message.error(t('pages.agentManager.loadDetailFailed', { error: error.message || t('errors.serverError') }));
+      // 提取后端返回的详细错误信息
+      const errorDetail = error.response?.data?.detail || error.message || t('errors.serverError');
+      console.error('Load agent detail error:', error.response?.data);
+      message.error(t('pages.agentManager.loadDetailFailed', { error: errorDetail }));
     }
   };
 
@@ -197,7 +204,10 @@ const AgentManager: React.FC = () => {
       setSelectedAgent(response.agent);
       setDetailModalVisible(true);
     } catch (error: any) {
-      message.error(t('pages.agentManager.loadDetailFailed', { error: error.message || t('errors.serverError') }));
+      // 提取后端返回的详细错误信息
+      const errorDetail = error.response?.data?.detail || error.message || t('errors.serverError');
+      console.error('Load agent detail error:', error.response?.data);
+      message.error(t('pages.agentManager.loadDetailFailed', { error: errorDetail }));
     }
   };
 
@@ -228,7 +238,10 @@ const AgentManager: React.FC = () => {
       setModalVisible(false);
       loadAgents();
     } catch (error: any) {
-      message.error(t('pages.agentManager.operationFailed', { error: error.message || t('errors.serverError') }));
+      // 提取后端返回的详细错误信息
+      const errorDetail = error.response?.data?.detail || error.message || t('errors.serverError');
+      console.error('Agent operation error:', error.response?.data);
+      message.error(t('pages.agentManager.operationFailed', { error: errorDetail }));
     }
   };
 
@@ -239,7 +252,10 @@ const AgentManager: React.FC = () => {
       message.success(t('pages.agentManager.deleteSuccess', { name: agentName }));
       loadAgents();
     } catch (error: any) {
-      message.error(t('pages.agentManager.deleteFailed', { error: error.message || t('errors.serverError') }));
+      // 提取后端返回的详细错误信息
+      const errorDetail = error.response?.data?.detail || error.message || t('errors.serverError');
+      console.error('Agent delete error:', error.response?.data);
+      message.error(t('pages.agentManager.deleteFailed', { error: errorDetail }));
     }
   };
 
