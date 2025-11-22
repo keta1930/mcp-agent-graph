@@ -137,12 +137,13 @@ class GraphService:
         # 清理并返回提示词名称
         return {match.strip() for match in matches}
 
-    async def _preprocess_graph_prompts(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _preprocess_graph_prompts(self, graph_config: Dict[str, Any], user_id: str = "default_user") -> Dict[str, Any]:
         """
         预处理图配置中的所有提示词引用，替换为实际内容
 
         Args:
             graph_config: 原始图配置
+            user_id: 用户ID，用于获取提示词
 
         Returns:
             Dict[str, Any]: 处理后的图配置（提示词引用已替换为实际内容）
@@ -176,8 +177,8 @@ class GraphService:
         prompt_contents = {}
         for prompt_name in all_prompt_refs:
             try:
-                # 直接调用PromptManager的同步方法
-                prompt_detail = prompt_service.prompt_manager.get_prompt(prompt_name)
+                # 使用 mongodb_client 获取提示词
+                prompt_detail = await self.mongodb_client.get_prompt(prompt_name, user_id)
                 if prompt_detail:
                     prompt_contents[prompt_name] = prompt_detail.content
                     logger.info(f"成功获取提示词: {prompt_name}")
@@ -213,9 +214,17 @@ class GraphService:
         logger.info("提示词预处理完成")
         return processed_config
 
-    async def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
-        """将图中所有子图完全展开为扁平结构，并更新节点引用关系"""
-        return await self.processor._flatten_all_subgraphs(graph_config)
+    async def _flatten_all_subgraphs(self, graph_config: Dict[str, Any], user_id: str = "default_user") -> Dict[str, Any]:
+        """将图中所有子图完全展开为扁平结构，并更新节点引用关系
+
+        Args:
+            graph_config: 图配置
+            user_id: 用户ID
+
+        Returns:
+            展开后的图配置
+        """
+        return await self.processor._flatten_all_subgraphs(graph_config, user_id)
 
     def _calculate_node_levels(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
         """重新设计的层级计算算法，正确处理所有依赖关系"""
@@ -304,10 +313,10 @@ class GraphService:
             else:
                 # 预处理提示词引用
                 logger.info("开始预处理图配置中的提示词引用")
-                preprocessed_config = await self._preprocess_graph_prompts(graph_config)
+                preprocessed_config = await self._preprocess_graph_prompts(graph_config, user_id)
 
                 # 展开子图和计算层级
-                flattened_config = await self.processor._flatten_all_subgraphs(preprocessed_config)
+                flattened_config = await self.processor._flatten_all_subgraphs(preprocessed_config, user_id)
                 flattened_config = self.processor._calculate_node_levels(flattened_config)
 
                 # 使用后台执行器执行图
@@ -334,10 +343,10 @@ class GraphService:
 
             # 第一步：预处理提示词引用
             logger.info("开始预处理图配置中的提示词引用")
-            preprocessed_config = await self._preprocess_graph_prompts(graph_config)
+            preprocessed_config = await self._preprocess_graph_prompts(graph_config, user_id)
 
             # 第二步：展开子图和计算层级
-            flattened_config = await self.processor._flatten_all_subgraphs(preprocessed_config)
+            flattened_config = await self.processor._flatten_all_subgraphs(preprocessed_config, user_id)
             flattened_config = self.processor._calculate_node_levels(flattened_config)
 
             # 第三步：执行图
@@ -369,7 +378,8 @@ class GraphService:
             if input_text and not continue_from_checkpoint:
                 logger.info("继续会话需要预处理图配置中的提示词引用")
                 original_config = conversation.get("graph_config", {})
-                preprocessed_config = await self._preprocess_graph_prompts(original_config)
+                user_id = conversation.get("user_id", "default_user")
+                preprocessed_config = await self._preprocess_graph_prompts(original_config, user_id)
 
                 # 更新会话中的图配置为预处理后的版本
                 conversation["graph_config"] = preprocessed_config

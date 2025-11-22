@@ -15,8 +15,16 @@ class GraphProcessor:
         self.get_graph = get_graph_func
 
 
-    async def _flatten_all_subgraphs(self, graph_config: Dict[str, Any]) -> Dict[str, Any]:
-        """将图中所有子图完全展开为扁平结构，并更新节点引用关系"""
+    async def _flatten_all_subgraphs(self, graph_config: Dict[str, Any], user_id: str = "default_user") -> Dict[str, Any]:
+        """将图中所有子图完全展开为扁平结构，并更新节点引用关系
+
+        Args:
+            graph_config: 图配置
+            user_id: 用户ID，用于获取子图配置
+
+        Returns:
+            展开后的图配置
+        """
         flattened_config = copy.deepcopy(graph_config)
         flattened_nodes = []
 
@@ -31,7 +39,7 @@ class GraphProcessor:
                 if not subgraph_name:
                     continue
 
-                subgraph_config = await self.get_graph(subgraph_name)
+                subgraph_config = await self.get_graph(subgraph_name, user_id)
                 if not subgraph_config:
                     continue
 
@@ -41,7 +49,7 @@ class GraphProcessor:
                 parent_outputs = node.get("output_nodes", [])
 
                 # 递归展开子图（处理嵌套子图）
-                subgraph_flattened = await self._flatten_all_subgraphs(subgraph_config)
+                subgraph_flattened = await self._flatten_all_subgraphs(subgraph_config, user_id)
 
                 # 找出子图中的输出节点
                 subgraph_output_nodes = []
