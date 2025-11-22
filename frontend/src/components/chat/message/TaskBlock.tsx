@@ -188,7 +188,7 @@ const TaskBlock: React.FC<TaskBlockProps> = ({
   conversationId
 }) => {
   const t = useT();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [showCompletionFeedback, setShowCompletionFeedback] = useState(false);
 
   // Handle task completion visual feedback
