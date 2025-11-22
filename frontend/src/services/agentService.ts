@@ -92,3 +92,40 @@ export const deleteAgent = async (agentName: string) => {
   const response = await api.delete(`/agent/${agentName}`);
   return response.data;
 };
+
+// 导入 Agents
+export const importAgents = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post('/agent/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    responseType: 'blob', // 接收文件
+  });
+
+  // 创建下载链接
+  const blob = new Blob([response.data], { type: 'text/markdown' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  
+  // 从响应头获取文件名，如果没有则使用默认名称
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = 'agent_import_report.md';
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1].replace(/['"]/g, '');
+    }
+  }
+  
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+
+  return { success: true };
+};

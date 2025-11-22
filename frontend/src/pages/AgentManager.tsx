@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, Button, Input, Tag, Spin, Space, Modal, Form, Typography } from 'antd';
-import { Plus, RefreshCw, Bot, Search as SearchIcon } from 'lucide-react';
+import { Plus, RefreshCw, Bot, Search as SearchIcon, Upload } from 'lucide-react';
 import { AgentConfig } from '../services/agentService';
 import { useT } from '../i18n/hooks';
 import { useAgentManager } from '../hooks/useAgentManager';
@@ -42,6 +42,7 @@ const AgentManager: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [editingAgent, setEditingAgent] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [importing, setImporting] = useState(false);
 
   /**
    * 显示创建 Modal
@@ -105,6 +106,50 @@ const AgentManager: React.FC = () => {
     }
   };
 
+  /**
+   * 处理文件导入
+   */
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.jsonl,.xlsx,.xls,.parquet';
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // 验证文件格式
+      const ext = file.name.toLowerCase().split('.').pop();
+      const supportedFormats = ['json', 'jsonl', 'xlsx', 'xls', 'parquet'];
+      if (!supportedFormats.includes(ext || '')) {
+        Modal.error({
+          title: t('pages.agentManager.import.invalidFormat'),
+          content: t('pages.agentManager.import.supportedFormats'),
+        });
+        return;
+      }
+
+      setImporting(true);
+      try {
+        const { importAgents } = await import('../services/agentService');
+        await importAgents(file);
+        Modal.success({
+          title: t('pages.agentManager.import.success'),
+          content: t('pages.agentManager.import.reportDownloaded'),
+        });
+        // 刷新列表
+        loadAgents();
+      } catch (error: any) {
+        Modal.error({
+          title: t('pages.agentManager.import.failed'),
+          content: error.response?.data?.detail || error.message || t('pages.agentManager.import.unknownError'),
+        });
+      } finally {
+        setImporting(false);
+      }
+    };
+    input.click();
+  };
+
   const totalAgentsCount = filteredGroups.reduce((sum, group) => sum + group.agents.length, 0);
 
   return (
@@ -154,6 +199,14 @@ const AgentManager: React.FC = () => {
               onFocus={(e) => Object.assign(e.target.style, INPUT_STYLES.focus)}
               onBlur={(e) => Object.assign(e.target.style, INPUT_STYLES.blur)}
             />
+            <Button
+              icon={<Upload size={16} strokeWidth={1.5} />}
+              onClick={handleImport}
+              loading={importing}
+              style={BUTTON_STYLES.secondary}
+            >
+              {t('pages.agentManager.import.button')}
+            </Button>
             <Button
               icon={<RefreshCw size={16} strokeWidth={1.5} />}
               onClick={loadAgents}
