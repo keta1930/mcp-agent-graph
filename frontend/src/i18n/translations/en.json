@@ -182,13 +182,25 @@
         "reportDownloaded": "Import report downloaded, please check the detailed results",
         "failed": "Import failed",
         "unknownError": "Unknown error"
+      },
+      "batchDeleteButton": "Batch Delete",
+      "batchDelete": {
+        "title": "Batch Delete Agents",
+        "selectWarning": "Please select agents to delete",
+        "confirmTitle": "Confirm Batch Delete",
+        "confirmMessage": "Are you sure you want to delete {{count}} selected agents? This action cannot be undone.",
+        "deleteButton": "Delete ({{count}})",
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All",
+        "selected": "Selected {{count}} agents",
+        "success": "Successfully deleted {{count}} agents",
+        "partial": "Deleted {{success}} agents, {{failed}} failed"
       }
     },
     "graphEditor": {
       "title": "Workflow Manager",
       "workflowsCount": "{{count}} workflows",
       "searchPlaceholder": "Search workflows...",
-      "aiPrompt": "AI Prompt",
       "createWorkflow": "Workflow",
       "noWorkflows": "No workflow configurations yet",
       "noMatchingWorkflows": "No workflows matching \"{{search}}\"",
@@ -238,9 +250,6 @@
       "graphSettingsUpdated": "Graph settings updated",
       "readmeFailed": "Failed to get README: {{error}}",
       "nodeProperties": "Node Properties",
-      "aiPromptTitle": "AI Generated Prompt",
-      "aiPromptMessage": "This feature helps you generate AI prompt templates for workflows",
-      "aiPromptHint": "Please select a workflow and enter edit mode, then access this feature from the editor toolbar",
       "readmeTitle": "README",
       "graphSettingsTitle": "Graph Settings",
       "graphName": "Graph Name",

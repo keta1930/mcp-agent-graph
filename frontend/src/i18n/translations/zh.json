@@ -182,13 +182,25 @@
         "reportDownloaded": "导入报告已下载，请查看详细结果",
         "failed": "导入失败",
         "unknownError": "未知错误"
+      },
+      "batchDeleteButton": "批量删除",
+      "batchDelete": {
+        "title": "批量删除智能体",
+        "selectWarning": "请选择要删除的智能体",
+        "confirmTitle": "确认批量删除",
+        "confirmMessage": "确定要删除选中的 {{count}} 个智能体吗？此操作无法撤销。",
+        "deleteButton": "删除 ({{count}})",
+        "selectAll": "全选",
+        "deselectAll": "取消全选",
+        "selected": "已选择 {{count}} 个智能体",
+        "success": "成功删除 {{count}} 个智能体",
+        "partial": "删除了 {{success}} 个智能体，{{failed}} 个失败"
       }
     },
     "graphEditor": {
       "title": "工作流管理",
       "workflowsCount": "{{count}} 个工作流",
       "searchPlaceholder": "搜索工作流...",
-      "aiPrompt": "AI提示词",
       "createWorkflow": "工作流",
       "noWorkflows": "暂无工作流配置",
       "noMatchingWorkflows": "未找到匹配 \"{{search}}\" 的工作流",
@@ -238,9 +250,6 @@
       "graphSettingsUpdated": "图设置已更新",
       "readmeFailed": "获取README失败: {{error}}",
       "nodeProperties": "节点属性设置",
-      "aiPromptTitle": "AI 生成提示词",
-      "aiPromptMessage": "该功能可以帮助您生成工作流的 AI 提示词模板",
-      "aiPromptHint": "请先选择一个工作流进入编辑模式，然后从编辑器工具栏访问此功能",
       "readmeTitle": "README",
       "graphSettingsTitle": "图设置",
       "graphName": "图名称",
