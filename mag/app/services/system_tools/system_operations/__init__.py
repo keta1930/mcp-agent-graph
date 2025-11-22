@@ -12,6 +12,7 @@ from . import list_all_graphs
 from . import get_graph_details
 from . import list_all_prompts
 from . import get_prompt_content
+from . import list_system_tools
 
 # 注册所有工具
 register_system_tool(
@@ -63,6 +64,13 @@ register_system_tool(
     category="system_operations"
 )
 
+register_system_tool(
+    name="list_system_tools",
+    schema=list_system_tools.TOOL_SCHEMA,
+    handler=list_system_tools.handler,
+    category="system_operations"
+)
+
 __all__ = [
     "list_all_models",
     "list_all_mcps",
@@ -70,5 +78,6 @@ __all__ = [
     "list_all_graphs",
     "get_graph_details",
     "list_all_prompts",
-    "get_prompt_content"
+    "get_prompt_content",
+    "list_system_tools"
 ]
