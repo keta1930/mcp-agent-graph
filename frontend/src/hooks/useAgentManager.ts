@@ -12,7 +12,7 @@ import {
   AgentCategoryItem
 } from '../services/agentService';
 import { getModels } from '../services/modelService';
-import { listSystemTools } from '../services/systemToolsService';
+import { listSystemTools, ToolCategory } from '../services/systemToolsService';
 import { getMCPConfig } from '../services/mcpService';
 import { useT } from '../i18n/hooks';
 
@@ -37,6 +37,7 @@ export const useAgentManager = () => {
   // 可选项数据
   const [models, setModels] = useState<string[]>([]);
   const [systemTools, setSystemTools] = useState<string[]>([]);
+  const [systemToolCategories, setSystemToolCategories] = useState<ToolCategory[]>([]);
   const [mcpServers, setMcpServers] = useState<string[]>([]);
   const [categories, setCategories] = useState<AgentCategoryItem[]>([]);
 
@@ -96,6 +97,7 @@ export const useAgentManager = () => {
       setModels(modelResponse.map((m: any) => m.name));
       const allTools = toolsResponse.categories.flatMap((cat: any) => cat.tools.map((t: any) => t.name));
       setSystemTools(allTools);
+      setSystemToolCategories(toolsResponse.categories || []);
       setMcpServers(Object.keys(mcpResponse.mcpServers || {}));
       setCategories(categoriesResponse.categories || []);
     } catch (error: any) {
@@ -208,13 +210,14 @@ export const useAgentManager = () => {
     loading,
     searchText,
     filteredGroups,
-    
+
     // 选项数据
     models,
     systemTools,
+    systemToolCategories,
     mcpServers,
     categories,
-    
+
     // 操作方法
     setSearchText,
     loadAgents,

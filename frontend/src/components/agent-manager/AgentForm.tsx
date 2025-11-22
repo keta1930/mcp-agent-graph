@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
 import { Form, Input, Select, InputNumber, AutoComplete, Row, Col } from 'antd';
 import { AgentConfig, AgentCategoryItem } from '../../services/agentService';
+import { ToolCategory } from '../../services/systemToolsService';
 import { useT } from '../../i18n/hooks';
 import { FORM_SECTION_STYLES } from '../../constants/agentManagerStyles';
+import SystemToolTreeSelector from '../common/SystemToolTreeSelector';
+import MCPSelector from '../common/MCPSelector';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -13,6 +16,7 @@ interface AgentFormProps {
   isEditing: boolean;
   models: string[];
   systemTools: string[];
+  systemToolCategories: ToolCategory[];
   mcpServers: string[];
   categories: AgentCategoryItem[];
 }
@@ -27,6 +31,7 @@ const AgentForm: React.FC<AgentFormProps> = ({
   isEditing,
   models,
   systemTools,
+  systemToolCategories,
   mcpServers,
   categories
 }) => {
@@ -218,17 +223,10 @@ const AgentForm: React.FC<AgentFormProps> = ({
           name="system_tools"
           style={{ marginBottom: '16px' }}
         >
-          <Select
-            mode="multiple"
+          <SystemToolTreeSelector
+            categories={systemToolCategories}
             placeholder={t('pages.agentManager.systemToolsPlaceholder')}
-            allowClear
-            maxTagCount="responsive"
-            style={{ fontSize: '14px' }}
-          >
-            {systemTools.map((tool) => (
-              <Option key={tool} value={tool}>{tool}</Option>
-            ))}
-          </Select>
+          />
         </Form.Item>
 
         <Form.Item
@@ -236,17 +234,10 @@ const AgentForm: React.FC<AgentFormProps> = ({
           name="mcp"
           style={{ marginBottom: '16px' }}
         >
-          <Select
-            mode="multiple"
+          <MCPSelector
+            mcpServers={mcpServers}
             placeholder={t('pages.agentManager.mcpServersPlaceholder')}
-            allowClear
-            maxTagCount="responsive"
-            style={{ fontSize: '14px' }}
-          >
-            {mcpServers.map((server) => (
-              <Option key={server} value={server}>{server}</Option>
-            ))}
-          </Select>
+          />
         </Form.Item>
 
         <Form.Item

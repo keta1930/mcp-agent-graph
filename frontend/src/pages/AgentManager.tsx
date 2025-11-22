@@ -29,6 +29,7 @@ const AgentManager: React.FC = () => {
     filteredGroups,
     models,
     systemTools,
+    systemToolCategories,
     mcpServers,
     categories,
     setSearchText,
@@ -322,6 +323,7 @@ const AgentManager: React.FC = () => {
           isEditing={!!editingAgent}
           models={models}
           systemTools={systemTools}
+          systemToolCategories={systemToolCategories}
           mcpServers={mcpServers}
           categories={categories}
         />

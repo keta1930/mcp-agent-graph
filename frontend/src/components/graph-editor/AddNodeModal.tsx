@@ -1,6 +1,6 @@
 // src/components/graph-editor/AddNodeModal.tsx
 import React, { useState } from 'react';
-import { Modal, Form, Input, Select, Radio, InputNumber, Button, Row, Col, Spin, TreeSelect, Tag } from 'antd';
+import { Modal, Form, Input, Select, Radio, InputNumber, Button, Row, Col, Tag } from 'antd';
 import { Plus } from 'lucide-react';
 import { useModelStore } from '../../store/modelStore';
 import { useMCPStore } from '../../store/mcpStore';
@@ -9,6 +9,8 @@ import { useAgentStore } from '../../store/agentStore';
 import { listSystemTools, ToolCategory } from '../../services/systemToolsService';
 import { promptService } from '../../services/promptService';
 import { useT } from '../../i18n/hooks';
+import SystemToolTreeSelector from '../common/SystemToolTreeSelector';
+import MCPSelector from '../common/MCPSelector';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -29,7 +31,6 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
   
   const [systemToolCategories, setSystemToolCategories] = useState<ToolCategory[]>([]);
   const [loadingTools, setLoadingTools] = useState(false);
-  const [selectedSystemTools, setSelectedSystemTools] = useState<string[]>([]);
   const [registeredPrompts, setRegisteredPrompts] = useState<string[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
 
@@ -44,7 +45,6 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
       fetchAgents();
       loadSystemTools();
       loadPrompts();
-      setSelectedSystemTools([]);
       form.resetFields();
     }
   }, [visible, fetchAgents]);
@@ -101,7 +101,7 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
         description: values.description || "",
         agent_name: values.agent_name || undefined,
         model_name: values.model_name || undefined,
-        system_tools: selectedSystemTools,
+        system_tools: values.system_tools || [],
         max_iterations: values.max_iterations || undefined,
         handoffs: values.handoffs || null,
         system_prompt: values.system_prompt || "",
@@ -111,7 +111,6 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
 
       onAdd(nodeData);
       form.resetFields();
-      setSelectedSystemTools([]);
       onClose();
     } catch (error) {
       // Form validation error
@@ -562,95 +561,17 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             {t('components.graphEditor.addNodeModal.toolsAndServices')}
           </div>
 
-          {/* 系统工具选择 - 使用树形选择器，支持折叠和多选 */}
+          {/* 系统工具选择 - 使用公共树形选择器组件 */}
           <Form.Item
             label={<span style={labelStyle}>{t('components.graphEditor.addNodeModal.systemTools')}</span>}
             name="system_tools"
             initialValue={[]}
             style={{ marginBottom: '16px' }}
           >
-            <TreeSelect
-              treeData={systemToolCategories.map(category => ({
-                title: category.category,
-                value: `category:${category.category}`,
-                selectable: true,
-                children: category.tools.map(tool => ({
-                  title: (
-                    <div style={{ padding: '4px 0' }}>
-                      <div style={{ fontWeight: 500, fontSize: '13px', color: '#2d2d2d' }}>
-                        {tool.schema.function.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', marginTop: '2px', lineHeight: '1.4' }}>
-                        {tool.schema.function.description}
-                      </div>
-                    </div>
-                  ),
-                  label: tool.schema.function.name,
-                  value: tool.name,
-                  selectable: true
-                }))
-              }))}
-              treeCheckable
-              showCheckedStrategy={TreeSelect.SHOW_CHILD}
-              placeholder={t('components.graphEditor.addNodeModal.systemToolsPlaceholder')}
-              allowClear
-              maxTagCount="responsive"
+            <SystemToolTreeSelector
+              categories={systemToolCategories}
               loading={loadingTools}
-              style={{ fontSize: '14px' }}
-              dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-              onChange={(values) => {
-                // 只保留实际的工具名称，过滤掉分类前缀
-                const toolNames = values.filter((v: string) => !v.startsWith('category:'));
-                setSelectedSystemTools(toolNames);
-                form.setFieldsValue({ system_tools: toolNames });
-              }}
-              tagRender={(props) => {
-                const { value, closable, onClose } = props;
-                // 从所有工具中找到对应的工具名称
-                let toolDisplayName = value as string;
-                systemToolCategories.forEach(category => {
-                  const tool = category.tools.find(t => t.name === value);
-                  if (tool) {
-                    toolDisplayName = tool.schema.function.name;
-                  }
-                });
-
-                return (
-                  <Tag
-                    closable={closable}
-                    onClose={onClose}
-                    style={{
-                      background: 'rgba(139, 115, 85, 0.08)',
-                      color: '#8b7355',
-                      border: '1px solid rgba(139, 115, 85, 0.2)',
-                      borderRadius: '6px',
-                      fontWeight: 500,
-                      fontSize: '12px',
-                      padding: '4px 12px',
-                      marginRight: '4px'
-                    }}
-                  >
-                    {toolDisplayName}
-                  </Tag>
-                );
-              }}
-              maxTagPlaceholder={(omittedValues) => (
-                <Tag
-                  style={{
-                    background: 'rgba(139, 115, 85, 0.08)',
-                    color: '#8b7355',
-                    border: '1px solid rgba(139, 115, 85, 0.2)',
-                    borderRadius: '6px',
-                    fontWeight: 500,
-                    fontSize: '12px',
-                    padding: '2px 8px',
-                    margin: 0
-                  }}
-                >
-                  +{omittedValues.length}
-                </Tag>
-              )}
-              treeDefaultExpandAll={false}
+              placeholder={t('components.graphEditor.addNodeModal.systemToolsPlaceholder')}
             />
           </Form.Item>
 
@@ -660,54 +581,10 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             initialValue={[]}
             style={{ marginBottom: '16px' }}
           >
-            <Select
-              mode="multiple"
+            <MCPSelector
+              mcpServers={mcpServers}
               placeholder={t('components.graphEditor.addNodeModal.mcpServersPlaceholder')}
-              allowClear
-              maxTagCount="responsive"
-              style={{ fontSize: '14px' }}
-              tagRender={(props) => {
-                const { value, closable, onClose } = props;
-                return (
-                  <Tag
-                    closable={closable}
-                    onClose={onClose}
-                    style={{
-                      background: 'rgba(139, 115, 85, 0.08)',
-                      color: '#8b7355',
-                      border: '1px solid rgba(139, 115, 85, 0.2)',
-                      borderRadius: '6px',
-                      fontWeight: 500,
-                      fontSize: '12px',
-                      padding: '4px 12px',
-                      marginRight: '4px'
-                    }}
-                  >
-                    {value}
-                  </Tag>
-                );
-              }}
-              maxTagPlaceholder={(omittedValues) => (
-                <Tag
-                  style={{
-                    background: 'rgba(139, 115, 85, 0.08)',
-                    color: '#8b7355',
-                    border: '1px solid rgba(139, 115, 85, 0.2)',
-                    borderRadius: '6px',
-                    fontWeight: 500,
-                    fontSize: '12px',
-                    padding: '2px 8px',
-                    margin: 0
-                  }}
-                >
-                  +{omittedValues.length}
-                </Tag>
-              )}
-            >
-              {mcpServers.map(server => (
-                <Option key={server} value={server}>{server}</Option>
-              ))}
-            </Select>
+            />
           </Form.Item>
 
           <div style={{ marginBottom: '0' }}>
