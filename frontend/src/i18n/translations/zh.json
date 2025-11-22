@@ -1129,7 +1129,7 @@
       "configure": "配置最大迭代次数",
       "currentValue": "最大迭代: {{value}}次",
       "description": "设置 Agent 执行的最大迭代次数",
-      "placeholder": "输入次数 (1-100)",
+      "placeholder": "输入次数 (1-200)",
       "clear": "清除",
       "apply": "应用"
     },

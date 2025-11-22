@@ -1129,7 +1129,7 @@
       "configure": "Configure max iterations",
       "currentValue": "Max Iterations: {{value}}",
       "description": "Set the maximum number of iterations for Agent execution",
-      "placeholder": "Enter count (1-100)",
+      "placeholder": "Enter count (1-200)",
       "clear": "Clear",
       "apply": "Apply"
     },
