@@ -13,6 +13,7 @@ from .refresh_token_repository import RefreshTokenRepository
 from .agent_repository import AgentRepository
 from .agent_run_repository import AgentRunRepository
 from .memory_repository import MemoryRepository
+from .share_repository import ShareRepository
 
 __all__ = [
     'ConversationRepository',
@@ -29,5 +30,6 @@ __all__ = [
     'RefreshTokenRepository',
     'AgentRepository',
     'AgentRunRepository',
-    'MemoryRepository'
+    'MemoryRepository',
+    'ShareRepository'
 ]

@@ -18,6 +18,7 @@ from .system_tools_routes import router as system_tools_router
 from .conversation_file_routes import router as conversation_file_router
 from .user_settings_routes import router as user_settings_router
 from .memory_routes import router as memory_router
+from .conversation_share_routes import router as conversation_share_router
 
 # 创建主路由器
 router = APIRouter()
@@ -43,3 +44,4 @@ router.include_router(system_tools_router)
 router.include_router(conversation_file_router)
 router.include_router(user_settings_router)
 router.include_router(memory_router)
+router.include_router(conversation_share_router)

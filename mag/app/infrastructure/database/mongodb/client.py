@@ -6,7 +6,7 @@ from app.infrastructure.database.mongodb.repositories import (
     TaskRepository, GraphConfigRepository, PromptRepository, ModelConfigRepository,
     MCPConfigRepository, PreviewRepository, UserRepository, InviteCodeRepository,
     TeamSettingsRepository, RefreshTokenRepository, AgentRepository,
-    AgentRunRepository, MemoryRepository
+    AgentRunRepository, MemoryRepository, ShareRepository
 )
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ class MongoDBClient:
         self.agents_collection = None
         self.agent_run_collection = None
         self.memories_collection = None
+        self.conversation_shares_collection = None
 
         self.is_connected = False
 
@@ -52,6 +53,7 @@ class MongoDBClient:
         self.agent_repository = None
         self.agent_run_repository = None
         self.memory_repository = None
+        self.share_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -80,6 +82,7 @@ class MongoDBClient:
             self.agents_collection = self.db.agents
             self.agent_run_collection = self.db.agent_run
             self.memories_collection = self.db.memories
+            self.conversation_shares_collection = self.db.conversation_shares
 
             await self.client.admin.command('ping')
 
@@ -170,6 +173,11 @@ class MongoDBClient:
             self.memories_collection
         )
 
+        self.share_repository = ShareRepository(
+            self.db,
+            self.conversation_shares_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
@@ -240,6 +248,11 @@ class MongoDBClient:
                                                         unique=True)
             await self.memories_collection.create_index([("user_id", 1)])
             await self.memories_collection.create_index([("updated_at", -1)])
+
+            await self.conversation_shares_collection.create_index([("share_id", 1)], unique=True)
+            await self.conversation_shares_collection.create_index([("conversation_id", 1)], unique=True)
+            await self.conversation_shares_collection.create_index([("user_id", 1)])
+            await self.conversation_shares_collection.create_index([("created_at", -1)])
 
             logger.info("MongoDB索引创建成功")
 
@@ -350,11 +363,14 @@ class MongoDBClient:
             conversation_type = conversation.get("type")
             user_id = conversation.get("user_id", "default_user")
 
-            # 1. 删除 MinIO 中的所有文件
+            # 1. 删除分享记录（级联删除）
+            await self.share_repository.delete_shares_by_conversation(conversation_id)
+
+            # 2. 删除 MinIO 中的所有文件
             from app.infrastructure.storage.object_storage.conversation_document_manager import conversation_document_manager
             await conversation_document_manager.delete_all_conversation_files(user_id, conversation_id)
 
-            # 2. 删除消息数据
+            # 3. 删除消息数据
             if conversation_type == "graph":
                 # 图运行类型，删除graph_run消息
                 await self.graph_run_repository.delete_graph_run_messages(conversation_id)
@@ -362,7 +378,7 @@ class MongoDBClient:
                 # Agent对话类型，删除agent_run消息
                 await self.agent_run_repository.delete_agent_run(conversation_id)
 
-            # 3. 删除conversation元数据
+            # 4. 删除conversation元数据
             return await self.conversation_repository.permanently_delete_conversation(conversation_id)
 
         except Exception as e:
@@ -474,9 +490,9 @@ class MongoDBClient:
         """创建提示词"""
         return await self.prompt_repository.create_prompt(prompt_data, user_id)
 
-    async def get_prompt(self, name: str, user_id: str = "default_user", check_shared: bool = True):
+    async def get_prompt(self, name: str, user_id: str = "default_user"):
         """获取提示词"""
-        return await self.prompt_repository.get_prompt(name, user_id, check_shared)
+        return await self.prompt_repository.get_prompt(name, user_id)
 
     async def update_prompt(self, name: str, update_data, user_id: str = "default_user"):
         """更新提示词"""
@@ -593,6 +609,28 @@ class MongoDBClient:
     async def delete_memory(self, user_id: str, deletions: List[Dict[str, Any]], agent_id: str = None) -> Dict[str, Any]:
         """删除记忆条目"""
         return await self.memory_repository.delete_memory(user_id, deletions, agent_id)
+
+    # === 分享管理方法 ===
+
+    async def create_conversation_share(self, conversation_id: str, user_id: str) -> Dict[str, Any]:
+        """创建对话分享"""
+        return await self.share_repository.create_share(conversation_id, user_id)
+
+    async def get_conversation_share(self, share_id: str) -> Optional[Dict[str, Any]]:
+        """获取分享记录"""
+        return await self.share_repository.get_share_by_id(share_id)
+
+    async def get_conversation_share_by_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """根据对话ID获取分享记录"""
+        return await self.share_repository.get_share_by_conversation(conversation_id)
+
+    async def delete_conversation_share(self, share_id: str, user_id: str) -> bool:
+        """删除对话分享"""
+        return await self.share_repository.delete_share(share_id, user_id)
+
+    async def delete_conversation_shares_by_conversation(self, conversation_id: str) -> bool:
+        """删除对话的所有分享记录（级联删除）"""
+        return await self.share_repository.delete_shares_by_conversation(conversation_id)
 
 
 mongodb_client = MongoDBClient()

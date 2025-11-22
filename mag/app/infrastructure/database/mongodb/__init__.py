@@ -7,7 +7,8 @@ from .repositories import (
     PromptRepository,
     ModelConfigRepository,
     MCPConfigRepository,
-    PreviewRepository
+    PreviewRepository,
+    ShareRepository
 )
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     'PromptRepository',
     'ModelConfigRepository',
     'MCPConfigRepository',
-    'PreviewRepository'
+    'PreviewRepository',
+    'ShareRepository'
 ]

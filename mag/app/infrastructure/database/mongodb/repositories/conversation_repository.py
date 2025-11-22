@@ -996,3 +996,86 @@ class ConversationRepository:
             "total_rounds": total_rounds,
             "total_messages": total_messages
         }
+
+    async def get_conversation_for_share(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """
+        获取用于分享的对话信息（排除敏感字段）
+        
+        Args:
+            conversation_id: 对话ID
+            
+        Returns:
+            清洗后的对话数据，包含完整的rounds信息，不存在返回None
+        """
+        try:
+            # 获取对话基本信息
+            conversation = await self.get_conversation(conversation_id)
+            if not conversation:
+                logger.warning(f"对话不存在: {conversation_id}")
+                return None
+            
+            # 检查对话状态，排除软删除的对话
+            if conversation.get("status") == "deleted":
+                logger.warning(f"对话已被删除，不允许分享: {conversation_id}")
+                return None
+            
+            conversation_type = conversation.get("type")
+            
+            # 根据对话类型获取rounds数据
+            rounds = []
+            tasks = []
+            
+            if conversation_type == "agent":
+                # 从agent_run集合获取数据
+                from app.infrastructure.database.mongodb.repositories.agent_run_repository import AgentRunRepository
+                agent_run_repo = AgentRunRepository(self.db, self.db.agent_run)
+                agent_run_doc = await agent_run_repo.get_agent_run(conversation_id)
+                
+                if agent_run_doc:
+                    rounds = agent_run_doc.get("rounds", [])
+                    tasks = agent_run_doc.get("tasks", [])
+                    
+            elif conversation_type == "graph":
+                # 从graph_run集合获取数据
+                graph_run_doc = await self.db.get_collection("mcp-agent-graph-messages").find_one(
+                    {"conversation_id": conversation_id}
+                )
+                
+                if graph_run_doc:
+                    rounds = graph_run_doc.get("rounds", [])
+                    tasks = graph_run_doc.get("tasks", [])
+                    # 添加graph特有字段
+                    conversation["execution_chain"] = graph_run_doc.get("execution_chain", [])
+                    conversation["final_result"] = graph_run_doc.get("final_result", "")
+            
+            # 构建清洗后的对话数据
+            created_at = conversation.get("created_at")
+            shared_conversation = {
+                "_id": conversation["_id"],
+                "title": conversation.get("title", ""),
+                "type": conversation_type,
+                "rounds": rounds,
+                "created_at": created_at.isoformat() if isinstance(created_at, datetime) else created_at,
+                "round_count": conversation.get("round_count", 0),
+            }
+            
+            # 添加可选字段
+            if tasks:
+                shared_conversation["tasks"] = tasks
+            
+            # 添加graph特有字段
+            if conversation_type == "graph":
+                if "execution_chain" in conversation:
+                    shared_conversation["execution_chain"] = conversation["execution_chain"]
+                if "final_result" in conversation:
+                    shared_conversation["final_result"] = conversation["final_result"]
+            
+            # 排除敏感字段：user_id, input_config, status, tags, total_token_usage, documents, updated_at
+            # 这些字段不会被添加到shared_conversation中
+            
+            logger.info(f"成功获取分享对话数据: {conversation_id}, 类型: {conversation_type}")
+            return shared_conversation
+            
+        except Exception as e:
+            logger.error(f"获取分享对话数据失败: {str(e)}")
+            return None

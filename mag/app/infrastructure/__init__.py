@@ -8,7 +8,8 @@ from .database.mongodb import (
     PromptRepository,
     ModelConfigRepository,
     MCPConfigRepository,
-    PreviewRepository
+    PreviewRepository,
+    ShareRepository
 )
 
 from .storage import (
@@ -29,6 +30,7 @@ __all__ = [
     'ModelConfigRepository',
     'MCPConfigRepository',
     'PreviewRepository',
+    'ShareRepository',
     'MinIOClient',
     'minio_client',
     'FileManager'
