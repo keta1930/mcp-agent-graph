@@ -1,12 +1,15 @@
 import json
 import logging
 import asyncio
+import tempfile
+import os
 from datetime import datetime
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
+from fastapi.responses import StreamingResponse, FileResponse
 from app.infrastructure.database.mongodb.client import mongodb_client
 from app.services.agent.agent_stream_executor import AgentStreamExecutor
+from app.services.agent.agent_import_service import agent_import_service
 from app.utils.sse_helper import TrajectoryCollector
 from app.models.agent_schema import (
     CreateAgentRequest,
@@ -548,4 +551,87 @@ async def agent_run(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"处理 Agent 运行时出错: {str(e)}"
+        )
+
+
+# ======= Agent 导入 API接口 =======
+@router.post("/import")
+async def import_agents(
+    file: UploadFile = File(...),
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """
+    导入Agent配置文件，返回导入报告
+    
+    支持的文件格式：
+    - JSON (.json): 单个Agent对象或Agent数组
+    - JSONL (.jsonl): 每行一个Agent对象
+    
+    Returns:
+        FileResponse: Markdown格式的导入报告文件
+    """
+    try:
+        user_id = current_user.user_id
+        
+        # 1. 验证文件格式
+        if not file.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="文件名不能为空"
+            )
+        
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        supported_formats = [".json", ".jsonl", ".xlsx", ".xls", ".parquet"]
+        
+        if file_extension not in supported_formats:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"不支持的文件格式: {file_extension}，支持的格式: {', '.join(supported_formats)}"
+            )
+        
+        # 2. 读取文件内容
+        file_content = await file.read()
+        
+        if not file_content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="文件内容为空"
+            )
+        
+        # 3. 执行导入
+        import_result = await agent_import_service.import_agents(
+            file_content=file_content,
+            file_extension=file_extension,
+            user_id=user_id
+        )
+        
+        # 4. 生成报告文件（固定使用Markdown格式）
+        report_content = import_result.get("report_markdown", "")
+        
+        # 5. 创建临时文件
+        temp_dir = tempfile.mkdtemp()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_filename = f"agent_import_report_{timestamp}.md"
+        report_path = os.path.join(temp_dir, report_filename)
+        
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(report_content)
+        
+        # 6. 返回文件响应
+        return FileResponse(
+            path=report_path,
+            filename=report_filename,
+            media_type="text/markdown",
+            headers={
+                "Content-Disposition": f"attachment; filename={report_filename}"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"导入Agent出错: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"导入Agent出错: {str(e)}"
         )
