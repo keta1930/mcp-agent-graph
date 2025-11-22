@@ -84,7 +84,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
       <Tooltip title={selectedAgent ? t('components.agentPicker.currentAgent', { agent: selectedAgent }) : t('components.agentPicker.selectAgent')}>
         <Button
           type="text"
-          icon={<Bot size={16} strokeWidth={1.5} />}
+          icon={<Bot size={14} strokeWidth={1.5} />}
           onClick={handleButtonClick}
           size={size}
           loading={loading}
@@ -93,8 +93,8 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
             border: 'none',
             background: showPanel || selectedAgent ? 'rgba(184, 88, 69, 0.08)' : 'transparent',
             transition: 'all 0.2s ease',
-            width: '32px',
-            height: '32px',
+            width: '28px',
+            height: '28px',
             borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
@@ -241,7 +241,7 @@ const AgentPicker: React.FC<AgentPickerProps> = ({
                       minWidth: 0
                     }}>
                       <Bot 
-                        size={16} 
+                        size={14} 
                         strokeWidth={1.5}
                         style={{ 
                           color: selectedAgent === agent.name ? '#b85845' : '#8b7355',
