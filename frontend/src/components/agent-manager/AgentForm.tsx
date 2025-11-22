@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Form, Input, Select, InputNumber, AutoComplete, Row, Col } from 'antd';
+import { Form, Input, Select, InputNumber, AutoComplete, Row, Col, Tag } from 'antd';
 import { AgentConfig, AgentCategoryItem } from '../../services/agentService';
 import { ToolCategory } from '../../services/systemToolsService';
 import { useT } from '../../i18n/hooks';
@@ -131,7 +131,7 @@ const AgentForm: React.FC<AgentFormProps> = ({
               rules={[{ required: true, message: t('pages.agentManager.categoryRequired') }]}
               tooltip={{
                 title: t('pages.agentManager.categoryTooltip'),
-                overlayStyle: { fontSize: '13px' }
+                styles: { root: { fontSize: '13px' } }
               }}
               style={{ marginBottom: '0' }}
             >
@@ -251,6 +251,27 @@ const AgentForm: React.FC<AgentFormProps> = ({
             tokenSeparators={[',']}
             maxTagCount="responsive"
             style={{ fontSize: '14px' }}
+            tagRender={(props) => {
+              const { label, closable, onClose } = props;
+              return (
+                <Tag
+                  closable={closable}
+                  onClose={onClose}
+                  style={{
+                    background: 'rgba(139, 115, 85, 0.08)',
+                    color: '#8b7355',
+                    border: '1px solid rgba(139, 115, 85, 0.2)',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                    fontSize: '12px',
+                    padding: '4px 12px',
+                    marginRight: '4px'
+                  }}
+                >
+                  {label}
+                </Tag>
+              );
+            }}
           />
         </Form.Item>
       </div>
