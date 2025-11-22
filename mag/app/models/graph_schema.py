@@ -63,6 +63,12 @@ class AgentNode(BaseModel):
             raise ValueError(f"子图节点 '{values['name']}' 必须指定子图名称")
         return v
 
+    @validator('max_iterations')
+    def validate_max_iterations(cls, v):
+        if v is not None and (v < 1 or v > 200):
+            raise ValueError('max_iterations 必须在 1-200 范围内')
+        return v
+
     @validator('level')
     def validate_level(cls, v):
         if v is None:

@@ -116,6 +116,13 @@ class AgentRunRequest(BaseModel):
             raise ValueError('用户消息不能为空')
         return v
 
+    @field_validator('max_iterations')
+    @classmethod
+    def validate_max_iterations(cls, v):
+        if v is not None and (v < 1 or v > 200):
+            raise ValueError('max_iterations 必须在 1-200 范围内')
+        return v
+
     @field_validator('model_name')
     @classmethod
     def check_config_source(cls, v, info: ValidationInfo):

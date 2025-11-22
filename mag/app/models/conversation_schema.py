@@ -48,6 +48,12 @@ class InputConfig(BaseModel):
     selected_system_tools: Optional[List[str]] = Field(None, description="选择的系统工具")
     max_iterations: Optional[int] = Field(None, description="最大迭代次数")
 
+    @validator('max_iterations')
+    def validate_max_iterations(cls, v):
+        if v is not None and (v < 1 or v > 200):
+            raise ValueError('max_iterations 必须在 1-200 范围内')
+        return v
+
 
 class ConversationDetailResponse(BaseModel):
     """对话详情响应（完整内容，支持所有类型）"""
