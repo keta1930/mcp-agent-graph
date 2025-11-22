@@ -908,7 +908,40 @@
         "sendFailed": "发送失败",
         "sendMessageFailed": "发送消息失败",
         "saveConfigFailed": "保存输入配置失败"
+      },
+      "share": {
+        "share": "分享",
+        "shareConversation": "分享对话",
+        "shareLink": "分享链接",
+        "shareLinkLabel": "分享链接",
+        "copyLink": "复制链接",
+        "copySuccess": "链接已复制到剪贴板",
+        "copyFailed": "复制失败，请手动复制",
+        "deleteShare": "删除分享",
+        "deleteConfirmTitle": "确认删除分享",
+        "deleteConfirmMessage": "确定要删除此分享链接吗？删除后链接将失效。",
+        "deleteSuccess": "分享已删除",
+        "deleteFailed": "删除分享失败: {{error}}",
+        "createSuccess": "分享链接创建成功",
+        "shareFailed": "分享失败: {{error}}",
+        "permissionDenied": "只有对话所有者可以创建分享链接"
       }
+    },
+    "sharedConversation": {
+      "title": "分享的对话",
+      "sharedConversation": "分享的对话",
+      "invalidShareLink": "无效的分享链接",
+      "notFound": "分享的对话不存在或已被删除",
+      "loadFailed": "加载分享对话失败",
+      "backToHome": "返回首页",
+      "files": "文件",
+      "noFiles": "暂无文件",
+      "download": "下载",
+      "downloadAll": "下载全部",
+      "downloadSuccess": "文件下载成功",
+      "downloadFailed": "文件下载失败",
+      "downloadAllSuccess": "所有文件已打包下载",
+      "downloadAllFailed": "批量下载失败"
     },
     "taskManager": {
       "title": "任务中心",

@@ -908,7 +908,40 @@
         "sendFailed": "Send failed",
         "sendMessageFailed": "Failed to send message",
         "saveConfigFailed": "Failed to save input configuration"
+      },
+      "share": {
+        "share": "Share",
+        "shareConversation": "Share Conversation",
+        "shareLink": "Share Link",
+        "shareLinkLabel": "Share Link",
+        "copyLink": "Copy Link",
+        "copySuccess": "Link copied to clipboard",
+        "copyFailed": "Copy failed, please copy manually",
+        "deleteShare": "Delete Share",
+        "deleteConfirmTitle": "Confirm Delete Share",
+        "deleteConfirmMessage": "Are you sure you want to delete this share link? The link will become invalid.",
+        "deleteSuccess": "Share deleted successfully",
+        "deleteFailed": "Failed to delete share: {{error}}",
+        "createSuccess": "Share link created successfully",
+        "shareFailed": "Share failed: {{error}}",
+        "permissionDenied": "Only conversation owner can create share links"
       }
+    },
+    "sharedConversation": {
+      "title": "Shared Conversation",
+      "sharedConversation": "Shared Conversation",
+      "invalidShareLink": "Invalid share link",
+      "notFound": "Shared conversation not found or has been deleted",
+      "loadFailed": "Failed to load shared conversation",
+      "backToHome": "Back to Home",
+      "files": "Files",
+      "noFiles": "No files",
+      "download": "Download",
+      "downloadAll": "Download All",
+      "downloadSuccess": "File downloaded successfully",
+      "downloadFailed": "Failed to download file",
+      "downloadAllSuccess": "All files downloaded successfully",
+      "downloadAllFailed": "Failed to download all files"
     },
     "taskManager": {
       "title": "Task Center",
