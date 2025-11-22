@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Input, Typography } from 'antd';
+import { Modal, Input, Typography, InputNumber } from 'antd';
 import { COLORS, getPrimaryButtonStyle, getSecondaryButtonStyle, getInputStyle, getInputFocusStyle, getInputBlurStyle, getModalStyles } from '../../constants/adminPanelStyles';
 
 const { Text } = Typography;
@@ -7,7 +7,9 @@ const { Text } = Typography;
 interface CreateInviteCodeModalProps {
   visible: boolean;
   description: string;
+  maxUses: number | null;
   onDescriptionChange: (value: string) => void;
+  onMaxUsesChange: (value: number | null) => void;
   onConfirm: () => void;
   onCancel: () => void;
   t: (key: string, params?: any) => string;
@@ -19,7 +21,9 @@ interface CreateInviteCodeModalProps {
 const CreateInviteCodeModal: React.FC<CreateInviteCodeModalProps> = ({
   visible,
   description,
+  maxUses,
   onDescriptionChange,
+  onMaxUsesChange,
   onConfirm,
   onCancel,
   t,
@@ -59,29 +63,70 @@ const CreateInviteCodeModal: React.FC<CreateInviteCodeModalProps> = ({
         }
       }}
     >
-      <div>
-        <Text style={{
-          display: 'block',
-          marginBottom: '10px',
-          color: COLORS.textLight,
-          fontWeight: 500,
-          fontSize: '13px',
-          letterSpacing: '0.3px'
-        }}>
-          {t('pages.adminPanel.inviteCodes.codeDescription')}
-        </Text>
-        <Input
-          placeholder={t('pages.adminPanel.inviteCodes.codeDescriptionPlaceholder')}
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          style={getInputStyle()}
-          onFocus={(e) => {
-            Object.assign(e.target.style, getInputFocusStyle());
-          }}
-          onBlur={(e) => {
-            Object.assign(e.target.style, getInputBlurStyle());
-          }}
-        />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* 描述输入框 */}
+        <div>
+          <Text style={{
+            display: 'block',
+            marginBottom: '10px',
+            color: COLORS.textLight,
+            fontWeight: 500,
+            fontSize: '13px',
+            letterSpacing: '0.3px'
+          }}>
+            {t('pages.adminPanel.inviteCodes.codeDescription')}
+          </Text>
+          <Input
+            placeholder={t('pages.adminPanel.inviteCodes.codeDescriptionPlaceholder')}
+            value={description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            style={getInputStyle()}
+            onFocus={(e) => {
+              Object.assign(e.target.style, getInputFocusStyle());
+            }}
+            onBlur={(e) => {
+              Object.assign(e.target.style, getInputBlurStyle());
+            }}
+          />
+        </div>
+
+        {/* 使用次数限制 */}
+        <div>
+          <Text style={{
+            display: 'block',
+            marginBottom: '10px',
+            color: COLORS.textLight,
+            fontWeight: 500,
+            fontSize: '13px',
+            letterSpacing: '0.3px'
+          }}>
+            {t('pages.adminPanel.inviteCodes.maxUses')}
+          </Text>
+          <InputNumber
+            placeholder={t('pages.adminPanel.inviteCodes.maxUsesPlaceholder')}
+            value={maxUses}
+            onChange={onMaxUsesChange}
+            min={1}
+            style={{
+              ...getInputStyle(),
+              width: '100%'
+            }}
+            onFocus={(e) => {
+              Object.assign(e.target.parentElement!.style, getInputFocusStyle());
+            }}
+            onBlur={(e) => {
+              Object.assign(e.target.parentElement!.style, getInputBlurStyle());
+            }}
+          />
+          <Text style={{
+            display: 'block',
+            marginTop: '8px',
+            color: COLORS.textSecondary,
+            fontSize: '12px'
+          }}>
+            {t('pages.adminPanel.inviteCodes.maxUsesHint')}
+          </Text>
+        </div>
       </div>
     </Modal>
   );

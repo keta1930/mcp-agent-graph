@@ -32,6 +32,7 @@ const AdminPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [descriptionModalVisible, setDescriptionModalVisible] = useState(false);
   const [newCodeDescription, setNewCodeDescription] = useState('');
+  const [newCodeMaxUses, setNewCodeMaxUses] = useState<number | null>(null);
   const [userCurrentPage, setUserCurrentPage] = useState(1);
   const [userPageSize] = useState(10);
   const [inviteCurrentPage, setInviteCurrentPage] = useState(1);
@@ -131,6 +132,7 @@ const AdminPanel: React.FC = () => {
    */
   const handleCreateInviteCode = () => {
     setNewCodeDescription('');
+    setNewCodeMaxUses(null);
     setDescriptionModalVisible(true);
   };
 
@@ -139,7 +141,10 @@ const AdminPanel: React.FC = () => {
    */
   const handleConfirmCreateCode = async () => {
     try {
-      const code = await createInviteCode(newCodeDescription || undefined);
+      const code = await createInviteCode(
+        newCodeDescription || undefined,
+        newCodeMaxUses || undefined
+      );
       message.success(t('pages.adminPanel.inviteCodes.createSuccess', { code }));
       setDescriptionModalVisible(false);
       loadData();
@@ -218,7 +223,9 @@ const AdminPanel: React.FC = () => {
       <CreateInviteCodeModal
         visible={descriptionModalVisible}
         description={newCodeDescription}
+        maxUses={newCodeMaxUses}
         onDescriptionChange={setNewCodeDescription}
+        onMaxUsesChange={setNewCodeMaxUses}
         onConfirm={handleConfirmCreateCode}
         onCancel={() => setDescriptionModalVisible(false)}
         t={t}
