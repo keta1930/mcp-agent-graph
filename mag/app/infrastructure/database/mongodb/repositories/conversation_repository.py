@@ -1037,10 +1037,10 @@ class ConversationRepository:
                     
             elif conversation_type == "graph":
                 # 从graph_run集合获取数据
-                graph_run_doc = await self.db.get_collection("mcp-agent-graph-messages").find_one(
-                    {"conversation_id": conversation_id}
-                )
-                
+                from app.infrastructure.database.mongodb.repositories.graph_run_repository import GraphRunRepository
+                graph_run_repo = GraphRunRepository(self.db, self.db.graph_run, self)
+                graph_run_doc = await graph_run_repo.get_graph_run_conversation(conversation_id)
+
                 if graph_run_doc:
                     rounds = graph_run_doc.get("rounds", [])
                     tasks = graph_run_doc.get("tasks", [])
