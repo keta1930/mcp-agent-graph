@@ -4,7 +4,6 @@ import { Input, Button, Empty, Spin, Tooltip } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Home, Clock, ChevronLeft, CheckSquare } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
-import { getCurrentUserDisplayName } from '../../../config/user';
 import { useT } from '../../../i18n/hooks';
 import UserMenu from '../../common/UserMenu';
 import CollapsedSidebar from './CollapsedSidebar';
@@ -171,7 +170,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       <CollapsedSidebar
         onExpand={toggleSidebar}
         onNewConversation={onNewConversation}
-        currentUserDisplayName={getCurrentUserDisplayName()}
       />
     );
   }

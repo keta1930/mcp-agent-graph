@@ -1,19 +1,18 @@
 // src/components/chat/sidebar/CollapsedSidebar.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, User, Clock, ChevronRight } from 'lucide-react';
+import { Home, Clock, ChevronRight } from 'lucide-react';
 import { useT } from '../../../i18n/hooks';
+import UserMenu from '../../common/UserMenu';
 
 interface CollapsedSidebarProps {
   onExpand: () => void;
   onNewConversation?: () => void;
-  currentUserDisplayName: string;
 }
 
 const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
   onExpand,
   onNewConversation,
-  currentUserDisplayName,
 }) => {
   const navigate = useNavigate();
   const t = useT();
@@ -176,11 +175,8 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
           borderTop: '1px solid rgba(139, 115, 85, 0.08)',
         }}
       >
-        <NavButton
-          icon={<User size={18} strokeWidth={1.5} />}
-          title={t('components.collapsedSidebar.user', { name: currentUserDisplayName })}
-          onClick={() => {}}
-        />
+        {/* 用户头像下拉菜单 */}
+        <UserMenu collapsed={true} placement="topLeft" />
 
         <NavButton
           icon={<Home size={18} strokeWidth={1.5} />}
