@@ -39,11 +39,10 @@ async def get_graph(graph_name: str, current_user: CurrentUser = Depends(get_cur
                 detail=f"找不到图 '{graph_name}'"
             )
 
-        # 验证访问权限（所有者或共享用户或管理员）
+        # 验证访问权限（所有者或管理员）
         if not current_user.is_admin():
             owner_id = graph_doc.get("user_id")
-            shared_with = graph_doc.get("shared_with", [])
-            if owner_id != current_user.user_id and current_user.user_id not in shared_with:
+            if owner_id != current_user.user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="无权限访问此图"
@@ -74,8 +73,7 @@ async def get_graph_readme(graph_name: str, current_user: CurrentUser = Depends(
         # 验证访问权限
         if not current_user.is_admin():
             owner_id = graph_doc.get("user_id")
-            shared_with = graph_doc.get("shared_with", [])
-            if owner_id != current_user.user_id and current_user.user_id not in shared_with:
+            if owner_id != current_user.user_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="无权限访问此图"

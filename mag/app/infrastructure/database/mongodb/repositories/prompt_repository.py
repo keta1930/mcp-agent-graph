@@ -63,7 +63,6 @@ class PromptRepository:
                 "name": prompt_data.name,
                 "content": prompt_data.content,
                 "category": prompt_data.category,
-                "shared_with": [],
                 "created_at": datetime.now(),
                 "updated_at": datetime.now()
             }
@@ -93,31 +92,23 @@ class PromptRepository:
                 "message": f"创建提示词时发生错误: {str(e)}"
             }
 
-    async def get_prompt(self, name: str, user_id: str = "default_user", check_shared: bool = True) -> Optional[PromptDetail]:
+    async def get_prompt(self, name: str, user_id: str = "default_user") -> Optional[PromptDetail]:
         """
         获取指定提示词的详细信息
 
         Args:
             name: 提示词名称
             user_id: 用户ID
-            check_shared: 是否检查共享（如果用户没有自己的提示词，尝试获取共享的）
 
         Returns:
             Optional[PromptDetail]: 提示词详细信息，不存在时返回 None
         """
         try:
-            # 首先查找用户自己的提示词
+            # 查找用户自己的提示词
             doc = await self.collection.find_one({
                 "user_id": user_id,
                 "name": name
             })
-
-            # 如果没有找到且需要检查共享，尝试获取共享给该用户的提示词
-            if not doc and check_shared:
-                doc = await self.collection.find_one({
-                    "name": name,
-                    "shared_with": user_id
-                })
 
             if not doc:
                 return None
@@ -313,90 +304,6 @@ class PromptRepository:
                 "message": f"批量删除时发生错误: {str(e)}"
             }
 
-    async def share_prompt(self, prompt_name: str, owner_user_id: str, target_user_ids: List[str]) -> bool:
-        """
-        共享提示词给其他用户
-
-        Args:
-            prompt_name: 提示词名称
-            owner_user_id: 所有者用户ID
-            target_user_ids: 目标用户ID列表
-
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            result = await self.collection.update_one(
-                {"user_id": owner_user_id, "name": prompt_name},
-                {"$addToSet": {"shared_with": {"$each": target_user_ids}}}
-            )
-
-            if result.modified_count > 0:
-                logger.info(f"提示词共享成功: {prompt_name} (owner: {owner_user_id}, targets: {target_user_ids})")
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"共享提示词失败 (owner: {owner_user_id}, prompt: {prompt_name}): {e}")
-            return False
-
-    async def unshare_prompt(self, prompt_name: str, owner_user_id: str, target_user_ids: List[str]) -> bool:
-        """
-        取消共享提示词
-
-        Args:
-            prompt_name: 提示词名称
-            owner_user_id: 所有者用户ID
-            target_user_ids: 目标用户ID列表
-
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            result = await self.collection.update_one(
-                {"user_id": owner_user_id, "name": prompt_name},
-                {"$pullAll": {"shared_with": target_user_ids}}
-            )
-
-            if result.modified_count > 0:
-                logger.info(f"取消提示词共享成功: {prompt_name} (owner: {owner_user_id}, targets: {target_user_ids})")
-                return True
-            return False
-        except Exception as e:
-            logger.error(f"取消共享提示词失败 (owner: {owner_user_id}, prompt: {prompt_name}): {e}")
-            return False
-
-    async def list_shared_prompts(self, user_id: str) -> List[Dict[str, Any]]:
-        """
-        列出共享给用户的提示词
-
-        Args:
-            user_id: 用户ID
-
-        Returns:
-            List[Dict[str, Any]]: 共享的提示词列表
-        """
-        try:
-            cursor = self.collection.find({"shared_with": user_id})
-            prompts = []
-
-            async for doc in cursor:
-                created_time = doc["created_at"].strftime("%Y-%m-%d") if doc.get("created_at") else datetime.now().strftime("%Y-%m-%d")
-                updated_time = doc["updated_at"].strftime("%Y-%m-%d") if doc.get("updated_at") else datetime.now().strftime("%Y-%m-%d")
-
-                prompts.append({
-                    "owner_user_id": doc.get("user_id"),
-                    "name": doc["name"],
-                    "content": doc["content"],
-                    "category": doc.get("category"),
-                    "created_time": created_time,
-                    "updated_time": updated_time
-                })
-
-            return prompts
-        except Exception as e:
-            logger.error(f"列出共享提示词失败 (user: {user_id}): {e}")
-            return []
-
     async def import_prompt_by_file(self, file: UploadFile, import_request: PromptImportByFileRequest,
                                    user_id: str = "default_user") -> Dict[str, Any]:
         """
@@ -462,7 +369,7 @@ class PromptRepository:
                 for name in export_request.names:
                     try:
                         # 从MongoDB获取提示词
-                        prompt_detail = await self.get_prompt(name, user_id, check_shared=False)
+                        prompt_detail = await self.get_prompt(name, user_id)
 
                         if prompt_detail:
                             # 将内容写入ZIP

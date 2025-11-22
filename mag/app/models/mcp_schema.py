@@ -123,7 +123,6 @@ class MCPConfigResponse(BaseModel):
     config: MCPConfig = Field(..., description="MCP配置内容")
     version: int = Field(..., description="配置版本号")
     user_id: str = Field(..., description="配置所有者用户ID")
-    shared_with: List[str] = Field(default_factory=list, description="共享给的用户列表")
     updated_at: Optional[str] = Field(None, description="最后更新时间")
 
 

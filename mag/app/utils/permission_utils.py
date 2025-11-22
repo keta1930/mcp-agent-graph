@@ -19,11 +19,10 @@ def can_access_resource(
 
     访问规则：
     1. 用户是资源所有者 -> 允许所有操作
-    2. 用户在共享列表中 -> 只读访问（require_owner=False时允许）
-    3. 其他情况 -> 拒绝访问
+    2. 其他情况 -> 拒绝访问
 
     Args:
-        resource: 资源对象（需包含user_id字段，可选shared_with字段）
+        resource: 资源对象（需包含user_id字段）
         user_id: 当前用户ID
         require_owner: 是否要求所有者权限（修改/删除操作需设为True）
 
@@ -43,27 +42,13 @@ def can_access_resource(
     if not resource:
         return False
 
-    # 1. 检查所有者
+    # 检查所有者
     resource_owner = resource.get("user_id")
     if resource_owner == user_id:
         return True
 
-    # 2. 如果要求所有者权限，非所有者拒绝
-    if require_owner:
-        logger.debug(
-            f"Access denied: User {user_id} is not the owner of resource (owner: {resource_owner}), "
-            f"and owner permission is required"
-        )
-        return False
-
-    # 3. 检查共享列表（只读访问）
-    shared_with = resource.get("shared_with", [])
-    if shared_with and user_id in shared_with:
-        return True
-
     logger.debug(
-        f"Access denied: User {user_id} is not the owner (owner: {resource_owner}) "
-        f"and not in shared_with list: {shared_with}"
+        f"Access denied: User {user_id} is not the owner (owner: {resource_owner})"
     )
     return False
 
@@ -107,8 +92,7 @@ def verify_resource_ownership(
 def verify_resource_access(
     resource: Dict[str, Any],
     user_id: str,
-    resource_type: str = "resource",
-    allow_shared: bool = True
+    resource_type: str = "resource"
 ) -> None:
     """
     验证用户是否可以访问资源（读权限），如果不能则抛出异常
@@ -117,13 +101,12 @@ def verify_resource_access(
         resource: 资源对象
         user_id: 当前用户ID
         resource_type: 资源类型名称（用于错误消息）
-        allow_shared: 是否允许共享用户访问
 
     Raises:
         ValueError: 当用户无权访问时
 
     Examples:
-        verify_resource_access(graph_doc, current_user_id, "graph", allow_shared=True)
+        verify_resource_access(graph_doc, current_user_id, "graph")
     """
     if not resource:
         raise ValueError(f"{resource_type} not found")
@@ -132,12 +115,6 @@ def verify_resource_access(
     resource_owner = resource.get("user_id")
     if resource_owner == user_id:
         return
-
-    # 检查共享列表
-    if allow_shared:
-        shared_with = resource.get("shared_with", [])
-        if shared_with and user_id in shared_with:
-            return
 
     logger.warning(
         f"Permission denied: User {user_id} attempted to access {resource_type} "

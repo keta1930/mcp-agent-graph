@@ -196,19 +196,16 @@ class MongoDBClient:
             await self.graphs_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.graphs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.graphs_collection.create_index([("name", 1)])
-            await self.graphs_collection.create_index([("shared_with", 1)])
 
             await self.prompts_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.prompts_collection.create_index([("user_id", 1), ("updated_at", -1)])
             await self.prompts_collection.create_index([("category", 1)])
-            await self.prompts_collection.create_index([("shared_with", 1)])
 
             await self.model_configs_collection.create_index([("user_id", 1)])
             await self.model_configs_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
             await self.model_configs_collection.create_index([("updated_at", -1)])
 
             await self.mcp_configs_collection.create_index([("user_id", 1)], unique=True)
-            await self.mcp_configs_collection.create_index([("shared_with", 1)])
             await self.mcp_configs_collection.create_index([("updated_at", -1)])
 
             await self.preview_shares_collection.create_index([("key", 1)], unique=True)

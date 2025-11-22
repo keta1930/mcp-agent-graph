@@ -30,18 +30,16 @@ class GraphConfigRepository:
             logger.error(f"创建图配置失败: {str(e)}")
             return False
 
-    async def get_graph(self, graph_name: str, user_id: Optional[str] = None,
-                       check_shared: bool = True) -> Optional[Dict[str, Any]]:
+    async def get_graph(self, graph_name: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         获取图配置
 
         Args:
             graph_name: 图名称
             user_id: 用户ID（必需，用于定位用户的图）
-            check_shared: 是否检查共享权限（仅在user_id不为None时有效）
 
         Returns:
-            包含完整图信息的字典（config, user_id, shared_with等），如果无权访问或不存在则返回None
+            包含完整图信息的字典（config, user_id等），如果无权访问或不存在则返回None
         """
         try:
             if user_id is None:
