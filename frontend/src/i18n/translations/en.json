@@ -857,7 +857,7 @@
         "toolCall": "Tool Call",
         "parameters": "Parameters",
         "result": "Result",
-        "aiThinking": "AI Thinking Process",
+        "aiThinking": "AI Thinking",
         "reasoning": "Reasoning",
         "node": "Node",
         "mcpTools": "MCP Tools: {{count}}",
