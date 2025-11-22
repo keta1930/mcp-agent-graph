@@ -238,9 +238,18 @@ class GraphService:
         """将子图节点展开为多个普通节点"""
         return await self.processor._expand_subgraph_node(subgraph_node, prefix_path)
 
-    async def detect_graph_cycles(self, graph_name: str, visited: List[str] = None) -> Optional[List[str]]:
-        """检测图引用中的循环"""
-        return await self.processor.detect_graph_cycles(graph_name, visited)
+    async def detect_graph_cycles(self, graph_name: str, visited: List[str] = None, user_id: str = "default_user") -> Optional[List[str]]:
+        """检测图引用中的循环
+
+        Args:
+            graph_name: 图名称
+            visited: 已访问的图列表
+            user_id: 用户ID
+
+        Returns:
+            如果存在循环则返回循环路径，否则返回None
+        """
+        return await self.processor.detect_graph_cycles(graph_name, visited, user_id)
 
     async def validate_graph(self, graph_config: Dict[str, Any], user_id: str = "default_user") -> Tuple[bool, Optional[str]]:
         """验证图配置是否有效"""
@@ -251,7 +260,8 @@ class GraphService:
         return await self.processor.validate_graph(
             graph_config,
             get_model_wrapper,
-            mcp_service.get_server_status_sync
+            mcp_service.get_server_status_sync,
+            user_id
         )
 
     async def create_conversation(self, graph_name: str) -> str:
@@ -289,7 +299,7 @@ class GraphService:
         """后台异步执行图，执行到创建conversation_id后立即返回，图在后台继续运行"""
         try:
             # 检测图循环（和SSE版本一样的前期检查）
-            cycle = await self.detect_graph_cycles(graph_name)
+            cycle = await self.detect_graph_cycles(graph_name, user_id=user_id)
             if cycle:
                 return {
                     "status": "error",
@@ -336,7 +346,7 @@ class GraphService:
                                    user_id: str = "default_user") -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""
         try:
-            cycle = await self.detect_graph_cycles(graph_name)
+            cycle = await self.detect_graph_cycles(graph_name, user_id=user_id)
             if cycle:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
                 return

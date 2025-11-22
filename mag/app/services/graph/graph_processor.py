@@ -398,8 +398,17 @@ class GraphProcessor:
 
         return expanded_nodes
 
-    async def detect_graph_cycles(self, graph_name: str, visited: List[str] = None) -> Optional[List[str]]:
-        """检测图引用中的循环"""
+    async def detect_graph_cycles(self, graph_name: str, visited: List[str] = None, user_id: str = "default_user") -> Optional[List[str]]:
+        """检测图引用中的循环
+
+        Args:
+            graph_name: 图名称
+            visited: 已访问的图列表
+            user_id: 用户ID
+
+        Returns:
+            如果存在循环则返回循环路径，否则返回None
+        """
         if visited is None:
             visited = []
 
@@ -408,7 +417,7 @@ class GraphProcessor:
             return visited + [graph_name]
 
         # 获取图配置
-        graph_config = await self.get_graph(graph_name)
+        graph_config = await self.get_graph(graph_name, user_id)
         if not graph_config:
             return None
 
@@ -421,14 +430,14 @@ class GraphProcessor:
                 subgraph_name = node.get("subgraph_name")
                 if subgraph_name:
                     # 递归检查
-                    cycle = await self.detect_graph_cycles(subgraph_name, current_path)
+                    cycle = await self.detect_graph_cycles(subgraph_name, current_path, user_id)
                     if cycle:
                         return cycle
 
         return None
 
     async def validate_graph(self, graph_config: Dict[str, Any],
-                      get_model_func, get_servers_status_func) -> Tuple[bool, Optional[str]]:
+                      get_model_func, get_servers_status_func, user_id: str = "default_user") -> Tuple[bool, Optional[str]]:
         """验证图配置是否有效"""
         try:
             # 检查基本结构
@@ -467,7 +476,7 @@ class GraphProcessor:
                         return False, f"子图节点 '{node['name']}' 未指定子图名称"
 
                     # 检查子图是否存在
-                    subgraph_config = await self.get_graph(subgraph_name)
+                    subgraph_config = await self.get_graph(subgraph_name, user_id)
                     if not subgraph_config:
                         return False, f"子图节点 '{node['name']}' 引用了不存在的子图 '{subgraph_name}'"
 
@@ -476,7 +485,7 @@ class GraphProcessor:
                         return False, f"子图节点 '{node['name']}' 引用了自身，形成循环引用"
 
                     # 检查深层次循环引用
-                    cycle = await self.detect_graph_cycles(subgraph_name, [graph_config.get("name")])
+                    cycle = await self.detect_graph_cycles(subgraph_name, [graph_config.get("name")], user_id)
                     if cycle:
                         return False, f"检测到循环引用链: {' -> '.join(cycle)}"
                 else:
