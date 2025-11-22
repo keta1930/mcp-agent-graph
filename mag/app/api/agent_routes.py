@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse, FileResponse
 from app.infrastructure.database.mongodb.client import mongodb_client
 from app.services.agent.agent_stream_executor import AgentStreamExecutor
 from app.services.agent.agent_import_service import agent_import_service
+from app.services.agent.agent_service import agent_service
 from app.utils.sse_helper import TrajectoryCollector
 from app.models.agent_schema import (
     CreateAgentRequest,
@@ -189,7 +190,6 @@ async def create_agent(
             )
 
         # 使用 agent_service 创建 Agent（包含记忆文档创建）
-        from app.services.agent.agent_service import agent_service
         result = await agent_service.create_agent(
             agent_config=request.agent_config.dict(),
             user_id=user_id
@@ -291,7 +291,6 @@ async def update_agent(
             )
 
         # 使用 agent_service 更新 Agent
-        from app.services.agent.agent_service import agent_service
         result = await agent_service.update_agent(
             agent_name=agent_name,
             agent_config=request.agent_config.dict(),
@@ -346,7 +345,6 @@ async def delete_agent(
             )
 
         # 使用 agent_service 删除 Agent（会同时删除记忆文档）
-        from app.services.agent.agent_service import agent_service
         success = await agent_service.delete_agent(agent_name, user_id)
 
         if not success:
