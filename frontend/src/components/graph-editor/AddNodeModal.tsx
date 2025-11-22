@@ -561,31 +561,36 @@ const AddNodeModal: React.FC<AddNodeModalProps> = ({ visible, onClose, onAdd }) 
             {t('components.graphEditor.addNodeModal.toolsAndServices')}
           </div>
 
-          {/* 系统工具选择 - 使用公共树形选择器组件 */}
-          <Form.Item
-            label={<span style={labelStyle}>{t('components.graphEditor.addNodeModal.systemTools')}</span>}
-            name="system_tools"
-            initialValue={[]}
-            style={{ marginBottom: '16px' }}
-          >
-            <SystemToolTreeSelector
-              categories={systemToolCategories}
-              loading={loadingTools}
-              placeholder={t('components.graphEditor.addNodeModal.systemToolsPlaceholder')}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label={<span style={labelStyle}>{t('components.graphEditor.addNodeModal.mcpServers')}</span>}
-            name="mcp_servers"
-            initialValue={[]}
-            style={{ marginBottom: '16px' }}
-          >
-            <MCPSelector
-              mcpServers={mcpServers}
-              placeholder={t('components.graphEditor.addNodeModal.mcpServersPlaceholder')}
-            />
-          </Form.Item>
+          {/* 系统工具和MCP服务器 - 两栏布局 */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={<span style={labelStyle}>{t('components.graphEditor.addNodeModal.systemTools')}</span>}
+                name="system_tools"
+                initialValue={[]}
+                style={{ marginBottom: '16px' }}
+              >
+                <SystemToolTreeSelector
+                  categories={systemToolCategories}
+                  loading={loadingTools}
+                  placeholder={t('components.graphEditor.addNodeModal.systemToolsPlaceholder')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={<span style={labelStyle}>{t('components.graphEditor.addNodeModal.mcpServers')}</span>}
+                name="mcp_servers"
+                initialValue={[]}
+                style={{ marginBottom: '16px' }}
+              >
+                <MCPSelector
+                  mcpServers={mcpServers}
+                  placeholder={t('components.graphEditor.addNodeModal.mcpServersPlaceholder')}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <div style={{ marginBottom: '0' }}>
             <Form.Item

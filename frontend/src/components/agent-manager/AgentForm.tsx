@@ -218,27 +218,33 @@ const AgentForm: React.FC<AgentFormProps> = ({
           {t('pages.agentManager.toolsAndServices')}
         </div>
 
-        <Form.Item
-          label={<span style={FORM_SECTION_STYLES.label}>{t('pages.agentManager.systemTools')}</span>}
-          name="system_tools"
-          style={{ marginBottom: '16px' }}
-        >
-          <SystemToolTreeSelector
-            categories={systemToolCategories}
-            placeholder={t('pages.agentManager.systemToolsPlaceholder')}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={<span style={FORM_SECTION_STYLES.label}>{t('pages.agentManager.mcpServers')}</span>}
-          name="mcp"
-          style={{ marginBottom: '16px' }}
-        >
-          <MCPSelector
-            mcpServers={mcpServers}
-            placeholder={t('pages.agentManager.mcpServersPlaceholder')}
-          />
-        </Form.Item>
+        {/* 系统工具和MCP服务器 - 两栏布局 */}
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              label={<span style={FORM_SECTION_STYLES.label}>{t('pages.agentManager.systemTools')}</span>}
+              name="system_tools"
+              style={{ marginBottom: '16px' }}
+            >
+              <SystemToolTreeSelector
+                categories={systemToolCategories}
+                placeholder={t('pages.agentManager.systemToolsPlaceholder')}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              label={<span style={FORM_SECTION_STYLES.label}>{t('pages.agentManager.mcpServers')}</span>}
+              name="mcp"
+              style={{ marginBottom: '16px' }}
+            >
+              <MCPSelector
+                mcpServers={mcpServers}
+                placeholder={t('pages.agentManager.mcpServersPlaceholder')}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item
           label={<span style={FORM_SECTION_STYLES.label}>{t('pages.agentManager.tags')}</span>}

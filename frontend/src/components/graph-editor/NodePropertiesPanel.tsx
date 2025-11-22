@@ -533,29 +533,34 @@ const NodePropertiesPanel: React.FC = () => {
             {t('components.graphEditor.addNodeModal.toolsAndServices')}
           </div>
 
-          {/* 系统工具选择 - 使用公共树形选择器组件 */}
-          <Form.Item
-            label={<span style={labelStyle}>{t('components.graphEditor.nodePropertiesPanel.systemTools')}</span>}
-            name="system_tools"
-            style={{ marginBottom: '16px' }}
-          >
-            <SystemToolTreeSelector
-              categories={systemToolCategories}
-              loading={loadingTools}
-              placeholder={t('components.graphEditor.nodePropertiesPanel.systemToolsPlaceholder')}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label={<span style={labelStyle}>{t('components.graphEditor.nodePropertiesPanel.mcpServers')}</span>}
-            name="mcp_servers"
-            style={{ marginBottom: '16px' }}
-          >
-            <MCPSelector
-              mcpServers={mcpServers}
-              placeholder={t('components.graphEditor.nodePropertiesPanel.mcpServersPlaceholder')}
-            />
-          </Form.Item>
+          {/* 系统工具和MCP服务器 - 两栏布局 */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={<span style={labelStyle}>{t('components.graphEditor.nodePropertiesPanel.systemTools')}</span>}
+                name="system_tools"
+                style={{ marginBottom: '16px' }}
+              >
+                <SystemToolTreeSelector
+                  categories={systemToolCategories}
+                  loading={loadingTools}
+                  placeholder={t('components.graphEditor.nodePropertiesPanel.systemToolsPlaceholder')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={<span style={labelStyle}>{t('components.graphEditor.nodePropertiesPanel.mcpServers')}</span>}
+                name="mcp_servers"
+                style={{ marginBottom: '16px' }}
+              >
+                <MCPSelector
+                  mcpServers={mcpServers}
+                  placeholder={t('components.graphEditor.nodePropertiesPanel.mcpServersPlaceholder')}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <div style={{ marginBottom: '0', display: 'flex', alignItems: 'center' }}>
             <span style={labelStyle}>{t('components.graphEditor.addNodeModal.enableOutput')}</span>
