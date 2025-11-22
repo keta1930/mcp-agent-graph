@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Input, Button, Empty, Spin, Tooltip } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, User, Home, Clock, ChevronLeft, CheckSquare } from 'lucide-react';
+import { Search, Plus, Home, Clock, ChevronLeft, CheckSquare } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
 import { getCurrentUserDisplayName } from '../../../config/user';
 import { useT } from '../../../i18n/hooks';
+import UserMenu from '../../common/UserMenu';
 import CollapsedSidebar from './CollapsedSidebar';
 import ConversationItem from './ConversationItem';
 import ExportManagerButton from '../modal/ExportManagerButton';
@@ -26,7 +27,6 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   const navigate = useNavigate();
   const t = useT();
   const [scrollPosition, setScrollPosition] = useState(0);
-  const currentUserDisplayName = getCurrentUserDisplayName();
   const [isBatchMode, setIsBatchMode] = useState(false);
   const [selectedConversations, setSelectedConversations] = useState<
     Set<string>
@@ -171,7 +171,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       <CollapsedSidebar
         onExpand={toggleSidebar}
         onNewConversation={onNewConversation}
-        currentUserDisplayName={currentUserDisplayName}
+        currentUserDisplayName={getCurrentUserDisplayName()}
       />
     );
   }
@@ -249,40 +249,94 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           />
         </div>
 
-        {/* 新建对话按钮 - 显眼的全宽按钮 */}
-        {onNewConversation && (
-          <Button
-            type="primary"
-            icon={<Plus size={16} strokeWidth={1.5} />}
-            onClick={onNewConversation}
-            block
-            style={{
-              height: '36px',
-              borderRadius: '6px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-              color: '#ffffff',
-              fontSize: '14px',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 6px rgba(184, 88, 69, 0.25)';
-            }}
-          >
-            {t('components.conversationSidebar.newConversation')}
-          </Button>
-        )}
+        {/* 功能按钮行：批量选择、导出、任务中心、新对话 */}
+        <div style={{ display: 'flex', gap: '4px', justifyContent: 'space-between' }}>
+          {/* 批量选择按钮 */}
+          <Tooltip title={isBatchMode ? t('components.conversationSidebar.cancelSelection') : t('components.conversationSidebar.batchMode')}>
+            <Button
+              type="text"
+              icon={<CheckSquare size={16} strokeWidth={1.5} />}
+              onClick={handleBatchModeToggle}
+              style={{
+                height: '36px',
+                width: '36px',
+                borderRadius: '6px',
+                border: 'none',
+                background: isBatchMode ? 'rgba(139, 115, 85, 0.08)' : 'transparent',
+                color: isBatchMode ? '#8b7355' : 'rgba(45, 45, 45, 0.65)',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isBatchMode ? 'rgba(139, 115, 85, 0.08)' : 'transparent';
+              }}
+            />
+          </Tooltip>
+
+          {/* 导出按钮 */}
+          <ExportManagerButton />
+
+          {/* 任务中心按钮 */}
+          <Tooltip title={t('components.conversationSidebar.taskCenter')}>
+            <Button
+              type="text"
+              icon={<Clock size={16} strokeWidth={1.5} />}
+              onClick={() => navigate('/tasks')}
+              style={{
+                height: '36px',
+                width: '36px',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'transparent',
+                color: 'rgba(45, 45, 45, 0.65)',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            />
+          </Tooltip>
+
+          {/* 新对话按钮 - 小图标，放在最右边 */}
+          {onNewConversation && (
+            <Tooltip title={t('components.conversationSidebar.newConversation')}>
+              <Button
+                type="text"
+                icon={<Plus size={16} strokeWidth={1.5} />}
+                onClick={onNewConversation}
+                style={{
+                  height: '36px',
+                  width: '36px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'rgba(45, 45, 45, 0.65)',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              />
+            </Tooltip>
+          )}
+        </div>
       </div>
 
       {/* 批量操作工具栏 */}
@@ -413,7 +467,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         )}
       </div>
 
-      {/* 底部 - 单行布局 */}
+      {/* 底部 - 用户头像和回到主页 */}
       <div
         style={{
           padding: '12px 16px',
@@ -421,79 +475,29 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          background: 'rgba(255, 255, 255, 0.5)',
         }}
       >
-        {/* 用户信息 */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: 'rgba(45, 45, 45, 0.65)',
-            fontSize: '13px',
-            fontWeight: 400,
-          }}
-        >
-          <User size={16} strokeWidth={1.5} />
-          <span>{currentUserDisplayName}</span>
-        </div>
+        {/* 用户头像下拉菜单 */}
+        <UserMenu collapsed={false} placement="topLeft" />
 
-        {/* 功能按钮组 */}
-        <div style={{ display: 'flex', gap: '2px' }}>
-          <Tooltip title={isBatchMode ? t('components.conversationSidebar.cancelSelection') : t('components.conversationSidebar.batchMode')}>
-            <Button
-              type="text"
-              icon={<CheckSquare size={16} strokeWidth={1.5} />}
-              onClick={handleBatchModeToggle}
-              style={{
-                background: isBatchMode ? 'rgba(139, 115, 85, 0.08)' : 'transparent',
-                color: isBatchMode ? '#8b7355' : 'rgba(45, 45, 45, 0.65)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = isBatchMode ? 'rgba(139, 115, 85, 0.08)' : 'transparent';
-              }}
-            />
-          </Tooltip>
-
-          <ExportManagerButton />
-
-          <Tooltip title={t('components.conversationSidebar.taskCenter')}>
-            <Button
-              type="text"
-              icon={<Clock size={16} strokeWidth={1.5} />}
-              onClick={() => navigate('/tasks')}
-              style={{
-                color: 'rgba(45, 45, 45, 0.65)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            />
-          </Tooltip>
-
-          <Tooltip title={t('components.conversationSidebar.backToHome')}>
-            <Button
-              type="text"
-              icon={<Home size={16} strokeWidth={1.5} />}
-              onClick={() => navigate('/')}
-              style={{
-                color: 'rgba(45, 45, 45, 0.65)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            />
-          </Tooltip>
-        </div>
+        {/* 回到主页按钮 */}
+        <Tooltip title={t('components.conversationSidebar.backToHome')}>
+          <Button
+            type="text"
+            icon={<Home size={16} strokeWidth={1.5} />}
+            onClick={() => navigate('/')}
+            style={{
+              color: 'rgba(45, 45, 45, 0.65)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          />
+        </Tooltip>
       </div>
     </div>
   );

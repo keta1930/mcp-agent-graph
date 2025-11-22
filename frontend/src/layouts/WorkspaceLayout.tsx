@@ -12,12 +12,11 @@ import {
   FolderOpen,
   Database,
   Home,
-  User,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
 import { useT } from '../i18n';
-import { getCurrentUserDisplayName } from '../config/user';
+import UserMenu from '../components/common/UserMenu';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -27,7 +26,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const t = useT();
-  const currentUserDisplayName = getCurrentUserDisplayName();
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -221,22 +219,8 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           <div style={footerStyle}>
             <div style={footerDecorStyle} />
             
-            {!collapsed && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: 'rgba(45, 45, 45, 0.65)',
-                  fontSize: '13px',
-                  fontWeight: 400,
-                  flex: 1,
-                }}
-              >
-                <User size={16} strokeWidth={1.5} />
-                <span>{currentUserDisplayName}</span>
-              </div>
-            )}
+            {/* 用户头像下拉菜单 */}
+            <UserMenu collapsed={collapsed} placement="topLeft" />
             
             <Tooltip title={t('pages.workspace.backHome')}>
               <Button

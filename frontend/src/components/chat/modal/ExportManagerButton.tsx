@@ -20,7 +20,16 @@ const ExportManagerButton: React.FC = () => {
         icon={<Download size={16} strokeWidth={1.5} />}
         onClick={handleClick}
         style={{
+          height: '36px',
+          width: '36px',
+          borderRadius: '6px',
+          border: 'none',
+          background: 'transparent',
           color: 'rgba(45, 45, 45, 0.65)',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
