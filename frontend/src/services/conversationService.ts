@@ -4,7 +4,12 @@ import {
   ConversationListResponse,
   ConversationDetail,
   GraphExecuteRequest,
-  AgentRunRequest
+  AgentRunRequest,
+  CreateShareResponse,
+  ShareStatusResponse,
+  DeleteShareResponse,
+  SharedConversationResponse,
+  SharedFileInfo
 } from '../types/conversation';
 
 const CONVERSATION_API_BASE = '/conversations';
@@ -170,6 +175,53 @@ export class ConversationService {
       console.error('创建 Agent SSE 连接失败:', error);
       throw error;
     }
+  }
+
+  // 分享相关API
+  // 创建分享链接
+  static async createShare(conversationId: string): Promise<CreateShareResponse> {
+    const response = await api.post(`${CONVERSATION_API_BASE}/${conversationId}/share`);
+    return response.data;
+  }
+
+  // 查询分享状态
+  static async getShareStatus(conversationId: string): Promise<ShareStatusResponse> {
+    const response = await api.get(`${CONVERSATION_API_BASE}/${conversationId}/share/status`);
+    return response.data;
+  }
+
+  // 删除分享
+  static async deleteShare(shareId: string): Promise<DeleteShareResponse> {
+    const response = await api.delete(`/share/${shareId}`);
+    return response.data;
+  }
+
+  // 获取分享的对话（无需认证）
+  static async getSharedConversation(shareId: string): Promise<SharedConversationResponse> {
+    const response = await api.get(`/share/${shareId}`);
+    return response.data;
+  }
+
+  // 获取分享的文件列表（无需认证）
+  static async getSharedFiles(shareId: string): Promise<string[]> {
+    const response = await api.get(`/share/${shareId}/files`);
+    return response.data.files; // 后端返回 {success, files, total_count}
+  }
+
+  // 下载分享的单个文件（无需认证）
+  static async downloadSharedFile(shareId: string, filename: string): Promise<Blob> {
+    const response = await api.get(`/share/${shareId}/file/${filename}`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  }
+
+  // 批量下载分享的所有文件（无需认证）
+  static async downloadAllSharedFiles(shareId: string): Promise<Blob> {
+    const response = await api.get(`/share/${shareId}/batch`, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 }
 

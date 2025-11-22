@@ -256,3 +256,51 @@ export interface EnhancedStreamingState {
     status?: 'running' | 'completed' | 'pending';
   } | null;
 }
+
+// 分享相关类型定义
+export interface ShareInfo {
+  share_id: string;
+  conversation_id: string;
+  created_at: string;
+  created_by: string;
+}
+
+export interface CreateShareResponse {
+  share_id: string;
+  share_url: string;
+  created_at: string;
+}
+
+export interface ShareStatusResponse {
+  is_shared: boolean;
+  share_info?: ShareInfo;
+}
+
+export interface DeleteShareResponse {
+  message: string;
+}
+
+export interface SharedConversationResponse {
+  conversation_id: string;
+  title: string;
+  rounds: ConversationRound[];
+  type: 'agent' | 'graph';
+  created_at: string;
+  round_count: number;
+  // 可选字段
+  execution_chain?: string[][];
+  final_result?: string;
+  tasks?: TaskData[];
+}
+
+export interface SharedFileInfo {
+  filename: string;
+  size: number;
+  created_at: string;
+}
+
+export interface SharedFilesResponse {
+  success: boolean;
+  files: string[];
+  total_count: number;
+}
