@@ -1,6 +1,6 @@
 // src/pages/ChatSystem.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { message, Button, Dropdown, Menu, Tooltip } from 'antd';
+import { Button, Dropdown, Menu, Tooltip, App } from 'antd';
 import { CompressOutlined, DownOutlined, FileOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConversationSidebar from '../components/chat/sidebar/ConversationSidebar';
@@ -17,12 +17,15 @@ import { useT } from '../i18n/hooks';
 import { useGlobalNotification } from '../hooks/useGlobalNotification';
 import { ConversationService, generateMongoId } from '../services/conversationService';
 import { ConversationMode, ConversationDetail } from '../types/conversation';
+import ShareButton from '../components/chat/ShareButton';
+import ShareModal from '../components/chat/ShareModal';
 import '../styles/chat-system.css';
 
 const ChatSystem: React.FC = () => {
   const { conversationId: urlConversationId } = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
   const t = useT();
+  const { message } = App.useApp();
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
   // 用于处理正在进行的对话，避免全局状态泄露
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
@@ -50,6 +53,11 @@ const ChatSystem: React.FC = () => {
   // 文件查看模态框状态
   const [fileViewModalVisible, setFileViewModalVisible] = useState(false);
   const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
+  // 分享相关状态
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [shareId, setShareId] = useState<string>('');
+  const [shareLoading, setShareLoading] = useState(false);
 
   const {
     currentConversation,
@@ -331,7 +339,6 @@ const ChatSystem: React.FC = () => {
             setTemporaryConversation(null);
             // 静默更新对话列表以显示新对话
             silentUpdateConversations();
-            message.success(t('pages.chatSystem.messages.conversationComplete'));
           }, 0);
         },
         onError: (error) => {
@@ -517,6 +524,60 @@ const ChatSystem: React.FC = () => {
     }
   }, [activeConversationId, getDisplayConversation, loadConversationDetail, t, showSuccessNotification]);
 
+  // 处理分享按钮点击
+  const handleShareClick = useCallback(async () => {
+    if (!activeConversationId) {
+      message.error(t('pages.chatSystem.errors.noConversationSelected'));
+      return;
+    }
+
+    setShareLoading(true);
+    try {
+      // 检查对话是否已分享
+      const statusResponse = await ConversationService.getShareStatus(activeConversationId);
+      
+      if (statusResponse.is_shared && statusResponse.share_info) {
+        // 已分享，显示现有分享链接
+        const fullUrl = `${window.location.origin}/share/${statusResponse.share_info.share_id}`;
+        setShareUrl(fullUrl);
+        setShareId(statusResponse.share_info.share_id);
+        setShareModalVisible(true);
+      } else {
+        // 未分享，创建新的分享链接
+        const createResponse = await ConversationService.createShare(activeConversationId);
+        const fullUrl = `${window.location.origin}/share/${createResponse.share_id}`;
+        setShareUrl(fullUrl);
+        setShareId(createResponse.share_id);
+        setShareModalVisible(true);
+        message.success(t('pages.chatSystem.share.createSuccess'));
+      }
+    } catch (error: any) {
+      console.error('分享失败:', error);
+      if (error.response?.status === 403) {
+        message.error(t('pages.chatSystem.share.permissionDenied'));
+      } else {
+        message.error(t('pages.chatSystem.share.shareFailed', { error: error.message }));
+      }
+    } finally {
+      setShareLoading(false);
+    }
+  }, [activeConversationId, t]);
+
+  // 处理删除分享
+  const handleDeleteShare = useCallback(async () => {
+    if (!shareId) return;
+
+    try {
+      await ConversationService.deleteShare(shareId);
+      setShareModalVisible(false);
+      setShareUrl('');
+      setShareId('');
+    } catch (error: any) {
+      // 抛出错误，让ShareModal的catch块能捕获并显示错误消息
+      throw error;
+    }
+  }, [shareId]);
+
   // 获取主对话区域的样式
   const getMainAreaStyle = () => {
     return 'main-conversation-area';
@@ -638,6 +699,15 @@ const ChatSystem: React.FC = () => {
                         {t('pages.chatSystem.documents')}: {displayConversation.documents?.total_count || 0}
                       </Button>
                     </Tooltip>
+                  )}
+
+                  {/* 分享按钮 */}
+                  {displayConversation && (
+                    <ShareButton
+                      onClick={handleShareClick}
+                      loading={shareLoading}
+                      disabled={shareLoading}
+                    />
                   )}
                   
                   {/* 压缩按钮 - 支持所有对话类型 */}
@@ -783,6 +853,15 @@ const ChatSystem: React.FC = () => {
             }}
           />
         )}
+
+        {/* 分享对话框 */}
+        <ShareModal
+          visible={shareModalVisible}
+          shareUrl={shareUrl}
+          shareId={shareId}
+          onClose={() => setShareModalVisible(false)}
+          onDelete={handleDeleteShare}
+        />
 
       </div>
     </div>

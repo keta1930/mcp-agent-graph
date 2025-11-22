@@ -28,6 +28,7 @@ import RegisterPage from './pages/RegisterPage';
 import AdminPanel from './pages/AdminPanel';
 import FileManager from './pages/FileManager';
 import MemoryManager from './pages/MemoryManager';
+import SharedConversation from './pages/SharedConversation';
 
 // AppContent component that uses i18n context
 const AppContent: React.FC = () => {
@@ -83,6 +84,9 @@ const AppContent: React.FC = () => {
           path="/register"
           element={isAuthenticated() ? <Navigate to="/" replace /> : <RegisterPage />}
         />
+
+        {/* 公开路由 - 分享页面（无需登录） */}
+        <Route path="/share/:shareId" element={<SharedConversation />} />
 
         {/* 受保护的路由 - 主入口页面 */}
         <Route path="/" element={
