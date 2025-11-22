@@ -183,7 +183,7 @@ const StaticTaskBlock: React.FC<StaticTaskBlockProps> = ({
   toolResults = {},
   conversationId
 }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   // 找到对应的 round
   const currentRound = taskData.rounds.find(r => r.tool_call_id === toolCallId);
