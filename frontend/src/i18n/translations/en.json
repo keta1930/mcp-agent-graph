@@ -173,7 +173,16 @@
       "close": "Close",
       "createdAt": "Created At",
       "updatedAt": "Updated At",
-      "none": "(None)"
+      "none": "(None)",
+      "import": {
+        "button": "Import",
+        "invalidFormat": "Unsupported file format",
+        "supportedFormats": "Supported formats: .json, .jsonl, .xlsx, .xls, .parquet",
+        "success": "Import successful",
+        "reportDownloaded": "Import report downloaded, please check the detailed results",
+        "failed": "Import failed",
+        "unknownError": "Unknown error"
+      }
     },
     "graphEditor": {
       "title": "Workflow Manager",

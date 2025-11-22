@@ -173,7 +173,16 @@
       "close": "关闭",
       "createdAt": "创建时间",
       "updatedAt": "更新时间",
-      "none": "（无）"
+      "none": "（无）",
+      "import": {
+        "button": "导入",
+        "invalidFormat": "文件格式不支持",
+        "supportedFormats": "支持格式: .json, .jsonl, .xlsx, .xls, .parquet",
+        "success": "导入成功",
+        "reportDownloaded": "导入报告已下载，请查看详细结果",
+        "failed": "导入失败",
+        "unknownError": "未知错误"
+      }
     },
     "graphEditor": {
       "title": "工作流管理",
