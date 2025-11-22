@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Layout, Button, Input, Tag, Spin, Space, Modal, Form, Typography } from 'antd';
-import { Plus, RefreshCw, Bot, Search as SearchIcon, Upload } from 'lucide-react';
+import { Plus, RefreshCw, Bot, Search as SearchIcon, Upload, Trash2 } from 'lucide-react';
 import { AgentConfig } from '../services/agentService';
 import { useT } from '../i18n/hooks';
 import { useAgentManager } from '../hooks/useAgentManager';
+import { useAgentBatchDelete } from '../hooks/useAgentBatchDelete';
 import AgentCategoryPanel from '../components/agent-manager/AgentCategoryPanel';
 import AgentForm from '../components/agent-manager/AgentForm';
 import AgentDetail from '../components/agent-manager/AgentDetail';
+import AgentBatchDelete from '../components/agent-manager/AgentBatchDelete';
 import { HEADER_STYLES, BUTTON_STYLES, INPUT_STYLES, MODAL_STYLES } from '../constants/agentManagerStyles';
 
 const { Header, Content } = Layout;
@@ -36,6 +38,9 @@ const AgentManager: React.FC = () => {
     handleDeleteAgent,
     fetchAgentDetail,
   } = useAgentManager();
+
+  // 批量删除逻辑
+  const batchDelete = useAgentBatchDelete(filteredGroups, handleDeleteAgent);
 
   // Modal 状态
   const [modalVisible, setModalVisible] = useState(false);
@@ -204,17 +209,18 @@ const AgentManager: React.FC = () => {
               onClick={handleImport}
               loading={importing}
               style={BUTTON_STYLES.secondary}
-            >
-              {t('pages.agentManager.import.button')}
-            </Button>
+            />
             <Button
               icon={<RefreshCw size={16} strokeWidth={1.5} />}
               onClick={loadAgents}
               loading={loading}
               style={BUTTON_STYLES.secondary}
-            >
-              {t('pages.agentManager.refresh')}
-            </Button>
+            />
+            <Button
+              icon={<Trash2 size={16} strokeWidth={1.5} />}
+              onClick={batchDelete.openDrawer}
+              style={BUTTON_STYLES.secondary}
+            />
             <Button
               type="primary"
               icon={<Plus size={16} strokeWidth={1.5} />}
@@ -377,6 +383,18 @@ const AgentManager: React.FC = () => {
       >
         <AgentDetail agent={selectedAgent} />
       </Modal>
+
+      {/* 批量删除抽屉 */}
+      <AgentBatchDelete
+        visible={batchDelete.visible}
+        filteredGroups={filteredGroups}
+        selectedAgents={batchDelete.selectedAgents}
+        deleting={batchDelete.deleting}
+        onClose={batchDelete.closeDrawer}
+        onConfirm={batchDelete.confirmDelete}
+        onToggleSelection={batchDelete.toggleSelection}
+        onToggleSelectAll={batchDelete.toggleSelectAll}
+      />
     </Layout>
   );
 };

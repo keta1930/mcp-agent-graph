@@ -5,3 +5,4 @@ export { default as AgentCard } from './AgentCard';
 export { default as AgentCategoryPanel } from './AgentCategoryPanel';
 export { default as AgentForm } from './AgentForm';
 export { default as AgentDetail } from './AgentDetail';
+export { default as AgentBatchDelete } from './AgentBatchDelete';
