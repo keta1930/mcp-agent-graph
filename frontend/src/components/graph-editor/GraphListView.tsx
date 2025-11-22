@@ -17,7 +17,6 @@ import {
   Plus,
   Workflow,
   Search as SearchIcon,
-  Sparkles,
   Edit,
   Trash2,
   Download,
@@ -38,7 +37,6 @@ interface GraphListViewProps {
   onSearchChange: (value: string) => void;
   onCreateGraph: () => void;
   onImportFile: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onShowPromptTemplate: () => void;
   onEditGraph: (graphName: string) => void;
   onExportPackage: (graphName: string) => void;
   onExportMCP: (graphName: string) => void;
@@ -56,7 +54,6 @@ const GraphListView: React.FC<GraphListViewProps> = ({
   onSearchChange,
   onCreateGraph,
   onImportFile,
-  onShowPromptTemplate,
   onEditGraph,
   onExportPackage,
   onExportMCP,
@@ -154,13 +151,6 @@ const GraphListView: React.FC<GraphListViewProps> = ({
                 {t('pages.graphEditor.import')}
               </Button>
             </Tooltip>
-            <Button
-              icon={<Sparkles size={16} strokeWidth={1.5} />}
-              onClick={onShowPromptTemplate}
-              style={buttonStyles.secondary}
-            >
-              {t('pages.graphEditor.aiPrompt')}
-            </Button>
             <Button
               type="primary"
               icon={<Plus size={16} strokeWidth={1.5} />}

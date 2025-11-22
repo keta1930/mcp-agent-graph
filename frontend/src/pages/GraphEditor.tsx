@@ -1,8 +1,6 @@
 // 图编辑器主组件
 import React, { useEffect, useState } from 'react';
 import { Alert, Modal, message } from 'antd';
-import { Sparkles } from 'lucide-react';
-import { Typography } from 'antd';
 import AddNodeModal from '../components/graph-editor/AddNodeModal';
 import GraphVersionManager from '../components/graph-editor/GraphVersionManager';
 import GraphListView from '../components/graph-editor/GraphListView';
@@ -17,9 +15,6 @@ import { useModelStore } from '../store/modelStore';
 import { useT } from '../i18n/hooks';
 import { ViewMode } from '../utils/graphEditorConstants';
 import { generateNodePosition } from '../utils/graphEditorUtils';
-import { buttonStyles, modalStyles } from '../utils/graphEditorConstants';
-
-const { Text } = Typography;
 
 /**
  * 图编辑器页面
@@ -60,7 +55,6 @@ const GraphEditor: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [filteredGraphs, setFilteredGraphs] = useState<string[]>(graphs);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState<string | null>(null);
-  const [promptTemplateModalVisible, setPromptTemplateModalVisible] = useState(false);
   const [readmeModalVisible, setReadmeModalVisible] = useState(false);
   const [readmeContent, setReadmeContent] = useState('');
   const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
@@ -280,7 +274,6 @@ const GraphEditor: React.FC = () => {
           onSearchChange={setSearchText}
           onCreateGraph={() => setNewGraphModalVisible(true)}
           onImportFile={handleImportFile}
-          onShowPromptTemplate={() => setPromptTemplateModalVisible(true)}
           onEditGraph={handleEditGraph}
           onExportPackage={handleExportPackage}
           onExportMCP={handleExportMCP}
@@ -345,65 +338,6 @@ const GraphEditor: React.FC = () => {
           graphName={currentGraph.name}
         />
       )}
-
-      {/* AI 提示词模态框 */}
-      <Modal
-        title={
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <Sparkles size={20} strokeWidth={1.5} style={{ color: '#b85845' }} />
-            <span style={{
-              color: '#2d2d2d',
-              fontSize: '18px',
-              fontWeight: 600,
-              letterSpacing: '0.5px'
-            }}>
-              {t('pages.graphEditor.aiPromptTitle')}
-            </span>
-          </div>
-        }
-        open={promptTemplateModalVisible}
-        onCancel={() => setPromptTemplateModalVisible(false)}
-        footer={[
-          <button
-            key="close"
-            onClick={() => setPromptTemplateModalVisible(false)}
-            style={{
-              ...buttonStyles.modalCancel,
-              cursor: 'pointer',
-              border: buttonStyles.modalCancel.border
-            }}
-          >
-            {t('pages.graphEditor.close')}
-          </button>
-        ]}
-        width={700}
-        styles={modalStyles}
-      >
-        <div style={{
-          textAlign: 'center',
-          padding: '20px'
-        }}>
-          <Sparkles size={48} strokeWidth={1.5} style={{ color: 'rgba(184, 88, 69, 0.5)', margin: '0 auto 16px' }} />
-          <Text style={{
-            fontSize: '16px',
-            color: 'rgba(45, 45, 45, 0.85)',
-            display: 'block',
-            marginBottom: '12px'
-          }}>
-            {t('pages.graphEditor.aiPromptMessage')}
-          </Text>
-          <Text style={{
-            fontSize: '14px',
-            color: 'rgba(45, 45, 45, 0.65)'
-          }}>
-            {t('pages.graphEditor.aiPromptHint')}
-          </Text>
-        </div>
-      </Modal>
     </div>
   );
 };
