@@ -52,13 +52,55 @@ const SystemToolTreeSelector: React.FC<SystemToolTreeSelectorProps> = ({
   return (
     <>
       <style>{`
-        /* 恢复默认布局：旋转按钮在左，复选框在中间，内容在右 */
+        /* 输入框边框颜色 */
+        .system-tool-tree-selector-wrapper .ant-select-selector {
+          border-color: rgba(139, 115, 85, 0.2) !important;
+          transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        }
+        
+        /* 聚焦状态 */
+        .system-tool-tree-selector-wrapper.ant-select-focused .ant-select-selector {
+          border-color: rgba(184, 88, 69, 0.4) !important;
+          box-shadow: 0 0 0 2px rgba(184, 88, 69, 0.06) !important;
+        }
+        
+        /* 悬停状态 */
+        .system-tool-tree-selector-wrapper:not(.ant-select-disabled):hover .ant-select-selector {
+          border-color: rgba(184, 88, 69, 0.25) !important;
+        }
+        
+        /* 占位符文字 */
+        .system-tool-tree-selector-wrapper .ant-select-selection-placeholder {
+          color: rgba(45, 45, 45, 0.35) !important;
+        }
+        
+        /* 清除按钮 */
+        .system-tool-tree-selector-wrapper .ant-select-clear {
+          color: rgba(139, 115, 85, 0.65) !important;
+          transition: color 0.2s ease !important;
+        }
+        
+        .system-tool-tree-selector-wrapper .ant-select-clear:hover {
+          color: #b85845 !important;
+        }
+        
+        /* 下拉箭头 */
+        .system-tool-tree-selector-wrapper .ant-select-arrow {
+          color: rgba(139, 115, 85, 0.65) !important;
+        }
+        
+        /* 下拉面板 */
+        .system-tool-tree-selector {
+          box-shadow: 0 2px 8px rgba(139, 115, 85, 0.08) !important;
+        }
+        
+        /* 树节点布局 */
         .system-tool-tree-selector .ant-select-tree .ant-select-tree-treenode {
           display: flex !important;
           align-items: center;
         }
         
-        /* 旋转按钮保持在左侧（默认位置） */
+        /* 展开/折叠按钮保持在左侧 */
         .system-tool-tree-selector .ant-select-tree .ant-select-tree-switcher {
           margin-right: 8px !important;
         }
@@ -83,21 +125,33 @@ const SystemToolTreeSelector: React.FC<SystemToolTreeSelectorProps> = ({
         
         /* 只在内容区域显示 hover 效果 */
         .system-tool-tree-selector .ant-select-tree .ant-select-tree-node-content-wrapper:hover {
-          background-color: rgba(0, 0, 0, 0.04) !important;
+          background-color: rgba(184, 88, 69, 0.04) !important;
         }
         
-        /* 旋转按钮 hover 时不显示背景 */
+        /* 展开/折叠按钮 hover 时不显示背景 */
         .system-tool-tree-selector .ant-select-tree .ant-select-tree-switcher:hover {
           background-color: transparent !important;
         }
         
+        /* 复选框边框颜色 */
+        .system-tool-tree-selector .ant-select-tree .ant-select-tree-checkbox-inner {
+          border-color: rgba(139, 115, 85, 0.25) !important;
+        }
+        
         /* 复选框 hover 时显示主题色边框 */
         .system-tool-tree-selector .ant-select-tree .ant-select-tree-checkbox:hover .ant-select-tree-checkbox-inner {
+          border-color: rgba(184, 88, 69, 0.5) !important;
+        }
+        
+        /* 复选框选中状态 */
+        .system-tool-tree-selector .ant-select-tree .ant-select-tree-checkbox-checked .ant-select-tree-checkbox-inner {
+          background-color: #b85845 !important;
           border-color: #b85845 !important;
         }
       `}</style>
       <TreeSelect
         value={value}
+        className="system-tool-tree-selector-wrapper"
         popupClassName="system-tool-tree-selector"
         treeData={categories.map(category => ({
         title: category.category,
@@ -106,10 +160,18 @@ const SystemToolTreeSelector: React.FC<SystemToolTreeSelectorProps> = ({
         children: category.tools.map(tool => ({
           title: (
             <div style={{ padding: '4px 0' }}>
-              <div style={{ fontWeight: 500, fontSize: '13px', color: '#2d2d2d' }}>
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#2d2d2d'
+              }}>
                 {tool.schema.function.name}
               </div>
-              <div style={{ fontSize: '12px', color: 'rgba(45, 45, 45, 0.65)', marginTop: '2px', lineHeight: '1.4' }}>
+              <div style={{ 
+                fontSize: '12px', 
+                color: 'rgba(45, 45, 45, 0.65)', 
+                marginTop: '2px', 
+                lineHeight: '1.4'
+              }}>
                 {tool.schema.function.description}
               </div>
             </div>
@@ -135,10 +197,9 @@ const SystemToolTreeSelector: React.FC<SystemToolTreeSelectorProps> = ({
             style={{
               display: 'inline-block',
               fontSize: '14px',
-              color: 'rgba(139, 115, 85, 0.75)',
-              transition: 'transform 0.2s ease',
-              transform: props.expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              fontWeight: 'bold'
+              color: '#8b7355',
+              transition: 'transform 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+              transform: props.expanded ? 'rotate(90deg)' : 'rotate(0deg)'
             }}
           >
             &gt;
@@ -147,7 +208,6 @@ const SystemToolTreeSelector: React.FC<SystemToolTreeSelectorProps> = ({
       }}
       tagRender={(props) => {
         const { value: tagValue, closable, onClose } = props;
-        // 从所有工具中找到对应的工具显示名称
         let toolDisplayName = tagValue as string;
         categories.forEach(category => {
           const tool = category.tools.find(t => t.name === tagValue);
