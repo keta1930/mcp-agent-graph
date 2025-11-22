@@ -1254,6 +1254,9 @@
       "noTools": "暂无可用的系统工具",
       "loadFailed": "加载系统工具列表失败"
     },
+    "systemToolTreeSelector": {
+      "placeholder": "选择系统工具（可选）"
+    },
     "mcpToolSelector": {
       "title": "MCP工具",
       "tooltip": "MCP工具 ({{count}}个已启用)",
