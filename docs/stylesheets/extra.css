@@ -266,21 +266,23 @@
   display: none !important;
 }
 
-/* Footer styling with earth-tone gradient - Light Mode */
+/* Footer styling - Light Mode */
 [data-md-color-scheme="default"] .md-footer {
-  background: linear-gradient(to bottom, #8b7355, #c14242) !important;
-  color: #fff !important;
+  background: #faf8f5 !important;
+  color: #2d2d2d !important;
+  border-top: 1px solid rgba(139, 115, 85, 0.15);
 }
 
 [data-md-color-scheme="default"] .md-footer-meta {
-  background: #2d2d2d !important;
-  color: #fff !important;
+  background: #f5f3f0 !important;
+  color: #2d2d2d !important;
 }
 
 /* Footer styling - Dark Mode */
 [data-md-color-scheme="slate"] .md-footer {
-  background: linear-gradient(to bottom, #8b7355, #1a1a1a) !important;
+  background: #1a1a1a !important;
   color: #fff !important;
+  border-top: 1px solid rgba(139, 115, 85, 0.3);
 }
 
 [data-md-color-scheme="slate"] .md-footer-meta {
@@ -288,21 +290,40 @@
   color: #fff !important;
 }
 
-/* Center the footer text */
+/* Make footer narrower - reduced padding */
 .md-footer-meta__inner {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  padding: 16px !important;
+  padding: 8px 16px !important;
+  min-height: auto !important;
 }
 
-/* Footer links color */
-.md-footer-meta a,
-.md-footer-meta__inner a {
+/* Footer text and links color - Light Mode */
+[data-md-color-scheme="default"] .md-footer-meta,
+[data-md-color-scheme="default"] .md-footer-meta__inner,
+[data-md-color-scheme="default"] .md-footer-meta .md-footer-meta__inner,
+[data-md-color-scheme="default"] .md-copyright,
+[data-md-color-scheme="default"] .md-copyright__highlight,
+[data-md-color-scheme="default"] .md-footer-meta a,
+[data-md-color-scheme="default"] .md-footer-meta__inner a {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-footer-meta a:hover,
+[data-md-color-scheme="default"] .md-footer-meta__inner a:hover {
+  color: #b85845 !important;
+}
+
+/* Footer text and links color - Dark Mode */
+[data-md-color-scheme="slate"] .md-footer-meta,
+[data-md-color-scheme="slate"] .md-footer-meta__inner,
+[data-md-color-scheme="slate"] .md-footer-meta a,
+[data-md-color-scheme="slate"] .md-footer-meta__inner a {
   color: rgba(255, 255, 255, 0.7) !important;
 }
 
-.md-footer-meta a:hover,
-.md-footer-meta__inner a:hover {
+[data-md-color-scheme="slate"] .md-footer-meta a:hover,
+[data-md-color-scheme="slate"] .md-footer-meta__inner a:hover {
   color: #fff !important;
 }
