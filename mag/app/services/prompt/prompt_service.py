@@ -19,7 +19,13 @@ class PromptService:
     """提示词服务类"""
 
     def __init__(self):
-        self.prompt_repository = mongodb_client.prompt_repository
+        pass
+
+    @property
+    def prompt_repository(self):
+        if not mongodb_client.is_connected or mongodb_client.prompt_repository is None:
+            raise RuntimeError("prompt_repository 不可用")
+        return mongodb_client.prompt_repository
 
     async def create_prompt(self, prompt_data: PromptCreate, user_id: str = "default_user") -> Dict[str, Any]:
         """
