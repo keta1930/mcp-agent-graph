@@ -484,66 +484,6 @@ class MongoDBClient:
         """更新图运行最终结果"""
         return await self.graph_run_repository.update_final_result(conversation_id, final_result)
 
-    # === Prompt管理方法 ===
-
-    async def create_prompt(self, prompt_data, user_id: str = "default_user"):
-        """创建提示词"""
-        return await self.prompt_repository.create_prompt(prompt_data, user_id)
-
-    async def get_prompt(self, name: str, user_id: str = "default_user"):
-        """获取提示词"""
-        return await self.prompt_repository.get_prompt(name, user_id)
-
-    async def update_prompt(self, name: str, update_data, user_id: str = "default_user"):
-        """更新提示词"""
-        return await self.prompt_repository.update_prompt(name, update_data, user_id)
-
-    async def delete_prompt(self, name: str, user_id: str = "default_user"):
-        """删除提示词"""
-        return await self.prompt_repository.delete_prompt(name, user_id)
-
-    async def list_prompts(self, user_id: str = "default_user"):
-        """列出所有提示词"""
-        return await self.prompt_repository.list_prompts(user_id)
-
-    async def batch_delete_prompts(self, names: List[str], user_id: str = "default_user"):
-        """批量删除提示词"""
-        return await self.prompt_repository.batch_delete_prompts(names, user_id)
-
-    async def import_prompt_by_file(self, file, import_request, user_id: str = "default_user"):
-        """通过文件导入提示词"""
-        return await self.prompt_repository.import_prompt_by_file(file, import_request, user_id)
-
-    async def export_prompts(self, export_request, user_id: str = "default_user"):
-        """批量导出提示词"""
-        return await self.prompt_repository.export_prompts(export_request, user_id)
-
-    # === 模型配置管理方法 ===
-
-    async def create_model_config(self, user_id: str, model_config: Dict[str, Any]):
-        """创建模型配置"""
-        return await self.model_config_repository.create_model(user_id, model_config)
-
-    async def get_model_config(self, model_name: str, user_id: str, include_api_key: bool = True):
-        """获取模型配置"""
-        return await self.model_config_repository.get_model(model_name, user_id, include_api_key)
-
-    async def update_model_config(self, model_name: str, user_id: str, model_config: Dict[str, Any]):
-        """更新模型配置"""
-        return await self.model_config_repository.update_model(model_name, user_id, model_config)
-
-    async def delete_model_config(self, model_name: str, user_id: str):
-        """删除模型配置"""
-        return await self.model_config_repository.delete_model(model_name, user_id)
-
-    async def list_model_configs(self, user_id: str, include_api_key: bool = False):
-        """列出所有模型配置"""
-        return await self.model_config_repository.list_models(user_id, include_api_key)
-
-    async def model_config_exists(self, model_name: str, user_id: str):
-        """检查模型配置是否存在"""
-        return await self.model_config_repository.model_exists(model_name, user_id)
-
     # === MCP配置管理方法（团队级） ===
 
     async def get_mcp_config(self) -> Optional[Dict[str, Any]]:
