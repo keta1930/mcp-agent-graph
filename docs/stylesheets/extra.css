@@ -1,0 +1,308 @@
+/**
+ * MAG Documentation Custom Theme
+ * Earth-tone color palette based on frontend style guide
+ */
+
+/* ========================================
+   CUSTOM COLOR SCHEME - Light Mode
+   Using :root > * selector as per Material docs
+   ======================================== */
+
+:root > * {
+  /* Primary colors - Rust red from style guide */
+  --md-primary-fg-color: #b85845;
+  --md-primary-fg-color--light: #cd7f32;
+  --md-primary-fg-color--dark: #a0826d;
+
+  /* Accent colors */
+  --md-accent-fg-color: #b85845;
+  --md-accent-fg-color--transparent: rgba(184, 88, 69, 0.1);
+
+  /* Background colors - Cream tones */
+  --md-default-bg-color: #faf8f5;
+  --md-default-bg-color--light: #f5f3f0;
+  --md-default-bg-color--lighter: #fff;
+
+  /* Text colors */
+  --md-default-fg-color: #2d2d2d;
+  --md-default-fg-color--light: rgba(45, 45, 45, 0.85);
+  --md-default-fg-color--lighter: rgba(45, 45, 45, 0.65);
+  --md-default-fg-color--lightest: rgba(45, 45, 45, 0.35);
+
+  /* Typography */
+  --md-typeset-a-color: #b85845;
+
+  /* Footer */
+  --md-footer-bg-color: #8b7355;
+  --md-footer-bg-color--dark: #fdfdfd;
+}
+
+/* ========================================
+   DARK MODE COLOR SCHEME
+   ======================================== */
+
+[data-md-color-scheme="slate"] {
+  /* Adjust hue for earth tones */
+  --md-hue: 15;
+
+  /* Primary colors for dark mode */
+  --md-primary-fg-color: #b85845;
+  --md-primary-fg-color--light: #cd7f32;
+  --md-primary-fg-color--dark: #a0826d;
+
+  /* Accent colors */
+  --md-accent-fg-color: #d4a574;
+
+  /* Dark backgrounds */
+  --md-default-bg-color: #1a1a1a;
+  --md-default-bg-color--light: #242424;
+  --md-default-bg-color--lighter: #2d2d2d;
+  --md-default-bg-color--lightest: #363636;
+
+  /* Dark mode text colors */
+  --md-default-fg-color: rgba(255, 255, 255, 0.87);
+  --md-default-fg-color--light: rgba(255, 255, 255, 0.65);
+  --md-default-fg-color--lighter: rgba(255, 255, 255, 0.45);
+
+  /* Links in dark mode */
+  --md-typeset-a-color: #d4a574;
+
+  /* Code colors for dark mode */
+  --md-code-bg-color: #242424;
+  --md-code-fg-color: #a0826d;
+}
+
+/* ========================================
+   HEADER CUSTOMIZATION - Light Mode
+   ======================================== */
+
+[data-md-color-scheme="default"] .md-header {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6)) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.08) !important;
+  border-bottom: none !important;
+}
+
+/* Header title color - Light Mode */
+[data-md-color-scheme="default"] .md-header__title {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: #2d2d2d !important;
+}
+
+/* Header buttons and icons - Light Mode */
+[data-md-color-scheme="default"] .md-header__button {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-header__button:hover {
+  color: #b85845 !important;
+}
+
+[data-md-color-scheme="default"] .md-header__source {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-source {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-source__icon {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-source__repository {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-source:hover {
+  color: #b85845 !important;
+}
+
+/* Header decorative bottom line - Light Mode */
+[data-md-color-scheme="default"] .md-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ========================================
+   HEADER CUSTOMIZATION - Dark Mode
+   ======================================== */
+
+[data-md-color-scheme="slate"] .md-header {
+  background: linear-gradient(to bottom, rgba(26, 26, 26, 0.9), rgba(36, 36, 36, 0.8)) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  border-bottom: none !important;
+}
+
+/* Header title color - Dark Mode */
+[data-md-color-scheme="slate"] .md-header__title {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: #fff !important;
+}
+
+/* Header buttons - Dark Mode */
+[data-md-color-scheme="slate"] .md-header__button {
+  color: #d4a574 !important;
+}
+
+[data-md-color-scheme="slate"] .md-header__button:hover {
+  color: #b85845 !important;
+}
+
+/* Header decorative bottom line - Dark Mode */
+[data-md-color-scheme="slate"] .md-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(139, 115, 85, 0.5) 50%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ========================================
+   NAVIGATION TABS
+   ======================================== */
+
+.md-tabs {
+  background: transparent;
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
+}
+
+[data-md-color-scheme="slate"] .md-tabs {
+  border-bottom: 1px solid rgba(139, 115, 85, 0.3);
+}
+
+/* Navigation tabs links - Light Mode */
+[data-md-color-scheme="default"] .md-tabs__link {
+  color: #8b7355 !important;
+}
+
+[data-md-color-scheme="default"] .md-tabs__link:hover {
+  color: #b85845 !important;
+}
+
+[data-md-color-scheme="default"] .md-tabs__link--active {
+  color: #b85845 !important;
+}
+
+/* Navigation tabs links - Dark Mode */
+[data-md-color-scheme="slate"] .md-tabs__link {
+  color: #d4a574 !important;
+}
+
+[data-md-color-scheme="slate"] .md-tabs__link:hover {
+  color: #b85845 !important;
+}
+
+[data-md-color-scheme="slate"] .md-tabs__link--active {
+  color: #b85845 !important;
+}
+
+/* Sidebar navigation - Light Mode */
+[data-md-color-scheme="default"] .md-nav__link {
+  color: #2d2d2d !important;
+}
+
+[data-md-color-scheme="default"] .md-nav__link:hover {
+  color: #b85845 !important;
+}
+
+[data-md-color-scheme="default"] .md-nav__link--active {
+  color: #b85845 !important;
+}
+
+/* Sidebar navigation - Dark Mode */
+[data-md-color-scheme="slate"] .md-nav__link {
+  color: rgba(255, 255, 255, 0.87) !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: #d4a574 !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: #d4a574 !important;
+}
+
+/* ========================================
+   MAIN CONTENT BACKGROUND
+   ======================================== */
+
+[data-md-color-scheme="default"] .md-main {
+  background: #faf8f5;
+}
+
+[data-md-color-scheme="slate"] .md-main {
+  background: #1a1a1a;
+}
+
+.md-content {
+  background: transparent;
+}
+
+/* ========================================
+   FOOTER CUSTOMIZATION
+   ======================================== */
+
+/* Hide next/previous navigation */
+.md-footer__inner {
+  display: none !important;
+}
+
+/* Footer styling with earth-tone gradient - Light Mode */
+[data-md-color-scheme="default"] .md-footer {
+  background: linear-gradient(to bottom, #8b7355, #c14242) !important;
+  color: #fff !important;
+}
+
+[data-md-color-scheme="default"] .md-footer-meta {
+  background: #2d2d2d !important;
+  color: #fff !important;
+}
+
+/* Footer styling - Dark Mode */
+[data-md-color-scheme="slate"] .md-footer {
+  background: linear-gradient(to bottom, #8b7355, #1a1a1a) !important;
+  color: #fff !important;
+}
+
+[data-md-color-scheme="slate"] .md-footer-meta {
+  background: #1a1a1a !important;
+  color: #fff !important;
+}
+
+/* Center the footer text */
+.md-footer-meta__inner {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 16px !important;
+}
+
+/* Footer links color */
+.md-footer-meta a,
+.md-footer-meta__inner a {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.md-footer-meta a:hover,
+.md-footer-meta__inner a:hover {
+  color: #fff !important;
+}

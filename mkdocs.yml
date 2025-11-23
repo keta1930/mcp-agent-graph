@@ -1,0 +1,226 @@
+site_name: MAG Documentation
+site_url: https://yourusername.github.io/mcp-agent-graph-p/
+site_description: Multi-Agent Graph Platform Documentation
+site_author: MAG Team
+
+repo_name: mcp-agent-graph
+repo_url: https://github.com/yourusername/mcp-agent-graph-p
+edit_uri: edit/master/docs/
+
+# Copyright
+
+# Configuration
+theme:
+  name: material
+  language: en
+
+  # Custom colors - Earth tone palette
+  palette:
+    # Light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  # Font settings
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+  # Logo and favicon
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+
+  # Features
+  features:
+    - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - navigation.expand
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: datetime
+      fallback_to_build_date: true
+  - awesome-pages:
+      collapse_single_pages: false
+
+# Extensions
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Customization
+extra:
+  version:
+    provider: mike
+    default: stable
+
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/mcp-agent-graph-p
+      name: GitHub Repository
+
+# Extra CSS and JavaScript
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+# Page tree
+nav:
+  - Home: index.md
+
+  - First Steps:
+    - first-steps/index.md
+    - Introduction: first-steps/intro.md
+    - Installation: first-steps/install.md
+    - Quickstart: first-steps/quickstart.md
+
+  - Core Components:
+
+    - Agent:
+      - core-components/agent/index.md
+      - Build Your First Agent: core-components/agent/first-agent.md
+      - Agent Config: core-components/agent/config.md
+      - Agent Loop: core-components/agent/loop.md
+      - Multi-Agent & Sub-agent: core-components/agent/multi-agent.md
+      - Agent Memory: core-components/agent/memory.md
+      - Agent Handoffs with File Tools: core-components/agent/handoffs.md
+      - Create Agent with Agent: core-components/agent/agent-creator.md
+
+    - Graph (Workflow):
+      - core-components/graph/index.md
+      - Build Your First Graph: core-components/graph/first-graph.md
+      - Graph Config: core-components/graph/config.md
+      - Graph Execution: core-components/graph/execution.md
+      - SubGraph: core-components/graph/subgraph.md
+      - Task: core-components/graph/task.md
+      - Build Complex Workflows: core-components/graph/complex-workflows.md
+
+    - Model:
+      - core-components/model/index.md
+      - Register Your Model: core-components/model/register.md
+      - Multi-model Coming Soon: core-components/model/multi-model.md
+
+    - Memory:
+      - core-components/memory/index.md
+      - Short-term Memory: core-components/memory/short-term.md
+      - Long-term Memory:
+        - core-components/memory/long-term/index.md
+        - Agent Memory: core-components/memory/long-term/agent-memory.md
+        - User Memory: core-components/memory/long-term/user-memory.md
+
+    - MCP:
+      - core-components/mcp/index.md
+      - Add Your First MCP Server: core-components/mcp/first-server.md
+      - MCP Inspector: core-components/mcp/inspector.md
+      - Build MCP with Agent: core-components/mcp/build-with-agent.md
+      - When to Use MCP: core-components/mcp/when-to-use.md
+
+    - Built-in Tools:
+      - core-components/tools/index.md
+      - Sub-agent: core-components/tools/sub-agent.md
+      - File Tool: core-components/tools/file-tool.md
+      - Agent Creator: core-components/tools/agent-creator.md
+      - Graph Designer: core-components/tools/graph-designer.md
+      - MCP Builder: core-components/tools/mcp-builder.md
+      - Prompt Generator: core-components/tools/prompt-generator.md
+      - Task Manager: core-components/tools/task-manager.md
+      - Memory Tool: core-components/tools/memory-tool.md
+      - System Operations: core-components/tools/system-operations.md
+
+    - Prompt Center:
+      - core-components/prompt/index.md
+      - Create and Edit Prompts: core-components/prompt/create-edit.md
+      - Work with Agents: core-components/prompt/work-with-agents.md
+
+    - Conversation:
+      - core-components/conversation/index.md
+      - Conversation Share: core-components/conversation/share.md
+      - Conversation Export: core-components/conversation/export.md
+
+    - Multi-User & Team:
+      - core-components/team/index.md
+      - Create Invite Code: core-components/team/invite-code.md
+      - Manage Your Team: core-components/team/manage.md
+
+  - Future Roadmap:
+    - roadmap/index.md
+    - Multimodal Support: roadmap/multimodal.md
+    - Agent Skills and Context: roadmap/skills-context.md
+    - Team Resource Sharing: roadmap/resource-sharing.md
+    - User Analytics: roadmap/analytics.md
+    - External Agent API: roadmap/external-api.md
