@@ -1,10 +1,10 @@
-site_name: MAG Documentation
-site_url: https://yourusername.github.io/mcp-agent-graph-p/
-site_description: Multi-Agent Graph Platform Documentation
-site_author: MAG Team
+site_name: Agent-Graph Documentation
+site_url: https://keta1930.github.io/mcp-agent-graph/
+site_description: Building Your AI Agents with Agent-Graph
+site_author: Agent-Graph Team
 
 repo_name: mcp-agent-graph
-repo_url: https://github.com/yourusername/mcp-agent-graph-p
+repo_url: https://github.com/keta1930/mcp-agent-graph
 edit_uri: edit/master/docs/
 
 # Copyright
@@ -70,6 +70,78 @@ theme:
 plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 中文
+          build: true
+          nav_translations:
+            Home: 首页
+            First Steps: 快速开始
+            Introduction: 介绍
+            Installation: 安装
+            Quickstart: 快速入门
+            Core Components: 核心组件
+            Agent: 智能体
+            Build Your First Agent: 构建你的第一个智能体
+            Agent Config: 智能体配置
+            Agent Loop: 智能体循环
+            Multi-Agent & Sub-agent: 多智能体与子智能体
+            Agent Memory: 智能体记忆
+            Agent Handoffs with File Tools: 智能体与文件工具的交接
+            Create Agent with Agent: 使用智能体创建智能体
+            Graph (Workflow): 图工作流
+            Build Your First Graph: 构建你的第一个图
+            Graph Config: 图配置
+            Graph Execution: 图执行
+            SubGraph: 子图
+            Task: 任务
+            Build Complex Workflows: 构建复杂工作流
+            Model: 模型
+            Register Your Model: 注册你的模型
+            Multi-model Coming Soon: 多模型即将推出
+            Memory: 记忆
+            Short-term Memory: 短期记忆
+            Long-term Memory: 长期记忆
+            User Memory: 用户记忆
+            MCP: MCP协议
+            Add Your First MCP Server: 添加你的第一个MCP服务器
+            MCP Inspector: MCP检查器
+            Build MCP with Agent: 使用智能体构建MCP
+            When to Use MCP: 何时使用MCP
+            Built-in Tools: 内置工具
+            Sub-agent: 子智能体
+            File Tool: 文件工具
+            Agent Creator: 智能体创建器
+            Graph Designer: 图设计器
+            MCP Builder: MCP构建器
+            Prompt Generator: 提示词生成器
+            Task Manager: 任务管理器
+            Memory Tool: 记忆工具
+            System Operations: 系统操作
+            Prompt Center: 提示词中心
+            Create and Edit Prompts: 创建和编辑提示词
+            Work with Agents: 与智能体协作
+            Conversation: 对话
+            Conversation Share: 对话分享
+            Conversation Export: 对话导出
+            Multi-User & Team: 多用户与团队
+            Create Invite Code: 创建邀请码
+            Manage Your Team: 管理你的团队
+            Future Roadmap: 未来规划
+            Multimodal Support: 多模态支持
+            Agent Skills and Context: 智能体技能与上下文
+            Team Resource Sharing: 团队资源共享
+            User Analytics: 用户分析
+            External Agent API: 外部智能体API
   - git-revision-date-localized:
       enable_creation_date: true
       type: datetime
@@ -122,9 +194,25 @@ markdown_extensions:
 
 # Customization
 extra:
+  alternate:
+    - name: English
+      link: /en/
+      lang: en
+    - name: 中文
+      link: /zh/
+      lang: zh
+
   version:
     provider: mike
     default: stable
+
+  alternate:
+    - name: English
+      link: /en/
+      lang: en
+    - name: 中文
+      link: /zh/
+      lang: zh
 
   social:
     - icon: fontawesome/brands/github
