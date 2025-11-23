@@ -1,6 +1,6 @@
 // 图编辑器主组件
 import React, { useEffect, useState } from 'react';
-import { Alert, Modal, message } from 'antd';
+import { Alert, App, message } from 'antd';
 import AddNodeModal from '../components/graph-editor/AddNodeModal';
 import GraphVersionManager from '../components/graph-editor/GraphVersionManager';
 import GraphListView from '../components/graph-editor/GraphListView';
@@ -21,6 +21,7 @@ import { generateNodePosition } from '../utils/graphEditorUtils';
  */
 const GraphEditor: React.FC = () => {
   const t = useT();
+  const { modal } = App.useApp();
   const {
     fetchGraphs,
     addNode,
@@ -126,7 +127,7 @@ const GraphEditor: React.FC = () => {
   // 返回列表
   const handleBackToList = () => {
     if (hasUnsavedChanges) {
-      Modal.confirm({
+      modal.confirm({
         title: t('pages.graphEditor.saveChangesTitle'),
         content: t('pages.graphEditor.saveChangesMessage'),
         okText: t('pages.graphEditor.saveAndReturn'),

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, message } from 'antd';
+import { App, message } from 'antd';
 import { useT } from '../i18n/hooks';
 
 interface AgentGroup {
@@ -18,6 +18,7 @@ export const useAgentBatchDelete = (
   handleDeleteAgent: (agentName: string) => Promise<boolean | void>
 ) => {
   const t = useT();
+  const { modal } = App.useApp();
   const [visible, setVisible] = useState(false);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
@@ -71,7 +72,7 @@ export const useAgentBatchDelete = (
       return;
     }
 
-    Modal.confirm({
+    modal.confirm({
       title: t('pages.agentManager.batchDelete.confirmTitle'),
       content: t('pages.agentManager.batchDelete.confirmMessage', { 
         count: selectedAgents.length 

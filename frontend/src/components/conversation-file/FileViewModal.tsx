@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Space, Typography, message, Spin } from 'antd';
+import { Modal, Button, Space, Typography, message, Spin, App } from 'antd';
 import {
   Save,
   Download,
@@ -35,6 +35,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
   onDelete,
 }) => {
   const t = useT();
+  const { modal } = App.useApp();
   const [fileDetail, setFileDetail] = useState<FileDetail | null>(null);
   const [content, setContent] = useState<string>('');
   const [originalContent, setOriginalContent] = useState<string>('');
@@ -104,7 +105,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
 
   const handleDelete = async () => {
     if (!filename) return;
-    Modal.confirm({
+    modal.confirm({
       title: t('pages.fileManager.fileViewModal.deleteConfirmTitle'),
       content: t('pages.fileManager.fileViewModal.deleteConfirmMessage', { filename }),
       okText: t('pages.fileManager.fileViewModal.deleteConfirmOk'),
@@ -125,7 +126,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
 
   const handleClose = () => {
     if (isDirty) {
-      Modal.confirm({
+      modal.confirm({
         title: t('pages.fileManager.fileViewModal.unsavedChangesTitle'),
         content: t('pages.fileManager.fileViewModal.unsavedChangesMessage'),
         okText: t('pages.fileManager.fileViewModal.unsavedChangesOk'),

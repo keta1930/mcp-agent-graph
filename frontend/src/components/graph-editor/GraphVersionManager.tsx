@@ -13,7 +13,8 @@ import {
   message,
   Popconfirm,
   Card,
-  ConfigProvider
+  ConfigProvider,
+  App
 } from 'antd';
 import {
   Plus,
@@ -57,6 +58,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
   graphName
 }) => {
   const t = useT();
+  const { modal } = App.useApp();
   const [messageApi, contextHolder] = message.useMessage();
   const {
     versions,
@@ -107,7 +109,7 @@ const GraphVersionManager: React.FC<GraphVersionManagerProps> = ({
   const handleLoadVersion = async (versionId: string, commitMessage: string) => {
     // If there are unsaved changes, prompt first
     if (dirty) {
-      Modal.confirm({
+      modal.confirm({
         title: t('components.graphEditor.versionManager.unsavedChanges'),
         content: t('components.graphEditor.versionManager.unsavedChangesMessage'),
         onOk: async () => {
