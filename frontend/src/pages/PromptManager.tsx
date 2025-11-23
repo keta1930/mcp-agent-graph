@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Button, Input, Space, Typography, Tag, Empty, Spin, Popconfirm, App } from 'antd';
-import { Plus, Search, Upload as UploadIcon, Download, Trash2, FileText } from 'lucide-react';
+import { Layout, Button, Input, Space, Typography, Tag, Empty, Spin, App } from 'antd';
+import { Plus, Search, Upload as UploadIcon, FileText } from 'lucide-react';
 import { promptService } from '../services/promptService';
 import { PromptInfo, PromptDetail, PromptCreate, PromptUpdate } from '../types/prompt';
 import PromptCategoryPanel from '../components/prompt/PromptCategoryPanel';
@@ -39,7 +39,6 @@ const PromptManager: React.FC = () => {
   const [filteredGroups, setFilteredGroups] = useState<PromptGroup[]>([]);
   const [editingPrompt, setEditingPrompt] = useState<PromptDetail | null>(null);
   const [categories, setCategories] = useState<CategoryStats>({});
-  const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
 
   // UI 状态
   const [loading, setLoading] = useState(false);
@@ -261,56 +260,7 @@ const PromptManager: React.FC = () => {
     }
   };
 
-  /**
-   * 批量删除 Prompt
-   */
-  const handleBatchDelete = async () => {
-    if (selectedPrompts.length === 0) {
-      message.warning(t('pages.promptManager.selectDeleteWarning'));
-      return;
-    }
 
-    try {
-      const response = await promptService.batchDeletePrompts({ names: selectedPrompts });
-      if (response.success) {
-        message.success(t('pages.promptManager.batchDeleteSuccess', { count: selectedPrompts.length }));
-        setSelectedPrompts([]);
-        loadPrompts();
-        setEditingPrompt(null);
-      } else {
-        message.error(response.message || t('pages.promptManager.batchDeleteFailed'));
-      }
-    } catch (error) {
-      message.error(t('pages.promptManager.batchDeleteFailed'));
-      console.error('Error batch deleting prompts:', error);
-    }
-  };
-
-  /**
-   * 导出 Prompt
-   */
-  const handleExportPrompts = async () => {
-    if (selectedPrompts.length === 0) {
-      message.warning(t('pages.promptManager.selectPromptWarning'));
-      return;
-    }
-
-    try {
-      const blob = await promptService.exportPrompts({ names: selectedPrompts });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'prompts_export.zip';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      message.success(t('pages.promptManager.exportSuccess'));
-    } catch (error) {
-      message.error(t('pages.promptManager.exportFailed'));
-      console.error('Error exporting prompts:', error);
-    }
-  };
 
   /**
    * 导入 Prompt
@@ -387,49 +337,6 @@ const PromptManager: React.FC = () => {
               >
                 {t('pages.promptManager.import')}
               </Button>
-              {selectedPrompts.length > 0 && (
-                <>
-                  <Button
-                    icon={<Download size={16} strokeWidth={1.5} />}
-                    onClick={handleExportPrompts}
-                    style={BUTTON_STYLES.secondary}
-                  >
-                    {t('pages.promptManager.export')}
-                  </Button>
-                  <Popconfirm
-                    title={t('pages.promptManager.batchDeleteConfirm', { count: selectedPrompts.length })}
-                    onConfirm={handleBatchDelete}
-                    okText={t('pages.promptManager.deleteConfirmOk')}
-                    cancelText={t('pages.promptManager.deleteConfirmCancel')}
-                    okButtonProps={{
-                      style: {
-                        background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontWeight: 500,
-                        boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
-                      }
-                    }}
-                    cancelButtonProps={{
-                      style: {
-                        borderRadius: '6px',
-                        border: '1px solid rgba(139, 115, 85, 0.2)',
-                        color: '#8b7355',
-                        fontWeight: 500
-                      }
-                    }}
-                    overlayStyle={{
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(139, 115, 85, 0.2)'
-                    }}
-                  >
-                    <Button danger icon={<Trash2 size={16} strokeWidth={1.5} />} style={{ background: 'transparent', borderRadius: '6px' }}>
-                      {t('pages.promptManager.delete')}
-                    </Button>
-                  </Popconfirm>
-                </>
-              )}
             </Space>
           </div>
         </Header>
