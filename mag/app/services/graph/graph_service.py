@@ -177,10 +177,10 @@ class GraphService:
         prompt_contents = {}
         for prompt_name in all_prompt_refs:
             try:
-                # 使用 mongodb_client 获取提示词
-                prompt_detail = await self.mongodb_client.get_prompt(prompt_name, user_id)
-                if prompt_detail:
-                    prompt_contents[prompt_name] = prompt_detail.content
+                # 使用 prompt_service 获取提示词
+                result = await prompt_service.get_prompt_content_only(prompt_name, user_id)
+                if result["success"] and result.get("data"):
+                    prompt_contents[prompt_name] = result["data"]["content"]
                     logger.info(f"成功获取提示词: {prompt_name}")
                 else:
                     prompt_contents[prompt_name] = ""
