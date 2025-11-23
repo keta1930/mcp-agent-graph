@@ -12,7 +12,7 @@ class ModelService:
     """模型服务管理 - 提供模型调用能力（SSE流式 + 非SSE）"""
 
     def __init__(self):
-        self.mongodb_client = None
+        self.model_config_repository = None
         self.clients: Dict[str, AsyncOpenAI] = {}
         self.param_builder = ParamBuilder()
         self.response_parser = ResponseParser()
@@ -23,7 +23,7 @@ class ModelService:
         Args:
             mongodb_client: MongoDB服务实例
         """
-        self.mongodb_client = mongodb_client
+        self.model_config_repository = mongodb_client.model_config_repository
         await self._initialize_clients()
 
     async def _initialize_clients(self, user_id: str = "default_user") -> None:
@@ -33,7 +33,7 @@ class ModelService:
             user_id: 用户ID
         """
         try:
-            models = await self.mongodb_client.list_model_configs(user_id=user_id, include_api_key=True)
+            models = await self.model_config_repository.list_models(user_id=user_id, include_api_key=True)
             for model_config in models:
                 try:
                     client = AsyncOpenAI(
@@ -60,7 +60,7 @@ class ModelService:
             List[Dict[str, Any]]: 模型配置列表
         """
         try:
-            models = await self.mongodb_client.list_model_configs(user_id=user_id, include_api_key=False)
+            models = await self.model_config_repository.list_models(user_id=user_id, include_api_key=False)
             return [{
                 "name": model["name"],
                 "base_url": model["base_url"],
@@ -81,7 +81,7 @@ class ModelService:
             Optional[Dict[str, Any]]: 模型配置
         """
         try:
-            model = await self.mongodb_client.get_model_config(model_name, user_id=user_id, include_api_key=False)
+            model = await self.model_config_repository.get_model(model_name, user_id=user_id, include_api_key=False)
             if model:
                 model.pop('created_at', None)
                 model.pop('updated_at', None)
@@ -101,7 +101,7 @@ class ModelService:
             Optional[Dict[str, Any]]: 模型配置
         """
         try:
-            return await self.mongodb_client.get_model_config(model_name, user_id=user_id, include_api_key=True)
+            return await self.model_config_repository.get_model(model_name, user_id=user_id, include_api_key=True)
         except Exception as e:
             logger.error(f"获取模型配置失败 {model_name} (user: {user_id}): {str(e)}")
             return None
@@ -122,7 +122,7 @@ class ModelService:
                 base_url=model_config["base_url"]
             )
 
-            result = await self.mongodb_client.create_model_config(user_id, model_config)
+            result = await self.model_config_repository.create_model(user_id, model_config)
 
             if result.get("success"):
                 client_key = f"{user_id}:{model_config['name']}"
@@ -154,7 +154,7 @@ class ModelService:
                 base_url=model_config["base_url"]
             )
 
-            result = await self.mongodb_client.update_model_config(model_name, user_id, model_config)
+            result = await self.model_config_repository.update_model(model_name, user_id, model_config)
 
             if result.get("success"):
                 old_name = model_name
@@ -187,7 +187,7 @@ class ModelService:
             bool: 是否成功
         """
         try:
-            result = await self.mongodb_client.delete_model_config(model_name, user_id)
+            result = await self.model_config_repository.delete_model(model_name, user_id)
 
             if result.get("success"):
                 client_key = f"{user_id}:{model_name}"
