@@ -2,7 +2,8 @@ from typing import Dict, List, Optional, Any, Union
 from pydantic import BaseModel, Field, validator
 
 class ModelConfig(BaseModel):
-    """模型配置 - 支持所有OpenAI API参数"""
+    """模型配置 - 支持多提供商和多模态的模型配置
+    """
     # 用户隔离
     user_id: Optional[str] = Field(default="default_user", description="所属用户ID")
 
@@ -11,6 +12,16 @@ class ModelConfig(BaseModel):
     base_url: str = Field(..., description="API基础URL")
     api_key: str = Field(..., description="API密钥")
     model: str = Field(..., description="模型标识符")
+    
+    # 提供商和模型类型
+    provider: Optional[str] = Field(
+        default="openai",
+        description="模型提供商（openai/google/anthropic等），默认为openai以保持向后兼容"
+    )
+    model_type: Optional[str] = Field(
+        default="llm",
+        description="模型类型（llm/vlm/image_gen/audio等），默认为llm以保持向后兼容"
+    )
     
     # 可选的OpenAI API参数
     stream: Optional[bool] = Field(default=False, description="是否启用流式返回")
@@ -28,6 +39,20 @@ class ModelConfig(BaseModel):
     extra_body: Optional[Dict[str, Any]] = Field(default=None, description="额外的请求体参数")
     extra_headers: Optional[Dict[str, str]] = Field(default=None, description="额外的请求头")
     timeout: Optional[float] = Field(default=None, description="请求超时时间（秒）")
+
+    @validator('provider')
+    def validate_provider(cls, v):
+        """确保provider转换为小写"""
+        if v is not None:
+            return v.lower()
+        return "openai"
+    
+    @validator('model_type')
+    def validate_model_type(cls, v):
+        """确保model_type转换为小写"""
+        if v is not None:
+            return v.lower()
+        return "llm"
 
     @validator('temperature')
     def validate_temperature(cls, v):

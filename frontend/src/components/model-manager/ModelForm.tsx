@@ -1,6 +1,6 @@
 // src/components/model-manager/ModelForm.tsx
 import React, { useState } from 'react';
-import { Form, Input, Modal, Button, InputNumber, Switch } from 'antd';
+import { Form, Input, Modal, Button, InputNumber, Switch, Select } from 'antd';
 import { ChevronDown } from 'lucide-react';
 import { ModelConfig } from '../../types/model';
 import { useT } from '../../i18n/hooks';
@@ -31,6 +31,9 @@ const ModelForm: React.FC<ModelFormProps> = ({
       // 准备表单初始值
       const formValues = {
         ...initialValues,
+        // 设置 provider 和 model_type 默认值
+        provider: initialValues.provider || 'openai',
+        model_type: initialValues.model_type || 'llm',
         // 处理 extra_body 参数，如果存在则转换为JSON字符串
         extra_body_json: initialValues.extra_body ? JSON.stringify(initialValues.extra_body, null, 2) : '',
         // 处理 stop 参数，如果是数组则转换为逗号分隔的字符串
@@ -41,6 +44,11 @@ const ModelForm: React.FC<ModelFormProps> = ({
       form.setFieldsValue(formValues);
     } else if (visible) {
       form.resetFields();
+      // 新建时设置默认值
+      form.setFieldsValue({
+        provider: 'openai',
+        model_type: 'llm'
+      });
     }
   }, [visible, initialValues, form]);
 
@@ -48,12 +56,16 @@ const ModelForm: React.FC<ModelFormProps> = ({
     form.validateFields().then((values) => {
       // 创建一个干净的对象，只包含有值的参数
       const cleanedValues: any = {};
-      
+
       // 处理必填参数
       cleanedValues.name = values.name;
       cleanedValues.base_url = values.base_url;
       cleanedValues.model = values.model;
-      
+
+      // 添加 provider 和 model_type
+      cleanedValues.provider = values.provider || 'openai';
+      cleanedValues.model_type = values.model_type || 'llm';
+
       // 处理API密钥：编辑模式下如果为空则不包含此字段，让后端保持原值
       if (!initialValues) {
         // 新增模式：API key 必须有值
@@ -64,15 +76,15 @@ const ModelForm: React.FC<ModelFormProps> = ({
           cleanedValues.api_key = values.api_key.trim();
         }
       }
-      
+
       // 处理可选参数 - 只有明确有值时才添加
       // 数值参数 - 只有当用户实际输入了值时才包含
       const numericFields = [
-        'temperature', 'max_tokens', 'max_completion_tokens', 
-        'top_p', 'frequency_penalty', 'presence_penalty', 
+        'temperature', 'max_tokens', 'max_completion_tokens',
+        'top_p', 'frequency_penalty', 'presence_penalty',
         'n', 'seed', 'top_logprobs', 'timeout'
       ];
-      
+
       numericFields.forEach(field => {
         const value = values[field];
         // 检查是否有实际的数值（不是undefined、null、空字符串、或NaN）
@@ -80,12 +92,12 @@ const ModelForm: React.FC<ModelFormProps> = ({
           cleanedValues[field] = Number(value);
         }
       });
-      
+
       // logprobs 开关
       if (values.logprobs !== undefined && values.logprobs !== null) {
         cleanedValues.logprobs = values.logprobs;
       }
-      
+
       // 处理 stop 参数
       if (values.stop && values.stop.trim() !== '') {
         const stopValue = values.stop.trim();
@@ -98,7 +110,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
           cleanedValues.stop = stopValue;
         }
       }
-      
+
       // 处理 extra_body 参数
       if (values.extra_body_json && values.extra_body_json.trim() !== '') {
         try {
@@ -111,7 +123,7 @@ const ModelForm: React.FC<ModelFormProps> = ({
           console.warn(t('pages.modelManager.form.invalidJson'), e);
         }
       }
-      
+
       console.log('提交清理后的值:', cleanedValues);
       onSubmit(cleanedValues as ModelConfig);
       form.resetFields();
@@ -183,6 +195,31 @@ const ModelForm: React.FC<ModelFormProps> = ({
         >
           <Input />
         </Form.Item>
+
+        {/* Provider 选择器 */}
+        <Form.Item
+          name="provider"
+          label={t('pages.modelManager.form.provider')}
+          initialValue="openai"
+          rules={[{ required: true, message: t('pages.modelManager.form.providerRequired') }]}
+        >
+          <Select placeholder={t('pages.modelManager.form.providerPlaceholder')}>
+            <Select.Option value="openai">OpenAI</Select.Option>
+          </Select>
+        </Form.Item>
+
+        {/* Model Type 选择器 */}
+        <Form.Item
+          name="model_type"
+          label={t('pages.modelManager.form.modelType')}
+          initialValue="llm"
+          rules={[{ required: true, message: t('pages.modelManager.form.modelTypeRequired') }]}
+        >
+          <Select placeholder={t('pages.modelManager.form.modelTypePlaceholder')}>
+            <Select.Option value="llm">{t('pages.modelManager.form.llmType')}</Select.Option>
+          </Select>
+        </Form.Item>
+
         <Form.Item
           name="base_url"
           label={t('pages.modelManager.form.baseUrlLabel')}

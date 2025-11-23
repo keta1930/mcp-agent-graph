@@ -54,6 +54,9 @@ class ModelConfigRepository:
                 "base_url": model_config["base_url"],
                 "api_key": model_config["api_key"],
                 "model": model_config.get("model", ""),
+                # 提供商和模型类型（新增字段）
+                "provider": model_config.get("provider", "openai"),
+                "model_type": model_config.get("model_type", "llm"),
                 # 可选参数
                 "temperature": model_config.get("temperature"),
                 "max_tokens": model_config.get("max_tokens"),
@@ -174,6 +177,9 @@ class ModelConfigRepository:
                 "base_url": model_config["base_url"],
                 "api_key": model_config["api_key"],
                 "model": model_config.get("model", ""),
+                # 提供商和模型类型（新增字段）
+                "provider": model_config.get("provider", "openai"),
+                "model_type": model_config.get("model_type", "llm"),
                 "temperature": model_config.get("temperature"),
                 "max_tokens": model_config.get("max_tokens"),
                 "max_completion_tokens": model_config.get("max_completion_tokens"),
