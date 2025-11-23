@@ -295,6 +295,13 @@
       "form": {
         "modelName": "Model Name",
         "modelNameRequired": "Please enter model name!",
+        "provider": "Model Provider",
+        "providerRequired": "Please select a model provider!",
+        "providerPlaceholder": "Select provider (OpenAI, Anthropic, Google...)",
+        "modelType": "Model Type",
+        "modelTypeRequired": "Please select a model type!",
+        "modelTypePlaceholder": "Select model type (LLM, VLM...)",
+        "llmType": "Large Language Model (LLM)",
         "baseUrlLabel": "Base URL",
         "baseUrlRequired": "Please enter base URL!",
         "baseUrlPlaceholder": "https://api.openai.com/v1",

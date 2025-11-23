@@ -295,6 +295,13 @@
       "form": {
         "modelName": "模型名称",
         "modelNameRequired": "请输入模型名称!",
+        "provider": "模型提供商",
+        "providerRequired": "请选择模型提供商!",
+        "providerPlaceholder": "选择提供商 (OpenAI, Anthropic, Google...)",
+        "modelType": "模型类型",
+        "modelTypeRequired": "请选择模型类型!",
+        "modelTypePlaceholder": "选择模型类型 (LLM, VLM...)",
+        "llmType": "大语言模型 (LLM)",
         "baseUrlLabel": "基础URL",
         "baseUrlRequired": "请输入基础URL!",
         "baseUrlPlaceholder": "https://api.openai.com/v1",
