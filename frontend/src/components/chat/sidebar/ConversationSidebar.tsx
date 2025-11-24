@@ -479,12 +479,12 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         {/* 用户头像下拉菜单 */}
         <UserMenu collapsed={false} placement="topLeft" />
 
-        {/* 回到主页按钮 */}
-        <Tooltip title={t('components.conversationSidebar.backToHome')}>
+        {/* 前往工作台按钮 */}
+        <Tooltip title={t('components.conversationSidebar.goToWorkspace')}>
           <Button
             type="text"
             icon={<Home size={16} strokeWidth={1.5} />}
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/workspace')}
             style={{
               color: 'rgba(45, 45, 45, 0.65)',
             }}

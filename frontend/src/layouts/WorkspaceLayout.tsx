@@ -29,10 +29,6 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const handleBackHome = () => {
-    navigate('/');
-  };
-
   const navItems = [
     { path: '/workspace/agent-manager', icon: Bot, labelKey: 'pages.workspace.agentManager' },
     { path: '/workspace/graph-editor', icon: Network, labelKey: 'pages.workspace.graphEditor' },
@@ -222,11 +218,11 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
             {/* 用户头像下拉菜单 */}
             <UserMenu collapsed={collapsed} placement="topLeft" />
             
-            <Tooltip title={t('pages.workspace.backHome')}>
+            <Tooltip title={t('pages.workspace.goToChat')}>
               <Button
                 type="text"
                 icon={<Home size={16} strokeWidth={1.5} />}
-                onClick={handleBackHome}
+                onClick={() => navigate('/chat')}
                 style={{
                   color: 'rgba(45, 45, 45, 0.65)',
                 }}

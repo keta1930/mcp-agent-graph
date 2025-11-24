@@ -10,7 +10,6 @@ import { isAuthenticated } from './utils/auth';
 import { I18nProvider, useI18n } from './i18n';
 
 // Import pages
-import Home from './pages/Home';
 import Workspace from './pages/Workspace';
 import ChatSystem from './pages/ChatSystem';
 import GraphEditor from './pages/GraphEditor';
@@ -78,22 +77,18 @@ const AppContent: React.FC = () => {
         {/* 公开路由 - 登录和注册 */}
         <Route
           path="/login"
-          element={isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />}
+          element={isAuthenticated() ? <Navigate to="/workspace" replace /> : <LoginPage />}
         />
         <Route
           path="/register"
-          element={isAuthenticated() ? <Navigate to="/" replace /> : <RegisterPage />}
+          element={isAuthenticated() ? <Navigate to="/workspace" replace /> : <RegisterPage />}
         />
 
         {/* 公开路由 - 分享页面（无需登录） */}
         <Route path="/share/:shareId" element={<SharedConversation />} />
 
-        {/* 受保护的路由 - 主入口页面 */}
-        <Route path="/" element={
-          <PrivateRoute>
-            <Home />
-          </PrivateRoute>
-        } />
+        {/* 根路径重定向到工作台 */}
+        <Route path="/" element={<Navigate to="/workspace" replace />} />
 
         {/* 受保护的路由 - 对话系统 */}
         <Route path="/chat" element={
@@ -236,7 +231,7 @@ const AppContent: React.FC = () => {
         <Route path="/prompt-manager" element={<Navigate to="/workspace/prompt-manager" replace />} />
 
         {/* 默认重定向 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/workspace" replace />} />
       </Routes>
         </Router>
       </AntApp>

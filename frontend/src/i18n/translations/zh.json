@@ -22,41 +22,6 @@
     "deleteConfirm": "确定要删除此项吗？"
   },
   "pages": {
-    "home": {
-      "title": "首页",
-      "description": "欢迎使用 MCP Agent Graph",
-      "tagline": "智能体开发框架",
-      "subtitle": "从需求到实现，让 AI 开发变得简单而优雅",
-      "features": {
-        "requirementDriven": {
-          "title": "需求驱动",
-          "description": "从想法到智能体"
-        },
-        "aiGenerated": {
-          "title": "AI 生成",
-          "description": "自动创建 MCP 工具"
-        },
-        "graphNesting": {
-          "title": "图嵌套图",
-          "description": "复杂流程编排"
-        },
-        "visualization": {
-          "title": "可视化",
-          "description": "直观的编辑体验"
-        }
-      },
-      "workspace": {
-        "title": "进入工作台",
-        "description": "管理 Agent、模型配置和 MCP 服务器",
-        "action": "开始管理"
-      },
-      "chat": {
-        "title": "对话系统",
-        "description": "与 AI Agent 交互，运行智能体工作流",
-        "action": "开始对话"
-      },
-      "copyright": "© 2025 MCP Agent Graph"
-    },
     "login": {
       "title": "登录",
       "subtitle": "欢迎回来，请登录您的账号",
@@ -112,7 +77,7 @@
       "systemToolsManager": "系统工具管理",
       "fileManager": "文件管理",
       "memoryManager": "记忆管理",
-      "backHome": "返回首页",
+      "goToChat": "前往对话",
       "userMenuSubtitle": "账户设置",
       "userSettings": "个人设置",
       "logout": "退出登录",
@@ -802,7 +767,7 @@
       "title": "管理后台",
       "usersCount": "{{count}} 位用户",
       "inviteCodesCount": "{{count}} 个邀请码",
-      "backHome": "返回主页",
+      "backHome": "返回工作台",
       "loadDataFailed": "加载数据失败",
       "operationSuccess": "操作成功",
       "operationFailed": "操作失败",
@@ -940,7 +905,7 @@
       "invalidShareLink": "无效的分享链接",
       "notFound": "分享的对话不存在或已被删除",
       "loadFailed": "加载分享对话失败",
-      "backToHome": "返回首页",
+      "backToHome": "返回工作台",
       "files": "文件",
       "noFiles": "暂无文件",
       "download": "下载",
@@ -1125,7 +1090,7 @@
       "batchMode": "批量",
       "cancelSelection": "取消选择",
       "taskCenter": "任务中心",
-      "backToHome": "返回主页",
+      "goToWorkspace": "前往工作台",
       "noConversations": "暂无对话",
       "noMatchingConversations": "没有找到匹配的对话",
       "movedToTrash": "已将 {{count}} 个对话移至回收站",
@@ -1139,7 +1104,7 @@
       "newConversation": "新建对话",
       "taskCenter": "任务中心",
       "user": "用户: {{name}}",
-      "backToHome": "返回主页"
+      "goToWorkspace": "前往工作台"
     },
     "exportManagerButton": {
       "title": "导出管理"

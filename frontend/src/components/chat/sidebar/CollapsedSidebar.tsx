@@ -180,8 +180,8 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
 
         <NavButton
           icon={<Home size={18} strokeWidth={1.5} />}
-          title={t('components.collapsedSidebar.backToHome')}
-          onClick={() => navigate('/')}
+          title={t('components.collapsedSidebar.goToWorkspace')}
+          onClick={() => navigate('/workspace')}
         />
       </div>
     </div>
