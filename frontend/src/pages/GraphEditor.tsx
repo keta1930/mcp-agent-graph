@@ -8,7 +8,7 @@ import GraphEditorView from '../components/graph-editor/GraphEditorView';
 import CreateGraphModal from '../components/graph-editor/CreateGraphModal';
 import GraphSettingsModal from '../components/graph-editor/GraphSettingsModal';
 import ReadmeModal from '../components/graph-editor/ReadmeModal';
-import DeleteConfirmDialog from '../components/graph-editor/DeleteConfirmDialog';
+
 import { useGraphEditorStore } from '../store/graphEditorStore';
 import { useMCPStore } from '../store/mcpStore';
 import { useModelStore } from '../store/modelStore';
@@ -55,7 +55,7 @@ const GraphEditor: React.FC = () => {
   const [versionManagerVisible, setVersionManagerVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filteredGraphs, setFilteredGraphs] = useState<string[]>(graphs);
-  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState<string | null>(null);
+
   const [readmeModalVisible, setReadmeModalVisible] = useState(false);
   const [readmeContent, setReadmeContent] = useState('');
   const [graphSettingsModalVisible, setGraphSettingsModalVisible] = useState(false);
@@ -153,7 +153,6 @@ const GraphEditor: React.FC = () => {
     try {
       await deleteGraph(graphName);
       message.success(t('pages.graphEditor.deleteSuccess', { name: graphName }));
-      setDeleteConfirmVisible(null);
     } catch (error: any) {
       message.error(t('pages.graphEditor.deleteFailed', { error: error.message || t('errors.serverError') }));
     }
@@ -278,7 +277,7 @@ const GraphEditor: React.FC = () => {
           onEditGraph={handleEditGraph}
           onExportPackage={handleExportPackage}
           onExportMCP={handleExportMCP}
-          onDeleteGraph={(graphName) => setDeleteConfirmVisible(graphName)}
+          onDeleteGraph={handleDeleteGraph}
         />
       ) : (
         <GraphEditorView
@@ -317,13 +316,6 @@ const GraphEditor: React.FC = () => {
         visible={readmeModalVisible}
         content={readmeContent}
         onClose={() => setReadmeModalVisible(false)}
-      />
-
-      <DeleteConfirmDialog
-        visible={!!deleteConfirmVisible}
-        graphName={deleteConfirmVisible || ''}
-        onConfirm={() => deleteConfirmVisible && handleDeleteGraph(deleteConfirmVisible)}
-        onCancel={() => setDeleteConfirmVisible(null)}
       />
 
       <AddNodeModal

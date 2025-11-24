@@ -11,7 +11,8 @@ import {
   Input,
   Row,
   Col,
-  Tag
+  Tag,
+  Popconfirm
 } from 'antd';
 import {
   Plus,
@@ -386,36 +387,66 @@ const GraphListView: React.FC<GraphListViewProps> = ({
                         <Code size={15} strokeWidth={1.5} />
                       </div>
                     </Tooltip>
-                    <Tooltip title={t('pages.graphEditor.deleteWorkflow')}>
-                      <div
-                        style={{
-                          padding: '6px',
-                          borderRadius: '4px',
+                    <Popconfirm
+                      title={t('pages.graphEditor.deleteConfirmTitle')}
+                      description={t('pages.graphEditor.deleteConfirmMessage', { name: graphName })}
+                      onConfirm={(e) => {
+                        e?.stopPropagation();
+                        onDeleteGraph(graphName);
+                      }}
+                      okText={t('common.confirm')}
+                      cancelText={t('common.cancel')}
+                      okButtonProps={{
+                        style: {
+                          background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontWeight: 500,
+                          boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+                        }
+                      }}
+                      cancelButtonProps={{
+                        style: {
+                          borderRadius: '6px',
+                          border: '1px solid rgba(139, 115, 85, 0.2)',
                           color: '#8b7355',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '13px',
-                          transition: 'all 0.2s ease',
-                          background: 'transparent'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteGraph(graphName);
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#b85845';
-                          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#8b7355';
-                          e.currentTarget.style.background = 'transparent';
-                        }}
-                      >
-                        <Trash2 size={15} strokeWidth={1.5} />
-                      </div>
-                    </Tooltip>
+                          fontWeight: 500
+                        }
+                      }}
+                      overlayStyle={{
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(139, 115, 85, 0.2)'
+                      }}
+                    >
+                      <Tooltip title={t('pages.graphEditor.deleteWorkflow')}>
+                        <div
+                          style={{
+                            padding: '6px',
+                            borderRadius: '4px',
+                            color: '#8b7355',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '13px',
+                            transition: 'all 0.2s ease',
+                            background: 'transparent'
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = '#b85845';
+                            e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = '#8b7355';
+                            e.currentTarget.style.background = 'transparent';
+                          }}
+                        >
+                          <Trash2 size={15} strokeWidth={1.5} />
+                        </div>
+                      </Tooltip>
+                    </Popconfirm>
                   </div>
                 </Card>
               </Col>
