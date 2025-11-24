@@ -15,3 +15,9 @@ export const setTitleGenerationModel = async (modelName: string): Promise<void> 
     params: { model_name: modelName }
   })
 }
+
+export const setUserLanguage = async (language: string): Promise<void> => {
+  await api.post('/user/settings/language', null, {
+    params: { language }
+  })
+}

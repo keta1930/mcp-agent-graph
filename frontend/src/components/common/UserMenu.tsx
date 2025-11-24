@@ -3,11 +3,13 @@ import React from 'react';
 import { Dropdown, App, message } from 'antd';
 import type { MenuProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Languages } from 'lucide-react';
 import { useT } from '../../i18n/hooks';
+import { useI18n } from '../../i18n';
 import { getCurrentUserDisplayName } from '../../config/user';
 import { logout as logoutAPI } from '../../services/authService';
 import { removeToken } from '../../utils/auth';
+import { setUserLanguage } from '../../services/userSettingsService';
 
 interface UserMenuProps {
   /** 是否收起状态（影响显示样式） */
@@ -24,12 +26,13 @@ interface UserMenuProps {
  * - 下拉菜单包含：个人设置（未来）、退出登录
  * - 统一的登出确认弹窗样式
  */
-const UserMenu: React.FC<UserMenuProps> = ({ 
+const UserMenu: React.FC<UserMenuProps> = ({
   collapsed = false,
   placement = 'topLeft'
 }) => {
   const navigate = useNavigate();
   const t = useT();
+  const { locale, setLocale } = useI18n();
   const { modal } = App.useApp();
   const currentUserDisplayName = getCurrentUserDisplayName();
 
@@ -118,12 +121,59 @@ const UserMenu: React.FC<UserMenuProps> = ({
     });
   };
 
+  const handleLanguageChange = async (language: 'en' | 'zh') => {
+    try {
+      await setUserLanguage(language);
+      setLocale(language);
+      message.success(
+        language === 'zh'
+          ? '语言已切换为中文'
+          : 'Language switched to English'
+      );
+    } catch (error) {
+      console.error('Failed to set language:', error);
+      message.error(
+        language === 'zh'
+          ? '语言设置失败'
+          : 'Failed to set language'
+      );
+    }
+  };
+
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'settings',
       icon: <Settings size={16} strokeWidth={1.5} />,
       label: t('pages.workspace.userSettings'),
-      disabled: true, // 暂时禁用，未来实现
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'language',
+      icon: <Languages size={16} strokeWidth={1.5} />,
+      label: t('components.languageSwitcher.title'),
+      children: [
+        {
+          key: 'en',
+          label: t('components.languageSwitcher.english'),
+          onClick: () => handleLanguageChange('en'),
+          style: {
+            color: locale === 'en' ? '#b85845' : undefined,
+            fontWeight: locale === 'en' ? 500 : undefined,
+          }
+        },
+        {
+          key: 'zh',
+          label: t('components.languageSwitcher.chinese'),
+          onClick: () => handleLanguageChange('zh'),
+          style: {
+            color: locale === 'zh' ? '#b85845' : undefined,
+            fontWeight: locale === 'zh' ? 500 : undefined,
+          }
+        },
+      ]
     },
     {
       type: 'divider',
