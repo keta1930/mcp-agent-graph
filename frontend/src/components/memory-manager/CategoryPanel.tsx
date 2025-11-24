@@ -1,6 +1,6 @@
 // src/components/memory-manager/CategoryPanel.tsx
 import React from 'react';
-import { Collapse, Typography, Space, App } from 'antd';
+import { Collapse, Typography, Space, App, Popconfirm } from 'antd';
 import type { CollapseProps } from 'antd';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import { MemoryItem } from '../../types/memory';
@@ -29,20 +29,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
   const t = useT();
   const { modal } = App.useApp();
 
-  const handleDeleteCategory = () => {
-    modal.confirm({
-      title: t('pages.memoryManager.deleteCategoryConfirm'),
-      okText: t('common.confirm'),
-      cancelText: t('common.cancel'),
-      okButtonProps: {
-        style: {
-          background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-          border: 'none',
-        },
-      },
-      onOk: onDeleteCategory,
-    });
-  };
+
 
   const handleEditItem = (item: MemoryItem) => {
     modal.confirm({
@@ -72,7 +59,19 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
         style: {
           background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
           border: 'none',
-        },
+          borderRadius: '6px',
+          color: '#fff',
+          fontWeight: 500,
+          boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+        }
+      },
+      cancelButtonProps: {
+        style: {
+          borderRadius: '6px',
+          border: '1px solid rgba(139, 115, 85, 0.2)',
+          color: '#8b7355',
+          fontWeight: 500
+        }
       },
       onOk: () => {
         const textarea = document.getElementById('edit-memory-content') as HTMLTextAreaElement;
@@ -84,17 +83,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
     });
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    modal.confirm({
-      title: t('common.deleteConfirm'),
-      okText: t('common.confirm'),
-      cancelText: t('common.cancel'),
-      okButtonProps: {
-        danger: true,
-      },
-      onOk: () => onDelete([itemId]),
-    });
-  };
+
 
   const panelHeader = (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
@@ -118,41 +107,69 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
           {items.length} {t('pages.memoryManager.items')}
         </Text>
       </Space>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleDeleteCategory();
+      <Popconfirm
+        title={t('pages.memoryManager.deleteCategoryConfirm')}
+        onConfirm={(e) => {
+          e?.stopPropagation();
+          onDeleteCategory();
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.stopPropagation();
-            handleDeleteCategory();
+        okText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        okButtonProps={{
+          style: {
+            background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+            border: 'none',
+            borderRadius: '6px',
+            color: '#fff',
+            fontWeight: 500,
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
           }
         }}
-        aria-label={t('pages.memoryManager.deleteCategory')}
-        style={{
-          padding: '4px',
-          borderRadius: '4px',
-          color: '#8b7355',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            color: '#8b7355',
+            fontWeight: 500
+          }
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#b85845';
-          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = '#8b7355';
-          e.currentTarget.style.background = 'transparent';
+        overlayStyle={{
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(139, 115, 85, 0.2)'
         }}
       >
-        <Trash2 size={14} strokeWidth={1.5} />
-      </div>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+            }
+          }}
+          aria-label={t('pages.memoryManager.deleteCategory')}
+          style={{
+            padding: '4px',
+            borderRadius: '4px',
+            color: '#8b7355',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#b85845';
+            e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#8b7355';
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <Trash2 size={14} strokeWidth={1.5} />
+        </div>
+      </Popconfirm>
     </div>
   );
 
@@ -167,7 +184,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({
               key={item.item_id}
               item={item}
               onEdit={() => handleEditItem(item)}
-              onDelete={() => handleDeleteItem(item.item_id)}
+              onDelete={() => onDelete([item.item_id])}
             />
           ))}
         </div>

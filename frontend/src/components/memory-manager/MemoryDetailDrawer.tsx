@@ -232,7 +232,19 @@ const MemoryDetailDrawer: React.FC<MemoryDetailDrawerProps> = ({
           style: {
             background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
             border: 'none',
-          },
+            borderRadius: '6px',
+            color: '#fff',
+            fontWeight: 500,
+            boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            color: '#8b7355',
+            fontWeight: 500
+          }
         }}
       >
         <div style={{ marginTop: '16px' }}>

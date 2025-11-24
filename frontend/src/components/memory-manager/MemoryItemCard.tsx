@@ -1,8 +1,9 @@
 // src/components/memory-manager/MemoryItemCard.tsx
 import React from 'react';
-import { Card, Typography, Space } from 'antd';
+import { Card, Typography, Space, Popconfirm } from 'antd';
 import { Edit, Trash2 } from 'lucide-react';
 import { MemoryItem } from '../../types/memory';
+import { useT } from '../../i18n/hooks';
 
 const { Text } = Typography;
 
@@ -13,6 +14,7 @@ interface MemoryItemCardProps {
 }
 
 const MemoryItemCard: React.FC<MemoryItemCardProps> = ({ item, onEdit, onDelete }) => {
+  const t = useT();
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -92,29 +94,57 @@ const MemoryItemCard: React.FC<MemoryItemCardProps> = ({ item, onEdit, onDelete 
           >
             <Edit size={14} strokeWidth={1.5} />
           </div>
-          <div
-            onClick={onDelete}
-            style={{
-              padding: '4px',
-              borderRadius: '4px',
-              color: '#8b7355',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+          <Popconfirm
+            title={t('common.deleteConfirm')}
+            onConfirm={onDelete}
+            okText={t('common.confirm')}
+            cancelText={t('common.cancel')}
+            okButtonProps={{
+              style: {
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontWeight: 500,
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+              }
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#b85845';
-              e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+            cancelButtonProps={{
+              style: {
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                color: '#8b7355',
+                fontWeight: 500
+              }
             }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#8b7355';
-              e.currentTarget.style.background = 'transparent';
+            overlayStyle={{
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(139, 115, 85, 0.2)'
             }}
           >
-            <Trash2 size={14} strokeWidth={1.5} />
-          </div>
+            <div
+              style={{
+                padding: '4px',
+                borderRadius: '4px',
+                color: '#8b7355',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#b85845';
+                e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#8b7355';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <Trash2 size={14} strokeWidth={1.5} />
+            </div>
+          </Popconfirm>
         </Space>
       </div>
     </Card>
