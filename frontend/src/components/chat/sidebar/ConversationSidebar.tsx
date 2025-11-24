@@ -177,20 +177,38 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   return (
     <div
       style={{
-        width: '300px',
-        background: '#faf8f5',
+        width: '280px',
+        minHeight: '100vh',
+        background: 'linear-gradient(to bottom, #faf8f5 0%, #f5f3f0 100%)',
         borderRight: '1px solid rgba(139, 115, 85, 0.12)',
+        boxShadow: '2px 0 8px rgba(139, 115, 85, 0.06)',
         display: 'flex',
         flexDirection: 'column',
+        transition: 'width 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* 头部 */}
       <div
         style={{
-          padding: '16px',
+          padding: '24px 20px',
           borderBottom: '1px solid rgba(139, 115, 85, 0.08)',
+          background: 'rgba(255, 255, 255, 0.5)',
+          position: 'relative',
         }}
       >
+        {/* Header decorative line */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '20%',
+            right: '20%',
+            height: '1px',
+            background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)',
+          }}
+        />
         {/* 搜索框和收起按钮 */}
         <div
           style={{
@@ -468,14 +486,28 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
       {/* 底部 - 用户头像和回到主页 */}
       <div
         style={{
-          padding: '12px 16px',
+          padding: '20px 16px',
           borderTop: '1px solid rgba(139, 115, 85, 0.08)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
           background: 'rgba(255, 255, 255, 0.5)',
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '8px',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
         }}
       >
+        {/* Footer decorative line */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '20%',
+            right: '20%',
+            height: '1px',
+            background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)',
+          }}
+        />
         {/* 用户头像下拉菜单 */}
         <UserMenu collapsed={false} placement="topLeft" />
 

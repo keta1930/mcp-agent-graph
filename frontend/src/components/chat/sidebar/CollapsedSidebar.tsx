@@ -1,7 +1,8 @@
 // src/components/chat/sidebar/CollapsedSidebar.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Clock, ChevronRight } from 'lucide-react';
+import { Button, Tooltip } from 'antd';
+import { Home, Clock, ChevronRight, Plus } from 'lucide-react';
 import { useT } from '../../../i18n/hooks';
 import UserMenu from '../../common/UserMenu';
 
@@ -17,85 +18,45 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
   const navigate = useNavigate();
   const t = useT();
 
-  const NavButton: React.FC<{
-    icon: React.ReactNode;
-    title: string;
-    onClick: () => void;
-  }> = ({ icon, title, onClick }) => {
-    const [isHovered, setIsHovered] = useState(false);
-
-    return (
-      <div style={{ position: 'relative' }}>
-        <button
-          type="button"
-          onClick={onClick}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          style={{
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            background: isHovered
-              ? 'rgba(139, 115, 85, 0.06)'
-              : 'transparent',
-            border: 'none',
-            color: isHovered ? '#8b7355' : 'rgba(45, 45, 45, 0.65)',
-          }}
-        >
-          {icon}
-        </button>
-        {isHovered && (
-          <div
-            style={{
-              position: 'absolute',
-              left: '52px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: '#ffffff',
-              color: '#2d2d2d',
-              padding: '6px 10px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: 400,
-              whiteSpace: 'nowrap',
-              border: '1px solid rgba(139, 115, 85, 0.12)',
-              boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
-              zIndex: 1000,
-              pointerEvents: 'none',
-            }}
-          >
-            {title}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div
       style={{
-        width: '56px',
+        width: '72px',
+        minHeight: '100vh',
+        background: 'linear-gradient(to bottom, #faf8f5 0%, #f5f3f0 100%)',
+        borderRight: '1px solid rgba(139, 115, 85, 0.12)',
+        boxShadow: '2px 0 8px rgba(139, 115, 85, 0.06)',
         display: 'flex',
         flexDirection: 'column',
-        background: '#faf8f5',
-        borderRight: '1px solid rgba(139, 115, 85, 0.12)',
+        transition: 'width 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
       {/* 顶部 */}
       <div
         style={{
-          padding: '16px 0',
+          padding: '24px 0',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
           borderBottom: '1px solid rgba(139, 115, 85, 0.08)',
+          background: 'rgba(255, 255, 255, 0.5)',
+          position: 'relative',
         }}
       >
+        {/* Header decorative line */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '15%',
+            right: '15%',
+            height: '1px',
+            background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)',
+          }}
+        />
         <button
           type="button"
           onClick={onExpand}
@@ -105,9 +66,9 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
             width: '32px',
             height: '32px',
             borderRadius: '4px',
-            background: '#ffffff',
-            border: '1px solid rgba(139, 115, 85, 0.12)',
-            color: '#8b7355',
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(45, 45, 45, 0.65)',
             transition: 'all 0.2s ease',
             cursor: 'pointer',
             display: 'flex',
@@ -115,12 +76,10 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
             justifyContent: 'center',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(139, 115, 85, 0.06)';
-            e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.2)';
+            e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#ffffff';
-            e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.12)';
+            e.currentTarget.style.background = 'transparent';
           }}
         >
           <ChevronRight size={16} strokeWidth={1.5} />
@@ -131,58 +90,120 @@ const CollapsedSidebar: React.FC<CollapsedSidebarProps> = ({
       <div
         style={{
           flex: 1,
+          padding: '20px 12px',
           display: 'flex',
           flexDirection: 'column',
-          padding: '12px 0',
-          gap: '4px',
-          alignItems: 'center',
+          gap: '8px',
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
         {onNewConversation && (
-          <NavButton
-            icon={
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            }
+          <Tooltip
             title={t('components.collapsedSidebar.newConversation')}
-            onClick={onNewConversation}
-          />
+            placement="right"
+          >
+            <Button
+              type="text"
+              icon={<Plus size={20} strokeWidth={1.5} />}
+              onClick={onNewConversation}
+              style={{
+                width: '100%',
+                height: '48px',
+                borderRadius: '8px',
+                color: 'rgba(45, 45, 45, 0.65)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(139, 115, 85, 0.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            />
+          </Tooltip>
         )}
 
-        <NavButton
-          icon={<Clock size={18} strokeWidth={1.5} />}
+        <Tooltip
           title={t('components.collapsedSidebar.taskCenter')}
-          onClick={() => navigate('/tasks')}
-        />
+          placement="right"
+        >
+          <Button
+            type="text"
+            icon={<Clock size={20} strokeWidth={1.5} />}
+            onClick={() => navigate('/tasks')}
+            style={{
+              width: '100%',
+              height: '48px',
+              borderRadius: '8px',
+              color: 'rgba(45, 45, 45, 0.65)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '12px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          />
+        </Tooltip>
       </div>
 
       {/* 底部 */}
       <div
         style={{
-          padding: '12px 0 16px',
+          padding: '20px 12px',
+          borderTop: '1px solid rgba(139, 115, 85, 0.08)',
+          background: 'rgba(255, 255, 255, 0.5)',
           display: 'flex',
           flexDirection: 'column',
+          gap: '8px',
+          justifyContent: 'center',
           alignItems: 'center',
-          gap: '4px',
-          borderTop: '1px solid rgba(139, 115, 85, 0.08)',
+          position: 'relative',
         }}
       >
+        {/* Footer decorative line */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '15%',
+            right: '15%',
+            height: '1px',
+            background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.25) 50%, transparent)',
+          }}
+        />
+
         {/* 用户头像下拉菜单 */}
         <UserMenu collapsed={true} placement="topLeft" />
 
-        <NavButton
-          icon={<Home size={18} strokeWidth={1.5} />}
+        {/* 前往工作台按钮 */}
+        <Tooltip
           title={t('components.collapsedSidebar.goToWorkspace')}
-          onClick={() => navigate('/workspace')}
-        />
+          placement="right"
+        >
+          <Button
+            type="text"
+            icon={<Home size={16} strokeWidth={1.5} />}
+            onClick={() => navigate('/workspace')}
+            style={{
+              color: 'rgba(45, 45, 45, 0.65)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 115, 85, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          />
+        </Tooltip>
       </div>
     </div>
   );
