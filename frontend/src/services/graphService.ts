@@ -112,10 +112,18 @@ export const createGraph = async (graph: BackendGraphConfig): Promise<any> => {
 
     const response = await api.post('/graphs', finalBody);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error submitting to API:', error);
     console.log('Submitted data:', JSON.stringify(requestBody, null, 2));
-    throw error;
+    
+    // Extract and log the detailed error message from the backend
+    const errorDetail = error?.response?.data?.detail || error?.message || 'Unknown error';
+    console.error('Backend error detail:', errorDetail);
+    
+    // Re-throw with more detailed error message
+    const enhancedError = new Error(errorDetail);
+    (enhancedError as any).originalError = error;
+    throw enhancedError;
   }
 };
 
