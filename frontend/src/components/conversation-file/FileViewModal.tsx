@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Space, Typography, message, Spin, App } from 'antd';
+import { Modal, Button, Space, Typography, message, Spin, App, Popconfirm } from 'antd';
 import {
   Save,
   Download,
@@ -103,25 +103,16 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     if (!filename) return;
-    modal.confirm({
-      title: t('pages.fileManager.fileViewModal.deleteConfirmTitle'),
-      content: t('pages.fileManager.fileViewModal.deleteConfirmMessage', { filename }),
-      okText: t('pages.fileManager.fileViewModal.deleteConfirmOk'),
-      okType: 'danger',
-      cancelText: t('pages.fileManager.fileViewModal.deleteConfirmCancel'),
-      onOk: async () => {
-        try {
-          await conversationFileService.deleteFile(conversationId, filename);
-          message.success(t('pages.fileManager.fileViewModal.deleteSuccess'));
-          if (onDelete) onDelete();
-          handleClose();
-        } catch (error: any) {
-          message.error(t('pages.fileManager.fileViewModal.deleteFailed', { error: error.message }));
-        }
-      },
-    });
+    try {
+      await conversationFileService.deleteFile(conversationId, filename);
+      message.success(t('pages.fileManager.fileViewModal.deleteSuccess'));
+      if (onDelete) onDelete();
+      handleClose();
+    } catch (error: any) {
+      message.error(t('pages.fileManager.fileViewModal.deleteFailed', { error: error.message }));
+    }
   };
 
   const handleClose = () => {
@@ -263,18 +254,47 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
           >
             {t('pages.fileManager.fileViewModal.download')}
           </Button>
-          <Button
-            icon={<Trash2 size={16} />}
-            danger
-            onClick={handleDelete}
-            style={{
-              borderRadius: '6px',
-              fontWeight: 500,
-              letterSpacing: '0.5px'
+          <Popconfirm
+            title={t('pages.fileManager.fileViewModal.deleteConfirmTitle')}
+            description={t('pages.fileManager.fileViewModal.deleteConfirmMessage', { filename: filename || '' })}
+            onConfirm={handleDeleteConfirm}
+            okText={t('pages.fileManager.fileViewModal.deleteConfirmOk')}
+            cancelText={t('pages.fileManager.fileViewModal.deleteConfirmCancel')}
+            okButtonProps={{
+              style: {
+                background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                border: 'none',
+                borderRadius: '6px',
+                color: '#fff',
+                fontWeight: 500,
+                boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+              }
+            }}
+            cancelButtonProps={{
+              style: {
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.2)',
+                color: '#8b7355',
+                fontWeight: 500
+              }
+            }}
+            overlayStyle={{
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(139, 115, 85, 0.2)'
             }}
           >
-            {t('pages.fileManager.fileViewModal.delete')}
-          </Button>
+            <Button
+              icon={<Trash2 size={16} />}
+              danger
+              style={{
+                borderRadius: '6px',
+                fontWeight: 500,
+                letterSpacing: '0.5px'
+              }}
+            >
+              {t('pages.fileManager.fileViewModal.delete')}
+            </Button>
+          </Popconfirm>
           <Button
             type="primary"
             icon={<Save size={16} />}
