@@ -1,6 +1,6 @@
 // src/pages/ModelManager.tsx
 import React, { useEffect, useState } from 'react';
-import { Layout, Button, Select, Card, Row, Col, Typography, Input, Space, Tag as AntTag, Spin, App } from 'antd';
+import { Layout, Button, Select, Card, Row, Col, Typography, Input, Space, Tag as AntTag, Spin, App, Popconfirm, Tooltip } from 'antd';
 import { Plus, Star, Edit, Trash2, Server, Globe, Tag, Search as SearchIcon, Settings } from 'lucide-react';
 import { useModelStore } from '../store/modelStore';
 import { ModelConfig } from '../types/model';
@@ -124,8 +124,6 @@ const ModelManager: React.FC = () => {
       message.error(t('pages.modelManager.deleteFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
-
-  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState<string | null>(null);
 
   return (
     <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
@@ -477,34 +475,65 @@ const ModelManager: React.FC = () => {
                     <Edit size={15} strokeWidth={1.5} />
                     {t('common.edit')}
                   </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      padding: '6px',
-                      borderRadius: '4px',
-                      color: '#8b7355',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
-                      fontSize: '13px',
-                      transition: 'all 0.2s ease',
-                      background: 'transparent'
+                  <Popconfirm
+                    title={t('pages.modelManager.deleteConfirmTitle')}
+                    description={t('pages.modelManager.deleteConfirmMessage', { name: model.name })}
+                    onConfirm={() => handleDelete(model.name)}
+                    okText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    okButtonProps={{
+                      style: {
+                        background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontWeight: 500,
+                        boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
+                      }
                     }}
-                    onClick={() => setDeleteConfirmVisible(model.name)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#b85845';
-                      e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                    cancelButtonProps={{
+                      style: {
+                        borderRadius: '6px',
+                        border: '1px solid rgba(139, 115, 85, 0.2)',
+                        color: '#8b7355',
+                        fontWeight: 500
+                      }
                     }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#8b7355';
-                      e.currentTarget.style.background = 'transparent';
+                    overlayStyle={{
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(139, 115, 85, 0.2)'
                     }}
                   >
-                    <Trash2 size={15} strokeWidth={1.5} />
-                    {t('common.delete')}
-                  </div>
+                    <Tooltip title={t('common.delete')}>
+                      <div
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          borderRadius: '4px',
+                          color: '#8b7355',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          fontSize: '13px',
+                          transition: 'all 0.2s ease',
+                          background: 'transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#b85845';
+                          e.currentTarget.style.background = 'rgba(184, 88, 69, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#8b7355';
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <Trash2 size={15} strokeWidth={1.5} />
+                        {t('common.delete')}
+                      </div>
+                    </Tooltip>
+                  </Popconfirm>
                 </div>
               </Card>
             </Col>
@@ -512,89 +541,6 @@ const ModelManager: React.FC = () => {
           </Row>
         )}
       </Content>
-
-      {/* 删除确认弹窗 */}
-      {deleteConfirmVisible && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(45, 45, 45, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}
-          onClick={() => setDeleteConfirmVisible(null)}
-        >
-          <Card
-            style={{
-              borderRadius: '8px',
-              border: '1px solid rgba(139, 115, 85, 0.15)',
-              background: 'rgba(255, 255, 255, 0.95)',
-              boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
-              minWidth: '320px',
-              maxWidth: '400px'
-            }}
-            styles={{ body: { padding: '24px' } }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ marginBottom: '16px' }}>
-              <Text style={{
-                fontSize: '16px',
-                fontWeight: 500,
-                color: '#2d2d2d',
-                display: 'block',
-                marginBottom: '8px'
-              }}>
-                {t('pages.modelManager.deleteConfirmTitle')}
-              </Text>
-              <Text style={{
-                fontSize: '14px',
-                color: 'rgba(45, 45, 45, 0.65)'
-              }}>
-                {t('pages.modelManager.deleteConfirmMessage', { name: deleteConfirmVisible })}
-              </Text>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <Button
-                style={{
-                  borderRadius: '6px',
-                  border: '1px solid rgba(139, 115, 85, 0.2)',
-                  background: 'rgba(255, 255, 255, 0.85)',
-                  color: '#8b7355',
-                  padding: '6px 16px',
-                  height: 'auto'
-                }}
-                onClick={() => setDeleteConfirmVisible(null)}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                style={{
-                  background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#fff',
-                  padding: '6px 16px',
-                  height: 'auto',
-                  fontWeight: 500,
-                  boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25)'
-                }}
-                onClick={() => {
-                  handleDelete(deleteConfirmVisible);
-                  setDeleteConfirmVisible(null);
-                }}
-              >
-                {t('common.confirm')}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* 标题模型设置 Modal */}
       {titleModelModalVisible && (
