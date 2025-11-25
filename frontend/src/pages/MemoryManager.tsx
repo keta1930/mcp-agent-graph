@@ -86,7 +86,7 @@ const MemoryManager: React.FC = () => {
   const totalItems = memories.reduce((sum, m) => sum + m.total_items, 0);
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#faf8f5' }}>
+    <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
       {/* Header 顶栏 */}
       <Header
         style={{
@@ -174,7 +174,7 @@ const MemoryManager: React.FC = () => {
       </Header>
 
       {/* Content 内容区 */}
-      <Content style={{ padding: '32px 48px', overflow: 'auto' }}>
+      <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '120px 0' }}>
             <Spin size="large" />
