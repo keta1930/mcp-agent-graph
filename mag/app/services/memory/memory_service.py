@@ -613,17 +613,28 @@ class MemoryService:
                     "error_code": "CONTENT_EMPTY"
                 }
 
-            # 根据 owner_type 选择正确的提示词模板
+            # 获取用户语言设置
+            user_language = await self.mongodb_client.user_repository.get_user_language(user_id)
+            logger.info(f"Memory导入使用用户语言: user_id={user_id}, language={user_language}")
+
+            # 根据 owner_type 和用户语言选择正确的提示词模板
             current_dir = os.path.dirname(os.path.abspath(__file__))
             if owner_type == "agent":
-                prompt_template_path = os.path.join(current_dir, "import_prompt_template_agent.md")
+                if user_language == "en":
+                    prompt_template_path = os.path.join(current_dir, "memory_template_agent_en.md")
+                else:
+                    prompt_template_path = os.path.join(current_dir, "memory_template_agent_zh.md")
             else:
-                prompt_template_path = os.path.join(current_dir, "import_prompt_template.md")
-            
+                if user_language == "en":
+                    prompt_template_path = os.path.join(current_dir, "memory_template_user_en.md")
+                else:
+                    prompt_template_path = os.path.join(current_dir, "memory_template_user_zh.md")
+
             if not os.path.exists(prompt_template_path):
+                logger.error(f"提示词模板文件不存在: {prompt_template_path}")
                 return {
                     "success": False,
-                    "message": "提示词模板文件不存在",
+                    "message": f"提示词模板文件不存在: {os.path.basename(prompt_template_path)}",
                     "error_code": "TEMPLATE_NOT_FOUND"
                 }
 

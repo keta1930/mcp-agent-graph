@@ -113,6 +113,12 @@ You MUST output strictly in the following JSON format, without any additional ex
   - Do NOT invent examples or details
   - Only reorganize and categorize what the user provided
 
+- **User Perspective**: Remember, these memories are about the user, for AI to read and reference:
+  - Use third-person perspective ("The user prefers...", "The user usually...", "The user's habit is...")
+  - Focus on the user's personal preferences, habits, and needs
+  - Organize information so AI can quickly understand user characteristics
+  - Maintain objective description, accurately reflecting the user's traits
+
 - **Categorization**: Group related memories together, but split unrelated topics into separate entries
 
 ## User Input
