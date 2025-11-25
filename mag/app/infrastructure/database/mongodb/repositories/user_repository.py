@@ -227,6 +227,60 @@ class UserRepository:
             logger.error(f"设置标题生成模型失败: {str(e)}")
             return False
 
+    async def get_user_language(self, user_id: str) -> str:
+        """
+        获取用户语言设置
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            str: 语言代码，默认返回 "zh"
+        """
+        try:
+            user = await self.collection.find_one(
+                {"user_id": user_id},
+                {"language": 1}
+            )
+            return user.get("language", "zh") if user else "zh"
+
+        except Exception as e:
+            logger.error(f"获取用户语言设置失败: {str(e)}")
+            return "zh"
+
+    async def set_user_language(self, user_id: str, language: str) -> bool:
+        """
+        设置用户语言
+
+        Args:
+            user_id: 用户ID
+            language: 语言代码（"zh" 或 "en"）
+
+        Returns:
+            bool: 是否设置成功
+        """
+        try:
+            result = await self.collection.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "language": language,
+                        "updated_at": datetime.now()
+                    }
+                }
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"用户 {user_id} 的语言已设置为: {language}")
+                return True
+            else:
+                logger.warning(f"未找到用户或语言未变更: {user_id}")
+                return False
+
+        except Exception as e:
+            logger.error(f"设置用户语言失败: {str(e)}")
+            return False
+
     async def deactivate_user(self, user_id: str) -> bool:
         """
         停用用户（软删除）

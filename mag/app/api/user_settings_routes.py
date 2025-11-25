@@ -73,3 +73,64 @@ async def set_title_generation_model(model_name: str, current_user = Depends(get
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"设置失败: {str(e)}"
         )
+
+
+@router.get("/language")
+async def get_user_language(current_user = Depends(get_current_user)):
+    """
+    获取用户语言设置
+    """
+    try:
+        user_id = current_user.user_id
+        language = await mongodb_client.user_repository.get_user_language(user_id)
+
+        return {
+            "language": language
+        }
+
+    except Exception as e:
+        logger.error(f"获取用户语言设置失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取语言设置失败: {str(e)}"
+        )
+
+
+@router.post("/language", response_model=MessageResponse)
+async def set_user_language(language: str, current_user = Depends(get_current_user)):
+    """
+    设置用户语言
+
+    Args:
+        language: 语言代码（"zh" 或 "en"）
+    """
+    try:
+        # 验证语言参数
+        if language not in ["zh", "en"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="语言参数必须是 'zh' 或 'en'"
+            )
+
+        user_id = current_user.user_id
+
+        # 设置用户语言
+        success = await mongodb_client.user_repository.set_user_language(user_id, language)
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="设置用户语言失败"
+            )
+
+        logger.info(f"用户 {user_id} 设置语言为: {language}")
+        return MessageResponse(message=f"语言已设置为: {language}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"设置用户语言失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"设置失败: {str(e)}"
+        )
