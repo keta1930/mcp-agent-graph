@@ -131,7 +131,9 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         for server_name, server_config in mcp_servers.items():
             # 获取服务器状态
             status_info = server_status.get(server_name, {})
-            status = status_info.get("status", "disconnected")
+            # 使用 connected 字段而不是 status 字段
+            is_connected = status_info.get("connected", False)
+            status = "connected" if is_connected else "disconnected"
             disabled = server_config.get("disabled", False)
             
             mcp_info = {
