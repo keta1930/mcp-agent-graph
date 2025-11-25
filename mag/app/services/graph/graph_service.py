@@ -298,6 +298,12 @@ class GraphService:
                                        user_id: str = "default_user") -> Dict[str, Any]:
         """后台异步执行图，执行到创建conversation_id后立即返回，图在后台继续运行"""
         try:
+            # 设置用户语言上下文（用于system tools的多语言支持）
+            from app.services.system_tools.registry import set_user_language_context
+            user_language = await self.mongodb_client.user_repository.get_user_language(user_id)
+            set_user_language_context(user_language)
+            logger.info(f"设置用户语言上下文: user_id={user_id}, language={user_language}")
+
             # 检测图循环（和SSE版本一样的前期检查）
             cycle = await self.detect_graph_cycles(graph_name, user_id=user_id)
             if cycle:
@@ -346,6 +352,12 @@ class GraphService:
                                    user_id: str = "default_user") -> AsyncGenerator[str, None]:
         """执行整个图并返回流式结果"""
         try:
+            # 设置用户语言上下文（用于system tools的多语言支持）
+            from app.services.system_tools.registry import set_user_language_context
+            user_language = await self.mongodb_client.user_repository.get_user_language(user_id)
+            set_user_language_context(user_language)
+            logger.info(f"设置用户语言上下文: user_id={user_id}, language={user_language}")
+
             cycle = await self.detect_graph_cycles(graph_name, user_id=user_id)
             if cycle:
                 yield SSEHelper.send_error(f"检测到循环引用链: {' -> '.join(cycle)}")
@@ -383,6 +395,13 @@ class GraphService:
             if not conversation:
                 yield SSEHelper.send_error(f"找不到会话 '{conversation_id}'")
                 return
+
+            # 设置用户语言上下文（用于system tools的多语言支持）
+            from app.services.system_tools.registry import set_user_language_context
+            user_id = conversation.get("user_id", "default_user")
+            user_language = await self.mongodb_client.user_repository.get_user_language(user_id)
+            set_user_language_context(user_language)
+            logger.info(f"设置用户语言上下文: user_id={user_id}, language={user_language}")
 
             # 如果是新的输入，需要重新预处理提示词
             if input_text and not continue_from_checkpoint:

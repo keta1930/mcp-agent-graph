@@ -52,6 +52,12 @@ class AgentStreamExecutor:
         """
         try:
             from app.infrastructure.database.mongodb.client import mongodb_client
+            from app.services.system_tools.registry import set_user_language_context
+
+            # 获取用户语言并设置到上下文
+            user_language = await mongodb_client.user_repository.get_user_language(user_id)
+            set_user_language_context(user_language)
+            logger.info(f"设置用户语言上下文: user_id={user_id}, language={user_language}")
 
             # 加载有效配置
             effective_config = await self._load_effective_config(
