@@ -3,7 +3,6 @@ import logging
 from typing import Dict, List, Tuple
 
 from app.infrastructure.database.mongodb.client import mongodb_client
-from app.utils.text_tool import detect_language
 from app.utils.text_parser import parse_title_and_tags_response
 from app.services.model.model_service import model_service
 from app.services.conversation.prompts import get_title_prompt
@@ -32,9 +31,10 @@ async def generate_title_and_tags(user_id: str, user_prompt: str) -> Tuple[str, 
             logger.warning(f"标题生成模型 {title_model_name} 不存在，跳过标题生成")
             return "新对话", []
 
-        # 检测语言并获取标题生成提示词
-        language = detect_language(user_prompt)
-        title_prompt_template = get_title_prompt(language)
+        # 使用用户的语言设置（而非检测文本语言）
+        user_language = await mongodb_client.user_repository.get_user_language(user_id)
+        title_prompt_template = get_title_prompt(user_language)
+        logger.info(f"使用用户语言设置生成标题: user_id={user_id}, language={user_language}")
 
         title_prompt = title_prompt_template.format(
             user_message=user_prompt,
