@@ -2,7 +2,6 @@ import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.services.system_tools import (
     get_tool_schema,
-    get_tool_names,
     is_system_tool,
     get_tools_by_category
 )

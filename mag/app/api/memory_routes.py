@@ -3,8 +3,7 @@ Memory API路由
 提供记忆管理的RESTful API
 """
 import logging
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import StreamingResponse, JSONResponse
 import io
 
