@@ -3,12 +3,37 @@
 提供系统工具的注册和获取机制
 """
 import logging
+from contextvars import ContextVar
 from typing import Dict, List, Any, Optional, Callable
 
 logger = logging.getLogger(__name__)
 
+# 存储当前请求的用户语言
+_current_user_language: ContextVar[str] = ContextVar('user_language', default='zh')
+
 # 全局系统工具注册表
 SYSTEM_TOOLS_REGISTRY: Dict[str, Dict[str, Any]] = {}
+
+
+def set_user_language_context(language: str):
+    """
+    设置当前请求的用户语言上下文
+    
+    Args:
+        language: 用户语言代码 ("zh" 或 "en")
+    """
+    _current_user_language.set(language)
+    logger.debug(f"设置用户语言上下文: {language}")
+
+
+def get_current_language() -> str:
+    """
+    获取当前请求的用户语言
+    
+    Returns:
+        用户语言代码，默认为 "zh"
+    """
+    return _current_user_language.get()
 
 
 def register_system_tool(
@@ -44,7 +69,7 @@ def register_system_tool(
 
 def get_tool_schema(tool_name: str) -> Optional[Dict[str, Any]]:
     """
-    获取工具 Schema
+    获取工具 Schema（自动根据当前语言返回对应版本）
 
     Args:
         tool_name: 工具名称
@@ -53,8 +78,19 @@ def get_tool_schema(tool_name: str) -> Optional[Dict[str, Any]]:
         工具 schema，不存在返回 None
     """
     tool = SYSTEM_TOOLS_REGISTRY.get(tool_name)
-    if tool:
-        return tool.get("schema")
+    if not tool:
+        return None
+    
+    schema = tool.get("schema")
+    
+    # schema 必须是多语言格式 {"zh": {...}, "en": {...}}
+    if isinstance(schema, dict) and "zh" in schema and "en" in schema:
+        language = get_current_language()
+        # 根据当前语言上下文返回对应版本，如果不存在则返回中文版本
+        return schema.get(language, schema.get("zh"))
+    
+    # 如果不是多语言格式，记录警告并返回 None
+    logger.warning(f"工具 {tool_name} 的 schema 不是多语言格式，必须包含 'zh' 和 'en' 键")
     return None
 
 
@@ -76,12 +112,26 @@ def get_tool_handler(tool_name: str) -> Optional[Callable]:
 
 def get_all_tool_schemas() -> List[Dict[str, Any]]:
     """
-    获取所有系统工具 Schemas
+    获取所有系统工具 Schemas（自动根据当前语言返回对应版本）
 
     Returns:
         工具 schema 列表
     """
-    return [tool["schema"] for tool in SYSTEM_TOOLS_REGISTRY.values()]
+    language = get_current_language()
+    schemas = []
+    
+    for tool_name, tool in SYSTEM_TOOLS_REGISTRY.items():
+        schema = tool["schema"]
+        
+        # schema 必须是多语言格式
+        if isinstance(schema, dict) and "zh" in schema and "en" in schema:
+            # 返回当前语言的版本
+            schemas.append(schema.get(language, schema.get("zh")))
+        else:
+            # 不是多语言格式，记录警告并跳过
+            logger.warning(f"工具 {tool_name} 的 schema 不是多语言格式，已跳过")
+    
+    return schemas
 
 
 def get_tool_names() -> List[str]:
@@ -129,7 +179,7 @@ def get_system_tools_by_names(tool_names: List[str]) -> List[Dict[str, Any]]:
 
 def get_tools_by_category() -> Dict[str, List[Dict[str, Any]]]:
     """
-    按类别获取工具
+    按类别获取工具（自动根据当前语言返回对应版本）
     
     Returns:
         {
@@ -140,18 +190,27 @@ def get_tools_by_category() -> Dict[str, List[Dict[str, Any]]]:
             "conversation_document_tools": [...]
         }
     """
+    language = get_current_language()
     categorized_tools: Dict[str, List[Dict[str, Any]]] = {}
     
     for tool_name, tool_info in SYSTEM_TOOLS_REGISTRY.items():
         category = tool_info.get("category", "uncategorized")
         schema = tool_info.get("schema")
         
-        if category not in categorized_tools:
-            categorized_tools[category] = []
-        
-        categorized_tools[category].append({
-            "name": tool_name,
-            "schema": schema
-        })
+        # schema 必须是多语言格式
+        if isinstance(schema, dict) and "zh" in schema and "en" in schema:
+            # 返回当前语言的版本
+            schema = schema.get(language, schema.get("zh"))
+            
+            if category not in categorized_tools:
+                categorized_tools[category] = []
+            
+            categorized_tools[category].append({
+                "name": tool_name,
+                "schema": schema
+            })
+        else:
+            # 不是多语言格式，记录警告并跳过
+            logger.warning(f"工具 {tool_name} 的 schema 不是多语言格式，已跳过")
     
     return categorized_tools
