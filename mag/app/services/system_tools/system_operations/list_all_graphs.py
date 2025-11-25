@@ -7,16 +7,30 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "list_all_graphs",
-        "description": "列出系统中所有已配置的图（Graph）。返回所有图的名称和描述信息。",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "list_all_graphs",
+            "description": "列出系统中所有已配置的图（Graph）。返回所有图的名称和描述信息。",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "list_all_graphs",
+            "description": "List all configured graphs in the system. Returns the names and descriptions of all graphs.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         }
     }
 }
@@ -70,9 +84,19 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"list_all_graphs 执行失败: {str(e)}")
+        
+        # 根据语言返回错误消息
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_msg = f"Failed to get graph list: {str(e)}"
+        else:
+            error_msg = f"获取图列表失败: {str(e)}"
+        
         return {
             "success": False,
-            "error": f"获取图列表失败: {str(e)}",
+            "error": error_msg,
             "graphs": [],
             "total_count": 0
         }

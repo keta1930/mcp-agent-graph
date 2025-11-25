@@ -7,16 +7,30 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "list_all_mcps",
-        "description": "列出所有已配置的MCP服务器及其基本信息。返回MCP服务器名称、连接状态、工具数量。对于已连接的服务器，如果工具数量大于等于3个，只显示前3个工具的名称和描述。",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "list_all_mcps",
+            "description": "列出所有已配置的MCP服务器及其基本信息。返回MCP服务器名称、连接状态、工具数量。对于已连接的服务器，如果工具数量大于等于3个，只显示前3个工具的名称和描述。",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "list_all_mcps",
+            "description": "List all configured MCP servers and their basic information. Returns MCP server names, connection status, and tool count. For connected servers with 3 or more tools, only the first 3 tools' names and descriptions are displayed.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         }
     }
 }
@@ -78,26 +92,32 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
     try:
         from app.services.mcp.mcp_service import mcp_service
         from app.infrastructure.database.mongodb import mongodb_client
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前语言
+        language = get_current_language()
 
         # 1. 获取所有已配置的MCP服务器
         config_data = await mongodb_client.get_mcp_config()
         if not config_data:
+            message = "No MCP servers configured" if language == "en" else "当前没有配置任何MCP服务器"
             return {
                 "success": True,
                 "mcps": [],
                 "total_count": 0,
-                "message": "当前没有配置任何MCP服务器"
+                "message": message
             }
 
         mcp_config = config_data.get("config", {})
         mcp_servers = mcp_config.get("mcpServers", {})
         
         if not mcp_servers:
+            message = "No MCP servers configured" if language == "en" else "当前没有配置任何MCP服务器"
             return {
                 "success": True,
                 "mcps": [],
                 "total_count": 0,
-                "message": "当前没有配置任何MCP服务器"
+                "message": message
             }
 
         # 2. 获取已连接服务器的工具信息
@@ -160,9 +180,19 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"list_all_mcps 执行失败: {str(e)}")
+        
+        # 根据语言返回错误消息
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_msg = f"Failed to get MCP list: {str(e)}"
+        else:
+            error_msg = f"获取MCP列表失败: {str(e)}"
+        
         return {
             "success": False,
-            "error": f"获取MCP列表失败: {str(e)}",
+            "error": error_msg,
             "mcps": [],
             "total_count": 0
         }

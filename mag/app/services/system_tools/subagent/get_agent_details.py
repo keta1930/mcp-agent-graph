@@ -7,21 +7,40 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format）- 多语言格式
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "get_agent_details",
-        "description": "查看指定 Agent 的详细信息，包括完整的能力描述（card）。这是查找 Agent 的第三步，确认 Agent 的具体能力。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "agent_name": {
-                    "type": "string",
-                    "description": "要查询的 Agent 名称"
-                }
-            },
-            "required": ["agent_name"]
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "get_agent_details",
+            "description": "查看指定 Agent 的详细信息，包括完整的能力描述（card）。这是查找 Agent 的第三步，确认 Agent 的具体能力。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_name": {
+                        "type": "string",
+                        "description": "要查询的 Agent 名称"
+                    }
+                },
+                "required": ["agent_name"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "get_agent_details",
+            "description": "View detailed information about a specified Agent, including complete capability description (card). This is the third step in finding an Agent - confirm the Agent's specific capabilities.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_name": {
+                        "type": "string",
+                        "description": "The Agent name to query"
+                    }
+                },
+                "required": ["agent_name"]
+            }
         }
     }
 }
@@ -51,6 +70,10 @@ async def handler(user_id: str, agent_name: str, **kwargs) -> Dict[str, Any]:
     """
     try:
         from app.infrastructure.database.mongodb.client import mongodb_client
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前语言
+        language = get_current_language()
 
         # 获取 Agent 详情
         agent_details = await mongodb_client.agent_repository.get_agent_details(
@@ -59,9 +82,10 @@ async def handler(user_id: str, agent_name: str, **kwargs) -> Dict[str, Any]:
         )
 
         if not agent_details:
+            error_msg = f"Agent does not exist: {agent_name}" if language == "en" else f"Agent 不存在: {agent_name}"
             return {
                 "success": False,
-                "error": f"Agent 不存在: {agent_name}",
+                "error": error_msg,
                 "agent": None
             }
 
@@ -72,8 +96,15 @@ async def handler(user_id: str, agent_name: str, **kwargs) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"get_agent_details 执行失败 (agent_name={agent_name}): {str(e)}")
+        
+        # 根据语言返回错误消息
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        error_msg = "Failed to get Agent details" if language == "en" else "获取 Agent 详情失败"
+        
         return {
             "success": False,
-            "error": f"获取 Agent 详情失败: {str(e)}",
+            "error": f"{error_msg}: {str(e)}",
             "agent": None
         }

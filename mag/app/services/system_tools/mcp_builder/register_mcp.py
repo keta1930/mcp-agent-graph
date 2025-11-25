@@ -9,21 +9,40 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言格式）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "register_mcp",
-        "description": "从指定文档中解析MCP配置（XML格式）并注册到系统。文档需要包含完整的MCP工具定义，包括：folder_name、script_files（必须包含main.py）、dependencies、readme等XML标签。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "包含MCP配置的文档名称（含路径），例如：'mcp/weather_tool.md'"
-                }
-            },
-            "required": ["filename"]
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "register_mcp",
+            "description": "从指定文档中解析MCP配置（XML格式）并注册到系统。文档需要包含完整的MCP工具定义，包括：folder_name、script_files（必须包含main.py）、dependencies、readme等XML标签。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "包含MCP配置的文档名称（含路径），例如：'mcp/weather_tool.md'"
+                    }
+                },
+                "required": ["filename"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "register_mcp",
+            "description": "Parse MCP configuration (XML format) from the specified document and register it with the system. The document must contain a complete MCP tool definition, including: folder_name, script_files (must include main.py), dependencies, readme, and other XML tags.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Document name (with path) containing MCP configuration, for example: 'mcp/weather_tool.md'"
+                    }
+                },
+                "required": ["filename"]
+            }
         }
     }
 }
@@ -49,14 +68,22 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.infrastructure.storage.object_storage.conversation_document_manager import conversation_document_manager
         from app.infrastructure.storage.file_storage import FileManager
         from app.utils.text_parser import parse_ai_mcp_generation_response
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前用户语言
+        language = get_current_language()
 
         conversation_id = kwargs.get("conversation_id")
         filename = kwargs.get("filename", "")
 
         if not conversation_id or not filename:
+            if language == "en":
+                message = "Missing required parameters: conversation_id or filename"
+            else:
+                message = "缺少必需参数：conversation_id或filename"
             return {
                 "success": False,
-                "message": "缺少必需参数：conversation_id或filename",
+                "message": message,
                 "tool_name": None
             }
 
@@ -69,9 +96,13 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         )
 
         if content is None:
+            if language == "en":
+                message = f"Failed to read document or document does not exist: {filename}"
+            else:
+                message = f"读取文档失败或文档不存在：{filename}"
             return {
                 "success": False,
-                "message": f"读取文档失败或文档不存在：{filename}",
+                "message": message,
                 "tool_name": None
             }
 
@@ -89,15 +120,22 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 if not value or len(value) == 0:
                     missing_fields.append(field)
                 elif "main.py" not in value:
-                    missing_fields.append("main.py脚本")
+                    if language == "en":
+                        missing_fields.append("main.py script")
+                    else:
+                        missing_fields.append("main.py脚本")
             else:
                 if not value:
                     missing_fields.append(field)
 
         if missing_fields:
+            if language == "en":
+                message = f"Incomplete MCP configuration, missing required fields: {', '.join(missing_fields)}"
+            else:
+                message = f"MCP配置不完整，缺少必需字段: {', '.join(missing_fields)}"
             return {
                 "success": False,
-                "message": f"MCP配置不完整，缺少必需字段: {', '.join(missing_fields)}",
+                "message": message,
                 "tool_name": None,
                 "missing_fields": missing_fields
             }
@@ -106,7 +144,11 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         folder_name = parsed_results.get("folder_name")
         script_files = parsed_results.get("script_files", {})
         dependencies = parsed_results.get("dependencies", "")
-        readme = parsed_results.get("readme", "# MCP Tool\n\nAI生成的MCP工具")
+        
+        if language == "en":
+            readme = parsed_results.get("readme", "# MCP Tool\n\nAI-generated MCP tool")
+        else:
+            readme = parsed_results.get("readme", "# MCP Tool\n\nAI生成的MCP工具")
 
         # 确保工具名称唯一
         original_name = folder_name
@@ -126,9 +168,13 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         )
 
         if not success:
+            if language == "en":
+                message = "Failed to create MCP tool files"
+            else:
+                message = "创建MCP工具文件失败"
             return {
                 "success": False,
-                "message": "创建MCP工具文件失败",
+                "message": message,
                 "tool_name": None
             }
 
@@ -140,25 +186,42 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             # 注册失败，清理文件
             logger.error(f"注册MCP工具失败，正在清理文件: {folder_name}")
             FileManager.delete_mcp_tool(folder_name)
+            if language == "en":
+                message = "Failed to register MCP tool to configuration"
+            else:
+                message = "注册MCP工具到配置失败"
             return {
                 "success": False,
-                "message": "注册MCP工具到配置失败",
+                "message": message,
                 "tool_name": None
             }
 
         logger.info(f"成功创建并注册MCP工具: {folder_name}")
 
+        if language == "en":
+            message = f"MCP tool '{folder_name}' registered successfully"
+        else:
+            message = f"MCP工具 '{folder_name}' 注册成功"
+
         return {
             "success": True,
             "tool_name": folder_name,
-            "message": f"MCP工具 '{folder_name}' 注册成功"
+            "message": message
         }
 
     except Exception as e:
         logger.error(f"register_mcp 执行失败: {str(e)}")
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_message = f"Failed to register MCP tool: {str(e)}"
+        else:
+            error_message = f"注册MCP工具失败：{str(e)}"
+        
         return {
             "success": False,
-            "message": f"注册MCP工具失败：{str(e)}",
+            "message": error_message,
             "tool_name": None
         }
 

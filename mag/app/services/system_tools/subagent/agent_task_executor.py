@@ -8,44 +8,86 @@ import json
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format）- 多语言格式
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "agent_task_executor",
-        "description": "调用其他已注册的 Agent 执行特定任务。支持同时创建一个或多个任务。你可以将复杂任务委托给专门的 Agent，它们会专注于完成任务并返回结果。建议先使用 list_agent_categories、list_agents_in_category、get_agent_details 工具查找合适的 Agent。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "tasks": {
-                    "type": "array",
-                    "description": "要执行的任务列表（可以是单个或多个任务）",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "agent_name": {
-                                "type": "string",
-                                "description": "要调用的 Agent 名称（必须是已注册的 Agent）"
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "agent_task_executor",
+            "description": "调用其他已注册的 Agent 执行特定任务。支持同时创建一个或多个任务。你可以将复杂任务委托给专门的 Agent，它们会专注于完成任务并返回结果。建议先使用 list_agent_categories、list_agents_in_category、get_agent_details 工具查找合适的 Agent。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tasks": {
+                        "type": "array",
+                        "description": "要执行的任务列表（可以是单个或多个任务）",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "agent_name": {
+                                    "type": "string",
+                                    "description": "要调用的 Agent 名称（必须是已注册的 Agent）"
+                                },
+                                "task_id": {
+                                    "type": "string",
+                                    "description": "任务 ID。如果该 task 已存在，则子 Agent 会继承该 task 的完整历史继续执行；如果 task 不存在，则创建新 task"
+                                },
+                                "task_description": {
+                                    "type": "string",
+                                    "description": "任务描述，清晰说明要执行的任务内容和期望结果"
+                                },
+                                "context": {
+                                    "type": "string",
+                                    "description": "传递给 Agent 的上下文信息（可选）"
+                                }
                             },
-                            "task_id": {
-                                "type": "string",
-                                "description": "任务 ID。如果该 task 已存在，则子 Agent 会继承该 task 的完整历史继续执行；如果 task 不存在，则创建新 task"
-                            },
-                            "task_description": {
-                                "type": "string",
-                                "description": "任务描述，清晰说明要执行的任务内容和期望结果"
-                            },
-                            "context": {
-                                "type": "string",
-                                "description": "传递给 Agent 的上下文信息（可选）"
-                            }
+                            "required": ["agent_name", "task_id", "task_description"]
                         },
-                        "required": ["agent_name", "task_id", "task_description"]
-                    },
-                    "minItems": 1
-                }
-            },
-            "required": ["tasks"]
+                        "minItems": 1
+                    }
+                },
+                "required": ["tasks"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "agent_task_executor",
+            "description": "Call other registered Agents to execute specific tasks. Supports creating one or multiple tasks simultaneously. You can delegate complex tasks to specialized Agents, which will focus on completing the tasks and returning results. It's recommended to first use list_agent_categories, list_agents_in_category, and get_agent_details tools to find suitable Agents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tasks": {
+                        "type": "array",
+                        "description": "List of tasks to execute (can be single or multiple tasks)",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "agent_name": {
+                                    "type": "string",
+                                    "description": "The Agent name to call (must be a registered Agent)"
+                                },
+                                "task_id": {
+                                    "type": "string",
+                                    "description": "Task ID. If the task already exists, the sub-Agent will inherit the complete task history and continue execution; if the task doesn't exist, a new task will be created"
+                                },
+                                "task_description": {
+                                    "type": "string",
+                                    "description": "Task description, clearly stating the task content and expected results"
+                                },
+                                "context": {
+                                    "type": "string",
+                                    "description": "Context information to pass to the Agent (optional)"
+                                }
+                            },
+                            "required": ["agent_name", "task_id", "task_description"]
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": ["tasks"]
+            }
         }
     }
 }
@@ -75,6 +117,10 @@ async def handler(
     try:
         from app.services.agent.agent_stream_executor import AgentStreamExecutor
         from app.infrastructure.database.mongodb.client import mongodb_client
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前语言
+        language = get_current_language()
 
         agent_stream_executor = AgentStreamExecutor()
         results = []
@@ -92,11 +138,12 @@ async def handler(
                 agent = await mongodb_client.agent_repository.get_agent(agent_name, user_id)
 
                 if not agent:
+                    error_msg = f"Agent does not exist: {agent_name}" if language == "en" else f"Agent 不存在: {agent_name}"
                     results.append({
                         "task_id": task_id,
                         "agent_name": agent_name,
                         "success": False,
-                        "error": f"Agent 不存在: {agent_name}",
+                        "error": error_msg,
                         "error_type": "agent_not_found"
                     })
                     all_success = False
@@ -145,9 +192,16 @@ async def handler(
 
     except Exception as e:
         logger.error(f"agent_task_executor 流式执行失败: {str(e)}")
+        
+        # 根据语言返回错误消息
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        error_msg = "Failed to execute Agent task" if language == "en" else "执行 Agent 任务失败"
+        
         yield {
             "success": False,
-            "error": f"执行 Agent 任务失败: {str(e)}",
+            "error": f"{error_msg}: {str(e)}",
             "results": []
         }
 
@@ -241,11 +295,15 @@ async def execute_agent_task_stream(
                 final_result = item
 
         if not final_result:
+            from app.services.system_tools.registry import get_current_language
+            language = get_current_language()
+            error_msg = "Execution failed, no result received" if language == "en" else "执行失败，未收到结果"
+            
             yield {
                 "task_id": task_id,
                 "agent_name": agent_name,
                 "success": False,
-                "error": "执行失败，未收到结果"
+                "error": error_msg
             }
             return
 
@@ -329,13 +387,20 @@ async def build_task_messages(
     agent_config = agent.get("agent_config", {})
     instruction = agent_config.get("instruction", "")
 
+    from app.services.system_tools.registry import get_current_language
+    language = get_current_language()
+
     # 构建用户消息
-    user_content = f"任务描述：\n{task_description}"
-
-    if context:
-        user_content += f"\n\n上下文信息：\n{context}"
-
-    user_content += "\n\n请专注于完成这个任务，并在完成后提供清晰的结果报告。"
+    if language == "en":
+        user_content = f"Task Description:\n{task_description}"
+        if context:
+            user_content += f"\n\nContext Information:\n{context}"
+        user_content += "\n\nPlease focus on completing this task and provide a clear result report when finished."
+    else:
+        user_content = f"任务描述：\n{task_description}"
+        if context:
+            user_content += f"\n\n上下文信息：\n{context}"
+        user_content += "\n\n请专注于完成这个任务，并在完成后提供清晰的结果报告。"
 
     # 如果有历史，继承完整历史
     if task_history:

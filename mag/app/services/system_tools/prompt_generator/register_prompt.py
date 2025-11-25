@@ -7,25 +7,48 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言格式）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "register_prompt",
-        "description": "将提示词文档注册到系统中",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "提示词文档名称（含路径），例如：'prompt/code_review.md'"
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "register_prompt",
+            "description": "将提示词文档注册到系统中",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "提示词文档名称（含路径），例如：'prompt/code_review.md'"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Prompt 类别，可包含中文、英文字母、数字、连字符和下划线，例如：'代码审查'、'writing'、'analysis'"
+                    }
                 },
-                "category": {
-                    "type": "string",
-                    "description": "Prompt 类别，可包含中文、英文字母、数字、连字符和下划线，例如：'代码审查'、'writing'、'analysis'"
-                }
-            },
-            "required": ["filename", "category"]
+                "required": ["filename", "category"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "register_prompt",
+            "description": "Register a prompt document to the system",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Prompt document name (with path), for example: 'prompt/code_review.md'"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Prompt category, can contain Chinese, English letters, numbers, hyphens and underscores, for example: 'code review', 'writing', 'analysis'"
+                    }
+                },
+                "required": ["filename", "category"]
+            }
         }
     }
 }
@@ -47,6 +70,10 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         }
     """
     try:
+        # 获取当前用户语言
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
         from app.infrastructure.storage.object_storage.conversation_document_manager import conversation_document_manager
         from app.services.prompt.prompt_service import prompt_service
         from app.models.prompt_schema import PromptCreate, PromptUpdate
@@ -58,23 +85,35 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
         # 1. 验证必需参数
         if not conversation_id:
+            if language == "en":
+                error_message = "Missing required parameter: conversation_id"
+            else:
+                error_message = "缺少必需参数：conversation_id"
             return {
                 "success": False,
-                "message": "缺少必需参数：conversation_id",
+                "message": error_message,
                 "prompt_name": None
             }
 
         if not filename:
+            if language == "en":
+                error_message = "Missing required parameter: filename"
+            else:
+                error_message = "缺少必需参数：filename"
             return {
                 "success": False,
-                "message": "缺少必需参数：filename",
+                "message": error_message,
                 "prompt_name": None
             }
 
         if not category:
+            if language == "en":
+                error_message = "Missing required parameter: category"
+            else:
+                error_message = "缺少必需参数：category"
             return {
                 "success": False,
-                "message": "缺少必需参数：category",
+                "message": error_message,
                 "prompt_name": None
             }
 
@@ -82,9 +121,13 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         prompt_name = os.path.splitext(os.path.basename(filename))[0]
         
         if not prompt_name:
+            if language == "en":
+                error_message = f"Unable to extract Prompt name from filename: {filename}"
+            else:
+                error_message = f"无法从文件名提取 Prompt 名称：{filename}"
             return {
                 "success": False,
-                "message": f"无法从文件名提取 Prompt 名称：{filename}",
+                "message": error_message,
                 "prompt_name": None
             }
 
@@ -99,17 +142,25 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         )
 
         if content is None:
+            if language == "en":
+                error_message = f"Failed to read document or document does not exist: {filename}"
+            else:
+                error_message = f"读取文档失败或文档不存在：{filename}"
             return {
                 "success": False,
-                "message": f"读取文档失败或文档不存在：{filename}",
+                "message": error_message,
                 "prompt_name": None
             }
 
         # 4. 验证内容不为空
         if not content.strip():
+            if language == "en":
+                error_message = f"Document content is empty: {filename}"
+            else:
+                error_message = f"文档内容为空：{filename}"
             return {
                 "success": False,
-                "message": f"文档内容为空：{filename}",
+                "message": error_message,
                 "prompt_name": None
             }
 
@@ -134,22 +185,34 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 
                 if result.get("success"):
                     logger.info(f"成功更新 Prompt: {prompt_name}")
+                    if language == "en":
+                        success_message = f"Prompt '{prompt_name}' updated successfully (category: {category})"
+                    else:
+                        success_message = f"Prompt '{prompt_name}' 更新成功（分类: {category}）"
                     return {
                         "success": True,
                         "prompt_name": prompt_name,
-                        "message": f"Prompt '{prompt_name}' 更新成功（分类: {category}）"
+                        "message": success_message
                     }
                 else:
+                    if language == "en":
+                        error_message = f"Failed to update Prompt: {result.get('message', 'Unknown error')}"
+                    else:
+                        error_message = f"更新 Prompt 失败: {result.get('message', '未知错误')}"
                     return {
                         "success": False,
-                        "message": f"更新 Prompt 失败: {result.get('message', '未知错误')}",
+                        "message": error_message,
                         "prompt_name": None
                     }
             except Exception as e:
                 logger.error(f"更新 Prompt 失败: {str(e)}")
+                if language == "en":
+                    error_message = f"Failed to update Prompt: {str(e)}"
+                else:
+                    error_message = f"更新 Prompt 失败: {str(e)}"
                 return {
                     "success": False,
-                    "message": f"更新 Prompt 失败: {str(e)}",
+                    "message": error_message,
                     "prompt_name": None
                 }
         
@@ -168,29 +231,49 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
             if result.get("success"):
                 logger.info(f"成功创建 Prompt: {prompt_name}")
+                if language == "en":
+                    success_message = f"Prompt '{prompt_name}' registered successfully (category: {category})"
+                else:
+                    success_message = f"Prompt '{prompt_name}' 注册成功（分类: {category}）"
                 return {
                     "success": True,
                     "prompt_name": prompt_name,
-                    "message": f"Prompt '{prompt_name}' 注册成功（分类: {category}）"
+                    "message": success_message
                 }
             else:
+                if language == "en":
+                    error_message = f"Failed to create Prompt: {result.get('message', 'Unknown error')}"
+                else:
+                    error_message = f"创建 Prompt 失败: {result.get('message', '未知错误')}"
                 return {
                     "success": False,
-                    "message": f"创建 Prompt 失败: {result.get('message', '未知错误')}",
+                    "message": error_message,
                     "prompt_name": None
                 }
         except Exception as e:
             logger.error(f"创建 Prompt 失败: {str(e)}")
+            if language == "en":
+                error_message = f"Failed to create Prompt: {str(e)}"
+            else:
+                error_message = f"创建 Prompt 失败: {str(e)}"
             return {
                 "success": False,
-                "message": f"创建 Prompt 失败: {str(e)}",
+                "message": error_message,
                 "prompt_name": None
             }
 
     except Exception as e:
         logger.error(f"register_prompt 执行失败: {str(e)}")
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_message = f"Failed to register Prompt: {str(e)}"
+        else:
+            error_message = f"注册 Prompt 失败：{str(e)}"
+        
         return {
             "success": False,
-            "message": f"注册 Prompt 失败：{str(e)}",
+            "message": error_message,
             "prompt_name": None
         }

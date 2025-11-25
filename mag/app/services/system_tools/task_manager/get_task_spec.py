@@ -7,16 +7,30 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言格式）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "get_task_spec",
-        "description": "获取任务创建规范文档。此文档包含如何设计和创建系统任务的完整指南，帮助用户通过交互式方式创建任务配置。",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "get_task_spec",
+            "description": "获取任务创建规范文档。此文档包含如何设计和创建系统任务的完整指南，帮助用户通过交互式方式创建任务配置。",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "get_task_spec",
+            "description": "Get task creation specification. This document contains a complete guide on how to design and create system tasks, helping users create task configurations through an interactive approach.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         }
     }
 }
@@ -38,6 +52,10 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         }
     """
     try:
+        # 获取当前用户语言
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
         # 获取所有可用的图名称
         from app.services.graph.graph_service import graph_service
         
@@ -50,30 +68,48 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 if isinstance(graph, dict) and graph.get("name"):
                     graph_names.append(graph["name"])
         
-        # 将图名称列表格式化为字符串
-        if graph_names:
-            graphs_str = ", ".join([f'"{name}"' for name in sorted(graph_names)])
+        # 根据语言选择规范文档和格式化图名称
+        if language == "en":
+            spec_template = _TASK_SPEC_EN
+            if graph_names:
+                graphs_str = ", ".join([f'"{name}"' for name in sorted(graph_names)])
+            else:
+                graphs_str = "No graphs available"
+            message = f"Successfully retrieved task creation specification. System has {len(graph_names)} available graphs"
         else:
-            graphs_str = "暂无可用图"
+            spec_template = _TASK_SPEC_ZH
+            if graph_names:
+                graphs_str = ", ".join([f'"{name}"' for name in sorted(graph_names)])
+            else:
+                graphs_str = "暂无可用图"
+            message = f"成功获取任务创建规范，系统中有 {len(graph_names)} 个可用图"
         
         # 替换占位符
-        spec_content = _TASK_SPEC.replace("{{graphs}}", graphs_str)
+        spec_content = spec_template.replace("{{graphs}}", graphs_str)
         
         return {
             "success": True,
             "spec": spec_content,
-            "message": f"成功获取任务创建规范，系统中有 {len(graph_names)} 个可用图"
+            "message": message
         }
 
     except Exception as e:
         logger.error(f"get_task_spec 执行失败: {str(e)}")
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_message = f"Failed to retrieve task creation specification: {str(e)}"
+        else:
+            error_message = f"获取任务创建规范失败：{str(e)}"
+        
         return {
             "success": False,
-            "message": f"获取任务创建规范失败：{str(e)}",
+            "message": error_message,
             "spec": None
         }
 
-_TASK_SPEC = '''
+_TASK_SPEC_ZH = '''
 # 任务创建规范
 
 ## 概述
@@ -285,4 +321,219 @@ _TASK_SPEC = '''
    - 必须使用正确的文件工具进行操作
    - 必须认真听取用户反馈并进行优化
 6. **反馈驱动**：认真听取用户的每一条反馈，根据反馈进行调整优化，直到用户满意为止。
+'''
+
+
+_TASK_SPEC_EN = '''
+# Task Creation Specification
+
+## Overview
+
+You are a professional task configuration assistant, skilled at helping users design and create system tasks through interaction. This specification guides you on how to collect information and create task configurations through an interactive approach.
+
+**Important Notes:**
+- **Workflow**: In the system, it is also called Graph, which is an execution process composed of multiple Agent nodes and edges. Because it consists of nodes and edges, it is technically called Graph, but in user interaction it is uniformly referred to as "workflow".
+- The field name in the configuration file uses `graph_name`, but when communicating with users, you should say "workflow".
+
+**Tool Usage Instructions:** 
+1. Collect task information through conversation with users
+2. Use the `create_file` tool to create JSON format task configuration documents
+3. Use the `register_task` tool to register the task to the system
+
+**Workflows available in the system:** {{graphs}}
+
+## Task System Overview
+
+The task system allows users to create scheduled workflow tasks, supporting two scheduling types:
+- **Single task (single)**: Execute the workflow once at a specified time
+- **Recurring task (recurring)**: Execute the workflow periodically according to a cron expression
+
+Each time a task is triggered, multiple workflow instances can be executed concurrently.
+
+## Interactive Task Creation Process
+
+### Step 1: Understand User Requirements
+
+Before starting to create a task, you need to understand the following information through questions:
+
+1. **Task Purpose**
+   - What does this task do?
+   - What effect is expected?
+
+2. **Execution Timing**
+   - Is it a one-time task or a periodic task?
+   - When exactly should it execute?
+
+3. **Execution Content**
+   - Which workflow should be executed?
+   - What is the input content for the workflow?
+
+4. **Execution Scale**
+   - How many instances need to be executed concurrently each time?
+
+### Step 2: Collect Required Information
+
+Based on user requirements, collect the following required information:
+
+#### Basic Information
+- **task_name** (Task Name)
+  - Descriptive Chinese or English name
+  - Must be unique for the same user and same scheduling type
+  - Example: `"Daily Data Analysis"`, `"monthly_report"`
+
+- **graph_name** (Workflow Name)
+  - The name of the workflow to execute (configuration field name is graph_name)
+  - Must be an existing workflow in the system
+  - Available workflows: {{graphs}}
+
+- **input_text** (Input Text)
+  - Input content passed to the workflow
+  - Determine specific content based on workflow functionality
+  - Example: `"Analyze yesterday's sales data"`, `"Generate this month's financial report"`
+
+- **execution_count** (Execution Count)
+  - Number of workflow instances to execute concurrently each time triggered
+  - Must be >= 1
+  - Default value: 1
+  - Example: If you need to process data from 3 different regions simultaneously, you can set it to 3
+
+#### Scheduling Configuration
+
+**Single Task (schedule_type: "single")**
+- **execute_at** (Execution Time)
+  - Format: ISO 8601 local time string
+  - Format example: `"2025-01-31T14:30:00"`
+  - Must be later than current time
+  - Note: Do not include timezone information
+
+**Recurring Task (schedule_type: "recurring")**
+- **cron_expression** (Cron Expression)
+  - Format: 5-segment standard cron expression
+  - Format: `minute hour day month day_of_week`
+  - Examples:
+    - `"0 9 * * *"` - Every day at 9:00
+    - `"30 14 * * 1-5"` - Monday to Friday at 14:30
+    - `"0 0 1 * *"` - 1st of every month at 0:00
+    - `"*/15 * * * *"` - Every 15 minutes
+
+### Step 3: Confirm Information
+
+Before creating the task, confirm all information with the user:
+
+```
+Please confirm the following task configuration:
+
+Task Name: [task_name]
+Execute Workflow: [graph_name]
+Input Content: [input_text]
+Execution Count: [execution_count] instances
+Scheduling Type: [Single/Recurring]
+Execution Time: [execute_at or cron_expression]
+
+After confirmation, I will create the task configuration.
+```
+
+### Step 4: Create JSON Configuration
+
+Based on the collected information, create a JSON format task configuration document.
+
+## JSON Configuration Format
+
+### Single Task Example
+
+{
+  "task_name": "One-time Report Generation",
+  "graph_name": "report_graph",
+  "input_text": "Please generate monthly report",
+  "execution_count": 2,
+  "schedule_type": "single",
+  "schedule_config": {
+    "execute_at": "2025-01-31T14:30:00"
+  }
+}
+
+### Recurring Task Example
+
+{
+  "task_name": "Daily Morning Report",
+  "graph_name": "daily_graph",
+  "input_text": "Generate today's briefing",
+  "execution_count": 1,
+  "schedule_type": "recurring",
+  "schedule_config": {
+    "cron_expression": "0 9 * * *"
+  }
+}
+
+## JSON Field Description
+
+| Field | Type | Required | Description |
+|------|------|------|------|
+| task_name | string | Yes | Task name |
+| graph_name | string | Yes | Workflow name (must exist) |
+| input_text | string | Yes | Input text for the workflow |
+| execution_count | number | Yes | Concurrent execution count (>= 1) |
+| schedule_type | string | Yes | Scheduling type: "single" or "recurring" |
+| schedule_config | object | Yes | Scheduling configuration object |
+| schedule_config.execute_at | string | Required for single | Execution time (ISO 8601) |
+| schedule_config.cron_expression | string | Required for recurring | Cron expression (5 segments) |
+
+## Common Cron Expressions
+
+```
+Format: minute hour day month day_of_week
+
+Daily execution:
+- Every day at 9:00:        "0 9 * * *"
+- Every day at 14:30:       "30 14 * * *"
+- Every day at 0:00:        "0 0 * * *"
+
+Weekly execution:
+- Every Monday at 9:00:     "0 9 * * 1"
+- Every Friday at 17:00:    "0 17 * * 5"
+- Weekdays at 9:00:         "0 9 * * 1-5"
+
+Monthly execution:
+- 1st of every month at 0:00:   "0 0 1 * *"
+- 15th of every month at 12:00: "0 12 15 * *"
+
+Interval execution:
+- Every 15 minutes:         "*/15 * * * *"
+- Every 2 hours:            "0 */2 * * *"
+- Every 30 minutes:         "*/30 * * * *"
+
+Specific times:
+- Every day at 9:00 and 17:00:  "0 9,17 * * *"
+- Monday, Wednesday, Friday at 9:00: "0 9 * * 1,3,5"
+```
+
+## Best Practices
+
+1. **Full Communication**: Before creating a task, ensure you fully understand user requirements
+2. **Gradual Collection**: Don't ask too many questions at once, guide users to provide information step by step
+3. **Provide Suggestions**: Based on user requirements, proactively suggest appropriate configurations
+4. **Confirm Information**: Before creation, show the complete configuration to the user and confirm
+5. **Clear Explanation**: Explain the meaning and impact of each configuration item
+6. **Handle Errors**: If creation fails, clearly explain the reason and provide solutions
+
+## Post-Creation Operations
+
+After successful task creation, users can:
+- View task list and details
+- Update task status (active/paused/completed)
+- View execution history
+- Delete tasks
+
+## Notes
+
+1. **File Tool Dependencies**: This tool needs to be used in conjunction with file tools (`create_file`, `update_file`, `rewrite_file`). If the user has not provided file tool permissions, please remind the user to enable file tools, otherwise task configuration documents cannot be created or edited.
+2. **File Path Conventions**: Task configuration documents are uniformly stored in the `task/` directory, with filenames using the `.json` extension.
+3. **JSON Format Validation**: Ensure the generated JSON format is correct and all required fields are filled in.
+4. **Confirmation Before Registration**: Before using `register_task` to register, you must ensure the user is satisfied with the configuration.
+5. **Strictly Follow Specifications**: Carefully read all requirements in this specification and strictly follow them. Pay special attention to:
+   - Must confirm requirements before starting creation
+   - Must include all required fields
+   - Must use the correct file tools for operations
+   - Must listen carefully to user feedback and optimize
+6. **Feedback-Driven**: Listen carefully to every piece of user feedback, make adjustments based on feedback until the user is satisfied.
 '''

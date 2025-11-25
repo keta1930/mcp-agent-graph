@@ -9,21 +9,40 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言格式）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "register_task",
-        "description": "将任务配置文档注册到任务系统中。任务配置必须是 JSON 格式，包含任务名称、图名称、输入文本、执行数量、调度类型和调度配置等信息。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "任务配置文档名称（含路径），必须是 JSON 文件，例如：'tasks/daily_report.json'"
-                }
-            },
-            "required": ["filename"]
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "register_task",
+            "description": "将任务配置文档注册到任务系统中。任务配置必须是 JSON 格式，包含任务名称、图名称、输入文本、执行数量、调度类型和调度配置等信息。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "任务配置文档名称（含路径），必须是 JSON 文件，例如：'tasks/daily_report.json'"
+                    }
+                },
+                "required": ["filename"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "register_task",
+            "description": "Register a task configuration document to the task system. The task configuration must be in JSON format, including task name, graph name, input text, execution count, schedule type, and schedule configuration.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Task configuration document name (with path), must be a JSON file, for example: 'tasks/daily_report.json'"
+                    }
+                },
+                "required": ["filename"]
+            }
         }
     }
 }
@@ -50,7 +69,11 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         from app.services.task.task_service import task_service
         from app.services.task.task_scheduler import task_scheduler
         from app.models.task_schema import TaskCreate
+        from app.services.system_tools.registry import get_current_language
         import os
+
+        # 获取当前用户语言
+        language = get_current_language()
 
         conversation_id = kwargs.get("conversation_id")
         filename = kwargs.get("filename", "")
@@ -59,7 +82,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if not conversation_id:
             return {
                 "success": False,
-                "message": "缺少必需参数：conversation_id",
+                "message": "Missing required parameter: conversation_id" if language == "en" else "缺少必需参数：conversation_id",
                 "task_id": None,
                 "task_name": None
             }
@@ -67,7 +90,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if not filename:
             return {
                 "success": False,
-                "message": "缺少必需参数：filename",
+                "message": "Missing required parameter: filename" if language == "en" else "缺少必需参数：filename",
                 "task_id": None,
                 "task_name": None
             }
@@ -76,7 +99,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if not filename.lower().endswith('.json'):
             return {
                 "success": False,
-                "message": f"任务配置文件必须是 JSON 格式：{filename}",
+                "message": f"Task configuration file must be in JSON format: {filename}" if language == "en" else f"任务配置文件必须是 JSON 格式：{filename}",
                 "task_id": None,
                 "task_name": None
             }
@@ -93,7 +116,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if content is None:
             return {
                 "success": False,
-                "message": f"读取文档失败或文档不存在：{filename}",
+                "message": f"Failed to read document or document does not exist: {filename}" if language == "en" else f"读取文档失败或文档不存在：{filename}",
                 "task_id": None,
                 "task_name": None
             }
@@ -102,7 +125,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if not content.strip():
             return {
                 "success": False,
-                "message": f"文档内容为空：{filename}",
+                "message": f"Document content is empty: {filename}" if language == "en" else f"文档内容为空：{filename}",
                 "task_id": None,
                 "task_name": None
             }
@@ -115,7 +138,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         except json.JSONDecodeError as e:
             return {
                 "success": False,
-                "message": f"JSON 格式错误：{str(e)}",
+                "message": f"JSON format error: {str(e)}" if language == "en" else f"JSON 格式错误：{str(e)}",
                 "task_id": None,
                 "task_name": None
             }
@@ -127,7 +150,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if missing_fields:
             return {
                 "success": False,
-                "message": f"缺少必需字段：{', '.join(missing_fields)}",
+                "message": f"Missing required fields: {', '.join(missing_fields)}" if language == "en" else f"缺少必需字段：{', '.join(missing_fields)}",
                 "task_id": None,
                 "task_name": None
             }
@@ -140,7 +163,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             if "execute_at" not in schedule_config:
                 return {
                     "success": False,
-                    "message": "单次任务必须指定 schedule_config.execute_at",
+                    "message": "Single task must specify schedule_config.execute_at" if language == "en" else "单次任务必须指定 schedule_config.execute_at",
                     "task_id": None,
                     "task_name": None
                 }
@@ -154,7 +177,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 if execute_at <= datetime.now():
                     return {
                         "success": False,
-                        "message": f"单次任务执行时间已过期：{execute_at_str}，请选择未来的时间",
+                        "message": f"Single task execution time has expired: {execute_at_str}, please choose a future time" if language == "en" else f"单次任务执行时间已过期：{execute_at_str}，请选择未来的时间",
                         "task_id": None,
                         "task_name": None
                     }
@@ -165,7 +188,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             except (ValueError, TypeError) as e:
                 return {
                     "success": False,
-                    "message": f"execute_at 时间格式错误：{str(e)}，应使用 ISO 8601 格式（如：2025-01-31T14:30:00）",
+                    "message": f"execute_at time format error: {str(e)}, should use ISO 8601 format (e.g.: 2025-01-31T14:30:00)" if language == "en" else f"execute_at 时间格式错误：{str(e)}，应使用 ISO 8601 格式（如：2025-01-31T14:30:00）",
                     "task_id": None,
                     "task_name": None
                 }
@@ -174,7 +197,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             if "cron_expression" not in schedule_config:
                 return {
                     "success": False,
-                    "message": "周期任务必须指定 schedule_config.cron_expression",
+                    "message": "Recurring task must specify schedule_config.cron_expression" if language == "en" else "周期任务必须指定 schedule_config.cron_expression",
                     "task_id": None,
                     "task_name": None
                 }
@@ -185,14 +208,14 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             if len(cron_parts) != 5:
                 return {
                     "success": False,
-                    "message": f"Cron 表达式必须是 5 段格式（minute hour day month day_of_week），当前：{cron_expr}",
+                    "message": f"Cron expression must be in 5-segment format (minute hour day month day_of_week), current: {cron_expr}" if language == "en" else f"Cron 表达式必须是 5 段格式（minute hour day month day_of_week），当前：{cron_expr}",
                     "task_id": None,
                     "task_name": None
                 }
         else:
             return {
                 "success": False,
-                "message": f"不支持的调度类型：{schedule_type}，仅支持 'single' 或 'recurring'",
+                "message": f"Unsupported schedule type: {schedule_type}, only 'single' or 'recurring' are supported" if language == "en" else f"不支持的调度类型：{schedule_type}，仅支持 'single' 或 'recurring'",
                 "task_id": None,
                 "task_name": None
             }
@@ -202,7 +225,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         if not isinstance(execution_count, int) or execution_count < 1:
             return {
                 "success": False,
-                "message": f"execution_count 必须是大于等于 1 的整数，当前：{execution_count}",
+                "message": f"execution_count must be an integer greater than or equal to 1, current: {execution_count}" if language == "en" else f"execution_count 必须是大于等于 1 的整数，当前：{execution_count}",
                 "task_id": None,
                 "task_name": None
             }
@@ -236,7 +259,7 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                             "success": True,
                             "task_id": task_id,
                             "task_name": task_name,
-                            "message": f"任务 '{task_name}' 创建并调度成功"
+                            "message": f"Task '{task_name}' created and scheduled successfully" if language == "en" else f"任务 '{task_name}' 创建并调度成功"
                         }
                     else:
                         logger.warning(f"任务创建成功但调度失败: {task_name}")
@@ -244,20 +267,20 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                             "success": True,
                             "task_id": task_id,
                             "task_name": task_name,
-                            "message": f"任务 '{task_name}' 创建成功，但调度失败，请检查调度配置"
+                            "message": f"Task '{task_name}' created successfully, but scheduling failed, please check the schedule configuration" if language == "en" else f"任务 '{task_name}' 创建成功，但调度失败，请检查调度配置"
                         }
                 else:
                     return {
                         "success": False,
-                        "message": f"任务创建成功但无法获取任务信息进行调度",
+                        "message": "Task created successfully but unable to retrieve task information for scheduling" if language == "en" else "任务创建成功但无法获取任务信息进行调度",
                         "task_id": task_id,
                         "task_name": task_name
                     }
             else:
-                error_msg = result.get("message", "未知错误")
+                error_msg = result.get("message", "Unknown error" if language == "en" else "未知错误")
                 return {
                     "success": False,
-                    "message": f"创建任务失败: {error_msg}",
+                    "message": f"Failed to create task: {error_msg}" if language == "en" else f"创建任务失败: {error_msg}",
                     "task_id": None,
                     "task_name": task_name
                 }
@@ -266,16 +289,18 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             logger.error(f"创建任务失败: {str(e)}")
             return {
                 "success": False,
-                "message": f"创建任务失败: {str(e)}",
+                "message": f"Failed to create task: {str(e)}" if language == "en" else f"创建任务失败: {str(e)}",
                 "task_id": None,
                 "task_name": task_name
             }
 
     except Exception as e:
         logger.error(f"register_task 执行失败: {str(e)}")
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
         return {
             "success": False,
-            "message": f"注册任务失败：{str(e)}",
+            "message": f"Failed to register task: {str(e)}" if language == "en" else f"注册任务失败：{str(e)}",
             "task_id": None,
             "task_name": None
         }

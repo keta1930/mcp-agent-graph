@@ -7,16 +7,30 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format）- 多语言格式
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "list_agent_categories",
-        "description": "列出所有可用的 Agent 分类。这是查找 Agent 的第一步，先了解有哪些分类，再深入查看具体的 Agent。",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "list_agent_categories",
+            "description": "列出所有可用的 Agent 分类。这是查找 Agent 的第一步，先了解有哪些分类，再深入查看具体的 Agent。",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "list_agent_categories",
+            "description": "List all available Agent categories. This is the first step in finding an Agent - understand what categories exist before exploring specific Agents.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         }
     }
 }
@@ -45,6 +59,10 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
     """
     try:
         from app.infrastructure.database.mongodb.client import mongodb_client
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前语言
+        language = get_current_language()
 
         # 获取分类列表
         categories = await mongodb_client.agent_repository.list_categories(user_id)
@@ -57,9 +75,16 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"list_agent_categories 执行失败: {str(e)}")
+        
+        # 根据语言返回错误消息
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        error_msg = "Failed to get Agent categories" if language == "en" else "获取 Agent 分类失败"
+        
         return {
             "success": False,
-            "error": f"获取 Agent 分类失败: {str(e)}",
+            "error": f"{error_msg}: {str(e)}",
             "categories": [],
             "total_categories": 0
         }

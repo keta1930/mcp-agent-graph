@@ -9,21 +9,40 @@ from app.infrastructure.storage.object_storage.conversation_document_manager imp
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format）- 多语言格式
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "register_graph_from_document",
-        "description": "从指定文档中解析Graph配置（JSON格式）并注册到系统。文档需要包含完整的Graph配置，包括name、description、nodes、end_template等字段。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "包含Graph配置的文档名称（含路径），例如：'graph/my_graph.json'"
-                }
-            },
-            "required": ["filename"]
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "register_graph_from_document",
+            "description": "从指定文档中解析Graph配置（JSON格式）并注册到系统。文档需要包含完整的Graph配置，包括name、description、nodes、end_template等字段。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "包含Graph配置的文档名称（含路径），例如：'graph/my_graph.json'"
+                    }
+                },
+                "required": ["filename"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "register_graph_from_document",
+            "description": "Parse Graph configuration (JSON format) from specified document and register it to the system. The document needs to contain complete Graph configuration, including name, description, nodes, end_template and other fields.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "Document name (with path) containing Graph configuration, for example: 'graph/my_graph.json'"
+                    }
+                },
+                "required": ["filename"]
+            }
         }
     }
 }
@@ -46,22 +65,34 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         }
     """
     try:
+        # 从上下文获取用户语言
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
         # 验证必需参数
         filename = kwargs.get("filename")
         conversation_id = kwargs.get("conversation_id")
         
         if not filename:
             logger.error("缺少必需参数：filename")
+            if language == "en":
+                error_msg = "Missing required parameter: filename"
+            else:
+                error_msg = "缺少必需参数：filename"
             return {
                 "success": False,
-                "message": "缺少必需参数：filename"
+                "message": error_msg
             }
         
         if not conversation_id:
             logger.error("缺少必需参数：conversation_id")
+            if language == "en":
+                error_msg = "Missing required parameter: conversation_id"
+            else:
+                error_msg = "缺少必需参数：conversation_id"
             return {
                 "success": False,
-                "message": "缺少必需参数：conversation_id"
+                "message": error_msg
             }
         
         logger.info(f"正在从文档注册Graph: {filename}")
@@ -75,9 +106,13 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         
         if content is None:
             logger.error(f"读取文档失败或文档不存在: {filename}")
+            if language == "en":
+                error_msg = f"Failed to read document or document does not exist: {filename}"
+            else:
+                error_msg = f"读取文档失败或文档不存在: {filename}"
             return {
                 "success": False,
-                "message": f"读取文档失败或文档不存在: {filename}"
+                "message": error_msg
             }
         
         # 解析 JSON 内容
@@ -85,25 +120,37 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
             graph_config = json.loads(content)
         except json.JSONDecodeError as e:
             logger.error(f"JSON解析失败: {str(e)}")
+            if language == "en":
+                error_msg = f"JSON parsing failed: {str(e)}"
+            else:
+                error_msg = f"JSON解析失败: {str(e)}"
             return {
                 "success": False,
-                "message": f"JSON解析失败: {str(e)}"
+                "message": error_msg
             }
         
         # 验证必需字段
         if not isinstance(graph_config, dict):
             logger.error("Graph配置必须是JSON对象")
+            if language == "en":
+                error_msg = "Graph configuration must be a JSON object"
+            else:
+                error_msg = "Graph配置必须是JSON对象"
             return {
                 "success": False,
-                "message": "Graph配置必须是JSON对象"
+                "message": error_msg
             }
         
         graph_name = graph_config.get("name")
         if not graph_name:
             logger.error("Graph配置缺少必需字段：name")
+            if language == "en":
+                error_msg = "Graph configuration missing required field: name"
+            else:
+                error_msg = "Graph配置缺少必需字段：name"
             return {
                 "success": False,
-                "message": "Graph配置缺少必需字段：name"
+                "message": error_msg
             }
         
         # 使用 graph_service 验证和保存配置
@@ -115,9 +162,13 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         
         if not is_valid:
             logger.error(f"Graph配置验证失败: {error_message}")
+            if language == "en":
+                error_msg = f"Graph configuration validation failed: {error_message}"
+            else:
+                error_msg = f"Graph配置验证失败: {error_message}"
             return {
                 "success": False,
-                "message": f"Graph配置验证失败: {error_message}"
+                "message": error_msg
             }
         
         # 保存 Graph 配置
@@ -126,21 +177,37 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         
         if not save_success:
             logger.error(f"保存Graph配置失败: {graph_name}")
+            if language == "en":
+                error_msg = f"Failed to save Graph configuration: {graph_name}"
+            else:
+                error_msg = f"保存Graph配置失败: {graph_name}"
             return {
                 "success": False,
-                "message": f"保存Graph配置失败: {graph_name}"
+                "message": error_msg
             }
         
         logger.info(f"成功注册Graph: {graph_name}")
+        if language == "en":
+            success_msg = f"Graph '{graph_name}' registered successfully"
+        else:
+            success_msg = f"Graph '{graph_name}' 注册成功"
         return {
             "success": True,
             "graph_name": graph_name,
-            "message": f"Graph '{graph_name}' 注册成功"
+            "message": success_msg
         }
         
     except Exception as e:
         logger.error(f"register_graph_from_document 执行失败: {str(e)}")
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_msg = f"Failed to register Graph: {str(e)}"
+        else:
+            error_msg = f"注册Graph失败: {str(e)}"
+        
         return {
             "success": False,
-            "message": f"注册Graph失败: {str(e)}"
+            "message": error_msg
         }

@@ -8,19 +8,38 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "list_files_by_directory",
-        "description": "列出指定目录下的所有文件（包含子目录），返回文件名列表。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "directory": {
-                    "type": "string",
-                    "description": "目录路径，例如：'note', 'code/src', 'docs/api'。"
-                }
-            },
-            "required": ["directory"]
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "list_files_by_directory",
+            "description": "列出指定目录下的所有文件（包含子目录），返回文件名列表。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "目录路径，例如：'note', 'code/src', 'docs/api'。"
+                    }
+                },
+                "required": ["directory"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "list_files_by_directory",
+            "description": "List all files in the specified directory (including subdirectories), returning a list of filenames.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "Directory path, for example: 'note', 'code/src', 'docs/api'."
+                    }
+                },
+                "required": ["directory"]
+            }
         }
     }
 }
@@ -29,12 +48,20 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
     """列出指定目录下的文件"""
     try:
         from app.infrastructure.database.mongodb.client import mongodb_client
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前用户语言
+        language = get_current_language()
 
         conversation_id = kwargs.get("conversation_id")
         directory = kwargs.get("directory", "")
 
         if not conversation_id:
-            return {"success": False, "error": "缺少conversation_id参数", "directory": directory, "file_count": 0, "files": []}
+            if language == "en":
+                error = "Missing conversation_id parameter"
+            else:
+                error = "缺少conversation_id参数"
+            return {"success": False, "error": error, "directory": directory, "file_count": 0, "files": []}
 
         documents = await mongodb_client.conversation_repository.get_all_files_metadata(conversation_id)
 
@@ -49,4 +76,11 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"list_files_by_directory 执行失败: {str(e)}")
-        return {"success": False, "error": f"列出目录文件失败: {str(e)}", "directory": kwargs.get("directory", ""), "file_count": 0, "files": []}
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error = f"Failed to list directory files: {str(e)}"
+        else:
+            error = f"列出目录文件失败: {str(e)}"
+        return {"success": False, "error": error, "directory": kwargs.get("directory", ""), "file_count": 0, "files": []}

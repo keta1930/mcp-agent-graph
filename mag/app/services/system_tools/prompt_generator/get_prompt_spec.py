@@ -7,16 +7,30 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言格式）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "get_prompt_spec",
-        "description": "获取Prompt创建规范文档。此文档包含如何设计和创建Prompt的完整指南。可以参考此规范来创建新的Prompt模板。",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "get_prompt_spec",
+            "description": "获取Prompt创建规范文档。此文档包含如何设计和创建Prompt的完整指南。可以参考此规范来创建新的Prompt模板。",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "get_prompt_spec",
+            "description": "Get Prompt creation specification. This document contains a complete guide on how to design and create Prompts. You can refer to this specification to create new Prompt templates.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         }
     }
 }
@@ -38,6 +52,10 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
         }
     """
     try:
+        # 获取当前用户语言
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
         # 获取所有已有的提示词，提取分类
         from app.services.prompt.prompt_service import prompt_service
         
@@ -50,30 +68,48 @@ async def handler(user_id: str, **kwargs) -> Dict[str, Any]:
                 if isinstance(prompt, dict) and prompt.get("category"):
                     categories.add(prompt["category"])
         
-        # 将分类列表格式化为字符串
-        if categories:
-            categories_str = ", ".join([f'"{cat}"' for cat in sorted(categories)])
+        # 根据语言选择规范文档和格式化分类
+        if language == "en":
+            spec_template = _PROMPT_SPEC_EN
+            if categories:
+                categories_str = ", ".join([f'"{cat}"' for cat in sorted(categories)])
+            else:
+                categories_str = "No categories yet"
+            message = f"Successfully retrieved Prompt creation specification. System has {len(categories)} categories"
         else:
-            categories_str = "暂无分类"
+            spec_template = _PROMPT_SPEC_ZH
+            if categories:
+                categories_str = ", ".join([f'"{cat}"' for cat in sorted(categories)])
+            else:
+                categories_str = "暂无分类"
+            message = f"成功获取Prompt创建规范，系统中已有 {len(categories)} 个分类"
         
         # 替换占位符
-        spec_content = _PROMPT_SPEC.replace("{{categories}}", categories_str)
+        spec_content = spec_template.replace("{{categories}}", categories_str)
         
         return {
             "success": True,
             "spec": spec_content,
-            "message": f"成功获取Prompt创建规范，系统中已有 {len(categories)} 个分类"
+            "message": message
         }
 
     except Exception as e:
         logger.error(f"get_prompt_spec 执行失败: {str(e)}")
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_message = f"Failed to retrieve Prompt creation specification: {str(e)}"
+        else:
+            error_message = f"获取Prompt创建规范失败：{str(e)}"
+        
         return {
             "success": False,
-            "message": f"获取Prompt创建规范失败：{str(e)}",
+            "message": error_message,
             "spec": None
         }
 
-_PROMPT_SPEC = '''
+_PROMPT_SPEC_ZH = '''
 # 高质量提示词编写规范
 
 ## 概述
@@ -216,4 +252,150 @@ _PROMPT_SPEC = '''
 3. **注册前确认**：在使用 `register_prompt` 注册提示词之前，必须确保用户对提示词内容满意。
 4. **分类一致性**：尽量使用系统中已有的分类（当前系统分类：{{categories}}），保持分类体系的一致性。
 5. **反馈驱动**：认真听取用户的每一条反馈，根据反馈进行调整优化，直到用户满意为止。
+'''
+
+
+_PROMPT_SPEC_EN = '''
+# High-Quality Prompt Writing Specification
+
+## Overview
+
+You are a professional prompt engineer who excels at creating structured, reusable, high-quality prompts by deeply understanding user intent. This specification guides you on how to write excellent prompts.
+
+## Workflow Selection
+
+Choose the appropriate workflow based on user needs:
+
+### Scenario 1: Creating a New Prompt
+**Applicable situation:** User requests to create/add a prompt
+
+**Process:**
+1. Deeply understand user intent and use case
+2. Use the `create_file` tool to create a Markdown file
+3. Write high-quality prompt content in the file
+4. Listen carefully to user feedback
+5. If the user is satisfied: Use the `register_prompt` tool to register the prompt to the system; If the user is not satisfied, update the prompt based on feedback and repeat steps 3-5
+
+### Scenario 2: Optimizing Existing Prompt
+**Applicable situation:** User wants to optimize/modify/improve an existing prompt
+
+**Process:**
+1. Use the `export_prompt_to_document` tool to export the prompt to a file
+2. Use the `update_file` or `rewrite_file` tool to edit and optimize the prompt content
+3. Listen carefully to user feedback
+4. If the user is satisfied: Use the `register_prompt` tool to register the prompt to the system; If the user is not satisfied, update the prompt based on feedback and repeat steps 2-4
+
+## Prompt Design Principles
+
+### 1. Deeply Understand User Intent
+Before writing a prompt, you must fully understand:
+- **Use Case**: In what situations will the prompt be used?
+- **Target Audience**: Who will use this prompt?
+- **Expected Output**: What kind of results does the user expect?
+- **Constraints**: What limitations or special requirements exist?
+
+### 2. Structured Design
+Excellent prompts should have a clear structure:
+
+**Basic Structure Template:**
+```
+[Role Definition]
+You are a...
+
+[Task Description]
+Your task is to...
+
+[Specific Requirements]
+1. Requirement one
+2. Requirement two
+3. Requirement three
+
+[Output Format]
+Please output in the following format...
+
+[Notes]
+- Note one
+- Note two
+```
+
+### 3. Clear and Explicit
+- Use concise, accurate language
+- Avoid ambiguity and vague expressions
+- Clearly specify expected behavior and output
+
+### 4. Hierarchical Organization
+- Use Markdown headings to organize content hierarchy
+- Use lists to present multiple points
+- Use code blocks to show format examples
+
+## Prompt Quality Checklist
+
+After completing prompt writing, check the following points:
+
+### Content Completeness
+- [ ] Is the role or task clearly defined?
+- [ ] Is the expected output clearly stated?
+- [ ] Are necessary constraints and requirements included?
+- [ ] Is sufficient context information provided?
+
+### Structural Clarity
+- [ ] Is a clear hierarchical structure used?
+- [ ] Are formatting elements like lists and headings used?
+- [ ] Is it easy to read and understand?
+
+### Language Quality
+- [ ] Is clear, accurate language used?
+- [ ] Are ambiguity and vague expressions avoided?
+- [ ] Is the grammar correct and expression fluent?
+
+## Common Scenario Examples
+
+### Code-Related
+- Code review, code generation, code optimization, code explanation, debugging assistance
+
+### Writing-Related
+- Article writing, content rewriting, summary generation, title optimization, style conversion
+
+### Analysis-Related
+- Data analysis, text analysis, trend prediction, problem diagnosis, solution evaluation
+
+### Creative-Related
+- Brainstorming, idea generation, story creation, design suggestions, naming suggestions
+
+### Education-Related
+- Knowledge explanation, exercise generation, learning plans, concept explanation, case analysis
+
+## Best Practices
+
+1. **Ask Before Writing**: Before writing a prompt, fully understand the user's specific needs and use cases
+2. **Iterative Optimization**: Continuously optimize the prompt based on actual usage effects
+3. **Keep It Concise**: Avoid redundant information, every sentence should have a clear purpose
+4. **Provide Examples**: Include input-output examples in the prompt to help understand expected effects
+5. **Consider Boundaries**: Clearly define the scope and limitations of the prompt
+6. **Use Markdown**: Fully utilize Markdown formatting to improve readability
+
+## Naming and Categorization Suggestions
+
+### Naming Conventions
+- Use descriptive English names
+- Use underscores to separate words: `code_review`, `data_analysis`
+- Avoid special characters: `/ \ : * ? " < > |`
+
+### Category Suggestions
+- `coding` - Code-related
+- `writing` - Writing-related
+- `analysis` - Analysis-related
+- `creative` - Creative-related
+- `education` - Education-related
+- `research` - Research-related
+- `business` - Business-related
+- `general` - General scenarios
+
+## Notes
+
+1. **File Tool Dependencies**: This tool needs to be used in conjunction with file tools (`create_file`, `update_file`, `rewrite_file`). If the user has not provided file tool permissions, please remind the user to enable file tools, otherwise prompt documents cannot be created or edited.
+2. **File Path Conventions**: Prompt documents are uniformly stored in the `prompts/` directory, with filenames using the `.md` extension.
+3. **Confirmation Before Registration**: Before using `register_prompt` to register a prompt, you must ensure the user is satisfied with the prompt content.
+4. **Category Consistency**: Try to use existing categories in the system (current system categories: {{categories}}) to maintain consistency in the category system.
+5. **Feedback-Driven**: Listen carefully to every piece of user feedback, make adjustments based on feedback until the user is satisfied.
 '''

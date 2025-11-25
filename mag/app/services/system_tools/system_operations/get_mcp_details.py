@@ -7,24 +7,46 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）
+# 工具 Schema（OpenAI format - 多语言）
 TOOL_SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "get_mcp_details",
-        "description": "查看指定MCP服务器的详细信息。返回服务器的配置信息（command、args等）和所有工具的名称与描述（如果已连接）。可以一次查询多个MCP服务器。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "server_names": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "description": "要查询的MCP服务器名称列表"
-                }
-            },
-            "required": ["server_names"]
+    "zh": {
+        "type": "function",
+        "function": {
+            "name": "get_mcp_details",
+            "description": "查看指定MCP服务器的详细信息。返回服务器的配置信息（command、args等）和所有工具的名称与描述（如果已连接）。可以一次查询多个MCP服务器。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "server_names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "要查询的MCP服务器名称列表"
+                    }
+                },
+                "required": ["server_names"]
+            }
+        }
+    },
+    "en": {
+        "type": "function",
+        "function": {
+            "name": "get_mcp_details",
+            "description": "View detailed information of specified MCP servers. Returns server configuration (command, args, etc.) and all tool names and descriptions (if connected). Can query multiple MCP servers at once.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "server_names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of MCP server names to query"
+                    }
+                },
+                "required": ["server_names"]
+            }
         }
     }
 }
@@ -70,13 +92,18 @@ async def handler(user_id: str, server_names: List[str], **kwargs) -> Dict[str, 
     try:
         from app.services.mcp.mcp_service import mcp_service
         from app.infrastructure.database.mongodb import mongodb_client
+        from app.services.system_tools.registry import get_current_language
+
+        # 获取当前语言
+        language = get_current_language()
 
         # 1. 获取MCP配置
         config_data = await mongodb_client.get_mcp_config()
         if not config_data:
+            error_msg = "No MCP servers configured" if language == "en" else "当前没有配置任何MCP服务器"
             return {
                 "success": False,
-                "error": "当前没有配置任何MCP服务器",
+                "error": error_msg,
                 "servers": []
             }
 
@@ -132,10 +159,11 @@ async def handler(user_id: str, server_names: List[str], **kwargs) -> Dict[str, 
                 })
             else:
                 # 未连接的服务器
+                message = "Server not connected, unable to get tool information" if language == "en" else "服务器未连接，无法获取工具信息"
                 server_info.update({
                     "tool_count": 0,
                     "tools": [],
-                    "message": "服务器未连接，无法获取工具信息"
+                    "message": message
                 })
             
             servers.append(server_info)
@@ -146,15 +174,28 @@ async def handler(user_id: str, server_names: List[str], **kwargs) -> Dict[str, 
         }
         
         if not_found:
-            result["warning"] = f"以下MCP服务器未配置: {', '.join(not_found)}"
+            if language == "en":
+                result["warning"] = f"The following MCP servers are not configured: {', '.join(not_found)}"
+            else:
+                result["warning"] = f"以下MCP服务器未配置: {', '.join(not_found)}"
             result["not_found"] = not_found
 
         return result
 
     except Exception as e:
         logger.error(f"get_mcp_details 执行失败: {str(e)}")
+        
+        # 根据语言返回错误消息
+        from app.services.system_tools.registry import get_current_language
+        language = get_current_language()
+        
+        if language == "en":
+            error_msg = f"Failed to get MCP details: {str(e)}"
+        else:
+            error_msg = f"获取MCP详情失败: {str(e)}"
+        
         return {
             "success": False,
-            "error": f"获取MCP详情失败: {str(e)}",
+            "error": error_msg,
             "servers": []
         }
