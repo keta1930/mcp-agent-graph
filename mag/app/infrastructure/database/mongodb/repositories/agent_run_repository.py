@@ -1,6 +1,5 @@
 import logging
 from typing import Dict, List, Any, Optional
-from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 

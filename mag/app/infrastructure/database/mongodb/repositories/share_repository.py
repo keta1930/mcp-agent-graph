@@ -1,8 +1,7 @@
 import logging
 import uuid
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime
-from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
