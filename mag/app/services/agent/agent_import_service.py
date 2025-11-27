@@ -297,21 +297,6 @@ class AgentImportService:
             backup_config = agent_config.copy()
             backup_config["name"] = backup_name
 
-            # 在card中添加备份说明（根据用户语言）
-            original_card = backup_config.get("card", "")
-            backup_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            if user_language == "zh":
-                backup_prefix = f"[备份于 {backup_time}] "
-            else:
-                backup_prefix = f"[Backed up at {backup_time}] "
-            backup_config["card"] = backup_prefix + original_card
-            
-            # 在tags中添加backup标记
-            backup_tags = backup_config.get("tags", [])
-            if "backup" not in backup_tags:
-                backup_tags.append("backup")
-            backup_config["tags"] = backup_tags
-
             # 创建备份Agent
             backup_result = await agent_service.create_agent(
                 agent_config=backup_config,
