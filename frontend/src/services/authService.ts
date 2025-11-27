@@ -17,6 +17,7 @@ export interface RegisterRequest {
   invite_code: string
   user_id: string
   password: string
+  language?: string  // 语言偏好: 'en' 或 'zh'
 }
 
 export const login = async (userId: string, password: string): Promise<LoginResponse> => {
@@ -30,12 +31,14 @@ export const login = async (userId: string, password: string): Promise<LoginResp
 export const register = async (
   inviteCode: string,
   userId: string,
-  password: string
+  password: string,
+  language: string = 'en'  // 默认为英语
 ): Promise<void> => {
   await api.post('/auth/register', {
     invite_code: inviteCode,
     user_id: userId,
-    password: password
+    password: password,
+    language: language
   })
 }
 

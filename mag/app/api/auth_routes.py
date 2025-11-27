@@ -61,7 +61,8 @@ async def register(request: UserRegisterRequest):
         user = await user_service.register_user(
             user_id=request.user_id,
             password=request.password,
-            invite_code=request.invite_code
+            invite_code=request.invite_code,
+            language=request.language
         )
 
         logger.info(f"用户注册成功: {request.user_id}")

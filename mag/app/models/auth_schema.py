@@ -15,6 +15,7 @@ class UserRegisterRequest(BaseModel):
     invite_code: str = Field(..., description="邀请码", min_length=1)
     user_id: str = Field(..., description="用户名（唯一，用于登录）", min_length=3, max_length=50)
     password: str = Field(..., description="密码", min_length=8)
+    language: str = Field(default="en", description="语言偏好: en（英语）或 zh（中文）")
 
     @validator('user_id')
     def validate_user_id(cls, v):
@@ -31,6 +32,14 @@ class UserRegisterRequest(BaseModel):
         """验证密码强度"""
         if len(v) < 8:
             raise ValueError('密码长度至少为8个字符')
+        return v
+
+    @validator('language')
+    def validate_language(cls, v):
+        """验证语言偏好"""
+        v = v.lower().strip()
+        if v not in ['en', 'zh']:
+            raise ValueError('语言偏好只能是 en（英语）或 zh（中文）')
         return v
 
 

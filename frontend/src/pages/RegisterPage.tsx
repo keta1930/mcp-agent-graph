@@ -6,6 +6,7 @@ import { User, Lock, Shield, UserPlus } from 'lucide-react';
 import { register } from '../services/authService';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import { useT } from '../i18n/hooks';
+import { useI18n } from '../i18n';
 
 const { Title, Text } = Typography;
 
@@ -18,6 +19,7 @@ const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const t = useT();
+  const { locale } = useI18n();  // 获取当前语言设置
 
   const validatePassword = (pwd: string): string => {
     if (pwd.length < 8) {
@@ -63,7 +65,8 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await register(inviteCode, userId, password);
+      // 传递当前语言设置到注册请求
+      await register(inviteCode, userId, password, locale);
 
       // 注册成功，跳转登录
       navigate('/login', {

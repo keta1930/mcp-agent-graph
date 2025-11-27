@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 from app.auth.password import hash_password, verify_password, validate_password_strength
+from app.services.user.user_initialization_factory import UserInitializationFactory
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,8 @@ class UserService:
         self,
         user_id: str,
         password: str,
-        invite_code: str
+        invite_code: str,
+        language: str = "en"
     ) -> dict:
         """
         注册用户
@@ -42,12 +44,14 @@ class UserService:
         3. 检查用户名是否已存在
         4. 加密密码
         5. 创建用户记录
-        6. 原子递增邀请码使用次数
+        6. 初始化用户资源
+        7. 原子递增邀请码使用次数
 
         Args:
             user_id: 用户名
             password: 密码
             invite_code: 邀请码
+            language: 语言偏好（en 或 zh），默认为 en
 
         Returns:
             dict: 创建的用户信息（不包含密码）
@@ -100,7 +104,17 @@ class UserService:
                 except Exception as mem_error:
                     logger.warning(f"为用户创建 memory 文档失败: {user_id}, 错误: {str(mem_error)}")
 
-            # 7. 原子递增邀请码使用次数
+            # 7. 初始化用户默认资源（模型、Agent、Graph、Prompt、对话）
+            if self.mongodb_client:
+                try:
+                    initialization_factory = UserInitializationFactory(self.mongodb_client)
+                    init_results = await initialization_factory.initialize_user_resources(user_id, language)
+                    logger.info(f"用户资源初始化完成: {user_id}, 语言: {language}, 结果: {init_results}")
+                except Exception as init_error:
+                    logger.warning(f"用户资源初始化失败: {user_id}, 错误: {str(init_error)}")
+                    # 初始化失败不影响注册流程
+
+            # 8. 原子递增邀请码使用次数
             await self.invite_code_repository.increment_invite_code_usage(invite_code)
 
             logger.info(f"用户注册成功: {user_id}")
