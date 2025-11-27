@@ -8,7 +8,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format）- 多语言格式
+# 工具 Schema（OpenAI format)
 TOOL_SCHEMA = {
     "zh": {
         "type": "function",

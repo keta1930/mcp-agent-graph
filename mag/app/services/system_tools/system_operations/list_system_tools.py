@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-# 工具 Schema（OpenAI format - 多语言）
+# 工具 Schema（OpenAI format）
 TOOL_SCHEMA = {
     "zh": {
         "type": "function",
