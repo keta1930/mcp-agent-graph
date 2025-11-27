@@ -40,31 +40,35 @@ def register_system_tool(
     name: str,
     schema: Dict[str, Any],
     handler: Callable,
-    category: str = "uncategorized"
+    category: str = "uncategorized",
+    is_streaming: bool = False
 ):
     """
     注册系统工具
 
     Args:
         name: 工具名称
-        schema: 工具 schema（OpenAI tool format）
+        schema: 工具 schema（OpenAI tool format)
         handler: 工具处理函数
         category: 工具类别（可选，默认为 "uncategorized"）
+        is_streaming: 是否为流式工具（返回 AsyncGenerator）
 
     Example:
         register_system_tool(
             name="tool_name",
             schema={...},
             handler=my_handler_function,
-            category="agent_tools"
+            category="agent_tools",
+            is_streaming=True
         )
     """
     SYSTEM_TOOLS_REGISTRY[name] = {
         "schema": schema,
         "handler": handler,
-        "category": category
+        "category": category,
+        "is_streaming": is_streaming
     }
-    logger.debug(f"注册系统工具: {name} (类别: {category})")
+    logger.debug(f"注册系统工具: {name} (类别: {category}, 流式: {is_streaming})")
 
 
 def get_tool_schema(tool_name: str) -> Optional[Dict[str, Any]]:
@@ -155,6 +159,22 @@ def is_system_tool(tool_name: str) -> bool:
         是系统工具返回 True，否则返回 False
     """
     return tool_name in SYSTEM_TOOLS_REGISTRY
+
+
+def is_streaming_tool(tool_name: str) -> bool:
+    """
+    检查是否为流式系统工具
+
+    Args:
+        tool_name: 工具名称
+
+    Returns:
+        是流式工具返回 True，否则返回 False
+    """
+    tool = SYSTEM_TOOLS_REGISTRY.get(tool_name)
+    if tool:
+        return tool.get("is_streaming", False)
+    return False
 
 
 def get_system_tools_by_names(tool_names: List[str]) -> List[Dict[str, Any]]:

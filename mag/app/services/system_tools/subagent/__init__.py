@@ -36,7 +36,8 @@ register_system_tool(
     name="agent_task_executor",
     schema=agent_task_executor.TOOL_SCHEMA,
     handler=agent_task_executor.handler,
-    category="subagent"
+    category="subagent",
+    is_streaming=True
 )
 
 __all__ = [

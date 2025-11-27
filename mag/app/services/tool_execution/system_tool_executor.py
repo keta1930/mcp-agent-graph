@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Dict, Any
 from app.services.tool_execution.base_executor import BaseToolExecutor
-from app.services.system_tools import is_system_tool, get_tool_handler
+from app.services.system_tools import is_system_tool, is_streaming_tool, get_tool_handler
 
 logger = logging.getLogger(__name__)
 
@@ -83,39 +83,54 @@ class SystemToolExecutor(BaseToolExecutor):
                 f"系统工具 {tool_name} 执行失败：{str(e)}"
             )
 
-    async def execute_stream(self, tool_name: str, arguments: Dict[str, Any], 
+    async def execute_stream(self, tool_name: str, arguments: Dict[str, Any],
                             tool_call_id: str, **context):
         """执行系统工具调用（流式版本）
-        
-        专门用于 agent_task_executor 等需要流式输出的工具
-        
+
+        用于所有流式系统工具（返回 AsyncGenerator 的工具）
+
         Args:
             tool_name: 工具名称
             arguments: 工具参数
             tool_call_id: 工具调用ID
             **context: 上下文参数
-            
+
         Yields:
             str: SSE 事件字符串
             Dict: 最终工具结果
         """
         try:
-            from app.services.system_tools.subagent import agent_task_executor
-            
+            # 获取工具处理函数
+            handler = get_tool_handler(tool_name)
+            if not handler:
+                logger.error(f"流式系统工具未找到处理函数: {tool_name}")
+                yield self._format_error(
+                    tool_call_id,
+                    f"系统工具 {tool_name} 未找到处理函数"
+                )
+                return
+
             # 添加上下文参数
             user_id = context.get("user_id")
             conversation_id = context.get("conversation_id")
             agent_id = context.get("agent_id")
-            
-            arguments["user_id"] = user_id
-            arguments["conversation_id"] = conversation_id
+
+            if user_id:
+                arguments["user_id"] = user_id
+            if conversation_id:
+                arguments["conversation_id"] = conversation_id
             if agent_id:
                 arguments["agent_id"] = agent_id
-            
+
+            # 添加 tool_call_id（用于关联主对话）
+            arguments["tool_call_id"] = tool_call_id
+
+            logger.debug(f"调用流式系统工具 {tool_name}，参数: {arguments}")
+
             # 调用流式执行版本
-            async for item in agent_task_executor.handler(**arguments):
+            async for item in handler(**arguments):
                 if isinstance(item, str):
-                    # SSE 事件
+                    # SSE 事件字符串，直接转发
                     yield item
                 else:
                     # 最终结果，格式化为工具结果
@@ -123,12 +138,12 @@ class SystemToolExecutor(BaseToolExecutor):
                         content = json.dumps(item, ensure_ascii=False)
                     else:
                         content = str(item)
-                    
+
                     yield self._format_result(tool_call_id, content)
-                    
+
         except Exception as e:
-            logger.error(f"agent_task_executor 流式执行失败: {str(e)}", exc_info=True)
+            logger.error(f"流式系统工具 {tool_name} 执行失败: {str(e)}", exc_info=True)
             yield self._format_error(
-                tool_call_id, 
-                f"agent_task_executor 执行失败：{str(e)}"
+                tool_call_id,
+                f"系统工具 {tool_name} 执行失败：{str(e)}"
             )

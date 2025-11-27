@@ -9,6 +9,7 @@ from .registry import (
     get_all_tool_schemas,
     get_tool_names,
     is_system_tool,
+    is_streaming_tool,
     get_system_tools_by_names,
     get_tools_by_category,
     SYSTEM_TOOLS_REGISTRY
@@ -32,6 +33,7 @@ __all__ = [
     "get_all_tool_schemas",
     "get_tool_names",
     "is_system_tool",
+    "is_streaming_tool",
     "get_system_tools_by_names",
     "get_tools_by_category",
     "SYSTEM_TOOLS_REGISTRY",

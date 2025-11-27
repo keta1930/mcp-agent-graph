@@ -1,6 +1,6 @@
 """
 记忆系统工具模块
-包含 5 个记忆操作相关的系统工具
+包含 6 个记忆操作相关的系统工具
 """
 from app.services.system_tools.registry import register_system_tool
 
@@ -10,6 +10,7 @@ from . import get_memory
 from . import add_memory
 from . import update_memory
 from . import delete_memory
+from . import search_memory_with_agent
 
 # 注册所有工具
 register_system_tool(
@@ -47,10 +48,19 @@ register_system_tool(
     category="memory_tools"
 )
 
+register_system_tool(
+    name="search_memory_with_agent",
+    schema=search_memory_with_agent.TOOL_SCHEMA,
+    handler=search_memory_with_agent.handler,
+    category="memory_tools",
+    is_streaming=True
+)
+
 __all__ = [
     "list_memory_categories",
     "get_memory",
     "add_memory",
     "update_memory",
-    "delete_memory"
+    "delete_memory",
+    "search_memory_with_agent"
 ]

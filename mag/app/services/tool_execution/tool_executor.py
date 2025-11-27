@@ -117,8 +117,8 @@ class ToolExecutor:
     async def execute_tools_batch_stream(self, tool_calls: List[Dict[str, Any]], mcp_servers: List[str],
                                         user_id: str = None, conversation_id: str = None, agent_id: str = None):
         """批量执行工具调用（流式版本）
-        
-        对于 agent_task_executor，会 yield SSE 事件
+
+        对于流式系统工具（如 agent_task_executor, search_memory_with_agent），会 yield SSE 事件
         对于其他工具，直接执行并返回结果
         
         Args:
@@ -160,16 +160,19 @@ class ToolExecutor:
                 logger.info(f"使用 HandoffsToolExecutor 执行: {tool_name}")
                 result = await self.handoffs_executor.execute(tool_name, arguments, tool_id, **context)
                 yield result
-            elif tool_name == "agent_task_executor":
-                # 特殊处理：agent_task_executor 需要流式执行
-                logger.info(f"使用 SystemToolExecutor 执行（流式）: {tool_name}")
-                arguments["tool_call_id"] = tool_id
-                async for item in self.system_executor.execute_stream(tool_name, arguments, tool_id, **context):
-                    yield item
             elif self.system_executor.can_handle(tool_name):
-                logger.info(f"使用 SystemToolExecutor 执行: {tool_name}")
-                result = await self.system_executor.execute(tool_name, arguments, tool_id, **context)
-                yield result
+                # 检查是否为流式系统工具
+                from app.services.system_tools import is_streaming_tool
+                if is_streaming_tool(tool_name):
+                    # 流式系统工具
+                    logger.info(f"使用 SystemToolExecutor 执行（流式）: {tool_name}")
+                    async for item in self.system_executor.execute_stream(tool_name, arguments, tool_id, **context):
+                        yield item
+                else:
+                    # 普通系统工具
+                    logger.info(f"使用 SystemToolExecutor 执行: {tool_name}")
+                    result = await self.system_executor.execute(tool_name, arguments, tool_id, **context)
+                    yield result
             else:
                 logger.info(f"使用 MCPToolExecutor 执行: {tool_name}")
                 result = await self.mcp_executor.execute(tool_name, arguments, tool_id, **context)

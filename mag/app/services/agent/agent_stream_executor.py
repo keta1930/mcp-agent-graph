@@ -442,15 +442,16 @@ class AgentStreamExecutor:
 
                 # 执行工具调用
                 logger.info(f"Agent {agent_name} - 执行 {len(current_tool_calls)} 个工具调用")
-                
-                # 检查是否有 agent_task_executor 工具调用
-                has_agent_task = any(
-                    tc.get("function", {}).get("name") == "agent_task_executor" 
+
+                # 检查是否有流式系统工具调用
+                from app.services.system_tools import is_streaming_tool
+                has_streaming_tool = any(
+                    is_streaming_tool(tc.get("function", {}).get("name"))
                     for tc in current_tool_calls
                 )
-                
-                if has_agent_task:
-                    # 有 Sub Agent 调用，使用流式执行
+
+                if has_streaming_tool:
+                    # 有流式工具调用，使用流式执行
                     tool_results = []
                     async for item in self.tool_executor.execute_tools_batch_stream(
                         tool_calls=current_tool_calls,
