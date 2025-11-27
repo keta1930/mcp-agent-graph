@@ -26,12 +26,13 @@ class AgentImportService:
             ".parquet": ParquetImporter(),
         }
 
-    def _get_importer(self, file_extension: str):
+    def _get_importer(self, file_extension: str, language: str = "zh"):
         """
         根据文件扩展名获取对应的导入器
 
         Args:
             file_extension: 文件扩展名（如 ".json"）
+            language: 语言代码（"zh" 或 "en"），用于错误消息
 
         Returns:
             导入器实例
@@ -42,7 +43,10 @@ class AgentImportService:
         file_extension = file_extension.lower()
         if file_extension not in self.importers:
             supported = ", ".join(self.importers.keys())
-            raise ValueError(f"不支持的文件格式: {file_extension}，支持的格式: {supported}")
+            if language == "zh":
+                raise ValueError(f"不支持的文件格式: {file_extension}，支持的格式: {supported}")
+            else:
+                raise ValueError(f"Unsupported file format: {file_extension}, supported formats: {supported}")
 
         return self.importers[file_extension]
 
@@ -78,16 +82,20 @@ class AgentImportService:
         results = []
 
         try:
-            # 1. 获取对应的导入器
-            importer = self._get_importer(file_extension)
+            # 1. 获取用户语言设置（用于所有错误消息和报告）
+            user_language = await mongodb_client.user_repository.get_user_language(user_id)
 
-            # 2. 解析文件内容
+            # 2. 获取对应的导入器
+            importer = self._get_importer(file_extension, user_language)
+
+            # 3. 解析文件内容
             try:
                 agent_configs = await importer.parse(file_content)
             except ValueError as e:
+                error_msg = f"文件解析失败: {str(e)}" if user_language == "zh" else f"File parsing failed: {str(e)}"
                 return {
                     "success": False,
-                    "message": f"文件解析失败: {str(e)}",
+                    "message": error_msg,
                     "results": [],
                     "statistics": {
                         "total": 0,
@@ -97,12 +105,12 @@ class AgentImportService:
                     }
                 }
 
-            # 3. 处理每个Agent配置
+            # 4. 处理每个Agent配置
             for agent_config in agent_configs:
                 result = await self._import_single_agent(agent_config, user_id)
                 results.append(result)
 
-            # 4. 统计结果
+            # 5. 统计结果
             statistics = {
                 "total": len(results),
                 "created": sum(1 for r in results if r["status"] == "created"),
@@ -110,17 +118,24 @@ class AgentImportService:
                 "failed": sum(1 for r in results if r["status"] == "failed")
             }
 
-            # 5. 生成报告
+            # 6. 生成报告（user_language已在步骤2获取）
             report_markdown = ImportReportGenerator.generate(
                 user_id=user_id,
                 file_format=file_extension.lstrip('.'),
                 results=results,
-                import_time=import_time
+                import_time=import_time,
+                language=user_language
             )
+
+            # 生成多语言消息
+            if user_language == "zh":
+                success_message = f"导入完成: 创建{statistics['created']}个, 更新{statistics['updated']}个, 失败{statistics['failed']}个"
+            else:
+                success_message = f"Import completed: {statistics['created']} created, {statistics['updated']} updated, {statistics['failed']} failed"
 
             return {
                 "success": True,
-                "message": f"导入完成: 创建{statistics['created']}个, 更新{statistics['updated']}个, 失败{statistics['failed']}个",
+                "message": success_message,
                 "results": results,
                 "statistics": statistics,
                 "report_markdown": report_markdown
@@ -128,9 +143,17 @@ class AgentImportService:
 
         except Exception as e:
             logger.error(f"导入Agent失败: {str(e)}")
+            # 尝试获取用户语言（可能在异常前未获取）
+            try:
+                user_language = await mongodb_client.user_repository.get_user_language(user_id)
+            except:
+                user_language = "zh"  # 默认中文
+
+            error_msg = f"导入失败: {str(e)}" if user_language == "zh" else f"Import failed: {str(e)}"
+
             return {
                 "success": False,
-                "message": f"导入失败: {str(e)}",
+                "message": error_msg,
                 "results": results,
                 "statistics": {
                     "total": len(results),
@@ -165,6 +188,9 @@ class AgentImportService:
         agent_name = agent_config.get("name", "未知")
 
         try:
+            # 获取用户语言设置（用于错误消息）
+            user_language = await mongodb_client.user_repository.get_user_language(user_id)
+
             # 1. 深度验证Agent配置（包括模型、MCP服务器、系统工具等）
             is_valid, error_msg = await agent_service.validate_agent_config(
                 agent_config, user_id
@@ -203,10 +229,11 @@ class AgentImportService:
                         "agent_config": agent_config
                     }
                 else:
+                    default_error = "Update failed" if user_language == "en" else "更新失败"
                     return {
                         "agent_name": agent_name,
                         "status": "failed",
-                        "error": update_result.get("error", "更新失败"),
+                        "error": update_result.get("error", default_error),
                         "agent_config": agent_config
                     }
             else:
@@ -223,10 +250,11 @@ class AgentImportService:
                         "agent_config": agent_config
                     }
                 else:
+                    default_error = "Creation failed" if user_language == "en" else "创建失败"
                     return {
                         "agent_name": agent_name,
                         "status": "failed",
-                        "error": create_result.get("error", "创建失败"),
+                        "error": create_result.get("error", default_error),
                         "agent_config": agent_config
                     }
 
@@ -255,6 +283,9 @@ class AgentImportService:
             str: 备份Agent名称
         """
         try:
+            # 获取用户语言设置
+            user_language = await mongodb_client.user_repository.get_user_language(user_id)
+
             original_name = agent_doc.get("name")
             agent_config = agent_doc.get("agent_config", {})
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -265,10 +296,15 @@ class AgentImportService:
             # 创建备份Agent配置（复制原配置并修改名称）
             backup_config = agent_config.copy()
             backup_config["name"] = backup_name
-            
-            # 在card中添加备份说明
+
+            # 在card中添加备份说明（根据用户语言）
             original_card = backup_config.get("card", "")
-            backup_config["card"] = f"[备份于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {original_card}"
+            backup_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            if user_language == "zh":
+                backup_prefix = f"[备份于 {backup_time}] "
+            else:
+                backup_prefix = f"[Backed up at {backup_time}] "
+            backup_config["card"] = backup_prefix + original_card
             
             # 在tags中添加backup标记
             backup_tags = backup_config.get("tags", [])
@@ -286,14 +322,21 @@ class AgentImportService:
                 logger.info(f"成功备份Agent: {original_name} -> {backup_name}")
                 return backup_name
             else:
-                error_msg = backup_result.get("error", "未知错误")
+                error_msg = backup_result.get("error", "Unknown error" if user_language == "en" else "未知错误")
                 logger.error(f"备份Agent失败: {error_msg}")
-                return f"备份失败: {error_msg}"
+                backup_failed_msg = "Backup failed" if user_language == "en" else "备份失败"
+                return f"{backup_failed_msg}: {error_msg}"
 
         except Exception as e:
             logger.error(f"备份Agent失败: {str(e)}")
             # 备份失败不应阻止导入流程
-            return f"备份失败: {str(e)}"
+            # 获取用户语言（如果之前获取失败）
+            try:
+                user_language = await mongodb_client.user_repository.get_user_language(user_id)
+            except:
+                user_language = "zh"
+            backup_failed_msg = "Backup failed" if user_language == "en" else "备份失败"
+            return f"{backup_failed_msg}: {str(e)}"
 
 
 # 全局实例
