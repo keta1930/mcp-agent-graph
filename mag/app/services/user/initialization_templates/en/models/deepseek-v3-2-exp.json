@@ -1,0 +1,8 @@
+{
+  "name": "deepseek-v3-2-exp",
+  "base_url": "https://openrouter.ai/api/v1",
+  "api_key": "OPENROUTER_API_KEY",
+  "model": "deepseek/deepseek-v3.2-exp",
+  "provider": "openai",
+  "model_type": "llm"
+}

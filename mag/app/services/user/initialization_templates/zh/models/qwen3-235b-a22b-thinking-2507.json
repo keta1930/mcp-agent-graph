@@ -1,0 +1,8 @@
+{
+  "name": "qwen3-235b-a22b-thinking-2507",
+  "base_url": "https://openrouter.ai/api/v1",
+  "api_key": "OPENROUTER_API_KEY",
+  "model": "qwen/qwen3-235b-a22b-thinking-2507",
+  "provider": "openai",
+  "model_type": "llm"
+}

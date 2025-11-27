@@ -1,0 +1,8 @@
+{
+  "name": "claude-sonnet-4-5",
+  "base_url": "https://api.anthropic.com/v1/",
+  "api_key": "ANTHROPIC_API_KEY",
+  "model": "claude-sonnet-4-5",
+  "provider": "openai",
+  "model_type": "llm"
+}

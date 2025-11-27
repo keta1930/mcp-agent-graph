@@ -1,0 +1,8 @@
+{
+  "name": "kimi-k2-turbo-preview",
+  "base_url": "https://api.moonshot.ai/v1",
+  "api_key": "MOONSHOT_API_KEY",
+  "model": "kimi-k2-turbo-preview",
+  "provider": "openai",
+  "model_type": "llm"
+}
