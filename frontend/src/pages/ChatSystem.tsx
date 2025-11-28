@@ -19,6 +19,8 @@ import { ConversationService, generateMongoId } from '../services/conversationSe
 import { ConversationMode, ConversationDetail } from '../types/conversation';
 import ShareButton from '../components/chat/ShareButton';
 import ShareModal from '../components/chat/ShareModal';
+import { useTour, chatTourSteps } from '../components/tour';
+import '../components/tour/tour-custom.css';
 import '../styles/chat-system.css';
 
 const ChatSystem: React.FC = () => {
@@ -83,6 +85,26 @@ const ChatSystem: React.FC = () => {
     removeNotification,
     success: showSuccessNotification
   } = useGlobalNotification();
+
+  // 引导演示 - 首次访问自动启动
+  const { startTour } = useTour({
+    steps: chatTourSteps,
+    onComplete: () => {
+      localStorage.setItem('chat-tour-completed', 'true');
+    }
+  });
+
+  // 首次访问时自动启动引导
+  useEffect(() => {
+    const tourCompleted = localStorage.getItem('chat-tour-completed');
+    if (!tourCompleted) {
+      // 延迟启动，确保页面完全加载
+      const timer = setTimeout(() => {
+        startTour();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [startTour]);
 
   // 处理URL参数变化 - 简化逻辑，避免破坏现有状态管理
   useEffect(() => {
@@ -601,14 +623,16 @@ const ChatSystem: React.FC = () => {
     <div className="chat-system-page">
       <div className="chat-system-layout">
         {/* 左侧边栏 */}
-        <ConversationSidebar
-          onConversationSelect={handleConversationSelect}
-          onNewConversation={handleNewConversation}
-          activeConversationId={activeConversationId}
-        />
+        <div data-tour="chat-sidebar">
+          <ConversationSidebar
+            onConversationSelect={handleConversationSelect}
+            onNewConversation={handleNewConversation}
+            activeConversationId={activeConversationId}
+          />
+        </div>
 
         {/* 主对话区域 */}
-        <div className={getMainAreaStyle()}>
+        <div className={getMainAreaStyle()} data-tour="chat-main-area">
           {!displayConversation && !pendingUserMessage ? (
             /* 无对话且无待发送消息时显示模式选择器 */
             <ModeSelector

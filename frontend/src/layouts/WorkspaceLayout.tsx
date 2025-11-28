@@ -1,5 +1,5 @@
 // src/layouts/WorkspaceLayout.tsx
-import React, { useState, CSSProperties } from 'react';
+import React, { useState, useEffect, CSSProperties } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, Tooltip } from 'antd';
 import {
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useT } from '../i18n';
 import UserMenu from '../components/common/UserMenu';
+import { useTour, workspaceTourSteps } from '../components/tour';
+import '../components/tour/tour-custom.css';
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -29,15 +31,35 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
+  // 引导演示 - 首次访问自动启动
+  const { startTour } = useTour({
+    steps: workspaceTourSteps,
+    onComplete: () => {
+      localStorage.setItem('workspace-tour-completed', 'true');
+    }
+  });
+
+  // 首次访问时自动启动引导
+  useEffect(() => {
+    const tourCompleted = localStorage.getItem('workspace-tour-completed');
+    if (!tourCompleted) {
+      // 延迟启动，确保页面完全加载
+      const timer = setTimeout(() => {
+        startTour();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [startTour]);
+
   const navItems = [
-    { path: '/workspace/agent-manager', icon: Bot, labelKey: 'pages.workspace.agentManager' },
-    { path: '/workspace/graph-editor', icon: Network, labelKey: 'pages.workspace.graphEditor' },
-    { path: '/workspace/model-manager', icon: Cpu, labelKey: 'pages.workspace.modelManager' },
-    { path: '/workspace/system-tools', icon: Wrench, labelKey: 'pages.workspace.systemTools' },
-    { path: '/workspace/mcp-manager', icon: Plug, labelKey: 'pages.workspace.mcpManager' },
-    { path: '/workspace/prompt-manager', icon: MessageSquareText, labelKey: 'pages.workspace.promptManager' },
-    { path: '/workspace/file-manager', icon: FolderOpen, labelKey: 'pages.workspace.fileManager' },
-    { path: '/workspace/memory-manager', icon: Database, labelKey: 'pages.workspace.memoryManager' },
+    { path: '/workspace/agent-manager', icon: Bot, labelKey: 'pages.workspace.agentManager', tourId: 'workspace-agent-manager' },
+    { path: '/workspace/graph-editor', icon: Network, labelKey: 'pages.workspace.graphEditor', tourId: 'workspace-graph-editor' },
+    { path: '/workspace/model-manager', icon: Cpu, labelKey: 'pages.workspace.modelManager', tourId: 'workspace-model-manager' },
+    { path: '/workspace/system-tools', icon: Wrench, labelKey: 'pages.workspace.systemTools', tourId: 'workspace-system-tools' },
+    { path: '/workspace/mcp-manager', icon: Plug, labelKey: 'pages.workspace.mcpManager', tourId: 'workspace-mcp-manager' },
+    { path: '/workspace/prompt-manager', icon: MessageSquareText, labelKey: 'pages.workspace.promptManager', tourId: 'workspace-prompt-manager' },
+    { path: '/workspace/file-manager', icon: FolderOpen, labelKey: 'pages.workspace.fileManager', tourId: 'workspace-file-manager' },
+    { path: '/workspace/memory-manager', icon: Database, labelKey: 'pages.workspace.memoryManager', tourId: 'workspace-memory-manager' },
   ];
 
   // 侧边栏容器样式
@@ -163,7 +185,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
 
       <div style={{ display: 'flex', minHeight: '100vh', background: '#faf8f5' }}>
         {/* 侧边栏 */}
-        <div style={sidebarStyle}>
+        <div style={sidebarStyle} data-tour="workspace-sidebar">
           {/* Header */}
           <div style={headerStyle}>
             <div style={headerDecorStyle} />
@@ -192,7 +214,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
               const isHovered = hoveredItem === item.path;
 
               return (
-                <Tooltip 
+                <Tooltip
                   key={item.path}
                   title={collapsed ? t(item.labelKey) : ''}
                   placement="right"
@@ -202,6 +224,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
                     style={getNavItemStyle(isActive, isHovered)}
                     onMouseEnter={() => setHoveredItem(item.path)}
                     onMouseLeave={() => setHoveredItem(null)}
+                    data-tour={item.tourId}
                   >
                     <Icon size={20} strokeWidth={1.5} />
                     {!collapsed && <span style={navLabelStyle}>{t(item.labelKey)}</span>}
@@ -214,15 +237,16 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           {/* Footer */}
           <div style={footerStyle}>
             <div style={footerDecorStyle} />
-            
+
             {/* 用户头像下拉菜单 */}
             <UserMenu collapsed={collapsed} placement="topLeft" />
-            
+
             <Tooltip title={t('pages.workspace.goToChat')}>
               <Button
                 type="text"
                 icon={<Home size={16} strokeWidth={1.5} />}
                 onClick={() => navigate('/chat')}
+                data-tour="workspace-home-button"
                 style={{
                   color: 'rgba(45, 45, 45, 0.65)',
                 }}
@@ -244,7 +268,9 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
           flexDirection: 'column',
           minHeight: '100vh',
           overflow: 'hidden'
-        }}>
+        }}
+          data-tour="workspace-main-area"
+        >
           <div style={{
             flex: 1,
             padding: '0',

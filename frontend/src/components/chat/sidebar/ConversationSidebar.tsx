@@ -331,6 +331,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
                 type="text"
                 icon={<Plus size={16} strokeWidth={1.5} />}
                 onClick={onNewConversation}
+                data-tour="chat-new-conversation"
                 style={{
                   height: '36px',
                   width: '36px',
@@ -517,6 +518,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
             type="text"
             icon={<Home size={16} strokeWidth={1.5} />}
             onClick={() => navigate('/workspace')}
+            data-tour="chat-workspace-button"
             style={{
               color: 'rgba(45, 45, 45, 0.65)',
             }}

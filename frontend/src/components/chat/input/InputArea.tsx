@@ -244,7 +244,9 @@ const InputArea: React.FC<InputAreaProps> = ({
       display: 'flex',
       justifyContent: 'center',
       position: 'relative'
-    }}>
+    }}
+      data-tour="chat-input-area"
+    >
       <div style={{
         position: 'absolute',
         top: 0,

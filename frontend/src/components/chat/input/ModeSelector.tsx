@@ -213,7 +213,9 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       justifyContent: 'center',
       padding: '32px',
       background: '#faf8f5'
-    }}>
+    }}
+      data-tour="chat-mode-selector"
+    >
       <div style={{
         maxWidth: '900px',
         width: '100%'
