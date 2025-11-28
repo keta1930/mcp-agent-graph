@@ -1,0 +1,35 @@
+{
+  "type": "agent",
+  "title": "👋 Welcome to Agent-Graph",
+  "tags": ["welcome", "tutorial", "demo"],
+  "status": "active",
+  "round_count": 5,
+  "total_token_usage": {
+    "total_tokens": 3260,
+    "prompt_tokens": 2880,
+    "completion_tokens": 1150
+  },
+  "documents": {
+    "total_count": 1,
+    "files": [
+      {
+        "filename": "WELCOME.md",
+        "summary": "Welcome document with quick start guide",
+        "size": 387,
+        "logs": [
+          {
+            "log_id": "log_welcome_init",
+            "agent": "system",
+            "comment": "Creating welcome document",
+            "timestamp": "2025-11-25T00:00:00.000Z"
+          }
+        ]
+      }
+    ]
+  },
+    "input_config": {
+        "selected_model": "claude-sonnet-4-5",
+        "selected_mcp_servers": [],
+        "selected_system_tools": []
+    }
+}

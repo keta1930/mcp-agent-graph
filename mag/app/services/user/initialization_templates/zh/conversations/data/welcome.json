@@ -1,0 +1,196 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 120,
+      "completion_tokens": 200,
+      "messages": [
+        {
+          "role": "system",
+          "content": "你是一个专业的AI助手，负责演示Agent-Graph系统的核心功能。"
+        },
+        {
+          "role": "user",
+          "content": "你好，我是新用户。请介绍一下这个系统的主要功能。"
+        },
+        {
+          "role": "assistant",
+          "content": "欢迎使用 Agent-Graph 👋\n\nAgent-Graph 是一个智能代理系统。你可以像现在这样直接与 Agent 对话，Agent 会运用工具和记忆来帮助你完成任务。当你需要处理更复杂的流程时，可以将多个 Agent 组合成工作流，实现自动化。\n\n---\n\n## Agent：会思考、会使用工具的智能体\n\n系统底层 Agent Loop 基于 ReAct 架构设计：\n\n**思考 → 行动 → 观察结果 → 思考→行动**\n\n这个循环让 Agent 能够：\n- 理解你的需求，制定解决方案\n- 调用工具获取信息或执行操作\n- 根据结果调整策略，直到完成任务\n\nAgent 的能力来自于它可以使用的工具。系统内置了丰富的工具集，也支持你连接外部服务，让 Agent 能够处理各种实际场景。\n\n---\n\n## Graph：让多个 Agent 协作的工作流\n\nGraph 是一种工作流设计方式。当单个 Agent 难以处理复杂任务时，你可以：\n\n- 将任务分解为多个步骤，每个步骤由专门的 Agent 负责\n- 让 Agent 之间传递信息，协同完成任务\n- 根据执行结果动态选择下一步执行哪个 Agent\n- 将常用的流程保存下来，在不同场景中复用\n\n这就像组建一个专业团队，每个成员各司其职，共同完成项目。\n\n---\n\n## 工具生态：扩展 Agent 的能力边界\n\n系统为 Agent 提供两类工具：\n\n**系统工具**：内置的能力集，包括9大类工具，为 Agent 提供：\n\n| 工具类别 | 为 Agent 提供的能力 |\n|---------|-------------------|\n| File Creator | 在对话中创建和管理文档的能力，所有文件自动保存和版本控制 |\n| Memory Tools | 长期记忆能力，让 Agent 能记住你的偏好和学习经验 |\n| Subagent | 调用其他专业 Agent 的能力，实现任务委托和协作 |\n| Agent Creator | 设计和创建新 Agent 的能力，Agent 可以创造 Agent |\n| Graph Designer | 设计工作流的能力，让 Agent 能够构建自动化流程 |\n| Prompt Generator | 创建和管理提示词模板的能力，沉淀优质提示词 |\n| MCP Builder | 注册外部工具的能力，连接更多数据源和服务 |\n| Task Manager | 创建定时任务的能力，实现自动化执行 |\n| System Operations | 查询系统资源的能力，了解可用的模型、工具、Agent 等 |\n\n**MCP 工具**：外部能力扩展\n\nMCP（Model Context Protocol）让 Agent 能够连接外部世界。你可以为 Agent 配置 MCP 服务，使其能够：\n\n- 访问数据库和 API，获取实时数据\n- 调用业务系统，执行实际操作\n- 使用互联网服务，如搜索查询\n- 执行专业任务，如代码运行、数据分析\n\nMCP 让 Agent 从对话助手进化为真正的业务执行者。\n\n---\n\n## 记忆架构：让 Agent 越用越聪明\n\n系统采用长短期记忆架构，让 Agent 既能处理当前对话，又能积累长期知识：\n\n| 记忆类型 | 存储内容 | 作用 |\n|---------|---------|------|\n| **短期记忆** | | |\n| 会话上下文 | 完整的对话历史 | 支持多轮交互，理解上下文 |\n| 上下文压缩 | 压缩后的关键信息 | 在长对话中保持性能 |\n| **长期记忆** | | |\n| 用户记忆 | 你的偏好、习惯、项目背景 | 提供个性化服务 |\n| Agent 记忆 | 该Agent 学习的经验和模式 | 持续优化表现 |\n\n记忆按主题分类管理，Agent 可以智能检索相关记忆。这意味着 Agent 会记住你上次的偏好，学习如何更好地为你服务。\n\n---\n\n## 开放生态：分享、导出、协作\n\n系统提供完整的数据流转能力：\n\n**分享对话**：生成公开链接，任何人都可以查看对话内容，无需登录\n\n**导出数据**：将对话导出为标准格式，用于训练 LLM 或数据分析\n\n**资源迁移**：\n- 批量导入 Agent（支持多种格式）\n- 导出导入 Graph 工作流\n- 导出导入 Prompt 模板\n- 从其他系统导入记忆数据\n\n这让你可以积累知识资产，在团队间共享，或迁移到其他环境。\n\n---\n\n接下来我将通过实际演示来展示这些功能。"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 350,
+      "completion_tokens": 180,
+      "messages": [
+        {
+          "role": "user",
+          "content": "请演示Subagent功能。我想看看它如何独立完成任务。"
+        },
+        {
+          "role": "assistant",
+          "content": "我将委托一个Subagent创建欢迎文档。它会在独立的上下文中完成创建和验证文件的工作。",
+          "tool_calls": [
+            {
+              "id": "call_task_demo",
+              "type": "function",
+              "function": {
+                "name": "agent_task_executor",
+                "arguments": "{\"tasks\": [{\"agent_name\": \"welcome-agent\", \"task_id\": \"create_welcome_doc\", \"task_description\": \"创建一个欢迎文档 WELCOME.md，内容包括：1）欢迎语；2）快速开始的4个步骤（探索聊天界面、创建代理、设计工作流图、集成MCP工具）；3）资源链接部分。创建后读取文件确认内容正确。\"}]}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_task_demo",
+          "content": "{\"success\": true, \"results\": [{\"task_id\": \"create_welcome_doc\", \"agent_name\": \"welcome-agent\", \"success\": true, \"result\": \"任务完成。已创建 WELCOME.md 文档，包含：\\n\\n- 欢迎语和系统介绍\\n- 快速开始的4个步骤指引\\n- 资源链接（文档、社区、支持）\\n\\n文档已创建并验证，可在对话的文件列表中查看。\"}]}"
+        },
+        {
+          "role": "assistant",
+          "content": "演示完成。Subagent已成功创建欢迎文档。这展示了Subagent的核心能力：\n\n## Subagent工作机制\n\n| 特性 | 说明 |\n|------|------|\n| 独立执行 | 在隔离的上下文中工作，不影响主对话流程 |\n| 工具调用 | 使用系统工具与MCP完成复杂任务 |\n| 多步运行 | Subagent同样基于React架构 |\n| 结果汇总 | 返回最终结果，隐藏执行细节 |\n\n在这个演示中，Subagent独立完成了文件创建和验证两个步骤，接下来我可以查看Subagent创建的文档，使用**同样的任务id**，继续调用该Agent执行任务，或使用**新的任务id**，开启新的任务，这非常适合工作的交接。这种模式适合将复杂任务委托给专门的执行单元，并实现上下文隔离。"
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 680,
+      "completion_tokens": 160,
+      "messages": [
+        {
+          "role": "user",
+          "content": "长期记忆系统是如何工作的？"
+        },
+        {
+          "role": "assistant",
+          "content": "我将演示长期记忆系统，存储一些用户偏好：",
+          "tool_calls": [
+            {
+              "id": "call_memory_demo",
+              "type": "function",
+              "function": {
+                "name": "add_memory",
+                "arguments": "{\"additions\": [{\"owner\": \"user\", \"category\": \"preferences\", \"items\": [\"首选交流语言：中文\", \"偏好使用表格展示结构化信息\"]}]}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_memory_demo",
+          "content": "{\"success\": true, \"message\": \"成功添加 2 个记忆条目\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "记忆添加成功。记忆系统的工作机制：\n\n## 记忆类型\n\n| 类型 | owner | 说明 | 示例 |\n|------|-------|------|------|\n| 用户记忆 | user | 存储用户偏好和上下文 | 语言偏好、工作领域、项目背景 |\n| 代理记忆 | self | Agent的学习和经验（不同Agent之间独立存储） | 成功模式、错误教训、优化策略 |\n\n## 记忆操作\n\n| 工具 | 功能 |\n|------|------|\n| add_memory | 添加新记忆条目 |\n| get_memory | 按分类检索记忆 |\n| update_memory | 更新已有记忆 |\n| delete_memory | 删除过时记忆 |\n| search_memory_with_agent | 使用Agent智能搜索记忆 |\n\n记忆在所有对话中持久化，Agent可以随时访问相关记忆来提供个性化服务。"
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 870,
+      "completion_tokens": 190,
+      "messages": [
+        {
+          "role": "user",
+          "content": "对话中的文件系统是怎么运作的？"
+        },
+        {
+          "role": "assistant",
+          "content": "每个对话拥有独立的文件空间，刚才Subagent创建的WELCOME.md就存储在这个对话中。\n\n## 文件：Agent协作的最佳方式\n\n文件是Agent之间协作的核心机制。在同一个会话中，所有文件都是共享的，这意味着：\n\n- **任务分工**：不同的Agent可以根据各自的专长创建不同的文档\n- **协同创作**：多个Agent可以共同维护、审查、反馈和优化同一个文档\n- **知识传递**：Agent可以通过文件交换信息，实现工作交接\n- **成果沉淀**：对话过程中产生的所有文档都会持久化保存\n\n## 文件系统特性\n\n| 特性 | 说明 |\n|------|------|\n| 隔离性 | 每个对话有独立的文件命名空间 |\n| 共享性 | 同一对话中的所有Agent共享文件空间 |\n| 持久化 | 文件存储在MinIO对象存储中 |\n| 版本控制 | 所有修改自动记录版本历史 |\n| 访问控制 | 仅对话参与者可访问文件 |\n\n## 文件操作工具\n\n| 工具 | 功能 |\n|------|------|\n| create_file | 创建新文件 |\n| read_file | 读取文件内容和元数据 |\n| update_file | 增量更新文件内容 |\n| rewrite_file | 完全重写文件 |\n| delete_files | 删除指定文件 |\n\n这些文件工具可以被Agent在对话过程中调用，实现文档管理、数据存储等功能。文件会随对话持久化保存。"
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 1090,
+      "completion_tokens": 220,
+      "messages": [
+        {
+          "role": "user",
+          "content": "让我们结束演示"
+        },
+        {
+          "role": "assistant",
+          "content": "好的！\n\n通过这个演示对话，您已经了解了Agent-Graph的核心功能。您可以随时删除这个对话。\n\n接下来，邀请您开始亲自体验这个系统（别忘了添加真实的模型API KEY！）。如需了解更多信息，可以访问项目地址 https://github.com/keta1930/mcp-agent-graph 以及在线文档 https://keta1930.github.io/mcp-agent-graph/\n\n祝您使用愉快！"
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "create_welcome_doc",
+      "agent_name": "welcome-agent",
+      "rounds": [
+        {
+          "round": 1,
+          "messages": [
+            {
+              "role": "system",
+              "content": "你是一个专业的AI助手，负责演示Agent-Graph系统的核心功能。"
+            },
+            {
+              "role": "user",
+              "content": "任务描述：\n创建一个欢迎文档 WELCOME.md，内容包括：1）欢迎语；2）快速开始的4个步骤（探索聊天界面、创建代理、设计工作流图、集成MCP工具）；3）资源链接部分。创建后读取文件确认内容正确。\n\n请专注于完成这个任务，并在完成后提供清晰的结果报告。"
+            },
+            {
+              "role": "assistant",
+              "content": "我将创建欢迎文档。首先创建文件：",
+              "tool_calls": [
+                {
+                  "id": "call_create_welcome",
+                  "type": "function",
+                  "function": {
+                    "name": "create_file",
+                    "arguments": "{\"filename\": \"WELCOME.md\", \"content\": \"# 欢迎使用Agent-Graph！\\n\\n这是你在此对话中的第一个文档。\\n\\n## 快速开始\\n\\n1. 探索聊天界面\\n2. 尝试创建代理\\n3. 设计工作流图\\n4. 通过MCP集成外部工具\\n\\n## 资源\\n\\n- 文档：[即将推出]\\n- 社区：[即将推出]\\n- 支持：通过平台提供\\n\\n享受构建智能代理系统的乐趣！\", \"summary\": \"欢迎文档，包含快速开始指引\", \"log\": \"创建欢迎文档\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_create_welcome",
+              "content": "{\"success\": true, \"message\": \"成功创建文件：WELCOME.md\", \"filename\": \"WELCOME.md\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "文件创建成功。现在读取文件验证内容：",
+              "tool_calls": [
+                {
+                  "id": "call_read_welcome",
+                  "type": "function",
+                  "function": {
+                    "name": "read_file",
+                    "arguments": "{\"files\": [{\"filename\": \"WELCOME.md\", \"fields\": [\"content\"]}]}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_read_welcome",
+              "content": "{\"success\": true, \"files\": [{\"filename\": \"WELCOME.md\", \"content\": \"# 欢迎使用Agent-Graph！\\n\\n这是你在此对话中的第一个文档。\\n\\n## 快速开始\\n\\n1. 探索聊天界面\\n2. 尝试创建代理\\n3. 设计工作流图\\n4. 通过MCP集成外部工具\\n\\n## 资源\\n\\n- 文档：[即将推出]\\n- 社区：[即将推出]\\n- 支持：通过平台提供\\n\\n享受构建智能代理系统的乐趣！\"}]}"
+            },
+            {
+              "role": "assistant",
+              "content": "任务完成。已创建 WELCOME.md 文档，包含：\n\n- 欢迎语和系统介绍\n- 快速开始的4个步骤指引\n- 资源链接（文档、社区、支持）\n\n文档已创建并验证，可在对话的文件列表中查看。"
+            }
+          ],
+          "model": "claude-sonnet-4-5",
+          "tool_call_id": "call_task_demo"
+        }
+      ]
+    }
+  ]
+}

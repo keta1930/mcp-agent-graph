@@ -1,0 +1,196 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 120,
+      "completion_tokens": 200,
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a helpful AI assistant demonstrating the capabilities of the Agent-Graph system."
+        },
+        {
+          "role": "user",
+          "content": "Hello! I'm new here. Can you give me an overview of this system?"
+        },
+        {
+          "role": "assistant",
+          "content": "Welcome to Agent-Graph\n\nAgent-Graph is an intelligent agent system. You can interact directly with Agents like we're doing now - Agents use tools and memory to help you accomplish tasks. When you need to handle more complex workflows, you can combine multiple Agents into a Graph to achieve automation.\n\n---\n\n## Agent: Intelligent Entities that Think and Use Tools\n\nThe system's underlying Agent Loop is based on the ReAct architecture:\n\n**Think → Act → Observe Results → Think → Act**\n\nThis loop enables Agents to:\n- Understand your needs and formulate solutions\n- Call tools to retrieve information or execute operations\n- Adjust strategies based on results until tasks are completed\n\nAn Agent's capabilities come from the tools it can use. The system includes a rich set of built-in tools and supports connecting to external services, enabling Agents to handle various real-world scenarios.\n\n---\n\n## Graph: Workflows for Multi-Agent Collaboration\n\nGraph is a workflow design approach. When a single Agent struggles with complex tasks, you can:\n\n- Break tasks into multiple steps, each handled by a specialized Agent\n- Enable Agents to exchange information and collaborate on tasks\n- Dynamically choose which Agent to execute next based on results\n- Save common workflows for reuse across different scenarios\n\nIt's like assembling a professional team where each member has their role, working together to complete projects.\n\n---\n\n## Tool Ecosystem: Expanding Agent Capabilities\n\nThe system provides two types of tools for Agents:\n\n**System Tools**: Built-in capabilities, including 9 major categories:\n\n| Tool Category | Capabilities Provided to Agents |\n|--------------|--------------------------------|\n| File Creator | Create and manage documents in conversations with automatic saving and version control |\n| Memory Tools | Long-term memory to remember your preferences and learn from experience |\n| Subagent | Delegate tasks to other specialized Agents for collaboration |\n| Agent Creator | Design and create new Agents - Agents can create Agents |\n| Graph Designer | Design workflows enabling Agents to build automation processes |\n| Prompt Generator | Create and manage prompt templates to capture quality prompts |\n| MCP Builder | Register external tools to connect more data sources and services |\n| Task Manager | Create scheduled tasks for automated execution |\n| System Operations | Query system resources to discover available models, tools, Agents, etc. |\n\n**MCP Tools**: External capability extensions\n\nMCP (Model Context Protocol) allows Agents to connect to the external world. You can configure MCP services for Agents to:\n\n- Access databases and APIs for real-time data\n- Call business systems to execute actual operations\n- Use internet services like search queries\n- Execute specialized tasks like code execution and data analysis\n\nMCP transforms Agents from conversational assistants into true business executors.\n\n---\n\n## Memory Architecture: Making Agents Smarter Over Time\n\nThe system uses a dual-memory architecture, allowing Agents to handle current conversations while accumulating long-term knowledge:\n\n| Memory Type | Stored Content | Purpose |\n|------------|----------------|----------|\n| **Short-term Memory** | | |\n| Conversation Context | Complete dialogue history | Support multi-turn interaction and context understanding |\n| Context Compression | Compressed key information | Maintain performance in long conversations |\n| **Long-term Memory** | | |\n| User Memory | Your preferences, habits, project background | Provide personalized service |\n| Agent Memory | Agent's learned experiences and patterns | Continuously optimize performance |\n\nMemories are organized by categories and Agents can intelligently retrieve relevant memories. This means Agents remember your previous preferences and learn how to better serve you.\n\n---\n\n## Open Ecosystem: Share, Export, Collaborate\n\nThe system provides complete data flow capabilities:\n\n**Share Conversations**: Generate public links for anyone to view conversation content without login\n\n**Export Data**: Export conversations to standard formats for LLM training or data analysis\n\n**Resource Migration**:\n- Batch import Agents (supports multiple formats)\n- Export and import Graph workflows\n- Export and import Prompt templates\n- Import memory data from other systems\n\nThis allows you to accumulate knowledge assets, share within teams, or migrate to other environments.\n\n---\n\nNext, I'll demonstrate these features through practical examples."
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 350,
+      "completion_tokens": 180,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Please demonstrate the Subagent feature. I want to see how it completes tasks independently."
+        },
+        {
+          "role": "assistant",
+          "content": "I will delegate a Subagent to create a welcome document. It will complete the work of creating and verifying the file in an independent context.",
+          "tool_calls": [
+            {
+              "id": "call_task_demo",
+              "type": "function",
+              "function": {
+                "name": "agent_task_executor",
+                "arguments": "{\"tasks\": [{\"agent_name\": \"welcome-agent\", \"task_id\": \"create_welcome_doc\", \"task_description\": \"Create a welcome document WELCOME.md with: 1) Welcome message; 2) Quick start with 4 steps (explore chat interface, create agents, design workflow graphs, integrate MCP tools); 3) Resources section. After creation, read the file to confirm the content is correct.\"}]}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_task_demo",
+          "content": "{\"success\": true, \"results\": [{\"task_id\": \"create_welcome_doc\", \"agent_name\": \"welcome-agent\", \"success\": true, \"result\": \"Task completed. Created WELCOME.md document containing:\\n\\n- Welcome message and system introduction\\n- Quick start guide with 4 steps\\n- Resources section (documentation, community, support)\\n\\nDocument has been created and verified, viewable in the conversation's file list.\"}]}"
+        },
+        {
+          "role": "assistant",
+          "content": "Demonstration complete. The Subagent has successfully created the welcome document. This demonstrates the core capabilities of Subagent:\n\n## Subagent Working Mechanism\n\n| Feature | Description |\n|---------|-------------|\n| Independent Execution | Works in an isolated context without affecting the main conversation flow |\n| Tool Invocation | Uses system tools and MCP to complete complex tasks |\n| Multi-step Execution | Subagent also based on ReAct architecture |\n| Result Aggregation | Returns final results while hiding execution details |\n\nIn this demonstration, the Subagent independently completed two steps: file creation and verification. Next, I can review the document created by the Subagent, use the **same task id** to continue calling the Agent to execute tasks, or use a **new task id** to start a new task. This is perfect for work handoffs. This pattern is suitable for delegating complex tasks to specialized execution units while achieving context isolation."
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 560,
+      "completion_tokens": 160,
+      "messages": [
+        {
+          "role": "user",
+          "content": "How does the long-term memory system work?"
+        },
+        {
+          "role": "assistant",
+          "content": "I will demonstrate the long-term memory system by storing some user preferences:",
+          "tool_calls": [
+            {
+              "id": "call_memory_demo",
+              "type": "function",
+              "function": {
+                "name": "add_memory",
+                "arguments": "{\"additions\": [{\"owner\": \"user\", \"category\": \"preferences\", \"items\": [\"Preferred communication language: English\", \"Prefer using tables to display structured information\"]}]}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "tool_call_id": "call_memory_demo",
+          "content": "{\"success\": true, \"message\": \"Successfully added 2 memory items\"}"
+        },
+        {
+          "role": "assistant",
+          "content": "Memory added successfully. The memory system's working mechanism:\n\n## Memory Types\n\n| Type | owner | Description | Examples |\n|------|-------|-------------|----------|\n| User Memory | user | Stores user preferences and context | Language preference, work domain, project background |\n| Agent Memory | self | Agent's learning and experience (stored independently per Agent) | Successful patterns, error lessons, optimization strategies |\n\n## Memory Operations\n\n| Tool | Function |\n|------|----------|\n| add_memory | Add new memory items |\n| get_memory | Retrieve memory by category |\n| update_memory | Update existing memory |\n| delete_memory | Delete outdated memory |\n| search_memory_with_agent | Intelligently search memory using Agent |\n\nMemory persists across all conversations, and Agents can access relevant memory at any time to provide personalized service."
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 750,
+      "completion_tokens": 190,
+      "messages": [
+        {
+          "role": "user",
+          "content": "How does the file system in conversations work?"
+        },
+        {
+          "role": "assistant",
+          "content": "Each conversation has its own independent file space. The WELCOME.md that the Subagent just created is stored in this conversation.\n\n## Files: The Best Way for Agent Collaboration\n\nFiles are the core mechanism for collaboration between Agents. In the same session, all files are shared, which means:\n\n- **Task Division**: Different Agents can create different documents based on their specializations\n- **Collaborative Creation**: Multiple Agents can jointly maintain, review, provide feedback, and optimize the same document\n- **Knowledge Transfer**: Agents can exchange information through files to achieve work handoffs\n- **Result Preservation**: All documents produced during conversations are persistently saved\n\n## File System Features\n\n| Feature | Description |\n|---------|-------------|\n| Isolation | Each conversation has its own file namespace |\n| Sharing | All Agents in the same conversation share the file space |\n| Persistence | Files are stored in MinIO object storage |\n| Version Control | All modifications are automatically recorded in version history |\n| Access Control | Only conversation participants can access files |\n\n## File Operation Tools\n\n| Tool | Function |\n|------|----------|\n| create_file | Create new files |\n| read_file | Read file content and metadata |\n| update_file | Incrementally update file content |\n| rewrite_file | Completely rewrite files |\n| delete_files | Delete specified files |\n\nThese file tools can be called by Agents during conversations to implement document management, data storage, and other functions. Files are persistently saved with the conversation."
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "agent_name": "welcome-agent",
+      "model": "claude-sonnet-4-5",
+      "prompt_tokens": 970,
+      "completion_tokens": 220,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Let's end the demonstration"
+        },
+        {
+          "role": "assistant",
+          "content": "Alright!\n\nThrough this demonstration conversation, you have learned about the core features of Agent-Graph. You can delete this conversation at any time.\n\nNext, we invite you to start experiencing this system yourself (don't forget to add your real model API KEY!). For more information, please visit the project address https://github.com/keta1930/mcp-agent-graph and the online documentation https://keta1930.github.io/mcp-agent-graph/\n\nEnjoy!"
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "task_id": "create_welcome_doc",
+      "agent_name": "welcome-agent",
+      "rounds": [
+        {
+          "round": 1,
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a helpful AI assistant demonstrating the capabilities of the Agent-Graph system."
+            },
+            {
+              "role": "user",
+              "content": "Task Description:\nCreate a welcome document WELCOME.md with: 1) Welcome message; 2) Quick start with 4 steps (explore chat interface, create agents, design workflow graphs, integrate MCP tools); 3) Resources section. After creation, read the file to confirm the content is correct.\n\nPlease focus on completing this task and provide a clear result report upon completion."
+            },
+            {
+              "role": "assistant",
+              "content": "I will create the welcome document. First, creating the file:",
+              "tool_calls": [
+                {
+                  "id": "call_create_welcome",
+                  "type": "function",
+                  "function": {
+                    "name": "create_file",
+                    "arguments": "{\"filename\": \"WELCOME.md\", \"content\": \"# Welcome to Agent-Graph!\\n\\nThis is your first document in this conversation.\\n\\n## Quick Start\\n\\n1. Explore the chat interface\\n2. Try creating agents\\n3. Design workflow graphs\\n4. Integrate external tools via MCP\\n\\n## Resources\\n\\n- Documentation: [Coming soon]\\n- Community: [Coming soon]\\n- Support: Available through the platform\\n\\nEnjoy building intelligent agent systems!\", \"summary\": \"Welcome document with quick start guide\", \"log\": \"Creating welcome document\"}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_create_welcome",
+              "content": "{\"success\": true, \"message\": \"Successfully created file: WELCOME.md\", \"filename\": \"WELCOME.md\"}"
+            },
+            {
+              "role": "assistant",
+              "content": "File created successfully. Now reading the file to verify content:",
+              "tool_calls": [
+                {
+                  "id": "call_read_welcome",
+                  "type": "function",
+                  "function": {
+                    "name": "read_file",
+                    "arguments": "{\"files\": [{\"filename\": \"WELCOME.md\", \"fields\": [\"content\"]}]}"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "tool_call_id": "call_read_welcome",
+              "content": "{\"success\": true, \"files\": [{\"filename\": \"WELCOME.md\", \"content\": \"# Welcome to Agent-Graph!\\n\\nThis is your first document in this conversation.\\n\\n## Quick Start\\n\\n1. Explore the chat interface\\n2. Try creating agents\\n3. Design workflow graphs\\n4. Integrate external tools via MCP\\n\\n## Resources\\n\\n- Documentation: [Coming soon]\\n- Community: [Coming soon]\\n- Support: Available through the platform\\n\\nEnjoy building intelligent agent systems!\"}]}"
+            },
+            {
+              "role": "assistant",
+              "content": "Task completed. Created WELCOME.md document containing:\n\n- Welcome message and system introduction\n- Quick start guide with 4 steps\n- Resources section (documentation, community, support)\n\nDocument has been created and verified, viewable in the conversation's file list."
+            }
+          ],
+          "model": "claude-sonnet-4-5",
+          "tool_call_id": "call_task_demo"
+        }
+      ]
+    }
+  ]
+}
