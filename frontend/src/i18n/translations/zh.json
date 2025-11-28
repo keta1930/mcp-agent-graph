@@ -1076,6 +1076,84 @@
     }
   },
   "components": {
+    "tour": {
+      "startTour": "开始引导",
+      "nextBtn": "下一步",
+      "prevBtn": "上一步",
+      "doneBtn": "完成",
+      "workspace": {
+        "sidebar": {
+          "title": "侧边栏导航",
+          "content": "这是工作台的侧边栏,包含了所有核心功能模块的快速入口。"
+        },
+        "agentManager": {
+          "title": "智能体管理",
+          "content": "在这里管理您的AI智能体,配置能力和工具。点击可以进入智能体管理页面。"
+        },
+        "graphEditor": {
+          "title": "图形编辑器",
+          "content": "设计和执行复杂的工作流图,实现任务自动化。"
+        },
+        "modelManager": {
+          "title": "模型管理",
+          "content": "管理和配置多个AI模型,支持不同的提供商。"
+        },
+        "systemTools": {
+          "title": "系统工具",
+          "content": "浏览和使用内置的系统工具,扩展智能体能力。"
+        },
+        "mcpManager": {
+          "title": "MCP管理器",
+          "content": "集成Model Context Protocol服务器,连接外部工具和数据源。"
+        },
+        "promptManager": {
+          "title": "提示词管理",
+          "content": "创建和管理提示词模板,优化AI交互效果。"
+        },
+        "fileManager": {
+          "title": "文件管理",
+          "content": "管理对话中生成的文件和文档。"
+        },
+        "memoryManager": {
+          "title": "记忆管理",
+          "content": "管理用户和智能体的长期记忆,提升对话连贯性。"
+        },
+        "homeButton": {
+          "title": "返回对话",
+          "content": "点击Home按钮可以快速切换到对话系统页面。"
+        },
+        "mainArea": {
+          "title": "主要工作区域",
+          "content": "这是主要的工作区域,根据左侧选择的功能模块显示不同的内容和操作界面。"
+        }
+      },
+      "chat": {
+        "sidebar": {
+          "title": "对话侧边栏",
+          "content": "这是对话侧边栏,显示您的所有对话历史,可以快速切换和管理对话。"
+        },
+        "newConversation": {
+          "title": "新建对话",
+          "content": "点击这里开始一个新的对话。"
+        },
+        "workspaceButton": {
+          "title": "前往工作台",
+          "content": "点击这里可以切换到工作台,管理智能体、模型和工具。"
+        },
+        "mainArea": {
+          "title": "对话区域",
+          "content": "这是主要的对话区域,您可以在这里与AI进行交互,查看消息历史。"
+        },
+        "modeSelector": {
+          "title": "模式选择",
+          "content": "选择Agent模式进行智能对话,或选择Graph模式执行预定义的工作流。"
+        },
+        "inputArea": {
+          "title": "输入区域",
+          "content": "在这里输入您的消息,配置模型、工具等参数,然后发送开始对话。"
+        }
+      }
+    },
     "languageSwitcher": {
       "title": "语言",
       "english": "English",
