@@ -1,0 +1,62 @@
+{
+  "name": "welcome-workflow",
+  "description": "Welcome workflow: Demonstrating multi-node collaboration through a fixed welcome process",
+  "nodes": [
+    {
+      "name": "greeter",
+      "description": "Greeting node: Create welcome document",
+      "model_name": "claude-sonnet-4-5",
+      "system_prompt": "This is a Graph demonstration environment. You must strictly follow the requirements in the user prompt to create the welcome document, without any variation based on user input. Your task is to demonstrate Graph's file creation capabilities.",
+      "user_prompt": "Hello! Welcome to the MAG system's Graph workflow feature.\n\nPlease create a welcome document `WELCOME.md` with the following content:\n\n```markdown\n# Welcome to MAG System\n\nThank you for choosing MAG (MCP Agent Graph) intelligent agent system.\n\n## What is MAG?\n\nMAG is a powerful intelligent agent collaboration platform that enables:\n\n- AI agents to use various tools to complete complex tasks\n- Workflow orchestration for multiple agents to work together\n- Long-term memory capabilities, making agents smarter over time\n- MCP protocol support to connect external services and data sources\n\n## Quick Start\n\n1. **Explore Chat Features** - Chat with agents and experience tool invocation\n2. **Browse Agent List** - Learn about pre-configured professional agents\n3. **Try Workflows** - Use Graph to orchestrate complex multi-step tasks\n4. **Configure MCP Tools** - Connect external services to extend capabilities\n\n## About This Demo Workflow\n\nYou are experiencing a simple demonstration workflow with 3 nodes, showcasing:\n- Sequential execution of multiple nodes\n- File creation and transfer\n- Quality checking mechanism\n- Dynamic flow control\n\nThe following nodes will validate and enhance this welcome document.\n\n---\n\nEnjoy using the system!\n```\n\nPlease use the `create_file` tool to create this document, then simply reply \"Welcome document created\".",
+      "mcp_servers": [],
+      "system_tools": ["create_file"],
+      "max_iterations": 30,
+      "input_nodes": ["start"],
+      "output_nodes": ["checker"],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {"x": 100, "y": 100},
+      "level": 0
+    },
+    {
+      "name": "checker",
+      "description": "Validation node: Verify document completeness",
+      "model_name": "claude-sonnet-4-5",
+      "system_prompt": "This is a Graph demonstration environment. You must strictly follow the requirements to validate the document. The purpose of this demo is to showcase the handoffs dynamic flow control feature.",
+      "user_prompt": "Please verify that the welcome document has been created correctly.\n\nUse `read_file` to read the `WELCOME.md` file.\n\nValidation points:\n1. Does the file exist\n2. Does it contain the \"Welcome to MAG System\" title\n3. Does it include the Quick Start section\n\n**Demo Scenario**:\n\nUnder normal circumstances, the document should already be created correctly. However, to demonstrate the handoffs flow control capability, please make the following judgment:\n\n- If the document is complete and properly formatted: Use `transfer_to_finalizer` to proceed to the final node\n- If there are any issues with the document: Use `transfer_to_greeter` to recreate it\n\nPlease state the validation results first, then make your decision. This decision process demonstrates how Graph dynamically selects execution paths based on conditions.",
+      "mcp_servers": [],
+      "system_tools": ["read_file"],
+      "max_iterations": 20,
+      "input_nodes": ["greeter"],
+      "output_nodes": ["greeter", "finalizer"],
+      "handoffs": 1,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {"x": 300, "y": 100},
+      "level": 1
+    },
+    {
+      "name": "finalizer",
+      "description": "Completion node: Add system information and finish demo",
+      "model_name": "claude-sonnet-4-5",
+      "system_prompt": "This is a Graph demonstration environment. You must strictly follow the requirements to complete the final document supplementation.",
+      "user_prompt": "The welcome document has passed validation. Now please complete the final supplementation.\n\nUse `update_file` to append the following content to the end of the `WELCOME.md` document:\n\n```markdown\n\n---\n\n## Demo Workflow Execution Complete\n\nThis demonstration workflow contains 3 nodes:\n\n1. **greeter** - Create welcome document (using create_file)\n2. **checker** - Validate document completeness (using read_file + handoffs)\n3. **finalizer** - Add system information (using update_file)\n\nThrough this simple process, you have seen:\n- Multiple nodes collaborating in sequence\n- Information transfer between nodes through files\n- Conditional judgment using handoffs\n- Different file operation tools\n\nYou can view this workflow's structure in the Graph editor, or create your own workflows!\n\n**Project URL**: https://github.com/keta1930/mcp-agent-graph  \n**Documentation**: https://keta1930.github.io/mcp-agent-graph/\n```\n\nAfter completion, simply reply \"Demo workflow execution complete\".",
+      "mcp_servers": [],
+      "system_tools": ["update_file"],
+      "max_iterations": 30,
+      "input_nodes": ["checker"],
+      "output_nodes": ["end"],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {"x": 500, "y": 100},
+      "level": 2
+    }
+  ],
+  "end_template": "# Welcome Demo Complete\n\nThank you for experiencing the MAG Graph demo workflow!\n\n## Generated Documents\n\nCreated **WELCOME.md** welcome document, please view the complete content in the document list on the left.\n\n## This Demo Showcased\n\n- **Multi-node Collaboration** - 3 nodes executing tasks sequentially\n- **File Tools** - create_file, read_file, update_file\n- **Handoffs Mechanism** - Checker node dynamically selects paths after validation\n- **Fixed Process** - Same welcome process regardless of input\n\n## Next Steps\n\n- View the generated welcome document\n- Check the workflow structure in the Graph editor\n- Try creating your own agents and workflows\n- Explore more system features\n\nEnjoy using the system!",
+  "readme": "# Graph Demo Workflow\n\nThis is a welcome demonstration workflow that showcases Graph's core features through a fixed process.\n\n## Design Philosophy\n\nThis workflow works like a lobby receptionist - it executes the same welcome process regardless of what visitors say:\n\n1. Create welcome document\n2. Validate document completeness\n3. Add system information\n\n## Workflow Structure\n\n```\nstart → greeter → checker (handoffs) → finalizer → end\n                     ↓\n                  greeter (if validation fails)\n```\n\n## Node Details\n\n### 1. greeter (Greeting Node)\n\n- **Role**: Create standardized welcome document\n- **Tool**: create_file\n- **Content**: Fixed welcome message (defined in prompt)\n- **Feature**: Not affected by user input, always creates the same content\n\n### 2. checker (Validation Node) - Handoffs\n\n- **Role**: Verify document is created correctly\n- **Tool**: read_file\n- **Decision**: \n  - Validation passes → transfer_to_finalizer\n  - Issues found → transfer_to_greeter\n- **Feature**: Demonstrates dynamic flow control capability\n\n### 3. finalizer (Completion Node)\n\n- **Role**: Add workflow execution information\n- **Tool**: update_file\n- **Content**: Add demo description and system links\n\n## Showcased Features\n\n- **Fixed Process Execution** - Independent of user input\n- **Multi-node Collaboration** - 3 nodes working sequentially\n- **File Tool Chain** - create → read → update\n- **Handoffs Control** - Conditional judgment and path selection\n- **Demo Environment** - System prompts clearly explain demo purpose\n\n## Correspondence with Welcome Conversation\n\n| Welcome Conversation | Welcome Graph |\n|---------------------|---------------|\n| Fixed welcome messages | Fixed document content |\n| Demo Subagent | Demo Handoffs |\n| File creation example | Complete file operation chain |\n| Single Agent execution | Multi-node collaboration |\n\n## Usage\n\n1. Select this Graph\n2. Enter any content (or leave empty)\n3. Observe the automatic workflow execution\n4. View the generated WELCOME.md document\n\n## Design Points\n\n1. **System Prompt Purpose**\n   - Clearly states this is a demo environment\n   - Requires strict adherence to requirements\n   - Unaffected by user input\n\n2. **Content Fixation**\n   - All document content defined in prompts\n   - Ensures consistent execution results\n   - Facilitates demonstration and learning\n\n3. **Feature Demonstration Priority**\n   - Focus on showcasing Graph's technical capabilities\n   - Simple but complete workflow\n   - Clear execution logic\n\n---\n\nThis demo workflow is the best starting point for new users to understand Graph features!"
+}

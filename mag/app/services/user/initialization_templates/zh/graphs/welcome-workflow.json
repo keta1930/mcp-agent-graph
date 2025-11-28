@@ -1,0 +1,62 @@
+{
+  "name": "welcome-workflow",
+  "description": "欢迎工作流：通过固定的欢迎流程展示多节点协作功能",
+  "nodes": [
+    {
+      "name": "greeter",
+      "description": "欢迎节点：创建欢迎文档",
+      "model_name": "claude-sonnet-4-5",
+      "system_prompt": "这是一个Graph演示环境。你必须严格按照用户提示词中的要求创建欢迎文档，不要根据用户输入进行任何变化。你的任务是展示Graph的文件创建功能。",
+      "user_prompt": "你好！欢迎体验MAG系统的Graph工作流功能。\n\n请创建欢迎文档 `WELCOME.md`，内容如下：\n\n```markdown\n# 欢迎使用 MAG 系统\n\n感谢您选择 MAG (MCP Agent Graph) 智能代理系统。\n\n## 什么是 MAG？\n\nMAG 是一个强大的智能代理协作平台，它能够：\n\n- 让AI代理使用各种工具完成复杂任务\n- 通过工作流编排多个代理协同工作\n- 提供长期记忆能力，让代理越用越聪明\n- 支持MCP协议，连接外部服务和数据源\n\n## 快速开始\n\n1. **探索对话功能** - 与代理对话，体验工具调用能力\n2. **查看代理列表** - 了解系统中预置的专业代理\n3. **尝试工作流** - 使用Graph编排复杂的多步骤任务\n4. **配置MCP工具** - 连接外部服务扩展能力\n\n## 本演示工作流\n\n您正在体验的是一个简单的演示工作流，它包含3个节点，展示了：\n- 多节点依次执行\n- 文件创建和传递\n- 质量检查机制\n- 动态流程控制\n\n接下来的节点会验证和完善这个欢迎文档。\n\n---\n\n祝您使用愉快！\n```\n\n请使用 `create_file` 工具创建这个文档，然后简单回复\"欢迎文档已创建\"。",
+      "mcp_servers": [],
+      "system_tools": ["create_file"],
+      "max_iterations": 30,
+      "input_nodes": ["start"],
+      "output_nodes": ["checker"],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {"x": 100, "y": 100},
+      "level": 0
+    },
+    {
+      "name": "checker",
+      "description": "检查节点：验证文档完整性",
+      "model_name": "claude-sonnet-4-5",
+      "system_prompt": "这是一个Graph演示环境。你必须严格按照要求验证文档。这个演示的目的是展示handoffs动态流程控制功能。",
+      "user_prompt": "请验证欢迎文档是否已正确创建。\n\n使用 `read_file` 读取 `WELCOME.md` 文件。\n\n验证要点：\n1. 文件是否存在\n2. 是否包含\"欢迎使用 MAG 系统\"标题\n3. 是否包含快速开始章节\n\n**演示场景**：\n\n在正常情况下，文档应该已经正确创建。但为了演示handoffs的流程控制能力，请做以下判断：\n\n- 如果文档完整且格式正确：使用 `transfer_to_finalizer` 进入最终节点\n- 如果文档有任何问题：使用 `transfer_to_greeter` 返回重新创建\n\n请先说明验证结果，然后做出决策。这个决策过程展示了Graph如何根据条件动态选择执行路径。",
+      "mcp_servers": [],
+      "system_tools": ["read_file"],
+      "max_iterations": 20,
+      "input_nodes": ["greeter"],
+      "output_nodes": ["greeter", "finalizer"],
+      "handoffs": 1,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {"x": 300, "y": 100},
+      "level": 1
+    },
+    {
+      "name": "finalizer",
+      "description": "完成节点：添加系统信息并完成演示",
+      "model_name": "claude-sonnet-4-5",
+      "system_prompt": "这是一个Graph演示环境。你必须严格按照要求完成最后的文档补充工作。",
+      "user_prompt": "欢迎文档已通过验证。现在请完成最后的补充工作。\n\n使用 `update_file` 在 `WELCOME.md` 文档末尾添加以下内容：\n\n```markdown\n\n---\n\n## 演示工作流执行完成\n\n本演示工作流包含3个节点：\n\n1. **greeter** - 创建欢迎文档（使用 create_file）\n2. **checker** - 验证文档完整性（使用 read_file + handoffs）\n3. **finalizer** - 补充系统信息（使用 update_file）\n\n通过这个简单的流程，您已经看到了：\n- 多个节点依次协作执行\n- 节点间通过文件传递信息\n- 使用handoffs实现条件判断\n- 不同的文件操作工具\n\n您可以在Graph编辑器中查看这个工作流的结构，或者创建您自己的工作流！\n\n**项目地址**: https://github.com/keta1930/mcp-agent-graph  \n**在线文档**: https://keta1930.github.io/mcp-agent-graph/\n```\n\n完成后，简单回复\"演示工作流执行完成\"。",
+      "mcp_servers": [],
+      "system_tools": ["update_file"],
+      "max_iterations": 30,
+      "input_nodes": ["checker"],
+      "output_nodes": ["end"],
+      "handoffs": null,
+      "output_enabled": true,
+      "is_subgraph": false,
+      "subgraph_name": null,
+      "position": {"x": 500, "y": 100},
+      "level": 2
+    }
+  ],
+  "end_template": "# 欢迎演示完成\n\n感谢您体验MAG Graph演示工作流！\n\n## 生成的文档\n\n已创建 **WELCOME.md** 欢迎文档，请在左侧文档列表中查看完整内容。\n\n## 本次演示展示了\n\n- **多节点协作** - 3个节点依次执行完成任务\n- **文件工具** - create_file、read_file、update_file\n- **Handoffs机制** - checker节点验证后动态选择路径\n- **固定流程** - 无论输入什么都执行相同的欢迎流程\n\n## 下一步\n\n- 查看生成的欢迎文档\n- 在Graph编辑器中查看工作流结构\n- 尝试创建您自己的代理和工作流\n- 探索更多系统功能\n\n祝您使用愉快！",
+  "readme": "# Graph演示工作流\n\n这是一个欢迎演示工作流，通过固定的流程展示Graph的核心功能。\n\n## 设计理念\n\n这个工作流像大堂接待员一样，无论访客说什么，都会执行相同的欢迎流程：\n\n1. 创建欢迎文档\n2. 验证文档完整性\n3. 补充系统信息\n\n## 工作流结构\n\n```\nstart → greeter → checker (handoffs) → finalizer → end\n                     ↓\n                  greeter (如验证失败)\n```\n\n## 节点详解\n\n### 1. greeter（欢迎节点）\n\n- **职责**: 创建标准化的欢迎文档\n- **工具**: create_file\n- **内容**: 固定的欢迎信息（在提示词中定义）\n- **特点**: 不受用户输入影响，始终创建相同内容\n\n### 2. checker（检查节点）- Handoffs\n\n- **职责**: 验证文档是否正确创建\n- **工具**: read_file\n- **决策**: \n  - 验证通过 → transfer_to_finalizer\n  - 发现问题 → transfer_to_greeter\n- **特点**: 展示动态流程控制能力\n\n### 3. finalizer（完成节点）\n\n- **职责**: 添加工作流执行信息\n- **工具**: update_file\n- **内容**: 补充演示说明和系统链接\n\n## 展示的功能\n\n- **固定流程执行** - 不依赖用户输入\n- **多节点协作** - 3个节点依次工作\n- **文件工具链** - create → read → update\n- **Handoffs控制** - 条件判断和路径选择\n- **演示环境** - 系统提示词明确说明演示目的\n\n## 与欢迎对话的对应关系\n\n| 欢迎对话 | 欢迎Graph |\n|---------|----------|\n| 固定的欢迎消息 | 固定的文档内容 |\n| 演示Subagent | 演示Handoffs |\n| 创建文件示例 | 完整的文件操作链 |\n| 单个Agent执行 | 多个节点协作 |\n\n## 使用方法\n\n1. 选择这个Graph\n2. 输入任意内容（甚至可以留空）\n3. 观察工作流自动执行\n4. 查看生成的WELCOME.md文档\n\n## 设计要点\n\n1. **系统提示词的作用**\n   - 明确说明这是演示环境\n   - 要求严格按照要求执行\n   - 不受用户输入影响\n\n2. **内容固定化**\n   - 所有文档内容在提示词中定义\n   - 确保每次执行结果一致\n   - 便于演示和学习\n\n3. **功能展示优先**\n   - 重点展示Graph的技术能力\n   - 简单但完整的工作流程\n   - 清晰的执行逻辑\n\n---\n\n这个演示工作流是新用户了解Graph功能的最佳起点！"
+}
