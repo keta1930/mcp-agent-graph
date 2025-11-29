@@ -1,18 +1,23 @@
 import logging
-from fastapi import APIRouter, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Depends
 from typing import Dict, Any
 
 from app.services.mcp.mcp_service import mcp_service
 from app.services.graph.graph_service import graph_service
+from app.auth.dependencies import require_admin
+from app.models.auth_schema import CurrentUser
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["system"])
 
 @router.post("/system/shutdown", response_model=Dict[str, Any])
-async def shutdown_service(background_tasks: BackgroundTasks):
-    """优雅关闭MAG服务"""
-    logger.info("收到关闭服务请求")
+async def shutdown_service(
+    background_tasks: BackgroundTasks,
+    current_user: CurrentUser = Depends(require_admin)
+):
+    """优雅关闭MAG服务（需要管理员权限）"""
+    logger.info(f"收到关闭服务请求，操作者: {current_user.user_id}")
 
     try:
         active_conversations = list(graph_service.active_conversations.keys())
