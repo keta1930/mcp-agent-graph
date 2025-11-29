@@ -2,19 +2,13 @@
 
 ## For Administrators: Team Management
 
-**Location:** Admin Panel (user menu → Admin)
-
-As an administrator, your first steps should focus on team setup:
+Visit the Admin Panel at `http://localhost:9999/admin` to manage your team and invite collaborators.
 
 ### 1. Create Invite Codes
-
-Invite team members to join the platform:
 
 **Learn more:** [Create Invite Code](../core-components/team/invite-code.md)
 
 ### 2. Manage Team Members
-
-Control team access and permissions:
 
 **Learn more:** [Manage Your Team](../core-components/team/manage.md)
 
@@ -22,11 +16,9 @@ Control team access and permissions:
 
 ## For Users: Getting Started
 
-After logging in, explore the pre-configured resources and learn the platform:
-
 ### Available Resources
 
-The system provides ready-to-use resources:
+When you first register, the system automatically creates the following resources based on your language:
 
 | Resource | Count | What You Can Do |
 |----------|-------|-----------------|
