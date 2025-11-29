@@ -1,1 +1,0 @@
-Long-term memory persistence.
