@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from app.api.routes import router
@@ -120,6 +122,43 @@ app.include_router(router, prefix="/api")
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "app_name": settings.APP_NAME, "version": settings.APP_VERSION}
+
+
+# 静态文件服务配置
+FRONTEND_DIST_DIR = Path(__file__).parent.parent / "frontend" / "dist"
+
+# 如果前端构建文件存在，则提供静态文件服务
+if FRONTEND_DIST_DIR.exists() and FRONTEND_DIST_DIR.is_dir():
+    logger.info(f"前端静态文件目录存在: {FRONTEND_DIST_DIR}")
+
+    # 挂载静态资源目录（CSS, JS, images等）
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST_DIR / "assets")), name="assets")
+
+    # 处理所有非API路由，返回index.html（支持前端路由）
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """
+        为所有非API路由提供前端应用
+        支持前端单页应用的客户端路由
+        """
+        # 如果请求的是具体文件且存在，直接返回
+        file_path = FRONTEND_DIST_DIR / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+
+        # 否则返回 index.html，让前端路由处理
+        index_path = FRONTEND_DIST_DIR / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+
+        # 如果 index.html 不存在，返回 404
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Frontend not found"}
+        )
+else:
+    logger.warning(f"前端静态文件目录不存在: {FRONTEND_DIST_DIR}")
+    logger.warning("如需使用集成前端，请先运行 'npm run build' 构建前端应用")
 
 
 if __name__ == "__main__":
