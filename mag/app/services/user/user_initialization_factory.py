@@ -115,21 +115,24 @@ class UserInitializationFactory:
     async def _create_default_models(self, user_id: str, language: str = "en") -> Dict[str, Any]:
         """创建默认模型配置（从 JSON 文件加载）"""
         try:
+            from app.services.model.model_service import model_service
+
             models_data = self._load_json_templates(language, "models")
 
             created_models = []
             for model_data in models_data:
                 try:
-                    result = await self.mongodb_client.model_config_repository.create_model(
+                    # 使用 ModelService 创建模型
+                    success = await model_service.add_model(
                         user_id=user_id,
                         model_config=model_data
                     )
 
-                    if result.get("success"):
+                    if success:
                         created_models.append(model_data["name"])
                         logger.info(f"为用户 {user_id} 创建模型: {model_data['name']}")
                     else:
-                        logger.warning(f"创建模型失败: {model_data['name']}, {result.get('message')}")
+                        logger.warning(f"创建模型失败: {model_data['name']}")
 
                 except Exception as e:
                     logger.error(f"创建模型 {model_data.get('name', 'unknown')} 时出错: {str(e)}")
@@ -147,21 +150,25 @@ class UserInitializationFactory:
     async def _create_default_agents(self, user_id: str, language: str = "en") -> Dict[str, Any]:
         """创建默认 Agent（从 JSON 文件加载）"""
         try:
+            from app.services.agent.agent_service import agent_service
+
             agents_data = self._load_json_templates(language, "agents")
 
             created_agents = []
             for agent_data in agents_data:
                 try:
-                    agent_id = await self.mongodb_client.agent_repository.create_agent(
+                    # 使用 AgentService 创建 Agent（会自动创建 memory 文档）
+                    result = await agent_service.create_agent(
                         agent_config=agent_data,
                         user_id=user_id
                     )
 
-                    if agent_id:
-                        created_agents.append(agent_data["name"])
-                        logger.info(f"为用户 {user_id} 创建 Agent: {agent_data['name']}")
+                    if result.get("success"):
+                        agent_name = result.get("agent_name")
+                        created_agents.append(agent_name)
+                        logger.info(f"为用户 {user_id} 创建 Agent: {agent_name}")
                     else:
-                        logger.warning(f"创建 Agent 失败: {agent_data['name']}")
+                        logger.warning(f"创建 Agent 失败: {agent_data['name']}, {result.get('error')}")
 
                 except Exception as e:
                     logger.error(f"创建 Agent {agent_data.get('name', 'unknown')} 时出错: {str(e)}")
@@ -179,14 +186,17 @@ class UserInitializationFactory:
     async def _create_default_graphs(self, user_id: str, language: str = "en") -> Dict[str, Any]:
         """创建默认 Graph（从 JSON 文件加载）"""
         try:
+            from app.services.graph.graph_service import graph_service
+
             graphs_data = self._load_json_templates(language, "graphs")
 
             created_graphs = []
             for graph_data in graphs_data:
                 try:
-                    success = await self.mongodb_client.graph_config_repository.create_graph(
+                    # 使用 GraphService 创建 Graph
+                    success = await graph_service.save_graph(
                         graph_name=graph_data["name"],
-                        graph_config=graph_data,
+                        config=graph_data,
                         user_id=user_id
                     )
 
@@ -213,6 +223,7 @@ class UserInitializationFactory:
         """创建默认 Prompt（从 JSON 文件加载）"""
         try:
             from app.models.prompt_schema import PromptCreate
+            from app.services.prompt.prompt_service import prompt_service
 
             prompts_data = self._load_json_templates(language, "prompts")
 
@@ -220,7 +231,8 @@ class UserInitializationFactory:
             for prompt_data in prompts_data:
                 try:
                     prompt_create = PromptCreate(**prompt_data)
-                    result = await self.mongodb_client.prompt_repository.create_prompt(
+                    # 使用 PromptService 创建 Prompt
+                    result = await prompt_service.create_prompt(
                         prompt_data=prompt_create,
                         user_id=user_id
                     )
