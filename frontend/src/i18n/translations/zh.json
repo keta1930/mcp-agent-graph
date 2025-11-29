@@ -581,7 +581,7 @@
     },
     "memoryManager": {
       "title": "记忆管理",
-      "memoriesCount": "{{count}} 个记忆",
+      "memoriesCount": "{{count}} 个集合",
       "itemsCount": "{{count}} 条记忆",
       "searchPlaceholder": "按所有者ID或类型搜索...",
       "noMemories": "暂无记忆",
