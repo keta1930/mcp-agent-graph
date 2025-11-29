@@ -14,7 +14,7 @@ MAG（多智能体图）是一个集成平台，用于构建、编排和管理 A
 
 三步开始使用 MAG：
 
-1. **[安装 MAG](first-steps/install.md)** - 在你的系统上部署平台
+1. **[安装 MAG](first-steps/install.md)** - 在您的系统上部署平台
 2. **[创建第一个智能体](core-components/agent/first-agent.md)** - 几分钟内构建一个简单智能体
 3. **[设计工作流](core-components/graph/first-graph.md)** - 将多个智能体连接成工作流
 
