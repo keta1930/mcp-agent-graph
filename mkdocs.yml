@@ -289,7 +289,6 @@ nav:
       - Export: core-components/conversation/export.md
 
     - Team:
-      - core-components/team/index.md
       - Invite Code: core-components/team/invite-code.md
       - Manage Team: core-components/team/manage.md
 
