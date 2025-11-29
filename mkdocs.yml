@@ -51,6 +51,7 @@ theme:
     - content.tabs.link
     - content.tooltips
     - navigation.expand
+    - navigation.indexes
     - navigation.instant
     - navigation.instant.prefetch
     - navigation.instant.progress
@@ -64,7 +65,6 @@ theme:
     - search.share
     - search.suggest
     - toc.follow
-    - toc.integrate
 
 # Plugins
 plugins:
@@ -85,63 +85,58 @@ plugins:
           build: true
           nav_translations:
             Home: 首页
-            First Steps: 快速开始
-            Introduction: 介绍
             Installation: 安装
-            Quickstart: 快速入门
+            Quickstart: 快速开始
             Core Components: 核心组件
             Agent: 智能体
-            Build Your First Agent: 构建你的第一个智能体
-            Agent Config: 智能体配置
-            Agent Loop: 智能体循环
-            Multi-Agent & Sub-agent: 多智能体与子智能体
-            Agent Memory: 智能体记忆
-            Agent Handoffs with File Tools: 智能体与文件工具的交接
-            Create Agent with Agent: 使用智能体创建智能体
-            Graph (Workflow): 图工作流
-            Build Your First Graph: 构建你的第一个图
-            Graph Config: 图配置
-            Graph Execution: 图执行
-            SubGraph: 子图
-            Task: 任务
-            Build Complex Workflows: 构建复杂工作流
+            First Agent: First Agent
+            Config: Config
+            Loop: Loop
+            Multi-Agent: Multi-Agent
+            Memory: Memory
+            Agent Creator: Agent Creator
+            Graph: 图工作流
+            First Graph: First Graph
+            Execution: Execution
+            SubGraph: SubGraph
+            Task: Task
+            Handoffs: Handoffs
+            Complex Workflows: Complex Workflows
             Model: 模型
-            Register Your Model: 注册你的模型
-            Multi-model Coming Soon: 多模型即将推出
-            Memory: 记忆
-            Short-term Memory: 短期记忆
-            Long-term Memory: 长期记忆
-            User Memory: 用户记忆
-            MCP: MCP协议
-            Add Your First MCP Server: 添加你的第一个MCP服务器
-            MCP Inspector: MCP检查器
-            Build MCP with Agent: 使用智能体构建MCP
-            When to Use MCP: 何时使用MCP
-            Built-in Tools: 内置工具
-            Sub-agent: 子智能体
-            File Tool: 文件工具
-            Agent Creator: 智能体创建器
-            Graph Designer: 图设计器
-            MCP Builder: MCP构建器
-            Prompt Generator: 提示词生成器
-            Task Manager: 任务管理器
-            Memory Tool: 记忆工具
-            System Operations: 系统操作
-            Prompt Center: 提示词中心
-            Create and Edit Prompts: 创建和编辑提示词
-            Work with Agents: 与智能体协作
+            Register Model: Register Model
+            Multi-model: Multi-model
+            Short-term: Short-term
+            Long-term: Long-term
+            Agent Memory: Agent Memory
+            User Memory: User Memory
+            MCP: MCP
+            First Server: First Server
+            Inspector: Inspector
+            MCP Builder: MCP Builder
+            When to Use: When to Use
+            Tools: 内置工具
+            Sub-agent: Sub-agent
+            File Tool: File Tool
+            Graph Designer: Graph Designer
+            Prompt Generator: Prompt Generator
+            Task Manager: Task Manager
+            Memory Tool: Memory Tool
+            System Operations: System Operations
+            Prompt: 提示词中心
+            Create & Edit: Create & Edit
+            Work with Agents: Work with Agents
             Conversation: 对话
-            Conversation Share: 对话分享
-            Conversation Export: 对话导出
-            Multi-User & Team: 多用户与团队
-            Create Invite Code: 创建邀请码
-            Manage Your Team: 管理你的团队
-            Future Roadmap: 未来规划
-            Multimodal Support: 多模态支持
-            Agent Skills and Context: 智能体技能与上下文
-            Team Resource Sharing: 团队资源共享
-            User Analytics: 用户分析
-            External Agent API: 外部智能体API
+            Share: Share
+            Export: Export
+            Team: 多用户与团队
+            Invite Code: Invite Code
+            Manage Team: Manage Team
+            Roadmap: 未来规划
+            Multimodal: Multimodal
+            Skills & Context: Skills & Context
+            Resource Sharing: Resource Sharing
+            Analytics: Analytics
+            External API: External API
   - git-revision-date-localized:
       enable_creation_date: true
       type: datetime
@@ -230,55 +225,48 @@ extra_javascript:
 # Page tree
 nav:
   - Home: index.md
-
-  - First Steps:
-    - first-steps/index.md
-    - Introduction: first-steps/intro.md
-    - Installation: first-steps/install.md
-    - Quickstart: first-steps/quickstart.md
+  - Installation: first-steps/install.md
+  - Quickstart: first-steps/quickstart.md
 
   - Core Components:
 
     - Agent:
       - core-components/agent/index.md
-      - Build Your First Agent: core-components/agent/first-agent.md
-      - Agent Config: core-components/agent/config.md
-      - Agent Loop: core-components/agent/loop.md
-      - Multi-Agent & Sub-agent: core-components/agent/multi-agent.md
-      - Agent Memory: core-components/agent/memory.md
-      - Agent Handoffs with File Tools: core-components/agent/handoffs.md
-      - Create Agent with Agent: core-components/agent/agent-creator.md
+      - First Agent: core-components/agent/first-agent.md
+      - Config: core-components/agent/config.md
+      - Loop: core-components/agent/loop.md
+      - Multi-Agent: core-components/agent/multi-agent.md
+      - Memory: core-components/agent/memory.md
+      - Agent Creator: core-components/agent/agent-creator.md
 
-    - Graph (Workflow):
+    - Graph:
       - core-components/graph/index.md
-      - Build Your First Graph: core-components/graph/first-graph.md
-      - Graph Config: core-components/graph/config.md
-      - Graph Execution: core-components/graph/execution.md
+      - First Graph: core-components/graph/first-graph.md
+      - Config: core-components/graph/config.md
+      - Execution: core-components/graph/execution.md
       - SubGraph: core-components/graph/subgraph.md
       - Task: core-components/graph/task.md
-      - Build Complex Workflows: core-components/graph/complex-workflows.md
+      - Handoffs: core-components/graph/handoffs.md
+      - Complex Workflows: core-components/graph/complex-workflows.md
 
     - Model:
-      - core-components/model/index.md
-      - Register Your Model: core-components/model/register.md
-      - Multi-model Coming Soon: core-components/model/multi-model.md
+      - Register Model: core-components/model/register.md
+      - Multi-model: core-components/model/multi-model.md
 
     - Memory:
-      - core-components/memory/index.md
-      - Short-term Memory: core-components/memory/short-term.md
-      - Long-term Memory:
-        - core-components/memory/long-term/index.md
-        - Agent Memory: core-components/memory/long-term/agent-memory.md
-        - User Memory: core-components/memory/long-term/user-memory.md
+        - Short-term: core-components/memory/short-term.md
+        - Long-term:
+            - Agent Memory: core-components/memory/long-term/agent-memory.md
+            - User Memory: core-components/memory/long-term/user-memory.md
 
     - MCP:
       - core-components/mcp/index.md
-      - Add Your First MCP Server: core-components/mcp/first-server.md
-      - MCP Inspector: core-components/mcp/inspector.md
-      - Build MCP with Agent: core-components/mcp/build-with-agent.md
-      - When to Use MCP: core-components/mcp/when-to-use.md
+      - First Server: core-components/mcp/first-server.md
+      - Inspector: core-components/mcp/inspector.md
+      - MCP Builder: core-components/mcp/build-with-agent.md
+      - When to Use: core-components/mcp/when-to-use.md
 
-    - Built-in Tools:
+    - Tools:
       - core-components/tools/index.md
       - Sub-agent: core-components/tools/sub-agent.md
       - File Tool: core-components/tools/file-tool.md
@@ -290,25 +278,25 @@ nav:
       - Memory Tool: core-components/tools/memory-tool.md
       - System Operations: core-components/tools/system-operations.md
 
-    - Prompt Center:
+    - Prompt:
       - core-components/prompt/index.md
-      - Create and Edit Prompts: core-components/prompt/create-edit.md
+      - Create & Edit: core-components/prompt/create-edit.md
       - Work with Agents: core-components/prompt/work-with-agents.md
 
     - Conversation:
       - core-components/conversation/index.md
-      - Conversation Share: core-components/conversation/share.md
-      - Conversation Export: core-components/conversation/export.md
+      - Share: core-components/conversation/share.md
+      - Export: core-components/conversation/export.md
 
-    - Multi-User & Team:
+    - Team:
       - core-components/team/index.md
-      - Create Invite Code: core-components/team/invite-code.md
-      - Manage Your Team: core-components/team/manage.md
+      - Invite Code: core-components/team/invite-code.md
+      - Manage Team: core-components/team/manage.md
 
-  - Future Roadmap:
+  - Roadmap:
     - roadmap/index.md
-    - Multimodal Support: roadmap/multimodal.md
-    - Agent Skills and Context: roadmap/skills-context.md
-    - Team Resource Sharing: roadmap/resource-sharing.md
-    - User Analytics: roadmap/analytics.md
-    - External Agent API: roadmap/external-api.md
+    - Multimodal: roadmap/multimodal.md
+    - Skills & Context: roadmap/skills-context.md
+    - Resource Sharing: roadmap/resource-sharing.md
+    - Analytics: roadmap/analytics.md
+    - External API: roadmap/external-api.md
