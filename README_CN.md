@@ -1,8 +1,12 @@
 [English](README.md) | 中文
 
-📚 [文档](https://keta1930.github.io/mcp-agent-graph/#) | 📦 [PyPI 包](https://pypi.org/project/mcp-agent-graph/)
-
 MCP Agent Graph 是一个基于上下文工程（Context Engineering）理念构建的多智能体系统（Multi-Agent System）。集成了 Sub-agent、长期记忆、MCP、Agent-based Workflow 等功能。通过将上下文工程的最佳实践融入可视化的开发体验，MCP Agent Graph 让开发者能够快速构建、测试和部署复杂的多智能体应用。
+
+| | |
+|---|---|
+| **在线体验** | **https://agent-graph.com/** |
+| **邀请码** | **TEAM-QI10IT** |
+| **文档** | **https://keta1930.github.io/mcp-agent-graph/** |
 
 ## 目录
 
