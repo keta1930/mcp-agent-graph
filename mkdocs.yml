@@ -18,16 +18,16 @@ theme:
   palette:
     # Light mode
     - scheme: default
-      primary: custom
-      accent: custom
+      primary: deep orange
+      accent: deep orange
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
 
     # Dark mode
     - scheme: slate
-      primary: custom
-      accent: custom
+      primary: deep orange
+      accent: deep orange
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -203,7 +203,7 @@ extra:
 
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/yourusername/mcp-agent-graph-p
+      link: https://github.com/keta1930/mcp-agent-graph
       name: GitHub Repository
 
 # Extra CSS and JavaScript
