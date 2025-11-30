@@ -125,7 +125,7 @@ async def health_check():
 
 
 # 静态文件服务配置
-FRONTEND_DIST_DIR = Path(__file__).parent.parent / "frontend" / "dist"
+FRONTEND_DIST_DIR = Path(__file__).parent / "dist"
 
 # 如果前端构建文件存在，则提供静态文件服务
 if FRONTEND_DIST_DIR.exists() and FRONTEND_DIST_DIR.is_dir():
