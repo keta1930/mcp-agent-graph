@@ -191,23 +191,15 @@ markdown_extensions:
 extra:
   alternate:
     - name: English
-      link: /en/
+      link: /mcp-agent-graph/
       lang: en
     - name: 中文
-      link: /zh/
+      link: /mcp-agent-graph/zh/
       lang: zh
 
   version:
     provider: mike
     default: stable
-
-  alternate:
-    - name: English
-      link: /en/
-      lang: en
-    - name: 中文
-      link: /zh/
-      lang: zh
 
   social:
     - icon: fontawesome/brands/github
