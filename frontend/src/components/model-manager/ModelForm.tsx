@@ -196,30 +196,6 @@ const ModelForm: React.FC<ModelFormProps> = ({
           <Input />
         </Form.Item>
 
-        {/* Provider 选择器 */}
-        <Form.Item
-          name="provider"
-          label={t('pages.modelManager.form.provider')}
-          initialValue="openai"
-          rules={[{ required: true, message: t('pages.modelManager.form.providerRequired') }]}
-        >
-          <Select placeholder={t('pages.modelManager.form.providerPlaceholder')}>
-            <Select.Option value="openai">OpenAI</Select.Option>
-          </Select>
-        </Form.Item>
-
-        {/* Model Type 选择器 */}
-        <Form.Item
-          name="model_type"
-          label={t('pages.modelManager.form.modelType')}
-          initialValue="llm"
-          rules={[{ required: true, message: t('pages.modelManager.form.modelTypeRequired') }]}
-        >
-          <Select placeholder={t('pages.modelManager.form.modelTypePlaceholder')}>
-            <Select.Option value="llm">{t('pages.modelManager.form.llmType')}</Select.Option>
-          </Select>
-        </Form.Item>
-
         <Form.Item
           name="base_url"
           label={t('pages.modelManager.form.baseUrlLabel')}
@@ -245,6 +221,30 @@ const ModelForm: React.FC<ModelFormProps> = ({
           rules={[{ required: true, message: t('pages.modelManager.form.modelIdentifierRequired') }]}
         >
           <Input placeholder={t('pages.modelManager.form.modelIdentifierPlaceholder')} />
+        </Form.Item>
+
+        {/* Provider 选择器 */}
+        <Form.Item
+          name="provider"
+          label={t('pages.modelManager.form.provider')}
+          initialValue="openai"
+          rules={[{ required: true, message: t('pages.modelManager.form.providerRequired') }]}
+        >
+          <Select placeholder={t('pages.modelManager.form.providerPlaceholder')}>
+            <Select.Option value="openai">OpenAI</Select.Option>
+          </Select>
+        </Form.Item>
+
+        {/* Model Type 选择器 */}
+        <Form.Item
+          name="model_type"
+          label={t('pages.modelManager.form.modelType')}
+          initialValue="llm"
+          rules={[{ required: true, message: t('pages.modelManager.form.modelTypeRequired') }]}
+        >
+          <Select placeholder={t('pages.modelManager.form.modelTypePlaceholder')}>
+            <Select.Option value="llm">{t('pages.modelManager.form.llmType')}</Select.Option>
+          </Select>
         </Form.Item>
 
         {/* 高级配置 */}
