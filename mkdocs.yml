@@ -91,6 +91,7 @@ plugins:
             Agent: 智能体
             First Agent: First Agent
             Config: Config
+            Import: Import
             Loop: Loop
             Multi-Agent: Multi-Agent
             Memory: Memory
@@ -226,6 +227,7 @@ nav:
       - core-components/agent/index.md
       - First Agent: core-components/agent/first-agent.md
       - Config: core-components/agent/config.md
+      - Import: core-components/agent/import.md
       - Loop: core-components/agent/loop.md
       - Multi-Agent: core-components/agent/multi-agent.md
       - Memory: core-components/agent/memory.md
