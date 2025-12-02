@@ -44,7 +44,7 @@ MCP Agent Graph is a Multi-Agent System built on the principles of Context Engin
 |-----------|-------------|
 | Operating System | Linux, macOS, or Windows (requires WSL2) |
 | Docker | Version 20.10+ with Docker Compose |
-| Python | Version 3.10+ |
+| Python | Version 3.11+ |
 | Memory | Minimum 4GB (8GB recommended) |
 | Storage | At least 10GB available space |
 

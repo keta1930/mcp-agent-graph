@@ -44,7 +44,7 @@ MCP Agent Graph 是一个基于上下文工程（Context Engineering）理念构
 |------|------|
 | 操作系统 | Linux、macOS 或 Windows (需要 WSL2) |
 | Docker | 20.10+ 版本,包含 Docker Compose |
-| Python | 3.10+ 版本 |
+| Python | 3.11+ 版本 |
 | 内存 | 最低 4GB (推荐 8GB) |
 | 存储空间 | 至少 10GB 可用空间 |
 
