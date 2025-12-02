@@ -22,7 +22,6 @@ Get started with MAG in three steps:
 
 | Topic | Description |
 |-------|-------------|
-| [Introduction](first-steps/intro.md) | Understand core concepts and features |
 | [Quickstart Guide](first-steps/quickstart.md) | Complete setup and first project |
 | [Agent System](core-components/agent/index.md) | Create and configure agents |
 | [Graph Workflows](core-components/graph/index.md) | Design multi-agent workflows |
