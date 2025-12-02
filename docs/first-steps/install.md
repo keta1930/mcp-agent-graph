@@ -8,7 +8,7 @@ Before installation, ensure your system meets these requirements:
 |-----------|-------------|
 | Operating System | Linux, macOS, or Windows (with WSL2) |
 | Docker | Version 20.10+ with Docker Compose |
-| Python | Version 3.10+ |
+| Python | Version 3.11+ |
 | Memory | Minimum 4GB RAM (8GB recommended) |
 | Storage | At least 10GB free disk space |
 
