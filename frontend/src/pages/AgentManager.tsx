@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Layout, Button, Input, Tag, Spin, Space, Modal, Form, Typography } from 'antd';
 import { Plus, RefreshCw, Bot, Search as SearchIcon, Upload, Trash2 } from 'lucide-react';
-import { AgentConfig } from '../services/agentService';
+import { AgentConfig, importAgents } from '../services/agentService';
 import { useT } from '../i18n/hooks';
 import { useAgentManager } from '../hooks/useAgentManager';
 import { useAgentBatchDelete } from '../hooks/useAgentBatchDelete';
@@ -136,7 +136,6 @@ const AgentManager: React.FC = () => {
 
       setImporting(true);
       try {
-        const { importAgents } = await import('../services/agentService');
         await importAgents(file);
         Modal.success({
           title: t('pages.agentManager.import.success'),
