@@ -22,7 +22,6 @@ MAG（多智能体图）是一个集成平台，用于构建、编排和管理 A
 
 | 主题 | 说明 |
 |-----|------|
-| [介绍](first-steps/intro.md) | 理解核心概念和功能 |
 | [快速入门指南](first-steps/quickstart.md) | 完成设置和第一个项目 |
 | [智能体系统](core-components/agent/index.md) | 创建和配置智能体 |
 | [图工作流](core-components/graph/index.md) | 设计多智能体工作流 |
