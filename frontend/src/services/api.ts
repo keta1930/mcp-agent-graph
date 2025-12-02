@@ -2,8 +2,8 @@
 import axios from 'axios';
 import { getToken, getRefreshToken, setToken, setRefreshToken, removeToken } from '../utils/auth';
 
-// 根据实际后端地址调整
-const API_BASE_URL = 'http://localhost:9999/api';
+// API 基础 URL（空字符串表示使用相对路径，自动使用当前域名）
+const API_BASE_URL = '';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
