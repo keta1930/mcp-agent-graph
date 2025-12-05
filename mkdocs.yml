@@ -240,11 +240,11 @@ nav:
       - First Graph: core-components/graph/first-graph.md
       - Config: core-components/graph/config.md
       - Data Passing: core-components/graph/data-passing.md
-      - Execution: core-components/graph/execution.md
-      - SubGraph: core-components/graph/subgraph.md
-      - Task: core-components/graph/task.md
       - Handoffs: core-components/graph/handoffs.md
+      - SubGraph: core-components/graph/subgraph.md
+      - Execution: core-components/graph/execution.md
       - Complex Workflows: core-components/graph/complex-workflows.md
+      - Task: core-components/graph/task.md
 
     - Model:
       - Register Model: core-components/model/register.md
