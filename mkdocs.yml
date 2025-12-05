@@ -102,6 +102,7 @@ plugins:
             SubGraph: SubGraph
             Task: Task
             Handoffs: Handoffs
+            Data Passing: Data Passing
             Complex Workflows: Complex Workflows
             Model: 模型
             Register Model: Register Model
@@ -242,6 +243,7 @@ nav:
       - SubGraph: core-components/graph/subgraph.md
       - Task: core-components/graph/task.md
       - Handoffs: core-components/graph/handoffs.md
+      - Data Passing: core-components/graph/data-passing.md
       - Complex Workflows: core-components/graph/complex-workflows.md
 
     - Model:
