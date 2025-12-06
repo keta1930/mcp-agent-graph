@@ -178,7 +178,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
     <div
       style={{
         width: '280px',
-        minHeight: '100vh',
+        height: '100vh',
         background: 'linear-gradient(to bottom, #faf8f5 0%, #f5f3f0 100%)',
         borderRight: '1px solid rgba(139, 115, 85, 0.12)',
         boxShadow: '2px 0 8px rgba(139, 115, 85, 0.06)',
