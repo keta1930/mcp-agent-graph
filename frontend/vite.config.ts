@@ -24,6 +24,14 @@ export default defineConfig({
       '/admin': {
         target: 'http://localhost:9999',
         changeOrigin: true,
+        bypass: (req, res, options) => {
+          // 如果是浏览器导航请求(Accept header包含text/html),返回null让Vite处理
+          // 这样前端路由 /admin 就可以正常工作
+          const proxyReq = req;
+          if (proxyReq.headers.accept?.includes('text/html')) {
+            return '/index.html';
+          }
+        },
       },
       '/conversations': {
         target: 'http://localhost:9999',
