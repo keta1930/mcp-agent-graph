@@ -32,8 +32,8 @@ class StreamAccumulator:
             if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
                 self.accumulated_reasoning += delta.reasoning_content
 
-            # 累积reasoning_content
-            if hasattr(delta, 'reasoning') and delta.reasonin:
+            # 累积reasoning
+            if hasattr(delta, 'reasoning') and delta.reasoning:
                 self.accumulated_reasoning += delta.reasoning
 
             # 累积tool_calls
