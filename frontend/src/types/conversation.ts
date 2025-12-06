@@ -121,6 +121,7 @@ export interface SSEMessage {
     delta?: {
       content?: string;
       reasoning_content?: string;
+      reasoning?: string; // OpenRouter format
       tool_calls?: ToolCall[];
     };
     finish_reason?: 'stop' | 'tool_calls' | null;

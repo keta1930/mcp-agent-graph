@@ -279,23 +279,24 @@ export function useSSEConnection() {
           // 处理带 task_id 的普通消息（Sub Agent 的思考和工具调用）
           if (message.task_id && message.choices && message.choices[0]) {
             const delta = message.choices[0].delta;
-            
-            // 处理 Sub Agent 的 reasoning_content
-            if (delta?.reasoning_content) {
+
+            // 处理 Sub Agent 的 reasoning_content 和 reasoning
+            if (delta?.reasoning_content || delta?.reasoning) {
+              const reasoningText = delta?.reasoning_content || delta?.reasoning || '';
               const currentReasoningBlockIndex = blocks.findIndex(block =>
                 block.type === 'reasoning' && !block.isComplete && block.taskId === message.task_id
               );
 
               if (currentReasoningBlockIndex === -1) {
                 // 创建新的推理块（属于 Task）
-                const newReasoningBlock = createStreamingBlock('reasoning', delta.reasoning_content);
+                const newReasoningBlock = createStreamingBlock('reasoning', reasoningText);
                 newReasoningBlock.taskId = message.task_id;
                 blocks = [...blocks, newReasoningBlock];
               } else {
                 // 更新现有推理块
                 blocks = blocks.map((block, index) =>
                   index === currentReasoningBlockIndex
-                    ? { ...block, content: block.content + delta.reasoning_content }
+                    ? { ...block, content: block.content + reasoningText }
                     : block
                 );
               }
@@ -392,21 +393,22 @@ export function useSSEConnection() {
           if (message.choices && message.choices[0]) {
             const delta = message.choices[0].delta;
 
-            // 处理reasoning_content（推理内容）
-            if (delta?.reasoning_content) {
+            // 处理reasoning_content和reasoning（推理内容）
+            if (delta?.reasoning_content || delta?.reasoning) {
+              const reasoningText = delta?.reasoning_content || delta?.reasoning || '';
               const currentReasoningBlockIndex = blocks.findIndex(block =>
                 block.type === 'reasoning' && !block.isComplete
               );
 
               if (currentReasoningBlockIndex === -1) {
                 // 创建新的推理块
-                const newReasoningBlock = createStreamingBlock('reasoning', delta.reasoning_content);
+                const newReasoningBlock = createStreamingBlock('reasoning', reasoningText);
                 blocks = [...blocks, newReasoningBlock];
               } else {
                 // 更新现有推理块
                 blocks = blocks.map((block, index) =>
                   index === currentReasoningBlockIndex
-                    ? { ...block, content: block.content + delta.reasoning_content }
+                    ? { ...block, content: block.content + reasoningText }
                     : block
                 );
               }
