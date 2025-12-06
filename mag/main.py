@@ -116,7 +116,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 
 # 注册路由
-app.include_router(router)
+app.include_router(router, prefix="/api")
 
 
 @app.get("/health")

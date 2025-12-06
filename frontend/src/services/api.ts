@@ -3,7 +3,7 @@ import axios from 'axios';
 import { getToken, getRefreshToken, setToken, setRefreshToken, removeToken } from '../utils/auth';
 
 // API 基础 URL（空字符串表示使用相对路径，自动使用当前域名）
-const API_BASE_URL = '';
+const API_BASE_URL = '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
