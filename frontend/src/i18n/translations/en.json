@@ -1084,47 +1084,15 @@
       "workspace": {
         "sidebar": {
           "title": "Sidebar Navigation",
-          "content": "This is the workspace sidebar, containing quick access to all core functional modules."
-        },
-        "agentManager": {
-          "title": "Agent Manager",
-          "content": "Manage your AI agents, configure capabilities and tools. Click to enter the agent management page."
-        },
-        "graphEditor": {
-          "title": "Graph Editor",
-          "content": "Design and execute complex workflow graphs to achieve task automation."
-        },
-        "modelManager": {
-          "title": "Model Manager",
-          "content": "Manage and configure multiple AI models from different providers."
-        },
-        "systemTools": {
-          "title": "System Tools",
-          "content": "Browse and use built-in system tools to extend agent capabilities."
-        },
-        "mcpManager": {
-          "title": "MCP Manager",
-          "content": "Integrate Model Context Protocol servers to connect external tools and data sources."
-        },
-        "promptManager": {
-          "title": "Prompt Manager",
-          "content": "Create and manage prompt templates to optimize AI interactions."
-        },
-        "fileManager": {
-          "title": "File Manager",
-          "content": "Manage files and documents generated during conversations."
-        },
-        "memoryManager": {
-          "title": "Memory Manager",
-          "content": "Manage long-term memories for users and agents to improve conversation continuity."
+          "content": "This is the workspace sidebar, containing quick access to all core modules including agents, graphs, models, tools, MCP, prompts, files, and memory."
         },
         "homeButton": {
           "title": "Back to Chat",
-          "content": "Click the Home button to quickly switch to the chat system page."
+          "content": "Click the Home button to quickly switch to the chat system and start interacting with AI."
         },
         "mainArea": {
           "title": "Main Work Area",
-          "content": "This is the main work area, displaying different content and operation interfaces based on the selected functional module."
+          "content": "This is the main work area, displaying different content and operation interfaces based on the selected functional module. You can configure and manage various resources here."
         }
       },
       "chat": {
@@ -1143,14 +1111,6 @@
         "mainArea": {
           "title": "Conversation Area",
           "content": "This is the main conversation area where you can interact with AI and view message history."
-        },
-        "modeSelector": {
-          "title": "Mode Selection",
-          "content": "Choose Agent mode for intelligent conversation, or Graph mode to execute predefined workflows."
-        },
-        "inputArea": {
-          "title": "Input Area",
-          "content": "Enter your message here, configure models, tools and other parameters, then send to start the conversation."
         }
       }
     },
