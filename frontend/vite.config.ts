@@ -11,6 +11,68 @@ export default defineConfig({
       'agent-graph.com',
       'www.agent-graph.com',
       'localhost'
-    ]
+    ],
+    proxy: {
+      '/agent': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/admin': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/conversations': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/graphs': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/mcp': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/models': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/system': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/prompt': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/tasks': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/export': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/preview': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/system-tools': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/user': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+      '/memory': {
+        target: 'http://localhost:9999',
+        changeOrigin: true,
+      },
+    }
   },
 })
