@@ -44,7 +44,7 @@ export interface TokenUsage {
 export interface ConversationSummary {
   _id: string;
   user_id: string;
-  type: 'agent' | 'graph'; // 删除 'chat'
+  type: 'agent' | 'graph';
   title: string;
   created_at: string;
   updated_at: string;

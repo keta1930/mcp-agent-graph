@@ -26,7 +26,7 @@ interface MessageItemProps {
   reasoningContent?: string;
   isGraphMode?: boolean;
   isFirstMessageInRound?: boolean;
-  renderingMode: 'chat' | 'agent' | 'graph_run';
+  renderingMode: 'agent' | 'graph';
   conversationId?: string;
 }
 
@@ -59,7 +59,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
   }
 
   // Graph执行模式下的特殊处理：如果是用户消息且没有节点信息，则不显示
-  if (renderingMode === 'graph_run' && isUser && !nodeInfo) {
+  if (renderingMode === 'graph' && isUser && !nodeInfo) {
     return null;
   }
 
@@ -73,7 +73,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
       fontFamily: "Cambria, Georgia, 'Times New Roman', serif, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', serif"
     }}>
       {/* 呼吸灯指示器 - 改为墨点效果 */}
-      {isFirstMessageInRound && renderingMode !== 'graph_run' && (
+      {isFirstMessageInRound && renderingMode !== 'graph' && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -107,20 +107,21 @@ const MessageItem: React.FC<MessageItemProps> = ({
       )}
 
       {/* Graph执行模式下用户消息：只有start节点显示消息内容，其他节点不显示 */}
-      {!(renderingMode === 'graph_run' && isUser && nodeInfo?.nodeName !== 'start') && (
-        <div style={isUser ? {
-          background: 'rgba(212, 196, 176, 0.15)',
-          border: '1px solid rgba(139, 115, 85, 0.2)',
-          borderRadius: '8px',
-          padding: '14px 16px',
-          boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-          maxHeight: '30rem',
-          overflow: 'auto',
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(139, 115, 85, 0.08)'
-        } : {}} className={isUser ? 'user-message-scrollbar' : ''}>
-          <div>
-            {/* AI思考过程优先显示 */}
+      {!(renderingMode === 'graph' && isUser && nodeInfo?.nodeName !== 'start') && (
+        <>
+          <div style={isUser ? {
+            background: 'rgba(212, 196, 176, 0.15)',
+            border: '1px solid rgba(139, 115, 85, 0.2)',
+            borderRadius: '8px',
+            padding: '14px 16px',
+            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+            maxHeight: '30rem',
+            overflow: 'auto',
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(139, 115, 85, 0.3) rgba(139, 115, 85, 0.08)'
+          } : {}} className={isUser ? 'user-message-scrollbar' : ''}>
+            <div>
+              {/* AI思考过程优先显示 */}
             {effectiveReasoningContent && (
               <ReasoningDisplay content={effectiveReasoningContent} />
             )}

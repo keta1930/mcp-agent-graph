@@ -54,7 +54,7 @@ const ExportManager: React.FC = () => {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'chat' | 'agent' | 'graph'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'agent' | 'graph'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'favorite' | 'deleted'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -359,7 +359,6 @@ const ExportManager: React.FC = () => {
                           style={{ width: '100%' }}
                           options={[
                             { label: t('pages.exportManager.typeAll'), value: 'all' },
-                            { label: t('pages.exportManager.typeChat'), value: 'chat' },
                             { label: t('pages.exportManager.typeAgent'), value: 'agent' },
                             { label: t('pages.exportManager.typeGraph'), value: 'graph' },
                           ]}
