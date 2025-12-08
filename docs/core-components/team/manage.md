@@ -4,7 +4,11 @@ Admin Panel provides centralized team management capabilities.
 
 ## Access Admin Panel
 
-Only administrators can access the Admin Panel. Navigate to the admin interface through the user menu.
+Only administrators can access the Admin Panel. To access it:
+
+Navigate to `/admin` page directly in your browser (e.g., `https://agent-graph.com/admin`)
+
+Administrators must login to access the admin panel.
 
 ![Admin Panel](../../assets/Admin/admin_page_en.png)
 
