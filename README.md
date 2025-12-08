@@ -8,6 +8,8 @@ MCP Agent Graph is a Multi-Agent System built on the principles of Context Engin
 | **Invitation Code** | **TEAM-QI10IT** |
 | **Documentation** | **https://keta1930.github.io/mcp-agent-graph/** |
 
+> ⚠️ **Important Note**: The models on the demo site do not have API keys configured. You will need to add your own API keys in Model Management to use the platform.
+
 ## Table of Contents
 
 1. [Framework](#1-framework)

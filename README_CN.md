@@ -8,6 +8,8 @@ MCP Agent Graph 是一个基于上下文工程（Context Engineering）理念构
 | **邀请码** | **TEAM-QI10IT** |
 | **文档** | **https://keta1930.github.io/mcp-agent-graph/** |
 
+> ⚠️ **重要提示**：体验网站中的模型均未配置 API Key，您需要在模型管理中添加自己的 API Key 才能使用。
+
 ## 目录
 
 1. [框架图](#1-框架图)
