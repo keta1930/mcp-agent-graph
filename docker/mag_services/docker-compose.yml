@@ -1,5 +1,5 @@
 services:
-  # MongoDB service configuration
+  # MongoDB
   mongodb:
     image: mongodb/mongodb-community-server:8.2.1-ubuntu2204-20251113T064937Z
     container_name: mongodb
@@ -25,18 +25,18 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "50m"     # Maximum size of a single log file, adjust as needed
-        max-file: "10"      # Maximum number of log files to retain, adjust as needed
+        max-size: "50m"
+        max-file: "10"
     deploy:
       resources:
         limits:
-          cpus: '2'          # 2 CPU core, adjust as needed
-          memory: 4G         # 4G memory, adjust as needed
+          cpus: '2'
+          memory: 4G
         reservations:
-          cpus: '0.5'        # 0.5 CPU core, adjust as needed
-          memory: 1G         # 1G memory, adjust as needed
+          cpus: '0.5'
+          memory: 1G
 
-  # MongoDB Express Web interface
+  # MongoDB Express
   mongo-express:
     image: mongo-express:latest
     container_name: mongo-express
@@ -58,20 +58,20 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "20m"     # Maximum size of a single log file, adjust as needed
-        max-file: "5"       # Maximum number of log files to retain, adjust as needed
+        max-size: "20m"
+        max-file: "5"
     deploy:
       resources:
         limits:
-          cpus: '0.5'         # 0.5 CPU core, adjust as needed
-          memory: 256M        # 256M memory, adjust as needed
+          cpus: '0.5'
+          memory: 256M
         reservations:
-          cpus: '0.25'        # 0.25 CPU core, adjust as needed
-          memory: 128M        # 128M memory, adjust as needed
+          cpus: '0.25'
+          memory: 128M
 
-  # MinIO object storage service
+  # MinIO
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: minio
     restart: always
     environment:
@@ -99,8 +99,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'          # 1 CPU core, adjust as needed
-          memory: 2G         # 2 G memory, adjust as needed
+          cpus: '1'
+          memory: 2G
         reservations:
           cpus: '0.5'        # 0.5 CPU core, adjust as needed
           memory: 1G         # 1 G memory, adjust as needed
