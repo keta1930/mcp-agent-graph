@@ -264,4 +264,7 @@ npm run build  # 构建生产版本
 ```
 
 ## 7. 微信群
+
+群满或者合作交流可以联系：
+
 ![微信群二维码](docs/assets/wechat.png)
