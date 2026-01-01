@@ -366,9 +366,11 @@ class MongoDBClient:
             # 1. 删除分享记录（级联删除）
             await self.share_repository.delete_shares_by_conversation(conversation_id)
 
-            # 2. 删除 MinIO 中的所有文件
+            # 2. 删除 MinIO 中的所有文件（文档和图片）
             from app.infrastructure.storage.object_storage.conversation_document_manager import conversation_document_manager
+            from app.infrastructure.storage.object_storage.conversation_image_manager import conversation_image_manager
             await conversation_document_manager.delete_all_conversation_files(user_id, conversation_id)
+            await conversation_image_manager.delete_all_conversation_images(user_id, conversation_id)
 
             # 3. 删除消息数据
             if conversation_type == "graph":

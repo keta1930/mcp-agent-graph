@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.infrastructure.database.mongodb import mongodb_client
+from app.infrastructure.storage.object_storage.conversation_image_manager import conversation_image_manager
 from app.models.conversation_schema import (
     ConversationListItem, ConversationListResponse, ConversationDetailResponse,
     UpdateConversationTitleRequest, UpdateConversationTagsRequest,
@@ -537,4 +538,79 @@ async def compact_conversation(
             compact_type=request.compact_type,
             statistics=None,
             error=str(e)
+        )
+
+
+@router.get("/conversations/{conversation_id}/image/{image_filename}")
+async def get_conversation_image(
+    conversation_id: str,
+    image_filename: str,
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """
+    获取会话中的图片（按需加载）
+
+    Args:
+        conversation_id: 会话ID
+        image_filename: 图片文件名
+        current_user: 当前用户
+
+    Returns:
+        Dict: {"image_data": "base64_string", "mime_type": "image/png"}
+    """
+    try:
+        # 验证对话所有权
+        conversation = await mongodb_client.get_conversation(conversation_id)
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到对话 '{conversation_id}'"
+            )
+
+        # 验证所有权（管理员可以访问所有对话）
+        if not current_user.is_admin() and conversation.get("user_id") != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限访问此对话"
+            )
+
+        user_id = conversation.get("user_id")
+
+        # 构建 MinIO 路径
+        minio_path = f"{conversation_image_manager.STORAGE_PREFIX}/{user_id}/{conversation_id}/{image_filename}"
+
+        # 从 MinIO 获取图片
+        image_base64 = await conversation_image_manager.get_image_as_base64(minio_path)
+
+        if not image_base64:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"找不到图片: {image_filename}"
+            )
+
+        # 根据文件扩展名推断 MIME 类型
+        import os
+        ext = os.path.splitext(image_filename)[1].lower()
+        mime_type_map = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.bmp': 'image/bmp'
+        }
+        mime_type = mime_type_map.get(ext, 'image/png')
+
+        return {
+            "image_data": image_base64,
+            "mime_type": mime_type
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取图片失败 (会话: {conversation_id}, 文件: {image_filename}): {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取图片失败: {str(e)}"
         )

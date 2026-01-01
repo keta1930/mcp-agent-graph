@@ -4,13 +4,15 @@ import asyncio
 import tempfile
 import os
 from datetime import datetime
+from typing import List, Optional
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Form
 from fastapi.responses import StreamingResponse, FileResponse
 from app.infrastructure.database.mongodb.client import mongodb_client
 from app.services.agent.agent_stream_executor import AgentStreamExecutor
 from app.services.agent.agent_import_service import agent_import_service
 from app.services.agent.agent_service import agent_service
+from app.services.agent.agent_run_service import agent_run_service
 from app.utils.sse_helper import TrajectoryCollector
 from app.models.agent_schema import (
     CreateAgentRequest,
@@ -20,8 +22,7 @@ from app.models.agent_schema import (
     AgentCategoryItem,
     AgentCategoryResponse,
     AgentInCategoryItem,
-    AgentInCategoryResponse,
-    AgentRunRequest
+    AgentInCategoryResponse
 )
 from app.auth.dependencies import get_current_user
 from app.models.auth_schema import CurrentUser
@@ -372,154 +373,79 @@ async def delete_agent(
 # ======= Agent 运行 API接口 =======
 @router.post("/run")
 async def agent_run(
-    request: AgentRunRequest,
+    user_prompt: str = Form(...),
+    agent_name: Optional[str] = Form(None),
+    conversation_id: Optional[str] = Form(None),
+    stream: bool = Form(True),
+    model_name: Optional[str] = Form(None),
+    system_prompt: Optional[str] = Form(None),
+    mcp_servers: Optional[str] = Form(None),
+    system_tools: Optional[str] = Form(None),
+    max_iterations: Optional[int] = Form(None),
+    files: Optional[List[UploadFile]] = File(None),
     current_user: CurrentUser = Depends(get_current_user)
 ):
-    """Agent 运行（流式响应，SSE）- 支持配置覆盖"""
+    """Agent 运行（流式响应，SSE）- 支持配置覆盖和文件上传"""
     try:
-        # 从token获取user_id，覆盖请求体中的user_id
         user_id = current_user.user_id
 
-        # 基本参数验证
-        if not request.user_prompt.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="用户消息不能为空"
-            )
-
-        # 验证配置：必须提供 agent_name 或 model_name
-        if not request.agent_name and not request.model_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须提供 agent_name 或 model_name"
-            )
-
-        # 如果提供了 agent_name，验证 Agent 是否存在
-        if request.agent_name:
-            agent = await mongodb_client.agent_repository.get_agent(
-                request.agent_name,
-                user_id
-            )
-
-            if not agent:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"找不到 Agent: {request.agent_name}"
-                )
-
-        # 生成或使用现有 conversation_id
-        conversation_id = request.conversation_id or str(ObjectId())
-
-        # 查询数据库判断是否为新对话
-        existing_conversation = await mongodb_client.conversation_repository.get_conversation(
-            conversation_id
+        # 1. 验证请求参数
+        agent_name, mcp_servers_list, system_tools_list = await agent_run_service.validate_request_params(
+            user_prompt=user_prompt,
+            agent_name=agent_name,
+            model_name=model_name,
+            user_id=user_id,
+            mcp_servers=mcp_servers,
+            system_tools=system_tools
         )
-        is_new_conversation = (existing_conversation is None)
 
+        # 2. 确保会话存在
+        conversation_id, is_new_conversation = await agent_run_service.ensure_conversation_exists(
+            conversation_id=conversation_id,
+            user_id=user_id,
+            agent_name=agent_name
+        )
+
+        # 3. 处理上传的文件
+        images_info = await agent_run_service.process_files(
+            files=files,
+            user_id=user_id,
+            conversation_id=conversation_id
+        )
+
+        # 4. 创建标题生成器（如果是新会话）
+        title_queue = None
         if is_new_conversation:
-            # 创建 conversation 记录（类型为 agent）
-            await mongodb_client.conversation_repository.create_conversation(
-                conversation_id=conversation_id,
-                conversation_type="agent",
+            title_queue, _ = agent_run_service.create_title_generator(
                 user_id=user_id,
-                title=f"{request.agent_name or 'Manual'} 对话"
-            )
-
-            # 创建 agent_run 记录
-            await mongodb_client.agent_run_repository.create_agent_run(
+                user_prompt=user_prompt,
                 conversation_id=conversation_id
             )
+        else:
+            # 创建空队列以保持接口一致
+            title_queue = asyncio.Queue()
 
-        # 创建队列用于标题更新通知
-        title_queue = asyncio.Queue()
-
-        # 后台标题生成任务
-        async def generate_title_background():
-            from app.services.conversation.title_service import generate_title_and_tags
-            try:
-                title, tags = await generate_title_and_tags(user_id=user_id, user_prompt=request.user_prompt)
-
-                # 更新数据库中的标题和标签
-                await mongodb_client.conversation_repository.update_conversation_title_and_tags(
-                    conversation_id=conversation_id,
-                    title=title,
-                    tags=tags
-                )
-
-                logger.info(f"✓ 后台生成标题成功: {title}")
-
-                # 通知前端标题更新
-                await title_queue.put({
-                    "type": "title_update",
-                    "title": title,
-                    "tags": tags,
-                    "conversation_id": conversation_id
-                })
-
-            except Exception as e:
-                logger.error(f"后台生成标题出错: {str(e)}")
-
-        # 如果是新会话，启动后台标题生成任务
-        if is_new_conversation:
-            asyncio.create_task(generate_title_background())
-
-        # 生成流式响应的生成器
+        # 5. 创建流式响应生成器
         async def generate_stream():
-            stream_done = False
-            try:
-                # 创建agent执行流的异步任务
-                async def agent_stream_wrapper():
-                    nonlocal stream_done
-                    async for chunk in agent_stream_executor.run_agent_stream(
-                        agent_name=request.agent_name,
-                        user_prompt=request.user_prompt,
-                        user_id=user_id,
-                        conversation_id=conversation_id,
-                        # 传递可选配置参数
-                        model_name=request.model_name,
-                        system_prompt=request.system_prompt,
-                        mcp_servers=request.mcp_servers,
-                        system_tools=request.system_tools,
-                        max_iterations=request.max_iterations
-                    ):
-                        yield chunk
-                    stream_done = True
+            async for chunk in agent_run_service.create_stream_generator(
+                agent_stream_executor=agent_stream_executor,
+                agent_name=agent_name,
+                user_prompt=user_prompt,
+                user_id=user_id,
+                conversation_id=conversation_id,
+                images_info=images_info,
+                model_name=model_name,
+                system_prompt=system_prompt,
+                mcp_servers_list=mcp_servers_list,
+                system_tools_list=system_tools_list,
+                max_iterations=max_iterations,
+                title_queue=title_queue,
+                is_new_conversation=is_new_conversation
+            ):
+                yield chunk
 
-                # 同时监听agent流和标题队列
-                agent_stream = agent_stream_wrapper()
-                async for chunk in agent_stream:
-                    yield chunk
-
-                    # 检查队列中是否有标题更新（非阻塞）
-                    try:
-                        while not title_queue.empty():
-                            title_event = await asyncio.wait_for(title_queue.get(), timeout=0.01)
-                            yield f"data: {json.dumps(title_event)}\n\n"
-                    except asyncio.TimeoutError:
-                        pass
-
-                # agent流结束后，等待并发送可能延迟的标题更新
-                if is_new_conversation:
-                    try:
-                        title_event = await asyncio.wait_for(title_queue.get(), timeout=3.0)
-                        yield f"data: {json.dumps(title_event)}\n\n"
-                    except asyncio.TimeoutError:
-                        pass
-
-            except Exception as e:
-                logger.error(f"Agent 流式响应生成出错: {str(e)}")
-                error_chunk = {
-                    "error": {
-                        "message": str(e),
-                        "type": "api_error"
-                    }
-                }
-                yield f"data: {json.dumps(error_chunk)}\n\n"
-                yield "data: [DONE]\n\n"
-
-        # 根据stream参数决定响应类型
-        if request.stream:
-            # 流式响应
+        # 6. 根据 stream 参数决定响应类型
+        if stream:
             return StreamingResponse(
                 generate_stream(),
                 media_type="text/event-stream",
@@ -530,16 +456,12 @@ async def agent_run(
                 }
             )
         else:
-            # 非流式响应：收集所有数据后返回完整结果
             collector = TrajectoryCollector(
-                user_prompt=request.user_prompt,
-                system_prompt=request.system_prompt or ""
+                user_prompt=user_prompt,
+                system_prompt=system_prompt or ""
             )
             complete_response = await collector.collect_stream_data(generate_stream())
-
-            # 添加 conversation_id
             complete_response["conversation_id"] = conversation_id
-
             return complete_response
 
     except HTTPException:

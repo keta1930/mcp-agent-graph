@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, field_validator
 
 class AgentConfig(BaseModel):
     """Agent配置数据模型（嵌套对象）"""
@@ -88,47 +88,3 @@ class AgentInCategoryResponse(BaseModel):
     category: str = Field(..., description="分类名称")
     agents: List[AgentInCategoryItem] = Field(..., description="Agent列表")
     total_count: int = Field(..., description="总数量")
-
-
-class AgentRunRequest(BaseModel):
-    """Agent运行请求（支持配置覆盖）"""
-    # Agent 选择（可选）
-    agent_name: Optional[str] = Field(None, description="Agent名称，不提供则为手动配置模式")
-
-    # 用户输入
-    user_prompt: str = Field(..., description="用户输入消息")
-
-    # 对话管理
-    conversation_id: Optional[str] = Field(None, description="对话ID，None表示新对话")
-    stream: bool = Field(default=True, description="是否流式响应")
-
-    # 可选配置参数（覆盖/扩展 Agent 配置）
-    model_name: Optional[str] = Field(None, description="模型名称（覆盖Agent配置）")
-    system_prompt: Optional[str] = Field(None, description="系统提示词（覆盖Agent配置）")
-    mcp_servers: Optional[List[str]] = Field(None, description="MCP服务器列表（添加到Agent配置）")
-    system_tools: Optional[List[str]] = Field(None, description="系统工具列表（添加到Agent配置）")
-    max_iterations: Optional[int] = Field(None, description="最大迭代次数（覆盖Agent配置）")
-
-    @field_validator('user_prompt')
-    @classmethod
-    def validate_user_prompt(cls, v):
-        if not v or not v.strip():
-            raise ValueError('用户消息不能为空')
-        return v
-
-    @field_validator('max_iterations')
-    @classmethod
-    def validate_max_iterations(cls, v):
-        if v is not None and (v < 1 or v > 200):
-            raise ValueError('max_iterations 必须在 1-200 范围内')
-        return v
-
-    @field_validator('model_name')
-    @classmethod
-    def check_config_source(cls, v, info: ValidationInfo):
-        """验证至少提供一种配置方式"""
-        # 在请求级别验证，确保 agent_name 或 model_name 至少提供一个
-        agent_name = info.data.get('agent_name')
-        if not agent_name and not v:
-            raise ValueError('必须提供 agent_name 或 model_name')
-        return v

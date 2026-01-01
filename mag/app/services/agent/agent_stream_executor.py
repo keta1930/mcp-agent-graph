@@ -27,6 +27,7 @@ class AgentStreamExecutor:
             user_prompt: str,
             user_id: str,
             conversation_id: str,
+            images_info: Optional[List[Dict[str, Any]]] = None,
             model_name: Optional[str] = None,
             system_prompt: Optional[str] = None,
             mcp_servers: Optional[List[str]] = None,
@@ -34,13 +35,14 @@ class AgentStreamExecutor:
             max_iterations: Optional[int] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Agent 流式运行（主入口，支持多轮对话）
+        Agent 流式运行（主入口，支持多轮对话和多模态输入）
 
         Args:
             agent_name: Agent 名称（None 表示手动配置模式）
             user_prompt: 用户输入
             user_id: 用户 ID
             conversation_id: 对话 ID
+            images_info: 图片信息列表（可选）
             model_name: 模型名称（可选覆盖）
             system_prompt: 系统提示词（可选覆盖）
             mcp_servers: MCP服务器列表（可选添加）
@@ -69,6 +71,7 @@ class AgentStreamExecutor:
                 system_tools=system_tools,
                 max_iterations=max_iterations
             )
+            logger.info(f"加载有效配置: {effective_config}")
 
             if not effective_config:
                 error_msg = {"error": "无法加载有效配置"}
@@ -80,7 +83,8 @@ class AgentStreamExecutor:
             messages = await self._build_messages(
                 conversation_id=conversation_id,
                 user_prompt=user_prompt,
-                system_prompt=effective_config["system_prompt"]
+                system_prompt=effective_config["system_prompt"],
+                images_info=images_info or []
             )
 
             # 准备工具
@@ -120,6 +124,7 @@ class AgentStreamExecutor:
                     user_prompt=user_prompt,
                     model_name=effective_config["model_name"],
                     tools=tools,
+                    images_info=images_info or [],
                     is_graph_node=False
                 )
 
@@ -136,20 +141,23 @@ class AgentStreamExecutor:
             self,
             conversation_id: str,
             user_prompt: str,
-            system_prompt: str
+            system_prompt: str,
+            images_info: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        构建包含历史消息的完整消息列表
+        构建包含历史消息的完整消息列表（支持多模态）
 
         Args:
             conversation_id: 对话 ID
             user_prompt: 当前用户输入
             system_prompt: 系统提示词
+            images_info: 当前轮次的图片信息列表
 
         Returns:
             完整的消息列表
         """
         from app.infrastructure.database.mongodb.client import mongodb_client
+        from app.infrastructure.storage.object_storage.conversation_image_manager import conversation_image_manager
 
         messages = []
 
@@ -173,17 +181,87 @@ class AgentStreamExecutor:
                     round_messages = round_data.get("messages", [])
                     for msg in round_messages:
                         # 跳过历史中的 system 消息（已在开头添加）
-                        if msg.get("role") != "system":
+                        if msg.get("role") == "system":
+                            continue
+
+                        # 处理包含图片的用户消息
+                        if msg.get("role") == "user" and msg.get("image_paths"):
+                            content_parts = []
+
+                            # 并发加载所有图片
+                            image_paths = msg.get("image_paths", [])
+                            if image_paths:
+                                image_tasks = [
+                                    conversation_image_manager.get_image_as_base64(path)
+                                    for path in image_paths
+                                ]
+                                base64_results = await asyncio.gather(*image_tasks, return_exceptions=True)
+
+                                for i, base64_string in enumerate(base64_results):
+                                    if isinstance(base64_string, str):
+                                        image_path = image_paths[i]
+                                        mime_type = "image/png"
+                                        if image_path.endswith(".jpg") or image_path.endswith(".jpeg"):
+                                            mime_type = "image/jpeg"
+                                        elif image_path.endswith(".gif"):
+                                            mime_type = "image/gif"
+                                        elif image_path.endswith(".webp"):
+                                            mime_type = "image/webp"
+
+                                        content_parts.append({
+                                            "type": "image_url",
+                                            "image_url": {"url": f"data:{mime_type};base64,{base64_string}"}
+                                        })
+                                    elif isinstance(base64_string, Exception):
+                                        logger.error(f"加载历史图片失败: {str(base64_string)}")
+
+                            # 添加文本内容
+                            if msg.get("content"):
+                                content_parts.append({
+                                    "type": "text",
+                                    "text": msg.get("content")
+                                })
+
+                            messages.append({
+                                "role": "user",
+                                "content": content_parts
+                            })
+                        else:
+                            # 普通消息
                             messages.append(msg)
             else:
                 logger.debug(f"新对话，无历史消息: {conversation_id}")
 
-            # 3. 添加当前用户消息
-            if user_prompt and user_prompt.strip():
+            # 3. 添加当前用户消息（支持多模态）
+            if images_info:
+                # 多模态消息
+                content_parts = []
+
+                # 添加图片
+                for img_info in images_info:
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{img_info['mime_type']};base64,{img_info['base64']}"}
+                    })
+
+                # 添加文本
+                if user_prompt and user_prompt.strip():
+                    content_parts.append({
+                        "type": "text",
+                        "text": user_prompt.strip()
+                    })
+
                 messages.append({
                     "role": "user",
-                    "content": user_prompt.strip()
+                    "content": content_parts
                 })
+            else:
+                # 纯文本消息
+                if user_prompt and user_prompt.strip():
+                    messages.append({
+                        "role": "user",
+                        "content": user_prompt.strip()
+                    })
 
             logger.info(f"✓ 构建消息完成，共 {len(messages)} 条（包含历史）")
             return messages
@@ -350,7 +428,7 @@ class AgentStreamExecutor:
 
         # 标识是否为 Sub Agent
         is_sub_agent = task_id is not None
-        
+
         # 记录 Graph 节点调用
         if is_graph_node:
             logger.debug(f"Graph 节点调用 Agent: {agent_name}, conversation_id={conversation_id}")
@@ -570,6 +648,7 @@ class AgentStreamExecutor:
             user_prompt: str,
             model_name: str,
             tools: Optional[List[Dict[str, Any]]] = None,
+            images_info: Optional[List[Dict[str, Any]]] = None,
             is_graph_node: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
@@ -583,6 +662,7 @@ class AgentStreamExecutor:
             user_prompt: 用户输入
             model_name: 模型名称
             tools: 工具 schema 列表（可选）
+            images_info: 图片信息列表（可选）
             is_graph_node: 是否为 Graph 节点调用（默认 False）
 
         Returns:
@@ -592,7 +672,7 @@ class AgentStreamExecutor:
         if is_graph_node:
             logger.debug(f"Graph 节点调用，跳过数据库写入: conversation_id={conversation_id}")
             return None
-        
+
         try:
             from app.infrastructure.database.mongodb.client import mongodb_client
 
@@ -623,18 +703,39 @@ class AgentStreamExecutor:
             prompt_tokens = token_usage.get("prompt_tokens", 0)
             completion_tokens = token_usage.get("completion_tokens", 0)
 
+            # 处理消息：分离文本和图片路径
+            round_messages = result.get("round_messages", [])
+            processed_messages = []
+
+            for msg in round_messages:
+                if msg.get("role") == "user" and images_info:
+                    # 用户消息：分离文本和图片路径
+                    processed_msg = {
+                        "role": "user",
+                        "content": user_prompt
+                    }
+
+                    # 添加图片路径
+                    if images_info:
+                        processed_msg["image_paths"] = [img["minio_path"] for img in images_info]
+
+                    processed_messages.append(processed_msg)
+                else:
+                    # 其他消息保持不变
+                    processed_messages.append(msg)
+
             # 保存轮次数据到 agent_run 集合的主线程 rounds
             success = await mongodb_client.agent_run_repository.add_round_to_main(
                 conversation_id=conversation_id,
                 round_number=next_round_number,
                 agent_name=agent_name,
-                messages=result.get("round_messages", []),
+                messages=processed_messages,
                 tools=tools,
                 model=model_name,
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens
             )
-            
+
             logger.info(f"✓ 保存主线程 round 成功: conversation_id={conversation_id}, round={next_round_number}")
 
             if not success:
