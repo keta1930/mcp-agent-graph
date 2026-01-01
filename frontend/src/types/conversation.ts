@@ -42,7 +42,7 @@ export interface TokenUsage {
 }
 
 export interface ConversationSummary {
-  _id: string;
+  conversation_id: string;
   user_id: string;
   type: 'agent' | 'graph';
   title: string;

@@ -9,7 +9,7 @@ class TokenUsage(BaseModel):
 
 class ConversationListItem(BaseModel):
     """对话列表项（包含conversations集合的所有字段）"""
-    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    conversation_id: str = Field(..., description="对话ID")
     user_id: str = Field(..., description="用户ID")
     type: str = Field(..., description="对话类型：agent（Agent对话）/ graph（图执行）")
     title: str = Field(..., description="对话标题")
@@ -19,9 +19,6 @@ class ConversationListItem(BaseModel):
     total_token_usage: TokenUsage = Field(..., description="总token使用量统计")
     status: str = Field(..., description="对话状态：active（活跃）/ deleted（已删除）/ favorite（收藏）")
     tags: List[str] = Field(default_factory=list, description="标签列表")
-
-    class Config:
-        allow_population_by_field_name = True
 
     @validator('type')
     def validate_type(cls, v):
@@ -57,7 +54,7 @@ class InputConfig(BaseModel):
 
 class ConversationDetailResponse(BaseModel):
     """对话详情响应（完整内容，支持所有类型）"""
-    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    conversation_id: str = Field(..., description="对话ID")
     title: str = Field(..., description="对话标题")
     rounds: List[Dict[str, Any]] = Field(default_factory=list, description="完整消息轮次（原始格式）")
     type: Optional[str] = Field(None, description="对话类型：agent（Agent对话）/ graph（图执行）")
@@ -71,15 +68,12 @@ class ConversationDetailResponse(BaseModel):
     # 图执行对话的扩展字段
     execution_chain: Optional[List[List[str]]] = Field(None, description="图执行链")
     final_result: Optional[str] = Field(None, description="最终执行结果")
-    
+
     # Agent 对话的扩展字段
     tasks: Optional[List[Dict[str, Any]]] = Field(None, description="Sub Agent 任务列表")
-    
+
     # 输入配置（用户在对话中使用的配置）
     input_config: Optional[InputConfig] = Field(None, description="用户输入配置")
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 class UpdateConversationTitleRequest(BaseModel):

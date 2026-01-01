@@ -121,19 +121,19 @@ export const useConversationStore = create<ConversationState>()(
         
         // 创建一个映射来快速查找新对话数据
         const newConversationsMap = new Map(
-          newConversations.map(conv => [conv._id, conv])
+          newConversations.map(conv => [conv.conversation_id, conv])
         );
-        
+
         // 更新现有对话的数据，保持顺序
         const updatedConversations = currentConversations.map(conv => {
-          const newConv = newConversationsMap.get(conv._id);
+          const newConv = newConversationsMap.get(conv.conversation_id);
           return newConv || conv; // 如果找到新数据则使用，否则保持原有数据
         });
-        
+
         // 添加新的对话到列表开头（如果有的话）
-        const existingIds = new Set(currentConversations.map(conv => conv._id));
+        const existingIds = new Set(currentConversations.map(conv => conv.conversation_id));
         const newlyAddedConversations = newConversations.filter(
-          conv => !existingIds.has(conv._id)
+          conv => !existingIds.has(conv.conversation_id)
         );
         
         const finalConversations = [...newlyAddedConversations, ...updatedConversations];
@@ -183,7 +183,7 @@ export const useConversationStore = create<ConversationState>()(
         // 更新本地状态
         set(state => ({
           conversations: state.conversations.map(conv =>
-            conv._id === conversationId ? { ...conv, status } : conv
+            conv.conversation_id === conversationId ? { ...conv, status } : conv
           )
         }));
         
@@ -205,7 +205,7 @@ export const useConversationStore = create<ConversationState>()(
         // 更新本地状态
         set(state => ({
           conversations: state.conversations.map(conv =>
-            conv._id === conversationId ? { ...conv, title } : conv
+            conv.conversation_id === conversationId ? { ...conv, title } : conv
           )
         }));
         
@@ -236,7 +236,7 @@ export const useConversationStore = create<ConversationState>()(
         // 更新本地状态
         set(state => ({
           conversations: state.conversations.map(conv =>
-            conv._id === conversationId ? { ...conv, tags } : conv
+            conv.conversation_id === conversationId ? { ...conv, tags } : conv
           )
         }));
         
@@ -257,7 +257,7 @@ export const useConversationStore = create<ConversationState>()(
         
         // 从本地状态移除
         set(state => ({
-          conversations: state.conversations.filter(conv => conv._id !== conversationId),
+          conversations: state.conversations.filter(conv => conv.conversation_id !== conversationId),
           totalCount: state.totalCount - 1
         }));
         
@@ -299,14 +299,14 @@ export const useConversationStore = create<ConversationState>()(
       if (isPermanent) {
         // 永久删除：从列表中移除
         set(state => ({
-          conversations: state.conversations.filter(conv => !conversationIds.includes(conv._id)),
+          conversations: state.conversations.filter(conv => !conversationIds.includes(conv.conversation_id)),
           totalCount: state.totalCount - successCount
         }));
       } else {
         // 软删除：更新状态
         set(state => ({
           conversations: state.conversations.map(conv =>
-            conversationIds.includes(conv._id) ? { ...conv, status: 'deleted' as const } : conv
+            conversationIds.includes(conv.conversation_id) ? { ...conv, status: 'deleted' as const } : conv
           )
         }));
       }

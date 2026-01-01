@@ -116,7 +116,7 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   };
 
   const handleSelectAll = () => {
-    const allIds = new Set(visibleConversations.map((conv) => conv._id));
+    const allIds = new Set(visibleConversations.map((conv) => conv.conversation_id));
     setSelectedConversations(allIds);
   };
 
@@ -129,14 +129,14 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
 
     try {
       const selectedList = conversations.filter((conv) =>
-        selectedConversations.has(conv._id)
+        selectedConversations.has(conv.conversation_id)
       );
       const toPermanent = selectedList
         .filter((conv) => conv.status === 'deleted')
-        .map((conv) => conv._id);
+        .map((conv) => conv.conversation_id);
       const toSoft = selectedList
         .filter((conv) => conv.status !== 'deleted')
-        .map((conv) => conv._id);
+        .map((conv) => conv.conversation_id);
 
       if (toSoft.length > 0) {
         const res = await batchDeleteConversations(toSoft, false);
@@ -472,12 +472,12 @@ const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
         ) : (
           visibleConversations.map((conversation) => (
             <ConversationItem
-              key={conversation._id}
+              key={conversation.conversation_id}
               conversation={conversation}
-              isActive={conversation._id === activeConversationId}
-              onClick={() => onConversationSelect(conversation._id)}
+              isActive={conversation.conversation_id === activeConversationId}
+              onClick={() => onConversationSelect(conversation.conversation_id)}
               isBatchMode={isBatchMode}
-              isSelected={selectedConversations.has(conversation._id)}
+              isSelected={selectedConversations.has(conversation.conversation_id)}
               onSelect={handleConversationSelect}
             />
           ))

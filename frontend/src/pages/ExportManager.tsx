@@ -127,7 +127,7 @@ const ExportManager: React.FC = () => {
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(filteredConversations.map(c => c._id)));
+    setSelectedIds(new Set(filteredConversations.map(c => c.conversation_id)));
   };
   const deselectAll = () => setSelectedIds(new Set());
 
@@ -432,15 +432,15 @@ const ExportManager: React.FC = () => {
                       ) : (
                         filteredConversations.map(conv => (
                           <div
-                            key={conv._id}
-                            onClick={() => toggleSelect(conv._id, !selectedIds.has(conv._id))}
+                            key={conv.conversation_id}
+                            onClick={() => toggleSelect(conv.conversation_id, !selectedIds.has(conv.conversation_id))}
                             style={{
                               display: 'flex',
                               alignItems: 'flex-start',
                               padding: '12px 14px',
                               marginBottom: '10px',
-                              background: selectedIds.has(conv._id) ? 'rgba(184, 88, 69, 0.08)' : 'rgba(255, 255, 255, 0.85)',
-                              border: selectedIds.has(conv._id) ? '1px solid rgba(184, 88, 69, 0.3)' : '1px solid rgba(139, 115, 85, 0.15)',
+                              background: selectedIds.has(conv.conversation_id) ? 'rgba(184, 88, 69, 0.08)' : 'rgba(255, 255, 255, 0.85)',
+                              border: selectedIds.has(conv.conversation_id) ? '1px solid rgba(184, 88, 69, 0.3)' : '1px solid rgba(139, 115, 85, 0.15)',
                               borderRadius: '6px',
                               cursor: 'pointer',
                               transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
@@ -448,14 +448,14 @@ const ExportManager: React.FC = () => {
                               boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)'
                             }}
                             onMouseEnter={(e) => {
-                              if (!selectedIds.has(conv._id)) {
+                              if (!selectedIds.has(conv.conversation_id)) {
                                 e.currentTarget.style.transform = 'translateY(-2px)';
                                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(184, 88, 69, 0.12)';
                                 e.currentTarget.style.borderColor = 'rgba(184, 88, 69, 0.3)';
                               }
                             }}
                             onMouseLeave={(e) => {
-                              if (!selectedIds.has(conv._id)) {
+                              if (!selectedIds.has(conv.conversation_id)) {
                                 e.currentTarget.style.transform = 'translateY(0)';
                                 e.currentTarget.style.boxShadow = '0 1px 3px rgba(139, 115, 85, 0.06)';
                                 e.currentTarget.style.borderColor = 'rgba(139, 115, 85, 0.15)';
@@ -463,10 +463,10 @@ const ExportManager: React.FC = () => {
                             }}
                           >
                             <Checkbox
-                              checked={selectedIds.has(conv._id)}
+                              checked={selectedIds.has(conv.conversation_id)}
                               onChange={(e) => {
                                 e.stopPropagation();
-                                toggleSelect(conv._id, e.target.checked);
+                                toggleSelect(conv.conversation_id, e.target.checked);
                               }}
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>

@@ -13,20 +13,17 @@ class CreateShareResponse(BaseModel):
 
 class SharedConversationResponse(BaseModel):
     """分享对话响应"""
-    conversation_id: str = Field(..., description="对话ID", alias="_id")
+    conversation_id: str = Field(..., description="对话ID")
     title: str = Field(..., description="对话标题")
     type: str = Field(..., description="对话类型：agent/graph")
     rounds: List[Dict[str, Any]] = Field(..., description="对话轮次")
     created_at: str = Field(..., description="创建时间")
     round_count: int = Field(..., description="轮次数")
-    
+
     # 可选字段
     execution_chain: Optional[List[List[str]]] = Field(None, description="图执行链")
     final_result: Optional[str] = Field(None, description="最终结果")
     tasks: Optional[List[Dict[str, Any]]] = Field(None, description="任务列表")
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 class SharedFilesResponse(BaseModel):

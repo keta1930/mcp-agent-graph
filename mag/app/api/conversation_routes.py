@@ -55,7 +55,7 @@ async def get_conversations_list(current_user: CurrentUser = Depends(get_current
             )
 
             conversation_items.append(ConversationListItem(
-                _id=conv["_id"],
+                conversation_id=conv["_id"],
                 user_id=conv.get("user_id", "default_user"),
                 type=conv.get("type", "agent"),
                 title=conv.get("title", "新对话"),
@@ -110,7 +110,7 @@ async def get_conversation_detail(
 
         # 准备响应数据
         response_data = {
-            "_id": conversation["_id"],
+            "conversation_id": conversation["_id"],
             "title": conversation.get("title", "新对话"),
             "rounds": rounds,
             "type": conversation_type,

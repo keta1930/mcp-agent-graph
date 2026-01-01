@@ -969,7 +969,7 @@ class ConversationRepository:
             # 构建清洗后的对话数据
             created_at = conversation.get("created_at")
             shared_conversation = {
-                "_id": conversation["_id"],
+                "conversation_id": conversation["_id"],
                 "title": conversation.get("title", ""),
                 "type": conversation_type,
                 "rounds": rounds,

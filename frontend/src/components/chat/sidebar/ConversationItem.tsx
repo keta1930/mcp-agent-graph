@@ -56,7 +56,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     try {
       const newStatus =
         conversation.status === 'favorite' ? 'active' : 'favorite';
-      await updateConversationStatus(conversation._id, newStatus);
+      await updateConversationStatus(conversation.conversation_id, newStatus);
       showNotification(
         newStatus === 'favorite' ? t('components.conversationItem.favorited') : t('components.conversationItem.unfavorited'),
         'success'
@@ -73,7 +73,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       if (conversation.status === 'deleted') {
         setDeleteModalVisible(true);
       } else {
-        await updateConversationStatus(conversation._id, 'deleted');
+        await updateConversationStatus(conversation.conversation_id, 'deleted');
         showNotification(t('components.conversationItem.movedToTrash'), 'success');
       }
     } catch (error) {
@@ -85,7 +85,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const handleRestore = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     try {
-      await updateConversationStatus(conversation._id, 'active');
+      await updateConversationStatus(conversation.conversation_id, 'active');
       showNotification(t('components.conversationItem.restored'), 'success');
     } catch (error) {
       console.error('Restore failed:', error);
@@ -95,7 +95,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
 
   const handleEditTitle = async () => {
     if (newTitle.trim() && newTitle !== conversation.title) {
-      await updateConversationTitle(conversation._id, newTitle.trim());
+      await updateConversationTitle(conversation.conversation_id, newTitle.trim());
     }
     setEditModalVisible(false);
   };
@@ -105,12 +105,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean);
-    await updateConversationTags(conversation._id, tags);
+    await updateConversationTags(conversation.conversation_id, tags);
     setTagsModalVisible(false);
   };
 
   const handlePermanentDelete = async () => {
-    await deleteConversationPermanent(conversation._id);
+    await deleteConversationPermanent(conversation.conversation_id);
     setDeleteModalVisible(false);
     showNotification(t('components.conversationItem.permanentlyDeleted'), 'success');
   };
@@ -341,7 +341,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           style={itemStyle}
           onClick={
             isBatchMode
-              ? () => onSelect?.(conversation._id, !isSelected)
+              ? () => onSelect?.(conversation.conversation_id, !isSelected)
               : onClick
           }
           onMouseEnter={() => setIsHovered(true)}
@@ -367,7 +367,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
                   checked={isSelected}
                   onChange={(e) => {
                     e.stopPropagation();
-                    onSelect?.(conversation._id, e.target.checked);
+                    onSelect?.(conversation.conversation_id, e.target.checked);
                   }}
                 />
                 <style>

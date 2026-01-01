@@ -101,14 +101,14 @@ const FileManager: React.FC = () => {
       // 2. 为每个对话获取文件列表
       const filePromises = conversations.map(async (conv: ConversationSummary) => {
         try {
-          const filesResponse = await conversationFileService.listFiles(conv._id);
+          const filesResponse = await conversationFileService.listFiles(conv.conversation_id);
           return filesResponse.files.map((filename) => ({
             filename,
-            conversationId: conv._id,
+            conversationId: conv.conversation_id,
             conversationTitle: conv.title,
           }));
         } catch (error) {
-          console.error(`获取对话 ${conv._id} 的文件失败:`, error);
+          console.error(`获取对话 ${conv.conversation_id} 的文件失败:`, error);
           return [];
         }
       });
