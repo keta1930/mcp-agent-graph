@@ -1193,6 +1193,20 @@
       "system": "系统",
       "user": "用户"
     },
+    "fileUploadButton": {
+      "uploadOrPaste": "上传文件或粘贴图片 (Ctrl+V)",
+      "filesSelected": "已选 {{count}} 个文件",
+      "maxFilesReached": "最多上传 {{max}} 个文件",
+      "disabled": "文件上传已禁用",
+      "selectedFiles": "已选文件 ({{count}})",
+      "addMore": "添加",
+      "fileSizeExceeded": "文件 \"{{name}}\" 超过大小限制 ({{max}}MB)",
+      "maxFilesError": "最多只能上传 {{max}} 个文件",
+      "pasteSuccess": "已粘贴 {{count}} 个图片",
+      "loading": "加载中...",
+      "loadFailed": "图片加载失败",
+      "clickToClose": "点击关闭"
+    },
     "maxIterationsConfig": {
       "title": "最大迭代次数",
       "configure": "配置最大迭代次数",

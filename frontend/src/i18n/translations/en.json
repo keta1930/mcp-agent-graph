@@ -1193,6 +1193,20 @@
       "system": "System",
       "user": "User"
     },
+    "fileUploadButton": {
+      "uploadOrPaste": "Upload files or paste images (Ctrl+V)",
+      "filesSelected": "{{count}} file(s) selected",
+      "maxFilesReached": "Maximum {{max}} files allowed",
+      "disabled": "File upload disabled",
+      "selectedFiles": "Selected Files ({{count}})",
+      "addMore": "Add",
+      "fileSizeExceeded": "File \"{{name}}\" exceeds size limit ({{max}}MB)",
+      "maxFilesError": "Maximum {{max}} files allowed",
+      "pasteSuccess": "{{count}} image(s) pasted",
+      "loading": "Loading...",
+      "loadFailed": "Failed to load image",
+      "clickToClose": "Click to close"
+    },
     "maxIterationsConfig": {
       "title": "Max Iterations",
       "configure": "Configure max iterations",
