@@ -15,6 +15,7 @@ import PromptSelector from '../controls/PromptSelector';
 import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
+import FileUploadButton from '../controls/FileUploadButton';
 import { useT } from '../../../i18n/hooks';
 
 interface ModeSelectorProps {
@@ -47,6 +48,11 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [selectedMCPServers, setSelectedMCPServers] = React.useState<Record<string, boolean>>({});
   const [selectedSystemTools, setSelectedSystemTools] = React.useState<string[]>([]);
   const [maxIterations, setMaxIterations] = React.useState<number | null>(null);
+  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+  const [clearFilesTrigger, setClearFilesTrigger] = React.useState<number>(0);
+  const [addFilesTrigger, setAddFilesTrigger] = React.useState<{ files: File[]; timestamp: number } | undefined>();
+  const [isDragging, setIsDragging] = React.useState(false);
+  const inputContainerRef = React.useRef<HTMLDivElement>(null);
 
   const availableMCPServers = React.useMemo(() => {
     return Object.keys(mcpConfig.mcpServers || {}).filter(serverName => {
@@ -87,6 +93,8 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setSystemPrompt('');
     setInputValue('');
     setIsSystemPromptMode(false);
+    setSelectedFiles([]);
+    setClearFilesTrigger(prev => prev + 1);
   };
 
   const toggleMcpServer = (serverName: string, enabled: boolean) => {
@@ -139,11 +147,17 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       if (maxIterations !== null) {
         options.max_iterations = maxIterations;
       }
+
+      if (selectedFiles.length > 0) {
+        options.files = selectedFiles;
+      }
     } else if (currentMode === 'graph') {
       options.graph_name = selectedGraph;
     }
 
     onStartConversation(content, options);
+    setSelectedFiles([]);
+    setClearFilesTrigger(prev => prev + 1);
   };
 
   const canStart = () => {
@@ -203,6 +217,40 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
       return t('pages.chatSystem.modeSelector.agentPlaceholder');
     }
     return t('pages.chatSystem.modeSelector.graphPlaceholder');
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (currentMode === 'agent') {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === inputContainerRef.current) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (currentMode !== 'agent') return;
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      setAddFilesTrigger({ files: droppedFiles, timestamp: Date.now() });
+    }
   };
 
   return (
@@ -304,13 +352,27 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
         </div>
 
         {currentMode && (
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.7)',
-            border: '1px solid rgba(139, 115, 85, 0.15)',
-            borderRadius: '6px',
-            padding: '20px',
-            boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
-          }}>
+          <div
+            ref={inputContainerRef}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            style={{
+              background: isDragging
+                ? 'rgba(184, 88, 69, 0.08)'
+                : 'rgba(255, 255, 255, 0.7)',
+              border: isDragging
+                ? '2px dashed rgba(184, 88, 69, 0.5)'
+                : '1px solid rgba(139, 115, 85, 0.15)',
+              borderRadius: '6px',
+              padding: '20px',
+              boxShadow: isDragging
+                ? '0 2px 8px rgba(184, 88, 69, 0.15), 0 0 0 3px rgba(184, 88, 69, 0.1)'
+                : '0 1px 3px rgba(139, 115, 85, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
+              transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)'
+            }}
+          >
             <div style={{ position: 'relative' }}>
               <div style={{
                 position: 'relative'
@@ -349,6 +411,11 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                 }}>
                   {currentMode === 'agent' && (
                     <>
+                      <FileUploadButton
+                        onFilesChange={setSelectedFiles}
+                        clearTrigger={clearFilesTrigger}
+                        addFilesTrigger={addFilesTrigger}
+                      />
                       <SystemPromptToggle
                         isSystemPromptMode={isSystemPromptMode}
                         onToggle={() => setIsSystemPromptMode(!isSystemPromptMode)}

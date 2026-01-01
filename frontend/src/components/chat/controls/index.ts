@@ -7,3 +7,4 @@ export { default as MCPToolSelector } from './MCPToolSelector';
 export { default as SystemToolSelector } from './SystemToolSelector';
 export { default as PromptSelector } from './PromptSelector';
 export { default as SystemPromptToggle } from './SystemPromptToggle';
+export { default as FileUploadButton } from './FileUploadButton';

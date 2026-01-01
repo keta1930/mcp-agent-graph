@@ -291,6 +291,7 @@ const ChatSystem: React.FC = () => {
         system_tools: options.system_tools || [],
         max_iterations: options.max_iterations,
         user_prompt: options.user_prompt || inputText,
+        files: options.files || [],
         // Graph 模式参数
         graph_name: options.graph_name,
         onConversationCreated: (backendConversationId: string) => {

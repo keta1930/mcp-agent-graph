@@ -15,6 +15,7 @@ import PromptSelector from '../controls/PromptSelector';
 import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
+import FileUploadButton from '../controls/FileUploadButton';
 import { useT } from '../../../i18n/hooks';
 
 interface InputAreaProps {
@@ -54,9 +55,13 @@ const InputArea: React.FC<InputAreaProps> = ({
   const [selectedMCPServers, setSelectedMCPServers] = useState<Record<string, boolean>>({});
   const [selectedSystemTools, setSelectedSystemTools] = useState<string[]>([]);
   const [maxIterations, setMaxIterations] = useState<number | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [clearFilesTrigger, setClearFilesTrigger] = useState<number>(0);
+  const [addFilesTrigger, setAddFilesTrigger] = useState<{ files: File[]; timestamp: number } | undefined>();
+  const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // 标记是否已经初始化过配置
+  const inputContainerRef = useRef<HTMLDivElement>(null);
+
   const [isConfigInitialized, setIsConfigInitialized] = useState(false);
 
   const { models: availableModels } = useModelStore();
@@ -173,6 +178,10 @@ const InputArea: React.FC<InputAreaProps> = ({
           options.max_iterations = maxIterations;
         }
 
+        if (selectedFiles.length > 0) {
+          options.files = selectedFiles;
+        }
+
         break;
       case 'graph':
         options.graph_name = selectedGraph;
@@ -181,6 +190,8 @@ const InputArea: React.FC<InputAreaProps> = ({
 
     onSendMessage(currentInput.trim(), options);
     setInputValue('');
+    setSelectedFiles([]);
+    setClearFilesTrigger(prev => prev + 1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -236,6 +247,40 @@ const InputArea: React.FC<InputAreaProps> = ({
     }
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (mode === 'agent' && !disabled) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === inputContainerRef.current) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (mode !== 'agent' || disabled) return;
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      setAddFilesTrigger({ files: droppedFiles, timestamp: Date.now() });
+    }
+  };
+
   return (
     <div style={{
       background: 'linear-gradient(to top, #f5f3f0 0%, #faf8f5 100%)',
@@ -261,15 +306,28 @@ const InputArea: React.FC<InputAreaProps> = ({
         margin: '0 auto',
         width: '100%'
       }}>
-        <div style={{
-          position: 'relative',
-          background: 'linear-gradient(to bottom, rgba(245, 243, 240, 0.6), rgba(250, 248, 245, 0.4))',
-          border: '1px solid rgba(139, 115, 85, 0.12)',
-          borderRadius: '10px',
-          padding: '14px 16px',
-          transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
-          boxShadow: 'inset 0 1px 3px rgba(139, 115, 85, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.5)'
-        }}>
+        <div
+          ref={inputContainerRef}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          style={{
+            position: 'relative',
+            background: isDragging
+              ? 'linear-gradient(to bottom, rgba(184, 88, 69, 0.08), rgba(184, 88, 69, 0.05))'
+              : 'linear-gradient(to bottom, rgba(245, 243, 240, 0.6), rgba(250, 248, 245, 0.4))',
+            border: isDragging
+              ? '2px dashed rgba(184, 88, 69, 0.5)'
+              : '1px solid rgba(139, 115, 85, 0.12)',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+            boxShadow: isDragging
+              ? 'inset 0 2px 8px rgba(184, 88, 69, 0.15), 0 0 0 3px rgba(184, 88, 69, 0.1)'
+              : 'inset 0 1px 3px rgba(139, 115, 85, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.5)'
+          }}
+        >
           <textarea
             ref={textareaRef}
             value={getCurrentInputValue()}
@@ -307,6 +365,12 @@ const InputArea: React.FC<InputAreaProps> = ({
           }}>
             {mode === 'agent' && (
               <>
+                <FileUploadButton
+                  onFilesChange={setSelectedFiles}
+                  disabled={disabled}
+                  clearTrigger={clearFilesTrigger}
+                  addFilesTrigger={addFilesTrigger}
+                />
                 <SystemPromptToggle
                   isSystemPromptMode={isSystemPromptMode}
                   onToggle={() => setIsSystemPromptMode(!isSystemPromptMode)}

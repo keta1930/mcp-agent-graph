@@ -132,11 +132,10 @@ export class ConversationService {
 
 
 
-  // Agent Invoke - 创建SSE连接
+  // Agent Invoke - 创建SSE连接（支持文件上传）
   static async createAgentRunSSE(request: AgentRunRequest): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     const token = localStorage.getItem('auth_token');
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
       'Cache-Control': 'no-cache',
     };
@@ -146,10 +145,47 @@ export class ConversationService {
     }
 
     try {
+      // 使用 FormData 代替 JSON（支持文件上传）
+      const formData = new FormData();
+
+      // 必需参数
+      formData.append('user_prompt', request.user_prompt);
+      formData.append('stream', String(request.stream ?? true));
+
+      // 可选参数
+      if (request.agent_name) {
+        formData.append('agent_name', request.agent_name);
+      }
+      if (request.conversation_id) {
+        formData.append('conversation_id', request.conversation_id);
+      }
+      if (request.model_name) {
+        formData.append('model_name', request.model_name);
+      }
+      if (request.system_prompt) {
+        formData.append('system_prompt', request.system_prompt);
+      }
+      if (request.mcp_servers && request.mcp_servers.length > 0) {
+        formData.append('mcp_servers', JSON.stringify(request.mcp_servers));
+      }
+      if (request.system_tools && request.system_tools.length > 0) {
+        formData.append('system_tools', JSON.stringify(request.system_tools));
+      }
+      if (request.max_iterations !== undefined) {
+        formData.append('max_iterations', String(request.max_iterations));
+      }
+
+      // 文件上传（新增）
+      if (request.files && request.files.length > 0) {
+        request.files.forEach(file => {
+          formData.append('files', file);
+        });
+      }
+
       const response = await fetch(`${api.defaults.baseURL}/agent/run`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ ...request, stream: true })
+        body: formData
       });
 
       if (!response.ok) {

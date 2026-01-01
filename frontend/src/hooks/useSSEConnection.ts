@@ -578,7 +578,8 @@ export function useSSEConnection() {
             system_prompt: options.system_prompt,
             mcp_servers: options.mcp_servers || [],
             system_tools: options.system_tools || [],
-            max_iterations: options.max_iterations
+            max_iterations: options.max_iterations,
+            files: options.files || [] // 添加文件支持
           };
           reader = await ConversationService.createAgentRunSSE(request);
           break;

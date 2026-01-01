@@ -6,6 +6,7 @@ export interface ConversationMessage {
   reasoning_content?: string;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
+  image_paths?: string[]; // 图片路径列表（MinIO路径，用于多模态消息）
 }
 
 export interface ToolCall {
@@ -160,24 +161,27 @@ export interface SSEMessage {
   error_type?: string; // 错误类型
 }
 
-// Agent 运行请求
+// Agent 运行请求（支持文件上传）
 export interface AgentRunRequest {
   // Agent 选择（可选）
   agent_name?: string;
-  
+
   // 用户输入
   user_prompt: string;
-  
+
   // 对话管理
   conversation_id?: string;
   stream?: boolean;
-  
+
   // 可选配置参数（覆盖/扩展 Agent 配置）
   model_name?: string; // 覆盖 Agent 的模型
   system_prompt?: string; // 覆盖 Agent 的系统提示词
   mcp_servers?: string[]; // 添加到 Agent 的 MCP 服务器列表
   system_tools?: string[]; // 添加到 Agent 的系统工具列表
   max_iterations?: number; // 覆盖 Agent 的最大迭代次数
+
+  // 文件上传（新增）
+  files?: File[]; // 上传的文件列表（图片、文本文件等）
 }
 
 export interface GraphExecuteRequest {
