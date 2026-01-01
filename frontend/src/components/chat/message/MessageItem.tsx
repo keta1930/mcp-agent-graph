@@ -10,6 +10,7 @@ import GlassCodeBlock from './GlassCodeBlock';
 import ToolCallDisplay from './ToolCallDisplay';
 import NodeExecutionInfo from './NodeExecutionInfo';
 import StaticTaskBlock from './StaticTaskBlock';
+import FileCard from './FileCard';
 
 interface MessageItemProps {
   message: ConversationMessage;
@@ -212,8 +213,28 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 ))}
               </div>
             )}
+            </div>
           </div>
-        </div>
+
+          {/* 图片显示在消息下方 */}
+          {message.image_paths && message.image_paths.length > 0 && (
+            <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {message.image_paths.map((imagePath, index) => {
+                const filename = imagePath.split('/').pop() || `image-${index + 1}`;
+                return (
+                  <FileCard
+                    key={index}
+                    filename={filename}
+                    isImage={true}
+                    size="medium"
+                    conversationId={conversationId}
+                    imagePath={imagePath}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
