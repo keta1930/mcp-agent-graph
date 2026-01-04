@@ -9,15 +9,16 @@ import {
   Space,
   Typography,
   Select,
-  Dropdown,
   Modal,
   Form,
   App,
   Empty,
   Spin,
+  Tag,
+  Popconfirm,
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, MoreHorizontal, LayoutGrid } from 'lucide-react';
+import { Search, Plus, LayoutGrid, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useT } from '../i18n/hooks';
@@ -27,6 +28,76 @@ import { ProjectListItem } from '../types/project';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
+
+// 样式常量 - 与 PromptManager 保持一致
+const HEADER_STYLES = {
+  container: {
+    background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+    backdropFilter: 'blur(20px)',
+    padding: '0 48px',
+    borderBottom: 'none',
+    boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+    position: 'relative' as const,
+  },
+  decorativeLine: {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: '20%',
+    right: '20%',
+    height: '1px',
+    background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)',
+  },
+  title: {
+    margin: 0,
+    color: '#2d2d2d',
+    fontWeight: 500,
+    letterSpacing: '2px',
+    fontSize: '18px',
+  },
+};
+
+const TAG_STYLES = {
+  primary: {
+    background: 'rgba(184, 88, 69, 0.08)',
+    color: '#b85845',
+    border: '1px solid rgba(184, 88, 69, 0.25)',
+    borderRadius: '6px',
+    fontWeight: 500,
+    padding: '4px 12px',
+    fontSize: '13px',
+  },
+};
+
+const BUTTON_STYLES = {
+  primary: {
+    background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+    border: 'none',
+    borderRadius: '6px',
+    color: '#fff',
+    padding: '8px 16px',
+    fontSize: '14px',
+    fontWeight: 500,
+    letterSpacing: '0.3px',
+    boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+  },
+};
+
+const INPUT_STYLES = {
+  search: {
+    width: 240,
+    height: '40px',
+    padding: '10px 14px',
+    borderRadius: '6px',
+    border: '1px solid rgba(139, 115, 85, 0.2)',
+    background: 'rgba(255, 255, 255, 0.85)',
+    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+    fontSize: '14px',
+    color: '#2d2d2d',
+    letterSpacing: '0.3px',
+    transition: 'all 0.3s ease',
+  },
+};
 
 type SortKey = 'activity' | 'name';
 
@@ -41,8 +112,6 @@ const Projects: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('activity');
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [editingProject, setEditingProject] = useState<ProjectListItem | null>(null);
   const [form] = Form.useForm();
 
   const loadProjects = async () => {
@@ -80,50 +149,23 @@ const Projects: React.FC = () => {
   }, [projects, searchText, sortBy]);
 
   const openCreateModal = () => {
-    setEditingProject(null);
     form.setFieldsValue({ name: '', instruction: '' });
     setModalOpen(true);
   };
 
-  const openEditModal = async (project: ProjectListItem) => {
-    setEditingProject(project);
-    setModalOpen(true);
-    setModalLoading(true);
-    try {
-      const detail = await projectService.getProjectDetail(project.project_id, false);
-      form.setFieldsValue({
-        name: detail.name,
-        instruction: detail.instruction || '',
-      });
-    } catch (error: any) {
-      message.error(t('pages.projects.loadDetailFailed', { error: error.message }));
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
   const handleModalCancel = () => {
     setModalOpen(false);
-    setEditingProject(null);
     form.resetFields();
   };
 
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
-      if (editingProject) {
-        await projectService.updateProject(editingProject.project_id, {
-          name: values.name,
-          instruction: values.instruction,
-        });
-        message.success(t('pages.projects.updateSuccess', { name: values.name }));
-      } else {
-        await projectService.createProject({
-          name: values.name,
-          instruction: values.instruction,
-        });
-        message.success(t('pages.projects.createSuccess', { name: values.name }));
-      }
+      await projectService.createProject({
+        name: values.name,
+        instruction: values.instruction,
+      });
+      message.success(t('pages.projects.createSuccess', { name: values.name }));
       handleModalCancel();
       loadProjects();
     } catch (error: any) {
@@ -132,23 +174,14 @@ const Projects: React.FC = () => {
     }
   };
 
-  const handleDelete = (project: ProjectListItem) => {
-    Modal.confirm({
-      title: t('pages.projects.deleteConfirmTitle'),
-      content: t('pages.projects.deleteConfirmMessage', { name: project.name }),
-      okText: t('common.delete'),
-      cancelText: t('common.cancel'),
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await projectService.deleteProject(project.project_id);
-          message.success(t('pages.projects.deleteSuccess', { name: project.name }));
-          loadProjects();
-        } catch (error: any) {
-          message.error(t('pages.projects.deleteFailed', { error: error.message }));
-        }
-      },
-    });
+  const handleDelete = async (project: ProjectListItem) => {
+    try {
+      await projectService.deleteProject(project.project_id);
+      message.success(t('pages.projects.deleteSuccess', { name: project.name }));
+      loadProjects();
+    } catch (error: any) {
+      message.error(t('pages.projects.deleteFailed', { error: error.message }));
+    }
   };
 
   const renderUpdatedText = (project: ProjectListItem) => {
@@ -162,95 +195,50 @@ const Projects: React.FC = () => {
 
   return (
     <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
-      <Header
-        style={{
-          background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(245, 243, 240, 0.6))',
-          backdropFilter: 'blur(20px)',
-          padding: '0 48px',
-          borderBottom: 'none',
-          boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: '20%',
-            right: '20%',
-            height: '1px',
-            background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)',
-          }}
-        />
+      <Header style={HEADER_STYLES.container}>
+        <div style={HEADER_STYLES.decorativeLine} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
           <Space size="large">
-            <LayoutGrid size={26} color="#b85845" strokeWidth={1.5} />
-            <Title level={4} style={{ margin: 0, color: '#2d2d2d', fontWeight: 500 }}>
+            <LayoutGrid size={28} color="#b85845" strokeWidth={1.5} />
+            <Title level={4} style={HEADER_STYLES.title}>
               {t('pages.projects.title')}
             </Title>
+            <Tag style={TAG_STYLES.primary}>
+              {t('pages.projects.totalCount', { count: projects.length })}
+            </Tag>
           </Space>
-          <Button
-            type="primary"
-            icon={<Plus size={16} strokeWidth={1.6} />}
-            onClick={openCreateModal}
-            style={{
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #c41e3a, #8b0000)',
-              boxShadow: '0 6px 16px rgba(196, 30, 58, 0.25)',
-              border: 'none',
-              height: '36px',
-              padding: '0 18px',
-              fontWeight: 500,
-            }}
-          >
-            {t('pages.projects.newProject')}
-          </Button>
+
+          <Space>
+            <Input
+              placeholder={t('pages.projects.searchPlaceholder')}
+              prefix={<Search size={16} strokeWidth={1.5} style={{ color: '#8b7355' }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              style={INPUT_STYLES.search}
+              allowClear
+            />
+            <Select
+              value={sortBy}
+              onChange={(value: SortKey) => setSortBy(value)}
+              style={{ minWidth: 140 }}
+              options={[
+                { label: t('pages.projects.sortActivity'), value: 'activity' },
+                { label: t('pages.projects.sortName'), value: 'name' },
+              ]}
+            />
+            <Button
+              type="primary"
+              icon={<Plus size={16} strokeWidth={1.5} />}
+              onClick={openCreateModal}
+              style={BUTTON_STYLES.primary}
+            >
+              {t('pages.projects.newProject')}
+            </Button>
+          </Space>
         </div>
       </Header>
 
-      <Content style={{ padding: '28px 48px 40px', overflow: 'auto' }}>
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.7)',
-            borderRadius: '16px',
-            padding: '16px',
-            border: '1px solid rgba(196, 30, 58, 0.12)',
-            boxShadow: '0 4px 16px rgba(139, 115, 85, 0.08)',
-            marginBottom: '24px',
-          }}
-        >
-          <Row align="middle" gutter={[16, 16]}>
-            <Col xs={24} md={18}>
-              <Input
-                prefix={<Search size={16} strokeWidth={1.6} style={{ color: 'rgba(45, 24, 16, 0.45)' }} />}
-                placeholder={t('pages.projects.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
-                style={{
-                  height: '40px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(196, 30, 58, 0.2)',
-                  background: 'rgba(255, 255, 255, 0.9)',
-                }}
-              />
-            </Col>
-            <Col xs={24} md={6}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
-                <Text style={{ color: 'rgba(45, 24, 16, 0.65)' }}>{t('pages.projects.sortBy')}</Text>
-                <Select
-                  value={sortBy}
-                  onChange={(value: SortKey) => setSortBy(value)}
-                  style={{ minWidth: 140 }}
-                  options={[
-                    { label: t('pages.projects.sortActivity'), value: 'activity' },
-                    { label: t('pages.projects.sortName'), value: 'name' },
-                  ]}
-                />
-              </div>
-            </Col>
-          </Row>
-        </div>
+      <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
@@ -263,116 +251,109 @@ const Projects: React.FC = () => {
           />
         ) : (
           <Row gutter={[24, 24]}>
-            {filteredProjects.map((project) => {
-              const menuItems = [
-                {
-                  key: 'open',
-                  label: t('pages.projects.open'),
-                  onClick: () => navigate(`/workspace/projects/${project.project_id}`),
-                },
-                {
-                  key: 'edit',
-                  label: t('common.edit'),
-                  onClick: () => openEditModal(project),
-                },
-                {
-                  key: 'delete',
-                  label: t('common.delete'),
-                  onClick: () => handleDelete(project),
-                },
-              ];
-
-              return (
-                <Col key={project.project_id} xs={24} sm={12} lg={12} xl={8}>
-                  <Card
-                    hoverable
-                    onClick={() => navigate(`/workspace/projects/${project.project_id}`)}
+            {filteredProjects.map((project) => (
+              <Col key={project.project_id} xs={24} sm={12} lg={12} xl={8}>
+                <Card
+                  hoverable
+                  onClick={() => navigate(`/workspace/projects/${project.project_id}`)}
+                  style={{
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
+                    background: 'rgba(255, 255, 255, 0.85)',
+                    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                    minHeight: '140px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+                  }}
+                  bodyStyle={{ padding: '20px 22px' }}
+                >
+                  <div
                     style={{
-                      borderRadius: '18px',
-                      border: '1px solid rgba(196, 30, 58, 0.12)',
-                      background: 'rgba(255, 255, 255, 0.85)',
-                      boxShadow: '0 8px 24px rgba(139, 115, 85, 0.1)',
-                      minHeight: '140px',
-                      position: 'relative',
-                      overflow: 'hidden',
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
                     }}
-                    bodyStyle={{ padding: '20px 22px' }}
                   >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
+                    <Popconfirm
+                      title={t('pages.projects.deleteConfirmTitle')}
+                      description={t('pages.projects.deleteConfirmMessage', { name: project.name })}
+                      onConfirm={(e) => {
+                        e?.stopPropagation();
+                        handleDelete(project);
                       }}
+                      onCancel={(e) => e?.stopPropagation()}
+                      okText={t('common.delete')}
+                      cancelText={t('common.cancel')}
+                      okButtonProps={{ danger: true }}
                     >
-                      <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-                        <Button
-                          type="text"
-                          icon={<MoreHorizontal size={16} strokeWidth={1.6} />}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{
-                            height: '32px',
-                            width: '32px',
-                            borderRadius: '8px',
-                            color: 'rgba(45, 24, 16, 0.65)',
-                          }}
-                        />
-                      </Dropdown>
-                    </div>
+                      <Button
+                        type="text"
+                        icon={<Trash2 size={14} strokeWidth={1.5} />}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          height: '28px',
+                          width: '28px',
+                          borderRadius: '4px',
+                          color: '#8b7355',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease',
+                        }}
+                      />
+                    </Popconfirm>
+                  </div>
 
-                    <Title level={5} style={{ marginBottom: '8px', color: '#2d2d2d' }}>
-                      {project.name}
-                    </Title>
-                    <Text style={{ color: 'rgba(45, 24, 16, 0.65)', fontSize: '13px' }}>
-                      {renderUpdatedText(project)}
+                  <Title level={5} style={{ marginBottom: '8px', color: '#2d2d2d' }}>
+                    {project.name}
+                  </Title>
+                  <Text style={{ color: 'rgba(45, 24, 16, 0.65)', fontSize: '13px' }}>
+                    {renderUpdatedText(project)}
+                  </Text>
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '16px' }}>
+                    <Text style={{ color: 'rgba(45, 24, 16, 0.75)', fontSize: '13px' }}>
+                      {t('pages.projects.conversationsCount', { count: project.conversation_count })}
                     </Text>
-                    <div style={{ marginTop: '16px', display: 'flex', gap: '16px' }}>
-                      <Text style={{ color: 'rgba(45, 24, 16, 0.75)', fontSize: '13px' }}>
-                        {t('pages.projects.conversationsCount', { count: project.conversation_count })}
-                      </Text>
-                      <Text style={{ color: 'rgba(45, 24, 16, 0.75)', fontSize: '13px' }}>
-                        {t('pages.projects.filesCount', { count: project.total_files })}
-                      </Text>
-                    </div>
-                  </Card>
-                </Col>
-              );
-            })}
+                    <Text style={{ color: 'rgba(45, 24, 16, 0.75)', fontSize: '13px' }}>
+                      {t('pages.projects.filesCount', { count: project.total_files })}
+                    </Text>
+                  </div>
+                </Card>
+              </Col>
+            ))}
           </Row>
         )}
       </Content>
 
       <Modal
         open={modalOpen}
-        title={editingProject ? t('pages.projects.editProjectTitle') : t('pages.projects.createProjectTitle')}
+        title={t('pages.projects.createProjectTitle')}
         onCancel={handleModalCancel}
         onOk={handleModalOk}
-        okText={editingProject ? t('common.save') : t('common.create')}
+        okText={t('common.create')}
         cancelText={t('common.cancel')}
-        confirmLoading={modalLoading}
+        okButtonProps={{
+          style: BUTTON_STYLES.primary,
+        }}
         centered
       >
-        {modalLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-            <Spin />
-          </div>
-        ) : (
-          <Form form={form} layout="vertical">
-            <Form.Item
-              name="name"
-              label={t('pages.projects.nameLabel')}
-              rules={[{ required: true, message: t('pages.projects.nameRequired') }]}
-            >
-              <Input placeholder={t('pages.projects.namePlaceholder')} />
-            </Form.Item>
-            <Form.Item name="instruction" label={t('pages.projects.instructionLabel')}>
-              <Input.TextArea
-                rows={5}
-                placeholder={t('pages.projects.instructionPlaceholder')}
-              />
-            </Form.Item>
-          </Form>
-        )}
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label={t('pages.projects.nameLabel')}
+            rules={[{ required: true, message: t('pages.projects.nameRequired') }]}
+          >
+            <Input placeholder={t('pages.projects.namePlaceholder')} />
+          </Form.Item>
+          <Form.Item name="instruction" label={t('pages.projects.instructionLabel')}>
+            <Input.TextArea
+              rows={5}
+              placeholder={t('pages.projects.instructionPlaceholder')}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </Layout>
   );

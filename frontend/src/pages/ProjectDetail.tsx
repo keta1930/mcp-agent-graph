@@ -17,9 +17,10 @@ import {
   Tag,
   Select,
   Popconfirm,
+  Tooltip,
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MessageSquareText, Plus, Upload, Link2, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, MessageSquareText, Plus, Upload, Link2, FileText, Trash2, Pencil, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
 import { useT } from '../i18n/hooks';
@@ -35,6 +36,57 @@ import { ConversationSummary } from '../types/conversation';
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
+// 样式常量 - 与 PromptManager 保持一致
+const HEADER_STYLES = {
+  container: {
+    background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(245, 243, 240, 0.6))',
+    backdropFilter: 'blur(20px)',
+    padding: '0 48px',
+    borderBottom: 'none',
+    boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
+    position: 'relative' as const,
+  },
+  decorativeLine: {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: '20%',
+    right: '20%',
+    height: '1px',
+    background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)',
+  },
+  title: {
+    margin: 0,
+    color: '#2d2d2d',
+    fontWeight: 500,
+    letterSpacing: '2px',
+    fontSize: '18px',
+  },
+};
+
+const BUTTON_STYLES = {
+  primary: {
+    background: 'linear-gradient(135deg, #b85845 0%, #a0826d 100%)',
+    border: 'none',
+    borderRadius: '6px',
+    color: '#fff',
+    fontSize: '14px',
+    fontWeight: 500,
+    letterSpacing: '0.3px',
+    boxShadow: '0 2px 6px rgba(184, 88, 69, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+    transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
+  },
+  icon: {
+    color: '#8b7355',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+};
+
 const ProjectDetail: React.FC = () => {
   const t = useT();
   const { locale } = useI18n();
@@ -44,9 +96,6 @@ const ProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [project, setProject] = useState<ProjectDetailType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editOpen, setEditOpen] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
-  const [form] = Form.useForm();
   const [projectFiles, setProjectFiles] = useState<string[]>([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [fileModalOpen, setFileModalOpen] = useState(false);
@@ -64,6 +113,14 @@ const ProjectDetail: React.FC = () => {
   const [allConversations, setAllConversations] = useState<ConversationSummary[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // 项目名称编辑状态
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingNameValue, setEditingNameValue] = useState('');
+  
+  // 项目指令编辑状态
+  const [instructionModalOpen, setInstructionModalOpen] = useState(false);
+  const [instructionForm] = Form.useForm();
 
   const loadProject = async () => {
     if (!projectId) return;
@@ -111,53 +168,60 @@ const ProjectDetail: React.FC = () => {
     loadProjectFiles();
   }, [projectId]);
 
-  const openEditModal = () => {
-    if (!project) return;
-    form.setFieldsValue({
-      name: project.name,
-      instruction: project.instruction || '',
-    });
-    setEditOpen(true);
+  // 开始编辑项目名称
+  const startEditingName = () => {
+    if (project) {
+      setEditingNameValue(project.name);
+      setIsEditingName(true);
+    }
   };
 
-  const handleEditSave = async () => {
+  // 保存项目名称
+  const saveProjectName = async () => {
+    if (!project || !editingNameValue.trim()) return;
+    try {
+      await projectService.updateProject(project.project_id, {
+        name: editingNameValue.trim(),
+        instruction: project.instruction,
+      });
+      message.success(t('pages.projects.updateSuccess', { name: editingNameValue.trim() }));
+      setIsEditingName(false);
+      loadProject();
+    } catch (error: any) {
+      message.error(t('pages.projects.saveFailed', { error: error.message }));
+    }
+  };
+
+  // 取消编辑项目名称
+  const cancelEditingName = () => {
+    setIsEditingName(false);
+    setEditingNameValue('');
+  };
+
+  // 打开指令编辑弹窗
+  const openInstructionModal = () => {
+    if (project) {
+      instructionForm.setFieldsValue({ instruction: project.instruction || '' });
+      setInstructionModalOpen(true);
+    }
+  };
+
+  // 保存项目指令
+  const saveInstruction = async () => {
     if (!project) return;
     try {
-      const values = await form.validateFields();
-      setEditLoading(true);
+      const values = await instructionForm.validateFields();
       await projectService.updateProject(project.project_id, {
-        name: values.name,
+        name: project.name,
         instruction: values.instruction,
       });
-      message.success(t('pages.projects.updateSuccess', { name: values.name }));
-      setEditOpen(false);
+      message.success(t('pages.projects.updateSuccess', { name: project.name }));
+      setInstructionModalOpen(false);
       loadProject();
     } catch (error: any) {
       if (error?.errorFields) return;
       message.error(t('pages.projects.saveFailed', { error: error.message }));
-    } finally {
-      setEditLoading(false);
     }
-  };
-
-  const handleDelete = () => {
-    if (!project) return;
-    Modal.confirm({
-      title: t('pages.projects.deleteConfirmTitle'),
-      content: t('pages.projects.deleteConfirmMessage', { name: project.name }),
-      okText: t('common.delete'),
-      cancelText: t('common.cancel'),
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await projectService.deleteProject(project.project_id);
-          message.success(t('pages.projects.deleteSuccess', { name: project.name }));
-          navigate('/workspace/projects');
-        } catch (error: any) {
-          message.error(t('pages.projects.deleteFailed', { error: error.message }));
-        }
-      },
-    });
   };
 
   const openAddConversationModal = async () => {
@@ -319,45 +383,55 @@ const ProjectDetail: React.FC = () => {
 
   return (
     <Layout style={{ height: '100vh', background: '#faf8f5', display: 'flex', flexDirection: 'column' }}>
-      <Header
-        style={{
-          background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(245, 243, 240, 0.6))',
-          backdropFilter: 'blur(20px)',
-          padding: '0 48px',
-          borderBottom: 'none',
-          boxShadow: '0 2px 8px rgba(139, 115, 85, 0.08)',
-          position: 'relative',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: '20%',
-            right: '20%',
-            height: '1px',
-            background: 'linear-gradient(to right, transparent, rgba(139, 115, 85, 0.3) 50%, transparent)',
-          }}
-        />
+      <Header style={HEADER_STYLES.container}>
+        <div style={HEADER_STYLES.decorativeLine} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
           <Space size="middle">
             <Button
               type="text"
-              icon={<ArrowLeft size={16} strokeWidth={1.6} />}
+              icon={<ArrowLeft size={16} strokeWidth={1.5} />}
               onClick={() => navigate('/workspace/projects')}
-              style={{ color: 'rgba(45, 24, 16, 0.65)' }}
+              style={{ color: '#8b7355' }}
             >
               {t('pages.projectDetail.back')}
             </Button>
-            <Title level={4} style={{ margin: 0, color: '#2d2d2d', fontWeight: 500 }}>
-              {project?.name || t('pages.projectDetail.title')}
-            </Title>
-          </Space>
-          <Space>
-            <Button onClick={openEditModal}>{t('common.edit')}</Button>
-            <Button danger onClick={handleDelete}>
-              {t('common.delete')}
-            </Button>
+            {isEditingName ? (
+              <Space size={8}>
+                <Input
+                  value={editingNameValue}
+                  onChange={(e) => setEditingNameValue(e.target.value)}
+                  onPressEnter={saveProjectName}
+                  style={{ width: 200, height: 32 }}
+                  autoFocus
+                />
+                <Button
+                  type="text"
+                  icon={<Check size={16} strokeWidth={1.5} />}
+                  onClick={saveProjectName}
+                  style={{ color: '#52c41a', padding: '4px' }}
+                />
+                <Button
+                  type="text"
+                  icon={<X size={16} strokeWidth={1.5} />}
+                  onClick={cancelEditingName}
+                  style={{ color: '#8b7355', padding: '4px' }}
+                />
+              </Space>
+            ) : (
+              <Space size={8}>
+                <Title level={4} style={HEADER_STYLES.title}>
+                  {project?.name || t('pages.projectDetail.title')}
+                </Title>
+                <Tooltip title={t('pages.projectDetail.editName')}>
+                  <Button
+                    type="text"
+                    icon={<Pencil size={14} strokeWidth={1.5} />}
+                    onClick={startEditingName}
+                    style={BUTTON_STYLES.icon}
+                  />
+                </Tooltip>
+              </Space>
+            )}
           </Space>
         </div>
       </Header>
@@ -374,31 +448,25 @@ const ProjectDetail: React.FC = () => {
             <Col xs={24} lg={15} xl={16}>
               <Card
                 style={{
-                  borderRadius: '18px',
-                  border: '1px solid rgba(196, 30, 58, 0.12)',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(139, 115, 85, 0.15)',
                   background: 'rgba(255, 255, 255, 0.85)',
-                  boxShadow: '0 8px 24px rgba(139, 115, 85, 0.1)',
+                  boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
                 }}
                 bodyStyle={{ padding: '24px' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <Space align="center">
-                    <MessageSquareText size={20} color="#b85845" strokeWidth={1.6} />
+                    <MessageSquareText size={20} color="#b85845" strokeWidth={1.5} />
                     <Title level={5} style={{ margin: 0 }}>
                       {t('pages.projectDetail.conversations')}
                     </Title>
                   </Space>
                   <Button
                     type="primary"
-                    icon={<Plus size={14} />}
+                    icon={<Plus size={14} strokeWidth={1.5} />}
                     onClick={openAddConversationModal}
-                    style={{
-                      borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #c41e3a, #8b0000)',
-                      border: 'none',
-                      boxShadow: '0 4px 12px rgba(196, 30, 58, 0.25)',
-                      fontWeight: 500,
-                    }}
+                    style={BUTTON_STYLES.primary}
                   >
                     {t('pages.projectDetail.addConversation')}
                   </Button>
@@ -462,20 +530,28 @@ const ProjectDetail: React.FC = () => {
               <Space direction="vertical" size={20} style={{ width: '100%' }}>
                 <Card
                   style={{
-                    borderRadius: '18px',
-                    border: '1px solid rgba(196, 30, 58, 0.12)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
                     background: 'rgba(255, 255, 255, 0.85)',
-                    boxShadow: '0 8px 24px rgba(139, 115, 85, 0.1)',
+                    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
                   }}
                   bodyStyle={{ padding: '20px' }}
                 >
-                  <Space style={{ marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <Text style={{ fontWeight: 600, color: '#2d2d2d' }}>
                       {t('pages.projectDetail.instructions')}
                     </Text>
-                  </Space>
+                    <Tooltip title={t('pages.projectDetail.setInstructions')}>
+                      <Button
+                        type="text"
+                        icon={<Pencil size={14} strokeWidth={1.5} />}
+                        onClick={openInstructionModal}
+                        style={BUTTON_STYLES.icon}
+                      />
+                    </Tooltip>
+                  </div>
                   {project.instruction ? (
-                    <Paragraph style={{ color: 'rgba(45, 24, 16, 0.75)', whiteSpace: 'pre-wrap' }}>
+                    <Paragraph style={{ color: 'rgba(45, 24, 16, 0.75)', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
                       {project.instruction}
                     </Paragraph>
                   ) : (
@@ -485,10 +561,10 @@ const ProjectDetail: React.FC = () => {
 
                 <Card
                   style={{
-                    borderRadius: '18px',
-                    border: '1px solid rgba(196, 30, 58, 0.12)',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(139, 115, 85, 0.15)',
                     background: 'rgba(255, 255, 255, 0.85)',
-                    boxShadow: '0 8px 24px rgba(139, 115, 85, 0.1)',
+                    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
                   }}
                   bodyStyle={{ padding: '20px' }}
                 >
@@ -497,12 +573,17 @@ const ProjectDetail: React.FC = () => {
                       <Text style={{ fontWeight: 600, color: '#2d2d2d' }}>
                         {t('pages.projectDetail.files')}
                       </Text>
-                      <Tag color="gold">{projectFiles.length}</Tag>
+                      <Tag style={{
+                        background: 'rgba(184, 88, 69, 0.08)',
+                        color: '#b85845',
+                        border: '1px solid rgba(184, 88, 69, 0.25)',
+                        borderRadius: '6px',
+                      }}>{projectFiles.length}</Tag>
                     </Space>
                     <Space size={8}>
                       <Button
                         type="text"
-                        icon={<FileText size={14} />}
+                        icon={<FileText size={14} strokeWidth={1.5} />}
                         onClick={openCreateFileModal}
                         style={{ color: '#b85845' }}
                       >
@@ -510,7 +591,7 @@ const ProjectDetail: React.FC = () => {
                       </Button>
                       <Button
                         type="text"
-                        icon={<Upload size={14} />}
+                        icon={<Upload size={14} strokeWidth={1.5} />}
                         onClick={handleUploadClick}
                         style={{ color: '#8b7355' }}
                       >
@@ -518,7 +599,7 @@ const ProjectDetail: React.FC = () => {
                       </Button>
                       <Button
                         type="text"
-                        icon={<Link2 size={14} />}
+                        icon={<Link2 size={14} strokeWidth={1.5} />}
                         onClick={openPushFileModal}
                         style={{ color: '#8b7355' }}
                       >
@@ -564,7 +645,7 @@ const ProjectDetail: React.FC = () => {
                               okText={t('common.delete')}
                               cancelText={t('common.cancel')}
                             >
-                              <Button type="link" danger style={{ padding: 0 }}>
+                              <Button type="link" style={{ padding: 0, color: '#b85845' }}>
                                 {t('common.delete')}
                               </Button>
                             </Popconfirm>,
@@ -585,25 +666,20 @@ const ProjectDetail: React.FC = () => {
       </Content>
 
       <Modal
-        open={editOpen}
-        title={t('pages.projects.editProjectTitle')}
-        onCancel={() => setEditOpen(false)}
-        onOk={handleEditSave}
+        open={instructionModalOpen}
+        title={t('pages.projectDetail.setInstructions')}
+        onCancel={() => setInstructionModalOpen(false)}
+        onOk={saveInstruction}
         okText={t('common.save')}
         cancelText={t('common.cancel')}
-        confirmLoading={editLoading}
+        okButtonProps={{
+          style: BUTTON_STYLES.primary,
+        }}
         centered
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label={t('pages.projects.nameLabel')}
-            rules={[{ required: true, message: t('pages.projects.nameRequired') }]}
-          >
-            <Input placeholder={t('pages.projects.namePlaceholder')} />
-          </Form.Item>
+        <Form form={instructionForm} layout="vertical">
           <Form.Item name="instruction" label={t('pages.projects.instructionLabel')}>
-            <Input.TextArea rows={5} placeholder={t('pages.projects.instructionPlaceholder')} />
+            <Input.TextArea rows={8} placeholder={t('pages.projects.instructionPlaceholder')} />
           </Form.Item>
         </Form>
       </Modal>
@@ -637,13 +713,7 @@ const ProjectDetail: React.FC = () => {
                     key="add"
                     type="primary"
                     onClick={() => handleAddConversation(item.conversation_id)}
-                    style={{
-                      borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #c41e3a, #8b0000)',
-                      border: 'none',
-                      boxShadow: '0 4px 12px rgba(196, 30, 58, 0.2)',
-                      fontWeight: 500,
-                    }}
+                    style={BUTTON_STYLES.primary}
                   >
                     {t('pages.projectDetail.add')}
                   </Button>,
