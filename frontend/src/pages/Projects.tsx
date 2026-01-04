@@ -238,7 +238,7 @@ const Projects: React.FC = () => {
         </div>
       </Header>
 
-      <Content style={{ flex: 1, padding: '48px 64px', overflow: 'auto' }}>
+      <Content style={{ flex: 1, padding: '32px 48px', overflow: 'auto' }}>
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
@@ -250,29 +250,28 @@ const Projects: React.FC = () => {
             style={{ marginTop: '80px' }}
           />
         ) : (
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             {filteredProjects.map((project) => (
-              <Col key={project.project_id} xs={24} sm={12} lg={12} xl={8}>
+              <Col key={project.project_id} xs={24} sm={12} lg={8} xl={6}>
                 <Card
                   hoverable
                   onClick={() => navigate(`/workspace/projects/${project.project_id}`)}
                   style={{
-                    borderRadius: '6px',
-                    border: '1px solid rgba(139, 115, 85, 0.15)',
-                    background: 'rgba(255, 255, 255, 0.85)',
-                    boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
-                    minHeight: '140px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(139, 115, 85, 0.12)',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    boxShadow: '0 2px 8px rgba(139, 115, 85, 0.06)',
                     position: 'relative',
                     overflow: 'hidden',
                     transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
                   }}
-                  bodyStyle={{ padding: '20px 22px' }}
+                  bodyStyle={{ padding: '14px 16px' }}
                 >
                   <div
                     style={{
                       position: 'absolute',
-                      top: '12px',
-                      right: '12px',
+                      top: '8px',
+                      right: '8px',
                     }}
                   >
                     <Popconfirm
@@ -285,17 +284,17 @@ const Projects: React.FC = () => {
                       onCancel={(e) => e?.stopPropagation()}
                       okText={t('common.delete')}
                       cancelText={t('common.cancel')}
-                      okButtonProps={{ danger: true }}
+                      okButtonProps={{ style: { background: '#b85845', borderColor: '#b85845' } }}
                     >
                       <Button
                         type="text"
-                        icon={<Trash2 size={14} strokeWidth={1.5} />}
+                        icon={<Trash2 size={13} strokeWidth={1.5} />}
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                          height: '28px',
-                          width: '28px',
+                          height: '24px',
+                          width: '24px',
                           borderRadius: '4px',
-                          color: '#8b7355',
+                          color: 'rgba(139, 115, 85, 0.5)',
                           padding: '4px',
                           display: 'flex',
                           alignItems: 'center',
@@ -306,17 +305,17 @@ const Projects: React.FC = () => {
                     </Popconfirm>
                   </div>
 
-                  <Title level={5} style={{ marginBottom: '8px', color: '#2d2d2d' }}>
+                  <Title level={5} style={{ marginBottom: '6px', color: '#2d2d2d', fontSize: '14px', fontWeight: 600, paddingRight: '24px' }}>
                     {project.name}
                   </Title>
-                  <Text style={{ color: 'rgba(45, 24, 16, 0.65)', fontSize: '13px' }}>
+                  <Text style={{ color: 'rgba(45, 24, 16, 0.55)', fontSize: '12px' }}>
                     {renderUpdatedText(project)}
                   </Text>
-                  <div style={{ marginTop: '16px', display: 'flex', gap: '16px' }}>
-                    <Text style={{ color: 'rgba(45, 24, 16, 0.75)', fontSize: '13px' }}>
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '12px' }}>
+                    <Text style={{ color: 'rgba(45, 24, 16, 0.65)', fontSize: '12px' }}>
                       {t('pages.projects.conversationsCount', { count: project.conversation_count })}
                     </Text>
-                    <Text style={{ color: 'rgba(45, 24, 16, 0.75)', fontSize: '13px' }}>
+                    <Text style={{ color: 'rgba(45, 24, 16, 0.65)', fontSize: '12px' }}>
                       {t('pages.projects.filesCount', { count: project.total_files })}
                     </Text>
                   </div>

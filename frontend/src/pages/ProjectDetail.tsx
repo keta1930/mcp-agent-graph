@@ -436,7 +436,7 @@ const ProjectDetail: React.FC = () => {
         </div>
       </Header>
 
-      <Content style={{ padding: '28px 48px 40px', overflow: 'auto' }}>
+      <Content style={{ padding: '24px 48px 40px', overflow: 'auto' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
             <Spin size="large" />
@@ -444,21 +444,25 @@ const ProjectDetail: React.FC = () => {
         ) : !project ? (
           <Empty description={t('pages.projectDetail.notFound')} style={{ marginTop: '80px' }} />
         ) : (
-          <Row gutter={[24, 24]}>
-            <Col xs={24} lg={15} xl={16}>
+          <Row gutter={[20, 20]} align="stretch">
+            <Col xs={24} lg={15} xl={16} style={{ display: 'flex', flexDirection: 'column' }}>
               <Card
                 style={{
                   borderRadius: '6px',
                   border: '1px solid rgba(139, 115, 85, 0.15)',
                   background: 'rgba(255, 255, 255, 0.85)',
                   boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                  maxHeight: '620px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
                 }}
-                bodyStyle={{ padding: '24px' }}
+                bodyStyle={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <Space align="center">
-                    <MessageSquareText size={20} color="#b85845" strokeWidth={1.5} />
-                    <Title level={5} style={{ margin: 0 }}>
+                    <MessageSquareText size={18} color="#b85845" strokeWidth={1.5} />
+                    <Title level={5} style={{ margin: 0, fontSize: '15px' }}>
                       {t('pages.projectDetail.conversations')}
                     </Title>
                   </Space>
@@ -472,6 +476,7 @@ const ProjectDetail: React.FC = () => {
                   </Button>
                 </div>
 
+                <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(139, 115, 85, 0.3) transparent' }}>
                 {conversations.length === 0 ? (
                   <Empty description={t('pages.projectDetail.noConversations')} />
                 ) : (
@@ -481,9 +486,9 @@ const ProjectDetail: React.FC = () => {
                     renderItem={(item) => (
                       <List.Item
                         style={{
-                          padding: '12px 8px',
+                          padding: '10px 8px',
                           cursor: 'pointer',
-                          borderRadius: '10px',
+                          borderRadius: '8px',
                           transition: 'all 0.2s ease',
                         }}
                         onClick={() => navigate(`/chat/${item.conversation_id}`)}
@@ -496,7 +501,7 @@ const ProjectDetail: React.FC = () => {
                               event.stopPropagation();
                               handleRemoveConversation(item.conversation_id);
                             }}
-                            style={{ color: '#b85845' }}
+                            style={{ color: '#b85845', fontSize: '13px' }}
                           >
                             {t('pages.projectDetail.removeConversation')}
                           </Button>,
@@ -504,41 +509,46 @@ const ProjectDetail: React.FC = () => {
                       >
                         <List.Item.Meta
                           title={
-                            <Text style={{ color: '#2d2d2d', fontWeight: 500 }}>
+                            <Text style={{ color: '#2d2d2d', fontWeight: 500, fontSize: '14px' }}>
                               {item.title || item.conversation_id}
                             </Text>
                           }
                           description={
-                            <Text style={{ color: 'rgba(45, 24, 16, 0.65)' }}>
+                            <Text style={{ color: 'rgba(45, 24, 16, 0.65)', fontSize: '12px' }}>
                               {t('pages.projectDetail.updatedAt', {
                                 time: renderTimeAgo(item.updated_at || item.created_at),
                               })}
                             </Text>
                           }
                         />
-                        <Text style={{ color: 'rgba(45, 24, 16, 0.45)' }}>
+                        <Text style={{ color: 'rgba(45, 24, 16, 0.45)', fontSize: '12px' }}>
                           {item.conversation_id.slice(-6)}
                         </Text>
                       </List.Item>
                     )}
                   />
                 )}
+                </div>
               </Card>
             </Col>
 
-            <Col xs={24} lg={9} xl={8}>
-              <Space direction="vertical" size={20} style={{ width: '100%' }}>
+            <Col xs={24} lg={9} xl={8} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, maxHeight: '600px' }}>
                 <Card
                   style={{
                     borderRadius: '6px',
                     border: '1px solid rgba(139, 115, 85, 0.15)',
                     background: 'rgba(255, 255, 255, 0.85)',
                     boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                    flex: '0 0 calc(35% - 8px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                   }}
-                  bodyStyle={{ padding: '20px' }}
+                  bodyStyle={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <Text style={{ fontWeight: 600, color: '#2d2d2d' }}>
+                    <Text style={{ fontWeight: 600, color: '#2d2d2d', fontSize: '14px' }}>
                       {t('pages.projectDetail.instructions')}
                     </Text>
                     <Tooltip title={t('pages.projectDetail.setInstructions')}>
@@ -550,13 +560,15 @@ const ProjectDetail: React.FC = () => {
                       />
                     </Tooltip>
                   </div>
+                  <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(139, 115, 85, 0.3) transparent' }}>
                   {project.instruction ? (
-                    <Paragraph style={{ color: 'rgba(45, 24, 16, 0.75)', whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                    <Paragraph style={{ color: 'rgba(45, 24, 16, 0.75)', whiteSpace: 'pre-wrap', marginBottom: 0, fontSize: '13px' }}>
                       {project.instruction}
                     </Paragraph>
                   ) : (
                     <Empty description={t('pages.projectDetail.noInstructions')} />
                   )}
+                  </div>
                 </Card>
 
                 <Card
@@ -565,12 +577,16 @@ const ProjectDetail: React.FC = () => {
                     border: '1px solid rgba(139, 115, 85, 0.15)',
                     background: 'rgba(255, 255, 255, 0.85)',
                     boxShadow: '0 1px 3px rgba(139, 115, 85, 0.06)',
+                    flex: '0 0 calc(65% - 8px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                   }}
-                  bodyStyle={{ padding: '20px' }}
+                  bodyStyle={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                     <Space align="center">
-                      <Text style={{ fontWeight: 600, color: '#2d2d2d' }}>
+                      <Text style={{ fontWeight: 600, color: '#2d2d2d', fontSize: '14px' }}>
                         {t('pages.projectDetail.files')}
                       </Text>
                       <Tag style={{
@@ -578,14 +594,15 @@ const ProjectDetail: React.FC = () => {
                         color: '#b85845',
                         border: '1px solid rgba(184, 88, 69, 0.25)',
                         borderRadius: '6px',
+                        fontSize: '12px',
                       }}>{projectFiles.length}</Tag>
                     </Space>
-                    <Space size={8}>
+                    <Space size={4}>
                       <Button
                         type="text"
                         icon={<FileText size={14} strokeWidth={1.5} />}
                         onClick={openCreateFileModal}
-                        style={{ color: '#b85845' }}
+                        style={{ color: '#b85845', padding: '4px 8px', fontSize: '13px' }}
                       >
                         {t('pages.projectDetail.newFile')}
                       </Button>
@@ -593,7 +610,7 @@ const ProjectDetail: React.FC = () => {
                         type="text"
                         icon={<Upload size={14} strokeWidth={1.5} />}
                         onClick={handleUploadClick}
-                        style={{ color: '#8b7355' }}
+                        style={{ color: '#b85845', padding: '4px 8px', fontSize: '13px' }}
                       >
                         {t('pages.projectDetail.uploadFile')}
                       </Button>
@@ -601,7 +618,7 @@ const ProjectDetail: React.FC = () => {
                         type="text"
                         icon={<Link2 size={14} strokeWidth={1.5} />}
                         onClick={openPushFileModal}
-                        style={{ color: '#8b7355' }}
+                        style={{ color: '#b85845', padding: '4px 8px', fontSize: '13px' }}
                       >
                         {t('pages.projectDetail.pushFile')}
                       </Button>
@@ -614,6 +631,7 @@ const ProjectDetail: React.FC = () => {
                       />
                     </Space>
                   </div>
+                  <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: 'rgba(139, 115, 85, 0.3) transparent' }}>
                   {filesLoading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
                       <Spin />
@@ -644,6 +662,7 @@ const ProjectDetail: React.FC = () => {
                               onConfirm={() => handleDeleteFile(file)}
                               okText={t('common.delete')}
                               cancelText={t('common.cancel')}
+                              okButtonProps={{ style: { background: '#b85845', borderColor: '#b85845' } }}
                             >
                               <Button type="link" style={{ padding: 0, color: '#b85845' }}>
                                 {t('common.delete')}
@@ -658,8 +677,9 @@ const ProjectDetail: React.FC = () => {
                   ) : (
                     <Empty description={t('pages.projectDetail.noFiles')} />
                   )}
+                  </div>
                 </Card>
-              </Space>
+              </div>
             </Col>
           </Row>
         )}
@@ -737,6 +757,9 @@ const ProjectDetail: React.FC = () => {
         okText={t('common.create')}
         cancelText={t('common.cancel')}
         confirmLoading={createFileLoading}
+        okButtonProps={{
+          style: BUTTON_STYLES.primary,
+        }}
         centered
       >
         <Form form={createFileForm} layout="vertical">
@@ -767,6 +790,9 @@ const ProjectDetail: React.FC = () => {
         okText={t('common.confirm')}
         cancelText={t('common.cancel')}
         confirmLoading={pushFileLoading}
+        okButtonProps={{
+          style: BUTTON_STYLES.primary,
+        }}
         centered
       >
         <Form form={pushFileForm} layout="vertical">
