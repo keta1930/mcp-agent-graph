@@ -1,14 +1,12 @@
 // src/components/chat/input/ModeSelector.tsx
 import React from 'react';
-import { Button, Dropdown } from 'antd';
-import { ArrowUp, Bot, GitBranch, FolderKanban, RefreshCw } from 'lucide-react';
+import { Button } from 'antd';
+import { ArrowUp, Bot, GitBranch } from 'lucide-react';
 import { useConversationStore } from '../../../store/conversationStore';
 import { useModelStore } from '../../../store/modelStore';
 import { useGraphEditorStore } from '../../../store/graphEditorStore';
 import { useMCPStore } from '../../../store/mcpStore';
 import { ConversationMode } from '../../../types/conversation';
-import { ProjectListItem } from '../../../types/project';
-import { projectService } from '../../../services/projectService';
 import SystemPromptToggle from '../controls/SystemPromptToggle';
 import AgentPicker from '../controls/AgentPicker';
 import MCPToolSelector from '../controls/MCPToolSelector';
@@ -18,6 +16,7 @@ import MaxIterationsConfig from '../controls/MaxIterationsConfig';
 import ModelSelector from '../controls/ModelSelector';
 import GraphSelector from '../controls/GraphSelector';
 import FileUploadButton from '../controls/FileUploadButton';
+import ProjectSelector from '../controls/ProjectSelector';
 import { useT } from '../../../i18n/hooks';
 
 interface ModeSelectorProps {
@@ -55,10 +54,7 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
   const [addFilesTrigger, setAddFilesTrigger] = React.useState<{ files: File[]; timestamp: number } | undefined>();
   const [isDragging, setIsDragging] = React.useState(false);
   const inputContainerRef = React.useRef<HTMLDivElement>(null);
-  const [projects, setProjects] = React.useState<ProjectListItem[]>([]);
-  const [projectsLoading, setProjectsLoading] = React.useState(false);
   const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
-  const [selectedProjectName, setSelectedProjectName] = React.useState<string | null>(null);
 
   const availableMCPServers = React.useMemo(() => {
     return Object.keys(mcpConfig.mcpServers || {}).filter(serverName => {
@@ -78,22 +74,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     fetchMCPConfig();
     fetchMCPStatus();
   }, [fetchModels, fetchGraphs, fetchMCPConfig, fetchMCPStatus]);
-
-  const loadProjects = React.useCallback(async () => {
-    setProjectsLoading(true);
-    try {
-      const response = await projectService.listProjects();
-      setProjects(response.projects || []);
-    } catch (error) {
-      setProjects([]);
-    } finally {
-      setProjectsLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
 
   React.useEffect(() => {
     const initialStates: Record<string, boolean> = {};
@@ -118,7 +98,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     setSelectedFiles([]);
     setClearFilesTrigger(prev => prev + 1);
     setSelectedProjectId(null);
-    setSelectedProjectName(null);
   };
 
   const toggleMcpServer = (serverName: string, enabled: boolean) => {
@@ -236,17 +215,8 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
   };
 
-  const handleProjectMenuClick = (key: string) => {
-    if (key === 'none') {
-      setSelectedProjectId(null);
-      setSelectedProjectName(null);
-      return;
-    }
-    const project = projects.find((item) => item.project_id === key);
-    if (project) {
-      setSelectedProjectId(project.project_id);
-      setSelectedProjectName(project.name);
-    }
+  const handleProjectChange = (projectId: string | null, _projectName: string | null) => {
+    setSelectedProjectId(projectId);
   };
 
   const getInputPlaceholder = () => {
@@ -259,14 +229,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
     return t('pages.chatSystem.modeSelector.graphPlaceholder');
   };
-
-  const projectMenuItems = [
-    { key: 'none', label: t('pages.chatSystem.modeSelector.projectNone') },
-    ...projects.map((project) => ({
-      key: project.project_id,
-      label: project.name,
-    }))
-  ];
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -475,32 +437,10 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({
                         onAgentChange={setSelectedAgent}
                         size="small"
                       />
-                      <Dropdown
-                        menu={{
-                          items: projectMenuItems,
-                          onClick: ({ key }) => handleProjectMenuClick(key),
-                        }}
-                        trigger={['click']}
-                      >
-                        <Button
-                          size="small"
-                          className="project-selector-button"
-                          icon={<FolderKanban size={14} strokeWidth={1.5} />}
-                          onClick={(event) => event.preventDefault()}
-                        >
-                          <span className="project-selector-text">
-                            {projectsLoading
-                              ? t('pages.chatSystem.modeSelector.projectLoading')
-                              : selectedProjectName || t('pages.chatSystem.modeSelector.projectPlaceholder')}
-                          </span>
-                        </Button>
-                      </Dropdown>
-                      <Button
+                      <ProjectSelector
+                        selectedProjectId={selectedProjectId}
+                        onProjectChange={handleProjectChange}
                         size="small"
-                        className="project-refresh-button"
-                        icon={<RefreshCw size={14} strokeWidth={1.6} />}
-                        onClick={loadProjects}
-                        title={t('pages.chatSystem.modeSelector.projectRefresh')}
                       />
                       <MCPToolSelector
                         availableMCPServers={availableMCPServers}
