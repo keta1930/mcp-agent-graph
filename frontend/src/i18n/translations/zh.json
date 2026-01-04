@@ -715,6 +715,7 @@
     },
     "projects": {
       "title": "项目管理",
+      "totalCount": "共 {{count}} 个项目",
       "newProject": "新建项目",
       "searchPlaceholder": "搜索项目...",
       "sortBy": "排序",
@@ -746,6 +747,8 @@
     "projectDetail": {
       "title": "项目",
       "back": "全部项目",
+      "editName": "编辑项目名称",
+      "setInstructions": "设置项目指令",
       "conversations": "对话",
       "noConversations": "该项目暂无对话",
       "addConversation": "添加对话",

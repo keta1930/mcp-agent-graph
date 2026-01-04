@@ -715,6 +715,7 @@
     },
     "projects": {
       "title": "Projects",
+      "totalCount": "{{count}} projects",
       "newProject": "New project",
       "searchPlaceholder": "Search projects...",
       "sortBy": "Sort by",
@@ -746,6 +747,8 @@
     "projectDetail": {
       "title": "Project",
       "back": "All projects",
+      "editName": "Edit project name",
+      "setInstructions": "Set project instructions",
       "conversations": "Conversations",
       "noConversations": "No conversations in this project",
       "addConversation": "Add conversation",
