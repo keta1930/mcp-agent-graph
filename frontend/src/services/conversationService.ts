@@ -159,6 +159,9 @@ export class ConversationService {
       if (request.conversation_id) {
         formData.append('conversation_id', request.conversation_id);
       }
+      if (request.project_id) {
+        formData.append('project_id', request.project_id);
+      }
       if (request.model_name) {
         formData.append('model_name', request.model_name);
       }

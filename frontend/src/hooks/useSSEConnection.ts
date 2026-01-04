@@ -574,6 +574,7 @@ export function useSSEConnection() {
             agent_name: options.agent_name,
             user_prompt: options.user_prompt || inputText,
             conversation_id: conversationId,
+            project_id: options.project_id,
             model_name: options.model_name,
             system_prompt: options.system_prompt,
             mcp_servers: options.mcp_servers || [],

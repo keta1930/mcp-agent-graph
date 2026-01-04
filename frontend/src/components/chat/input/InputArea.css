@@ -117,6 +117,54 @@
   }
 }
 
+/* 项目选择按钮 */
+.project-selector-button {
+  height: 28px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(139, 115, 85, 0.2) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: rgba(139, 115, 85, 0.85) !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.project-selector-button:hover {
+  border-color: rgba(196, 30, 58, 0.35) !important;
+  color: #b85845 !important;
+  box-shadow: 0 2px 6px rgba(196, 30, 58, 0.12) !important;
+}
+
+.project-selector-text {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.project-refresh-button {
+  height: 28px !important;
+  width: 28px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(139, 115, 85, 0.2) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: rgba(139, 115, 85, 0.75) !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+.project-refresh-button:hover {
+  border-color: rgba(196, 30, 58, 0.35) !important;
+  color: #b85845 !important;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .model-selector-new .ant-select,

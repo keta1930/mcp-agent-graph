@@ -173,6 +173,7 @@ export interface AgentRunRequest {
 
   // 对话管理
   conversation_id?: string;
+  project_id?: string;
   stream?: boolean;
 
   // 可选配置参数（覆盖/扩展 Agent 配置）

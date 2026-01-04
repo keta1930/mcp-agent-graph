@@ -930,7 +930,11 @@
         "graphModeDesc": "执行流程",
         "systemPromptPlaceholder": "输入系统提示词（可选）... (Ctrl+Enter发送)",
         "agentPlaceholder": "输入您的问题或请求... (Ctrl+Enter发送)",
-        "graphPlaceholder": "输入要传递给Graph的内容... (Ctrl+Enter发送)"
+        "graphPlaceholder": "输入要传递给Graph的内容... (Ctrl+Enter发送)",
+        "projectPlaceholder": "选择项目",
+        "projectNone": "不加入项目",
+        "projectLoading": "加载项目中...",
+        "projectRefresh": "刷新项目"
       },
       "inputArea": {
         "systemPromptPlaceholder": "输入系统提示词... (Ctrl+Enter保存)",

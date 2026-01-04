@@ -290,6 +290,7 @@ const ChatSystem: React.FC = () => {
         mcp_servers: options.mcp_servers || options.selectedMCPServers || [],
         system_tools: options.system_tools || [],
         max_iterations: options.max_iterations,
+        project_id: options.project_id,
         user_prompt: options.user_prompt || inputText,
         files: options.files || [],
         // Graph 模式参数

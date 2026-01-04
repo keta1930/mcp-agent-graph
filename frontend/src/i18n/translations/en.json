@@ -930,7 +930,11 @@
         "graphModeDesc": "Execute Workflow",
         "systemPromptPlaceholder": "Enter system prompt (optional)... (Ctrl+Enter to send)",
         "agentPlaceholder": "Enter your question or request... (Ctrl+Enter to send)",
-        "graphPlaceholder": "Enter content to pass to Graph... (Ctrl+Enter to send)"
+        "graphPlaceholder": "Enter content to pass to Graph... (Ctrl+Enter to send)",
+        "projectPlaceholder": "Select project",
+        "projectNone": "No project",
+        "projectLoading": "Loading projects...",
+        "projectRefresh": "Refresh projects"
       },
       "inputArea": {
         "systemPromptPlaceholder": "Enter system prompt... (Ctrl+Enter to save)",
