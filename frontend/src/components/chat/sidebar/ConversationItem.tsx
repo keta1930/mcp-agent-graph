@@ -1,6 +1,6 @@
 // src/components/chat/sidebar/ConversationItem.tsx
-import React, { useState } from 'react';
-import { Modal, Tag, Tooltip, Checkbox, Dropdown, Button, Input } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Modal, Tag, Tooltip, Checkbox, Dropdown, Button, Input, List, Empty, Spin } from 'antd';
 import {
   MoreHorizontal,
   Star,
@@ -8,6 +8,9 @@ import {
   Tag as TagIcon,
   Trash2,
   Check,
+  FolderPlus,
+  Folder,
+  Search,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
@@ -15,6 +18,8 @@ import { ConversationSummary } from '../../../types/conversation';
 import { useConversationStore } from '../../../store/conversationStore';
 import { useT } from '../../../i18n/hooks';
 import { useI18n } from '../../../i18n/I18nContext';
+import { projectService } from '../../../services/projectService';
+import { ProjectListItem } from '../../../types/project';
 
 const { TextArea } = Input;
 
@@ -39,6 +44,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [tagsModalVisible, setTagsModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [projectModalVisible, setProjectModalVisible] = useState(false);
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
   const [newTitle, setNewTitle] = useState(conversation.title);
   const [newTags, setNewTags] = useState(conversation.tags.join(', '));
   const [isHovered, setIsHovered] = useState(false);
@@ -49,7 +58,46 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     updateConversationTags,
     deleteConversationPermanent,
     showNotification,
+    loadConversations,
   } = useConversationStore();
+
+  // Load projects when modal opens
+  useEffect(() => {
+    if (projectModalVisible) {
+      loadProjects();
+    }
+  }, [projectModalVisible]);
+
+  const loadProjects = async () => {
+    setProjectsLoading(true);
+    try {
+      const response = await projectService.listProjects(100, 0);
+      setProjects(response.projects);
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      showNotification(t('components.conversationItem.loadProjectsFailed'), 'error');
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const filteredProjects = projects.filter((project) =>
+    project.name.toLowerCase().includes(projectSearchQuery.toLowerCase())
+  );
+
+  const handleAddToProject = async (projectId: string) => {
+    try {
+      await projectService.moveConversationToProject(conversation.conversation_id, projectId);
+      showNotification(t('components.conversationItem.addedToProject'), 'success');
+      setProjectModalVisible(false);
+      setProjectSearchQuery('');
+      // Refresh conversations to update project info
+      loadConversations();
+    } catch (error) {
+      console.error('Failed to add to project:', error);
+      showNotification(t('components.conversationItem.addToProjectFailed'), 'error');
+    }
+  };
 
   const handleStatusToggle = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -129,6 +177,15 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           } as const,
         ]
       : []),
+    {
+      key: 'addToProject',
+      icon: <FolderPlus size={14} strokeWidth={1.5} />,
+      label: t('components.conversationItem.addToProject'),
+      onClick: (e: any) => {
+        e.domEvent?.stopPropagation();
+        setProjectModalVisible(true);
+      },
+    },
     {
       key: 'star',
       icon: (
@@ -569,6 +626,99 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         <p style={{ color: '#b85845', fontWeight: 500, margin: 0 }}>
           <strong>{conversation.title}</strong>
         </p>
+      </Modal>
+
+      {/* Add to Project Modal */}
+      <Modal
+        title={t('components.conversationItem.addToProjectModal')}
+        open={projectModalVisible}
+        onCancel={() => {
+          setProjectModalVisible(false);
+          setProjectSearchQuery('');
+        }}
+        footer={null}
+        styles={{
+          content: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(139, 115, 85, 0.15)',
+          }
+        }}
+      >
+        <div style={{ marginBottom: '12px' }}>
+          <p style={{ color: 'rgba(45, 45, 45, 0.65)', fontSize: '13px', margin: '0 0 12px 0' }}>
+            {t('components.conversationItem.selectProjectHint')}
+          </p>
+          <Input
+            prefix={<Search size={14} style={{ color: 'rgba(45, 45, 45, 0.45)' }} />}
+            placeholder={t('components.conversationItem.searchProject')}
+            value={projectSearchQuery}
+            onChange={(e) => setProjectSearchQuery(e.target.value)}
+            allowClear
+            style={{
+              height: '36px',
+              borderRadius: '6px',
+              border: '1px solid rgba(139, 115, 85, 0.2)',
+              background: 'rgba(255, 255, 255, 0.85)',
+            }}
+          />
+        </div>
+        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+          {projectsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+              <Spin />
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <Empty
+              description={projectSearchQuery ? t('components.conversationItem.noMatchingProjects') : t('components.conversationItem.noProjects')}
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              style={{ padding: '20px 0' }}
+            />
+          ) : (
+            <List
+              dataSource={filteredProjects}
+              renderItem={(project) => (
+                <List.Item
+                  style={{
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    marginBottom: '4px',
+                    border: 'none',
+                    transition: 'background 0.2s ease',
+                  }}
+                  onClick={() => handleAddToProject(project.project_id)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(139, 115, 85, 0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                    <Folder size={16} strokeWidth={1.5} style={{ color: '#8b7355', flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#2d2d2d',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {project.name}
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: 'rgba(45, 45, 45, 0.45)',
+                      }}>
+                        {t('components.conversationItem.conversationCount', { count: project.conversation_count })}
+                      </div>
+                    </div>
+                  </div>
+                </List.Item>
+              )}
+            />
+          )}
+        </div>
       </Modal>
     </>
   );

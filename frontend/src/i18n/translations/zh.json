@@ -1350,7 +1350,17 @@
       "created": "创建",
       "updated": "更新",
       "rounds": "轮次",
-      "tags": "标签"
+      "tags": "标签",
+      "addToProject": "添加到项目",
+      "addToProjectModal": "添加到项目",
+      "selectProjectHint": "选择一个项目来添加此对话",
+      "searchProject": "搜索项目",
+      "noProjects": "暂无项目",
+      "noMatchingProjects": "没有匹配的项目",
+      "conversationCount": "{{count}} 个对话",
+      "addedToProject": "已添加到项目",
+      "addToProjectFailed": "添加到项目失败",
+      "loadProjectsFailed": "加载项目列表失败"
     },
     "documentsDrawer": {
       "title": "对话文档",

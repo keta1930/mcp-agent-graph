@@ -1350,7 +1350,17 @@
       "created": "Created",
       "updated": "Updated",
       "rounds": "Rounds",
-      "tags": "Tags"
+      "tags": "Tags",
+      "addToProject": "Add to Project",
+      "addToProjectModal": "Add to Project",
+      "selectProjectHint": "Select a project to add this conversation to",
+      "searchProject": "Search projects",
+      "noProjects": "No projects",
+      "noMatchingProjects": "No matching projects",
+      "conversationCount": "{{count}} conversations",
+      "addedToProject": "Added to project",
+      "addToProjectFailed": "Failed to add to project",
+      "loadProjectsFailed": "Failed to load projects"
     },
     "documentsDrawer": {
       "title": "Conversation Documents",
