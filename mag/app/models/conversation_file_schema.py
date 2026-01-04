@@ -31,7 +31,8 @@ class FileDetail(BaseModel):
 class FileListResponse(BaseModel):
     """文件列表响应"""
     success: bool = Field(..., description="是否成功")
-    conversation_id: str = Field(..., description="会话ID")
+    conversation_id: Optional[str] = Field(None, description="会话ID")
+    project_id: Optional[str] = Field(None, description="项目ID")
     total_count: int = Field(..., description="文件总数")
     files: List[str] = Field(..., description="文件名列表")
 
