@@ -53,6 +53,7 @@ export interface ConversationSummary {
   total_token_usage: TokenUsage;
   status: 'active' | 'deleted' | 'favorite';
   tags: string[];
+  project_id?: string | null;
 }
 
 export interface InputConfig {
@@ -70,6 +71,7 @@ export interface ConversationDetail {
   title: string;
   rounds: ConversationRound[];
   type: 'agent' | 'graph';
+  project_id?: string | null;
   documents?: ConversationDocuments; // 新增：文档列表
   parsed_results?: ParsedResults;
   execution_chain?: string[][];

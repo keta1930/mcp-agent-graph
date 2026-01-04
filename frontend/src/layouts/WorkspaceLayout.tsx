@@ -11,6 +11,7 @@ import {
   MessageSquareText,
   FolderOpen,
   Database,
+  LayoutGrid,
   Home,
   ChevronLeft,
   ChevronRight
@@ -58,6 +59,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({ children }) => {
     { path: '/workspace/system-tools', icon: Wrench, labelKey: 'pages.workspace.systemTools', tourId: 'workspace-system-tools' },
     { path: '/workspace/mcp-manager', icon: Plug, labelKey: 'pages.workspace.mcpManager', tourId: 'workspace-mcp-manager' },
     { path: '/workspace/prompt-manager', icon: MessageSquareText, labelKey: 'pages.workspace.promptManager', tourId: 'workspace-prompt-manager' },
+    { path: '/workspace/projects', icon: LayoutGrid, labelKey: 'pages.workspace.projects', tourId: 'workspace-projects' },
     { path: '/workspace/file-manager', icon: FolderOpen, labelKey: 'pages.workspace.fileManager', tourId: 'workspace-file-manager' },
     { path: '/workspace/memory-manager', icon: Database, labelKey: 'pages.workspace.memoryManager', tourId: 'workspace-memory-manager' },
   ];

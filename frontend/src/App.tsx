@@ -28,6 +28,8 @@ import AdminPanel from './pages/AdminPanel';
 import FileManager from './pages/FileManager';
 import MemoryManager from './pages/MemoryManager';
 import SharedConversation from './pages/SharedConversation';
+import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
 
 // AppContent component that uses i18n context
 const AppContent: React.FC = () => {
@@ -212,6 +214,26 @@ const AppContent: React.FC = () => {
             <PrivateRoute>
               <WorkspaceLayout>
                 <MemoryManager />
+              </WorkspaceLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workspace/projects"
+          element={
+            <PrivateRoute>
+              <WorkspaceLayout>
+                <Projects />
+              </WorkspaceLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/workspace/projects/:projectId"
+          element={
+            <PrivateRoute>
+              <WorkspaceLayout>
+                <ProjectDetail />
               </WorkspaceLayout>
             </PrivateRoute>
           }

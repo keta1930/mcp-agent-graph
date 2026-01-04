@@ -38,8 +38,10 @@ export interface FileDetail {
 export interface FileListResponse {
   success: boolean;
   conversation_id: string;
+  project_id?: string;
   total_count: number;
   files: string[];
+  project_files?: string[];
 }
 
 /**
