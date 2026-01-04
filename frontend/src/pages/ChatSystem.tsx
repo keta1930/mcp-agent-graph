@@ -863,7 +863,7 @@ const ChatSystem: React.FC = () => {
           <FileViewModal
             visible={fileViewModalVisible}
             filename={selectedFilename}
-            conversationId={activeConversationId}
+            resourceId={activeConversationId}
             onClose={() => {
               setFileViewModalVisible(false);
               setSelectedFilename(null);

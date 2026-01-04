@@ -476,7 +476,7 @@ const FileManager: React.FC = () => {
         <FileViewModal
           visible={modalVisible}
           filename={selectedFile.filename}
-          conversationId={selectedFile.conversationId}
+          resourceId={selectedFile.conversationId}
           onClose={handleModalClose}
           onSave={handleFileSaved}
         />

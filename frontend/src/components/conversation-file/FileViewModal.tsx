@@ -11,8 +11,15 @@ import conversationFileService from '../../services/conversationFileService';
 import FileEditor from './FileEditor';
 import MarkdownPreview from './MarkdownPreview';
 import FileVersionHistory from './FileVersionHistory';
-import { FileDetail } from '../../types/conversationFile';
-import { isMarkdownFile, formatFileSize, downloadBlob } from '../../utils/fileUtils';
+import {
+  FileDetail,
+  FileDetailResponse,
+  FileOperationResponse,
+  FileVersionResponse,
+  DeleteFileResponse,
+  SaveFileRequest,
+} from '../../types/conversationFile';
+import { isMarkdownFile, downloadBlob } from '../../utils/fileUtils';
 import { useT } from '../../i18n/hooks';
 
 const { Text } = Typography;
@@ -20,19 +27,29 @@ const { Text } = Typography;
 interface FileViewModalProps {
   visible: boolean;
   filename: string | null;
-  conversationId: string;
+  resourceId: string;
   onClose: () => void;
   onSave?: () => void;
   onDelete?: () => void;
+  fileService?: {
+    getFile: (resourceId: string, filename: string) => Promise<FileDetailResponse>;
+    updateFile: (resourceId: string, filename: string, data: SaveFileRequest) => Promise<FileOperationResponse>;
+    deleteFile: (resourceId: string, filename: string) => Promise<DeleteFileResponse>;
+    getFileVersion: (resourceId: string, filename: string, versionId: string) => Promise<FileVersionResponse>;
+    downloadFile?: (resourceId: string, filename: string) => Promise<Blob>;
+  };
+  allowDownload?: boolean;
 }
 
 export const FileViewModal: React.FC<FileViewModalProps> = ({
   visible,
   filename,
-  conversationId,
+  resourceId,
   onClose,
   onSave,
   onDelete,
+  fileService,
+  allowDownload = true,
 }) => {
   const t = useT();
   const { modal } = App.useApp();
@@ -43,18 +60,20 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeView, setActiveView] = useState<'editor' | 'history'>('editor');
+  const service = fileService || conversationFileService;
+  const canDownload = allowDownload && typeof service.downloadFile === 'function';
 
   useEffect(() => {
     if (visible && filename) {
       loadFile();
     }
-  }, [visible, filename, conversationId]);
+  }, [visible, filename, resourceId]);
 
   const loadFile = async () => {
     if (!filename) return;
     setLoading(true);
     try {
-      const response = await conversationFileService.getFile(conversationId, filename);
+      const response = await service.getFile(resourceId, filename);
       setFileDetail(response.file);
       setContent(response.file.content);
       setOriginalContent(response.file.content);
@@ -75,7 +94,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
     if (!filename) return;
     setSaving(true);
     try {
-      await conversationFileService.updateFile(conversationId, filename, {
+      await service.updateFile(resourceId, filename, {
         content,
         summary: fileDetail?.summary || '',
         log: t('pages.fileManager.fileViewModal.saveLog'),
@@ -93,9 +112,9 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
   };
 
   const handleDownload = async () => {
-    if (!filename) return;
+    if (!filename || !service.downloadFile) return;
     try {
-      const blob = await conversationFileService.downloadFile(conversationId, filename);
+      const blob = await service.downloadFile(resourceId, filename);
       downloadBlob(blob, filename.split('/').pop() || filename);
       message.success(t('pages.fileManager.downloadSuccess'));
     } catch (error: any) {
@@ -106,7 +125,7 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
   const handleDeleteConfirm = async () => {
     if (!filename) return;
     try {
-      await conversationFileService.deleteFile(conversationId, filename);
+      await service.deleteFile(resourceId, filename);
       message.success(t('pages.fileManager.fileViewModal.deleteSuccess'));
       if (onDelete) onDelete();
       handleClose();
@@ -241,19 +260,21 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
           >
             {t('pages.fileManager.fileViewModal.close')}
           </Button>
-          <Button
-            icon={<Download size={16} />}
-            onClick={handleDownload}
-            style={{
-              borderRadius: '6px',
-              border: '1px solid rgba(139, 115, 85, 0.25)',
-              color: '#8b7355',
-              fontWeight: 500,
-              letterSpacing: '0.5px'
-            }}
-          >
-            {t('pages.fileManager.fileViewModal.download')}
-          </Button>
+          {canDownload && (
+            <Button
+              icon={<Download size={16} />}
+              onClick={handleDownload}
+              style={{
+                borderRadius: '6px',
+                border: '1px solid rgba(139, 115, 85, 0.25)',
+                color: '#8b7355',
+                fontWeight: 500,
+                letterSpacing: '0.5px'
+              }}
+            >
+              {t('pages.fileManager.fileViewModal.download')}
+            </Button>
+          )}
           <Popconfirm
             title={t('pages.fileManager.fileViewModal.deleteConfirmTitle')}
             description={t('pages.fileManager.fileViewModal.deleteConfirmMessage', { filename: filename || '' })}
@@ -385,9 +406,10 @@ export const FileViewModal: React.FC<FileViewModalProps> = ({
             <div style={{ height: '60vh' }}>
               <FileVersionHistory
                 filename={filename || ''}
-                conversationId={conversationId}
+                resourceId={resourceId}
                 versions={fileDetail.versions}
                 currentContent={content}
+                getFileVersion={service.getFileVersion}
               />
             </div>
           )}

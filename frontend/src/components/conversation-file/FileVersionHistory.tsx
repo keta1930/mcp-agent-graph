@@ -8,7 +8,7 @@ import {
   Diff as DiffIcon,
 } from 'lucide-react';
 import conversationFileService from '../../services/conversationFileService';
-import { FileVersion, FileVersionDetail } from '../../types/conversationFile';
+import { FileVersion, FileVersionDetail, FileVersionResponse } from '../../types/conversationFile';
 import { formatFileSize } from '../../utils/fileUtils';
 import * as Diff from 'diff';
 import { useT } from '../../i18n/hooks';
@@ -17,22 +17,29 @@ const { Text, Paragraph } = Typography;
 
 interface FileVersionHistoryProps {
   filename: string;
-  conversationId: string;
+  resourceId: string;
   versions: FileVersion[];
   currentContent: string;
+  getFileVersion?: (
+    resourceId: string,
+    filename: string,
+    versionId: string
+  ) => Promise<FileVersionResponse>;
 }
 
 const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
   filename,
-  conversationId,
+  resourceId,
   versions,
   currentContent,
+  getFileVersion,
 }) => {
   const t = useT();
   const [selectedVersion, setSelectedVersion] = useState<FileVersionDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [diffModalVisible, setDiffModalVisible] = useState(false);
+  const fetchVersion = getFileVersion || conversationFileService.getFileVersion;
 
   const formatTimestamp = (timestamp: string): string => {
     try {
@@ -72,8 +79,8 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
   const handleViewVersion = async (version: FileVersion) => {
     setLoading(true);
     try {
-      const response = await conversationFileService.getFileVersion(
-        conversationId,
+      const response = await fetchVersion(
+        resourceId,
         filename,
         version.version_id
       );
@@ -89,8 +96,8 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({
   const handleCompareVersion = async (version: FileVersion) => {
     setLoading(true);
     try {
-      const response = await conversationFileService.getFileVersion(
-        conversationId,
+      const response = await fetchVersion(
+        resourceId,
         filename,
         version.version_id
       );
