@@ -79,6 +79,23 @@ class AgentStreamExecutor:
                 yield "data: [DONE]\n\n"
                 return
 
+            # 获取conversation的project_id并追加project instruction
+            conversation = await mongodb_client.conversation_repository.get_conversation(conversation_id)
+            if conversation and conversation.get("project_id"):
+                project_id = conversation.get("project_id")
+                project_instruction = await mongodb_client.get_project_instruction(project_id, user_id)
+
+                if project_instruction and project_instruction.strip():
+                    # 拼接顺序：agent instruction + project instruction
+                    if effective_config["system_prompt"]:
+                        effective_config["system_prompt"] = (
+                            f"{effective_config['system_prompt']}\n\n"
+                            f"# Project Instructions\n{project_instruction}"
+                        )
+                    else:
+                        effective_config["system_prompt"] = f"# Project Instructions\n{project_instruction}"
+                    logger.info(f"已追加Project指令: project_id={project_id}")
+
             # 构建包含历史消息的完整消息列表
             messages = await self._build_messages(
                 conversation_id=conversation_id,

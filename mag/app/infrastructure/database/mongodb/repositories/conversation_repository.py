@@ -16,7 +16,7 @@ class ConversationRepository:
 
     async def create_conversation(self, conversation_id: str, conversation_type: str = "agent",
                                   user_id: str = "default_user", title: str = "",
-                                  tags: List[str] = None) -> bool:
+                                  tags: List[str] = None, project_id: Optional[str] = None) -> bool:
         """
         创建新对话（统一入口，支持 agent 和 graph 类型）
 
@@ -44,6 +44,7 @@ class ConversationRepository:
                 },
                 "status": "active",
                 "tags": tags or [],
+                "project_id": project_id,
                 # 初始化 documents 字段
                 "documents": {
                     "total_count": 0,
@@ -215,6 +216,59 @@ class ConversationRepository:
             logger.error(f"更新对话标签失败: {str(e)}")
             return False
 
+    async def update_conversation_project(self, conversation_id: str, project_id: Optional[str],
+                                         user_id: str) -> bool:
+        """
+        更新conversation的project归属
+
+        Args:
+            conversation_id: Conversation ID
+            project_id: Project ID（None表示移除归属）
+            user_id: 用户ID
+
+        Returns:
+            bool: 更新是否成功
+        """
+        try:
+            result = await self.conversations_collection.update_one(
+                {"_id": conversation_id, "user_id": user_id},
+                {"$set": {"project_id": project_id, "updated_at": datetime.now()}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"✓ 更新conversation project成功: {conversation_id} -> {project_id}")
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"更新conversation project失败 ({conversation_id}): {str(e)}")
+            return False
+
+    async def get_conversations_by_project(self, project_id: str, user_id: str) -> List[Dict[str, Any]]:
+        """
+        获取project下的所有conversations
+
+        Args:
+            project_id: Project ID
+            user_id: 用户ID
+
+        Returns:
+            List[Dict]: Conversation列表
+        """
+        try:
+            cursor = self.conversations_collection.find({
+                "user_id": user_id,
+                "project_id": project_id
+            }).sort("updated_at", -1)
+
+            conversations = await cursor.to_list(length=None)
+            return conversations
+
+        except Exception as e:
+            logger.error(f"获取project conversations失败 ({project_id}): {str(e)}")
+            return []
+
     async def update_input_config(self, conversation_id: str, input_config: Dict[str, Any],
                                   user_id: str = "default_user") -> bool:
         """更新对话的输入配置"""
@@ -275,7 +329,7 @@ class ConversationRepository:
             return False
 
     async def list_conversations(self, user_id: str = "default_user", conversation_type: str = None,
-                                 limit: int = 200, skip: int = 0) -> List[Dict[str, Any]]:
+                                 limit: int = 200, skip: int = 0, project_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         获取用户的对话列表
 
@@ -284,6 +338,7 @@ class ConversationRepository:
             conversation_type: 对话类型过滤（"agent" 或 "graph"），None 表示所有类型
             limit: 返回数量限制
             skip: 跳过数量
+            project_id: Project ID筛选（可选，None表示不筛选）
         """
         try:
             # 构建查询条件
@@ -294,6 +349,9 @@ class ConversationRepository:
                     logger.warning(f"无效的对话类型过滤: {conversation_type}")
                     return []
                 query["type"] = conversation_type
+
+            if project_id is not None:
+                query["project_id"] = project_id
 
             cursor = self.conversations_collection.find(query).sort("updated_at", -1).skip(skip).limit(limit)
 

@@ -14,6 +14,7 @@ from .agent_repository import AgentRepository
 from .agent_run_repository import AgentRunRepository
 from .memory_repository import MemoryRepository
 from .share_repository import ShareRepository
+from .project_repository import ProjectRepository
 
 __all__ = [
     'ConversationRepository',
@@ -31,5 +32,6 @@ __all__ = [
     'AgentRepository',
     'AgentRunRepository',
     'MemoryRepository',
-    'ShareRepository'
+    'ShareRepository',
+    'ProjectRepository'
 ]

@@ -6,7 +6,7 @@ from app.infrastructure.database.mongodb.repositories import (
     TaskRepository, GraphConfigRepository, PromptRepository, ModelConfigRepository,
     MCPConfigRepository, PreviewRepository, UserRepository, InviteCodeRepository,
     TeamSettingsRepository, RefreshTokenRepository, AgentRepository,
-    AgentRunRepository, MemoryRepository, ShareRepository
+    AgentRunRepository, MemoryRepository, ShareRepository, ProjectRepository
 )
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ class MongoDBClient:
         self.agent_run_collection = None
         self.memories_collection = None
         self.conversation_shares_collection = None
+        self.projects_collection = None
 
         self.is_connected = False
 
@@ -54,6 +55,7 @@ class MongoDBClient:
         self.agent_run_repository = None
         self.memory_repository = None
         self.share_repository = None
+        self.project_repository = None
 
     async def initialize(self, connection_string: str, database_name: str = None):
         """初始化MongoDB连接"""
@@ -83,6 +85,7 @@ class MongoDBClient:
             self.agent_run_collection = self.db.agent_run
             self.memories_collection = self.db.memories
             self.conversation_shares_collection = self.db.conversation_shares
+            self.projects_collection = self.db.projects
 
             await self.client.admin.command('ping')
 
@@ -178,12 +181,19 @@ class MongoDBClient:
             self.conversation_shares_collection
         )
 
+        self.project_repository = ProjectRepository(
+            self.db,
+            self.projects_collection
+        )
+
     async def _create_indexes(self):
         """创建必要的索引"""
         try:
             await self.conversations_collection.create_index([("user_id", 1), ("type", 1), ("created_at", -1)])
             await self.conversations_collection.create_index([("status", 1)])
             await self.conversations_collection.create_index([("updated_at", -1)])
+            await self.conversations_collection.create_index([("project_id", 1, "updated_at", -1)])
+            await self.conversations_collection.create_index([("user_id", 1), ("project_id", 1)])
 
 
 
@@ -254,6 +264,9 @@ class MongoDBClient:
             await self.conversation_shares_collection.create_index([("user_id", 1)])
             await self.conversation_shares_collection.create_index([("created_at", -1)])
 
+            await self.projects_collection.create_index([("user_id", 1), ("updated_at", -1)])
+            await self.projects_collection.create_index([("user_id", 1), ("name", 1)], unique=True)
+
             logger.info("MongoDB索引创建成功")
 
         except Exception as e:
@@ -323,9 +336,9 @@ class MongoDBClient:
             return None
 
     async def list_conversations(self, user_id: str = "default_user", conversation_type: str = None,
-                                 limit: int = 200, skip: int = 0) -> List[Dict[str, Any]]:
+                                 limit: int = 200, skip: int = 0, project_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """获取用户的对话列表（支持 agent 和 graph 类型）"""
-        return await self.conversation_repository.list_conversations(user_id, conversation_type, limit, skip)
+        return await self.conversation_repository.list_conversations(user_id, conversation_type, limit, skip, project_id)
 
     async def update_conversation_status(self, conversation_id: str, status: str,
                                          user_id: str = "default_user") -> bool:
@@ -573,6 +586,57 @@ class MongoDBClient:
     async def delete_conversation_shares_by_conversation(self, conversation_id: str) -> bool:
         """删除对话的所有分享记录（级联删除）"""
         return await self.share_repository.delete_shares_by_conversation(conversation_id)
+
+    # === Project管理方法 ===
+
+    async def create_project(self, project_id: str, name: str, instruction: str,
+                            user_id: str = "default_user") -> bool:
+        """创建新的Project"""
+        return await self.project_repository.create_project(project_id, name, instruction, user_id)
+
+    async def get_project(self, project_id: str, user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """获取Project详情"""
+        return await self.project_repository.get_project(project_id, user_id)
+
+    async def update_project(self, project_id: str, update_data: Dict[str, Any],
+                            user_id: str = "default_user") -> bool:
+        """更新Project信息"""
+        return await self.project_repository.update_project(project_id, update_data, user_id)
+
+    async def delete_project(self, project_id: str) -> bool:
+        """硬删除Project"""
+        return await self.project_repository.delete_project(project_id)
+
+    async def list_projects(self, user_id: str = "default_user",
+                           limit: int = 100, skip: int = 0) -> List[Dict[str, Any]]:
+        """获取用户的Project列表"""
+        return await self.project_repository.list_projects(user_id, limit, skip)
+
+    async def update_project_instruction(self, project_id: str, instruction: str,
+                                        user_id: str = "default_user") -> bool:
+        """更新Project的instruction"""
+        return await self.project_repository.update_instruction(project_id, instruction, user_id)
+
+    async def get_project_instruction(self, project_id: str,
+                                      user_id: Optional[str] = None) -> Optional[str]:
+        """获取Project的instruction"""
+        return await self.project_repository.get_instruction(project_id, user_id)
+
+    async def update_conversation_project(self, conversation_id: str, project_id: Optional[str],
+                                         user_id: str = "default_user") -> bool:
+        """更新conversation的project归属"""
+        return await self.conversation_repository.update_conversation_project(
+            conversation_id, project_id, user_id
+        )
+
+    async def get_conversations_by_project(self, project_id: str,
+                                          user_id: str = "default_user") -> List[Dict[str, Any]]:
+        """获取project下的所有conversations"""
+        return await self.conversation_repository.get_conversations_by_project(project_id, user_id)
+
+    async def update_project_conversation_count(self, project_id: str, increment: int) -> bool:
+        """更新project的conversation计数"""
+        return await self.project_repository.update_conversation_count(project_id, increment)
 
 
 mongodb_client = MongoDBClient()

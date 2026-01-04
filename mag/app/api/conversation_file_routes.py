@@ -41,9 +41,13 @@ async def list_files(
     """
     获取会话所有文件列表
 
-    返回文件名列表（含路径），前端可自行构建树形结构
+    返回文件名列表（含路径），如果会话属于项目，还会返回项目的共享文件
     """
     try:
+        from app.infrastructure.database.mongodb import mongodb_client
+        from app.services.project import project_document_service
+
+        # 获取conversation文件
         result = await conversation_document_service.get_all_files(
             conversation_id=conversation_id,
             user_id=current_user.user_id
@@ -51,6 +55,19 @@ async def list_files(
 
         if not result["success"]:
             raise HTTPException(status_code=404, detail=result.get("error", "获取文件列表失败"))
+
+        # 检查是否属于project，如果是则获取project文件
+        conversation = await mongodb_client.conversation_repository.get_conversation(conversation_id)
+        if conversation and conversation.get("project_id"):
+            project_id = conversation.get("project_id")
+            project_result = await project_document_service.get_all_files(
+                project_id=project_id,
+                user_id=current_user.user_id
+            )
+
+            if project_result["success"]:
+                result["project_id"] = project_id
+                result["project_files"] = project_result["files"]
 
         return result
 
@@ -335,3 +352,43 @@ async def delete_file(
     except Exception as e:
         logger.error(f"删除文件失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"删除文件失败: {str(e)}")
+
+
+@router.post("/{filename:path}/push-to-project", response_model=FileOperationResponse)
+async def push_file_to_project(
+    conversation_id: str = Path(..., description="会话ID"),
+    filename: str = Path(..., description="文件名（含路径）"),
+    project_id: str = Query(..., description="目标Project ID"),
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    """
+    推送文件到Project
+
+    将conversation中的文件复制到project
+    """
+    try:
+        from app.services.project import project_document_service
+
+        result = await project_document_service.push_file_from_conversation(
+            conversation_id=conversation_id,
+            project_id=project_id,
+            filename=filename,
+            user_id=current_user.user_id
+        )
+
+        if not result["success"]:
+            status_code = 404 if "不存在" in result.get("message", "") else 400
+            if "已存在" in result.get("message", ""):
+                status_code = 409
+            raise HTTPException(status_code=status_code, detail=result.get("message", "推送文件失败"))
+
+        return {
+            "success": True,
+            "message": result["message"]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"推送文件到Project失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"推送文件失败: {str(e)}")

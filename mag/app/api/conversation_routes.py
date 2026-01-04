@@ -65,7 +65,8 @@ async def get_conversations_list(current_user: CurrentUser = Depends(get_current
                 round_count=conv.get("round_count", 0),
                 total_token_usage=token_usage,
                 status=conv.get("status", "active"),
-                tags=conv.get("tags", [])
+                tags=conv.get("tags", []),
+                project_id=conv.get("project_id")
             ))
 
         return ConversationListResponse(
@@ -115,6 +116,7 @@ async def get_conversation_detail(
             "title": conversation.get("title", "新对话"),
             "rounds": rounds,
             "type": conversation_type,
+            "project_id": conversation.get("project_id")
         }
 
         # 添加文档/文件信息（如果存在）

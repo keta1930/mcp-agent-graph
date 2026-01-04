@@ -19,6 +19,7 @@ class ConversationListItem(BaseModel):
     total_token_usage: TokenUsage = Field(..., description="总token使用量统计")
     status: str = Field(..., description="对话状态：active（活跃）/ deleted（已删除）/ favorite（收藏）")
     tags: List[str] = Field(default_factory=list, description="标签列表")
+    project_id: Optional[str] = Field(None, description="所属Project ID")
 
     @validator('type')
     def validate_type(cls, v):
@@ -58,6 +59,7 @@ class ConversationDetailResponse(BaseModel):
     title: str = Field(..., description="对话标题")
     rounds: List[Dict[str, Any]] = Field(default_factory=list, description="完整消息轮次（原始格式）")
     type: Optional[str] = Field(None, description="对话类型：agent（Agent对话）/ graph（图执行）")
+    project_id: Optional[str] = Field(None, description="所属Project ID")
 
     # 文档/文件信息
     documents: Optional[Dict[str, Any]] = Field(None, description="对话关联的文档/文件信息")
@@ -152,4 +154,10 @@ class UpdateConversationStatusRequest(BaseModel):
 class UpdateInputConfigRequest(BaseModel):
     """更新输入配置请求"""
     input_config: InputConfig = Field(..., description="输入配置")
+    user_id: str = Field(default="default_user", description="用户ID")
+
+
+class UpdateConversationProjectRequest(BaseModel):
+    """更新conversation的project归属请求"""
+    project_id: Optional[str] = Field(None, description="Project ID，None表示移除归属")
     user_id: str = Field(default="default_user", description="用户ID")
