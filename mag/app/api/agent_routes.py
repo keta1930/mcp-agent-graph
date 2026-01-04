@@ -376,6 +376,7 @@ async def agent_run(
     user_prompt: str = Form(...),
     agent_name: Optional[str] = Form(None),
     conversation_id: Optional[str] = Form(None),
+    project_id: Optional[str] = Form(None),
     stream: bool = Form(True),
     model_name: Optional[str] = Form(None),
     system_prompt: Optional[str] = Form(None),
@@ -403,7 +404,8 @@ async def agent_run(
         conversation_id, is_new_conversation = await agent_run_service.ensure_conversation_exists(
             conversation_id=conversation_id,
             user_id=user_id,
-            agent_name=agent_name
+            agent_name=agent_name,
+            project_id=project_id
         )
 
         # 3. 处理上传的文件
@@ -466,6 +468,11 @@ async def agent_run(
 
     except HTTPException:
         raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Agent 运行处理出错: {str(e)}")
         raise HTTPException(

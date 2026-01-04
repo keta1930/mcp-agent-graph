@@ -86,7 +86,8 @@ class AgentRunService:
         self,
         conversation_id: Optional[str],
         user_id: str,
-        agent_name: Optional[str]
+        agent_name: Optional[str],
+        project_id: Optional[str] = None
     ) -> Tuple[str, bool]:
         """
         确保 Agent 会话存在（包括 conversation 和 agent_run 记录）
@@ -104,6 +105,12 @@ class AgentRunService:
             对于其他类型的会话，请使用 conversation_repository.ensure_conversation_exists()
         """
 
+        # 验证 project 权限（如有）
+        if project_id:
+            project = await mongodb_client.get_project(project_id, user_id)
+            if not project:
+                raise ValueError(f"Project 不存在或无权限访问: {project_id}")
+
         # 生成或使用现有 conversation_id
         conversation_id = conversation_id or str(ObjectId())
 
@@ -120,13 +127,17 @@ class AgentRunService:
                 conversation_type="agent",
                 user_id=user_id,
                 title=f"{agent_name or 'Manual'} 对话",
-                tags=[]
+                tags=[],
+                project_id=project_id
             )
 
             # 创建 agent_run 记录（Agent 专用）
             await mongodb_client.agent_run_repository.create_agent_run(
                 conversation_id=conversation_id
             )
+
+            if project_id:
+                await mongodb_client.update_project_conversation_count(project_id, 1)
 
         return conversation_id, is_new_conversation
 
