@@ -73,7 +73,7 @@
       "modelManager": "Model Manager",
       "mcpManager": "MCP Manager",
       "promptManager": "Prompt Manager",
-      "projects": "Projects",
+      "projects": "Projects Manager",
       "systemTools": "System Tools",
       "systemToolsManager": "System Tools Manager",
       "fileManager": "File Manager",
@@ -1268,6 +1268,12 @@
       "clearSelection": "Clear Selection",
       "noAgents": "No agents available",
       "loadAgentsFailed": "Failed to load agent list"
+    },
+    "projectSelector": {
+      "selectProject": "Select Project",
+      "clearSelection": "Clear Selection",
+      "noProjects": "No projects available",
+      "conversations": "conversations"
     },
     "modelSelector": {
       "placeholder": "Select AI Model"

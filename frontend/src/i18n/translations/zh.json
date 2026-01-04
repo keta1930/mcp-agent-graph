@@ -73,7 +73,7 @@
       "modelManager": "模型管理",
       "mcpManager": "MCP 管理",
       "promptManager": "提示词管理",
-      "projects": "项目",
+      "projects": "项目管理",
       "systemTools": "系统工具箱",
       "systemToolsManager": "系统工具管理",
       "fileManager": "文件管理",
@@ -714,7 +714,7 @@
       }
     },
     "projects": {
-      "title": "项目",
+      "title": "项目管理",
       "newProject": "新建项目",
       "searchPlaceholder": "搜索项目...",
       "sortBy": "排序",
@@ -1268,6 +1268,12 @@
       "clearSelection": "清除选择",
       "noAgents": "暂无可用的 Agent",
       "loadAgentsFailed": "加载 Agent 列表失败"
+    },
+    "projectSelector": {
+      "selectProject": "选择项目",
+      "clearSelection": "清除选择",
+      "noProjects": "暂无可用的项目",
+      "conversations": "个对话"
     },
     "modelSelector": {
       "placeholder": "点击选择AI模型"
