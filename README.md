@@ -134,6 +134,8 @@ npm run build  # Build production version
 | **Model** | Support for multiple LLM models (OpenAI compatible), flexible API Key configuration | [Model Docs](docs/core-components/model/multi-model.md) |
 | **Memory** | Short-term memory maintains conversation context, long-term memory stores user preferences and Agent knowledge base across sessions | [Memory Docs](docs/core-components/memory/index.md) |
 | **Prompt Center** | Centralized management of reusable Prompt templates, supporting categorization, import/export, and cross-project references | [Prompt Docs](docs/core-components/prompt/index.md) |
+| **Multimodal (VLM)** | Vision language model support for image understanding and visual Q&A | [Multimodal Docs](docs/roadmap/multimodal.md) |
+| **Projects** | Organize conversations into collections with shared files | [Projects Docs](docs/core-components/conversation/projects.md) |
 
 ### Workflow Capabilities
 
@@ -165,13 +167,21 @@ npm run build  # Build production version
 
 The platform continues to evolve, bringing more powerful Agent capabilities and better collaboration experiences to users.
 
+### Recently Implemented
+
+The following features have been recently implemented and are now available:
+
+| Feature | Core Value | Documentation |
+|---------|------------|---------------|
+| **Multimodal Support** | VLM gives Agents visual understanding capabilities | [Details](docs/roadmap/multimodal.md) |
+| **Projects** | Organize conversations into collections with shared resources | [Details](docs/core-components/conversation/projects.md) |
+
 ### Coming Soon
 
 The following features are coming soon or actively under development:
 
 | Feature | Core Value | Documentation |
 |---------|------------|---------------|
-| **Multimodal Support** | VLM gives Agents visual understanding capabilities | [Details](docs/roadmap/multimodal.md) |
 | **Team Resource Sharing** | Share Agents, workflows, and Prompts within teams | [Details](docs/roadmap/resource-sharing.md) |
 | **Agent Skills** | Progressive context engineering to improve efficiency and capabilities | [Details](docs/roadmap/skills-context.md) |
 

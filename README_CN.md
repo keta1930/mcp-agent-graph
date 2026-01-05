@@ -134,6 +134,8 @@ npm run build  # 构建生产版本
 | **Model（模型）** | 支持多种 LLM 模型（Openai兼容），灵活配置 API Key | [模型文档](docs/core-components/model/multi-model.zh.md) |
 | **Memory（记忆）** | 短期记忆维护对话上下文，长期记忆跨会话存储用户偏好和 Agent 知识库 | [Memory 文档](docs/core-components/memory/index.zh.md) |
 | **Prompt Center** | 中心化管理可复用的 Prompt 模板，支持分类组织、导入导出和跨项目引用 | [Prompt 文档](docs/core-components/prompt/index.zh.md) |
+| **多模态 (VLM)** | 视觉语言模型支持，实现图像理解和图文问答 | [多模态文档](docs/roadmap/multimodal.zh.md) |
+| **Projects（项目）** | 将对话组织为集合，支持文件共享 | [Projects 文档](docs/core-components/conversation/projects.zh.md) |
 
 ### 工作流能力
 
@@ -165,13 +167,21 @@ npm run build  # 构建生产版本
 
 平台持续发展，为用户带来更强大的 Agent 能力和更好的协作体验。
 
+### 最近实现
+
+以下功能已经实现并可以使用：
+
+| 功能 | 核心价值 | 文档 |
+|------|---------|------|
+| **多模态支持** | VLM 让 Agent 具备视觉理解能力 | [详情](docs/roadmap/multimodal.zh.md) |
+| **Projects（项目）** | 将对话组织为集合，支持共享资源 | [详情](docs/core-components/conversation/projects.zh.md) |
+
 ### 即将推出
 
 以下功能即将上线或正在积极开发中：
 
 | 功能 | 核心价值 | 文档 |
 |------|---------|------|
-| **多模态支持** | VLM 让 Agent 具备视觉理解能力 | [详情](docs/roadmap/multimodal.zh.md) |
 | **团队资源共享** | Agent、工作流、Prompt 在团队内共享 | [详情](docs/roadmap/resource-sharing.zh.md) |
 | **Agent Skills** | 渐进式上下文工程，提升效率和能力 | [详情](docs/roadmap/skills-context.zh.md) |
 
