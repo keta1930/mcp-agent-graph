@@ -389,6 +389,12 @@ async def agent_run(
     """Agent 运行（流式响应，SSE）- 支持配置覆盖和文件上传"""
     try:
         user_id = current_user.user_id
+        
+        # 处理空字符串的 project_id
+        if project_id is not None and project_id.strip() == "":
+            project_id = None
+        
+        logger.info(f"Agent run request - user_id: {user_id}, project_id: {project_id}, conversation_id: {conversation_id}")
 
         # 1. 验证请求参数
         agent_name, mcp_servers_list, system_tools_list = await agent_run_service.validate_request_params(
