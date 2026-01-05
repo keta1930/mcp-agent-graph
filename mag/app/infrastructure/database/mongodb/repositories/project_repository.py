@@ -38,7 +38,7 @@ class ProjectRepository:
             bool: 创建是否成功
         """
         try:
-            now = datetime.utcnow()
+            now = datetime.now()
             project_doc = {
                 "_id": project_id,
                 "user_id": user_id,
@@ -106,7 +106,7 @@ class ProjectRepository:
         """
         try:
             # 构建更新字段
-            update_fields = {"updated_at": datetime.utcnow()}
+            update_fields = {"updated_at": datetime.now()}
 
             if "name" in update_data and update_data["name"]:
                 update_fields["name"] = update_data["name"]
@@ -196,7 +196,7 @@ class ProjectRepository:
         try:
             result = await self.collection.update_one(
                 {"_id": project_id, "user_id": user_id},
-                {"$set": {"instruction": instruction, "updated_at": datetime.utcnow()}}
+                {"$set": {"instruction": instruction, "updated_at": datetime.now()}}
             )
 
             return result.modified_count > 0
@@ -255,7 +255,7 @@ class ProjectRepository:
             bool: 添加是否成功
         """
         try:
-            now = datetime.utcnow()
+            now = datetime.now()
             log_id = str(uuid.uuid4())
 
             file_metadata = {
@@ -317,7 +317,7 @@ class ProjectRepository:
             bool: 更新是否成功
         """
         try:
-            now = datetime.utcnow()
+            now = datetime.now()
             update_fields = {"documents.files.$.updated_at": now}
 
             if summary is not None:
@@ -381,7 +381,7 @@ class ProjectRepository:
                         "documents.total_count": -1,
                         "stats.total_files": -1
                     },
-                    "$set": {"updated_at": datetime.utcnow()}
+                    "$set": {"updated_at": datetime.now()}
                 }
             )
 
@@ -483,7 +483,7 @@ class ProjectRepository:
                 {"_id": project_id},
                 {
                     "$inc": {"stats.conversation_count": increment},
-                    "$set": {"updated_at": datetime.utcnow()}
+                    "$set": {"updated_at": datetime.now()}
                 }
             )
 
