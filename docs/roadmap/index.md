@@ -6,13 +6,20 @@ The platform continues to evolve, bringing more powerful Agent capabilities and 
 
 Our development focuses on three directions: **capability enhancement**, **ecosystem building**, and **experience optimization**.
 
+## Recently Implemented
+
+These features have been recently implemented and are now available:
+
+| Feature | Status | Core Value |
+|---------|--------|-----------|
+| [Multimodal Support](multimodal.md) | ✅ Implemented | VLM brings visual understanding to Agents |
+
 ## Coming Soon
 
 The following features are launching soon or actively under development:
 
 | Feature | Status | Core Value |
 |---------|--------|-----------|
-| [Multimodal Support](multimodal.md) | Coming Soon | VLM brings visual understanding to Agents |
 | [Team Resource Sharing](resource-sharing.md) | Coming Soon | Share Agents, workflows, and prompts within teams |
 | [Agent Skills](skills-context.md) | Coming Soon | Progressive context engineering for efficiency and capability |
 
