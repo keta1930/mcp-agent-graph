@@ -1,4 +1,3 @@
-// src/pages/MCPManager.tsx
 import React, { useEffect, useState } from 'react';
 import { Layout, Row, Col, Alert, App } from 'antd';
 import { Grid3x3 } from 'lucide-react';
@@ -8,7 +7,6 @@ import MCPServerCard from '../components/mcp-manager/MCPServerCard';
 import MCPToolsViewer from '../components/mcp-manager/MCPToolsViewer';
 import MCPJsonEditor from '../components/mcp-manager/MCPJsonEditor';
 import MCPManagerHeader from '../components/mcp-manager/MCPManagerHeader';
-import MCPActionButtons from '../components/mcp-manager/MCPActionButtons';
 import { MCPServerConfig } from '../types/mcp';
 import { getUserInfo } from '../utils/auth';
 import { useT } from '../i18n/hooks';
@@ -180,6 +178,11 @@ const MCPManager: React.FC = () => {
         connectedCount={connectedCount}
         viewMode={viewMode}
         onViewModeChange={() => setViewMode(viewMode === 'visual' ? 'json' : 'visual')}
+        onAddServer={showAddModal}
+        onRefresh={handleRefresh}
+        onConnectAll={handleConnectAll}
+        loading={loading}
+        disabled={serverNames.length === 0}
         t={t}
       />
 
@@ -205,15 +208,6 @@ const MCPManager: React.FC = () => {
 
         {viewMode === 'visual' ? (
           <div>
-            <MCPActionButtons
-              onAddServer={showAddModal}
-              onRefresh={handleRefresh}
-              onConnectAll={handleConnectAll}
-              loading={loading}
-              disabled={serverNames.length === 0}
-              t={t}
-            />
-
             {serverNames.length === 0 ? (
               <div style={getMCPEmptyStateStyle()}>
                 <Grid3x3 size={48} strokeWidth={1.5} style={{
