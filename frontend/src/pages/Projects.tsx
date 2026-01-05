@@ -261,19 +261,15 @@ const Projects: React.FC = () => {
                     border: '1px solid rgba(139, 115, 85, 0.12)',
                     background: 'rgba(255, 255, 255, 0.9)',
                     boxShadow: '0 2px 8px rgba(139, 115, 85, 0.06)',
-                    position: 'relative',
                     overflow: 'hidden',
                     transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
                   }}
                   bodyStyle={{ padding: '14px 16px' }}
                 >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                    }}
-                  >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <Title level={5} style={{ margin: 0, color: '#2d2d2d', fontSize: '14px', fontWeight: 600, flex: 1 }}>
+                      {project.name}
+                    </Title>
                     <Popconfirm
                       title={t('pages.projects.deleteConfirmTitle')}
                       description={t('pages.projects.deleteConfirmMessage', { name: project.name })}
@@ -300,14 +296,13 @@ const Projects: React.FC = () => {
                           alignItems: 'center',
                           justifyContent: 'center',
                           transition: 'all 0.2s ease',
+                          flexShrink: 0,
+                          marginLeft: '8px',
                         }}
                       />
                     </Popconfirm>
                   </div>
 
-                  <Title level={5} style={{ marginBottom: '6px', color: '#2d2d2d', fontSize: '14px', fontWeight: 600, paddingRight: '24px' }}>
-                    {project.name}
-                  </Title>
                   <Text style={{ color: 'rgba(45, 24, 16, 0.55)', fontSize: '12px' }}>
                     {renderUpdatedText(project)}
                   </Text>
