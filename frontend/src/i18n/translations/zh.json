@@ -324,6 +324,7 @@
       "connectedCount": "{{count}} 已连接",
       "jsonView": "JSON视图",
       "listView": "列表视图",
+      "server": "服务器",
       "addServer": "添加服务器",
       "registerTool": "注册工具",
       "refresh": "刷新",

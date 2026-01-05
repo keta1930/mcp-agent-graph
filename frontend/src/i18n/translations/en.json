@@ -324,6 +324,7 @@
       "connectedCount": "{{count}} connected",
       "jsonView": "JSON View",
       "listView": "List View",
+      "server": "Server",
       "addServer": "Add Server",
       "registerTool": "Register Tool",
       "refresh": "Refresh",
