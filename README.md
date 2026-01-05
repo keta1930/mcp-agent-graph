@@ -131,10 +131,9 @@ npm run build  # Build production version
 |---------|-------------|---------------|
 | **Agent** | AI entities with capabilities to understand goals, use tools, iterate optimization, maintain context and long-term memory, solving open-ended tasks through autonomous action execution | [Agent Docs](docs/core-components/agent/index.md) |
 | **Graph (Workflow)** | Orchestrate multiple agents into structured workflows, defining execution flow through nodes and edges, suitable for predictable multi-stage tasks | [Graph Docs](docs/core-components/graph/index.md) |
-| **Model** | Support for multiple LLM models (OpenAI compatible), flexible API Key configuration | [Model Docs](docs/core-components/model/multi-model.md) |
+| **Model** | Support for LLM and VLM models (OpenAI compatible), flexible API Key configuration | [Model Docs](docs/core-components/model/multi-model.md) |
 | **Memory** | Short-term memory maintains conversation context, long-term memory stores user preferences and Agent knowledge base across sessions | [Memory Docs](docs/core-components/memory/index.md) |
 | **Prompt Center** | Centralized management of reusable Prompt templates, supporting categorization, import/export, and cross-project references | [Prompt Docs](docs/core-components/prompt/index.md) |
-| **Multimodal (VLM)** | Vision language model support for image understanding and visual Q&A | [Multimodal Docs](docs/roadmap/multimodal.md) |
 | **Projects** | Organize conversations into collections with shared files | [Projects Docs](docs/core-components/conversation/projects.md) |
 
 ### Workflow Capabilities
@@ -152,7 +151,7 @@ npm run build  # Build production version
 |---------|-------------|---------------|
 | **MCP Protocol Integration** | Connect external tools and data sources (databases, APIs, file systems, cloud services, etc.) through standardized protocol, connect once and use everywhere | [MCP Docs](docs/core-components/mcp/index.md) |
 | **Built-in Tool Set** | Provides resource creation (Agent Creator, Graph Designer, MCP Builder, Prompt Generator, Task Manager), collaboration (Sub-agent, File Tool), and query (Memory Tool, System Operations) system tools | [Tools Docs](docs/core-components/tools/index.md) |
-| **Python SDK** | Install via `pip install mcp-agent-graph`, build and manage Agent systems using Python code | [PyPI Package](https://pypi.org/project/mcp-agent-graph/) |
+| **Python SDK** | [Discontinued] Install via `pip install mcp-agent-graph`, build and manage Agent systems using Python code | [PyPI Package](https://pypi.org/project/mcp-agent-graph/) |
 
 ### Collaboration & Management
 

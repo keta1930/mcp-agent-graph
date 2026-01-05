@@ -127,15 +127,14 @@ npm run build  # 构建生产版本
 
 ### 核心组件
 
-| 特性 | 说明 | 文档链接 |
-|------|------|---------|
+| 特性 | 说明                                                   | 文档链接 |
+|------|------------------------------------------------------|---------|
 | **Agent（智能体）** | 具备理解目标、使用工具、迭代优化、维护上下文和长期记忆能力的 AI 实体，通过自主执行动作解决开放式任务 | [Agent 文档](docs/core-components/agent/index.zh.md) |
-| **Graph（工作流）** | 将多个智能体编排为结构化工作流，通过节点和边定义执行流程，适合可预测的多阶段任务 | [Graph 文档](docs/core-components/graph/index.zh.md) |
-| **Model（模型）** | 支持多种 LLM 模型（Openai兼容），灵活配置 API Key | [模型文档](docs/core-components/model/multi-model.zh.md) |
-| **Memory（记忆）** | 短期记忆维护对话上下文，长期记忆跨会话存储用户偏好和 Agent 知识库 | [Memory 文档](docs/core-components/memory/index.zh.md) |
-| **Prompt Center** | 中心化管理可复用的 Prompt 模板，支持分类组织、导入导出和跨项目引用 | [Prompt 文档](docs/core-components/prompt/index.zh.md) |
-| **多模态 (VLM)** | 视觉语言模型支持，实现图像理解和图文问答 | [多模态文档](docs/roadmap/multimodal.zh.md) |
-| **Projects（项目）** | 将对话组织为集合，支持文件共享 | [Projects 文档](docs/core-components/conversation/projects.zh.md) |
+| **Graph（工作流）** | 将多个智能体编排为结构化工作流，通过节点和边定义执行流程，适合可预测的多阶段任务             | [Graph 文档](docs/core-components/graph/index.zh.md) |
+| **Model（模型）** | 支持 LLM;VLM 模型（Openai兼容），灵活配置 API Key                 | [模型文档](docs/core-components/model/multi-model.zh.md) |
+| **Memory（记忆）** | 短期记忆维护对话上下文，长期记忆跨会话存储用户偏好和 Agent 知识库                 | [Memory 文档](docs/core-components/memory/index.zh.md) |
+| **Prompt Center** | 中心化管理可复用的 Prompt 模板，支持分类组织、导入导出和跨项目引用                | [Prompt 文档](docs/core-components/prompt/index.zh.md) |
+| **Projects（项目）** | 将对话组织为集合，支持文件共享                                      | [Projects 文档](docs/core-components/conversation/projects.zh.md) |
 
 ### 工作流能力
 
@@ -148,11 +147,11 @@ npm run build  # 构建生产版本
 
 ### 扩展能力
 
-| 特性 | 说明 | 文档链接 |
-|------|------|---------|
-| **MCP 协议集成** | 通过标准化协议连接外部工具和数据源（数据库、API、文件系统、云服务等），一次连接即可使用 | [MCP 文档](docs/core-components/mcp/index.zh.md) |
+| 特性 | 说明                                                                                                                                            | 文档链接 |
+|------|-----------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| **MCP 协议集成** | 通过标准化协议连接外部工具和数据源（数据库、API、文件系统、云服务等），一次连接即可使用                                                                                                 | [MCP 文档](docs/core-components/mcp/index.zh.md) |
 | **内置工具集** | 提供资源创建（Agent Creator、Graph Designer、MCP Builder、Prompt Generator、Task Manager）、协作（Sub-agent、File Tool）和查询（Memory Tool、System Operations）等系统工具 | [Tools 文档](docs/core-components/tools/index.zh.md) |
-| **Python SDK** | 通过 `pip install mcp-agent-graph` 安装，使用 Python 代码构建和管理 Agent 系统 | [PyPI 包](https://pypi.org/project/mcp-agent-graph/) |
+| **Python SDK** | [已停止支持] 通过 `pip install mcp-agent-graph` 安装，使用 Python 代码构建和管理 Agent 系统                                                                         | [PyPI 包](https://pypi.org/project/mcp-agent-graph/) |
 
 ### 协作与管理
 
