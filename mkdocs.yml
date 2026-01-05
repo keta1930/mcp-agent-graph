@@ -130,6 +130,7 @@ plugins:
             Conversation: 对话
             Share: Share
             Export: Export
+            Projects: 项目
             Team: 多用户与团队
             Invite Code: Invite Code
             Manage Team: Manage Team
@@ -284,6 +285,7 @@ nav:
       - core-components/conversation/index.md
       - Share: core-components/conversation/share.md
       - Export: core-components/conversation/export.md
+      - Projects: core-components/conversation/projects.md
 
     - Team:
       - Invite Code: core-components/team/invite-code.md
