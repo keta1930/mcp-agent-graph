@@ -1,6 +1,8 @@
 English | [中文](README_CN.md)
 
 > ⚠️ **Project Status**: This project is currently on pause and will not receive new feature updates. The online demo service has been discontinued.
+>
+> ⚠️ **项目状态**：本项目目前处于暂停更新状态，不会再更新新功能。在线体验服务已下线。
 
 MCP Agent Graph is a Multi-Agent System built on the principles of Context Engineering. It integrates Sub-agent, Long-term Memory, MCP, Agent-based Workflow, and other capabilities. By integrating Context Engineering best practices into a visual development experience, MCP Agent Graph enables developers to rapidly build, test, and deploy complex multi-agent applications.
 
